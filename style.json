@@ -578,6 +578,7 @@
         ["in", "class", "rail", "transit"],
         ["==", "brunnel", "tunnel"]
       ],
+      "layout": {"visibility": "none"},
       "paint": {
         "line-color": "#ccc",
         "line-width": [
@@ -2013,7 +2014,11 @@
       "source": "routes",
       "source-layer": "routes",
       "filter": ["==", ["get", "mode"], "L_RAIL"],
-      "layout": {"line-cap": "round", "line-join": "round"},
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round",
+        "visibility": "none"
+      },
       "paint": {
         "line-color": "#fff",
         "line-width": {"stops": [[10, 4], [22, 8]]}
@@ -2236,7 +2241,8 @@
         "icon-size": 0.7,
         "icon-padding": 1,
         "symbol-avoid-edges": false,
-        "icon-allow-overlap": true
+        "icon-allow-overlap": true,
+        "visibility": "none"
       },
       "paint": {"icon-translate-anchor": "viewport"}
     },
