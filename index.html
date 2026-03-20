@@ -2,14 +2,20 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Tampereen Pysäköintikartta</title>
+    <title>Pysäköintikartta</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
     <script src="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@3.x/dist/link/maplibre-gl.css" rel="stylesheet" />
+    <link href="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.css" rel="stylesheet" />
     <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        .maplibregl-popup { font-family: sans-serif; font-size: 12px; }
+        /* Popupin muotoilu siistimmäksi */
+        .maplibregl-popup-content {
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -17,69 +23,100 @@
     <script>
         const map = new maplibregl.Map({
             container: 'map',
-            style: 'style.json', // Käyttää sinun HSL-tyyliäsi
-            center: [23.76, 61.494], // Tampereen keskusta
-            zoom: 14,
-            dragRotate: false,
-            touchPitch: false
+            style: 'style.json', 
+            center: [23.76, 61.494],
+            zoom: 14.5,
+            dragRotate: false
         });
 
         map.on('load', () => {
-            // Lukitaan pohjoinen ylöspäin
+            // Estetään kartan pyörittäminen vahingossa
             map.touchZoomRotate.disableRotation();
 
-            // 1. Ladataan data GitHubista (Huom: tiedostonimi täsmälleen kuten sanoit)
-            map.addSource('tampere-parkit', {
+            // 1. Ladataan Tampereen data
+            map.addSource('parkit', {
                 'type': 'geojson',
-                'data': 'tampere_pysakointi_pysakointipaikat_polygon_gk24 (1).json'
+                'data': 'tampere_pysakointi_pysakointipaikat_polygon_gk24 (1).json',
+                'generateId': true // Mahdollistaa yksittäisen alueen korostamisen
             });
 
-            // 2. Piirretään alueet sinisellä
+            // 2. ALUEEN TÄYTTÖ (Sävy referenssikuvasta: haalea siniliila)
             map.addLayer({
                 'id': 'parkki-fill',
                 'type': 'fill',
-                'source': 'tampere-parkit',
+                'source': 'parkit',
                 'paint': {
-                    'fill-color': '#007AFF',
-                    'fill-opacity': 0.5
+                    'fill-color': '#7d97f4', // eParkingin vaaleansininen
+                    'fill-opacity': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false],
+                        0.5, // Hieman tummempi kun hiiri on päällä
+                        0.25 // Erittäin haalea normaalisti, jotta tekstit näkyvät läpi
+                    ]
                 }
             });
 
-            // 3. Lisätään valkoiset reunat, jotta alueet erottuvat paremmin
+            // 3. REUNAVIIVA (Hieman vahvempi sininen)
             map.addLayer({
                 'id': 'parkki-outline',
                 'type': 'line',
-                'source': 'tampere-parkit',
+                'source': 'parkit',
                 'paint': {
-                    'line-color': '#ffffff',
-                    'line-width': 1
+                    'line-color': '#5a78ed',
+                    'line-width': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false],
+                        4, // Viiva paksunee selvästi hoverissa (EasyPark-tyyli)
+                        1.5 // Ohut siisti reuna normaalisti
+                    ]
                 }
             });
 
-            // 4. Klikkaus-popup: näyttää kaikki tiedot mitä tiedostosta löytyy
+            // --- HOVER-TOIMINNALLISUUS ---
+            let hoveredId = null;
+
+            map.on('mousemove', 'parkki-fill', (e) => {
+                if (e.features.length > 0) {
+                    if (hoveredId !== null) {
+                        map.setFeatureState(
+                            { source: 'parkit', id: hoveredId },
+                            { hover: false }
+                        );
+                    }
+                    hoveredId = e.features[0].id;
+                    map.setFeatureState(
+                        { source: 'parkit', id: hoveredId },
+                        { hover: true }
+                    );
+                    map.getCanvas().style.cursor = 'pointer';
+                }
+            });
+
+            map.on('mouseleave', 'parkki-fill', () => {
+                if (hoveredId !== null) {
+                    map.setFeatureState(
+                        { source: 'parkit', id: hoveredId },
+                        { hover: false }
+                    );
+                }
+                hoveredId = null;
+                map.getCanvas().style.cursor = '';
+            });
+
+            // --- KLIKKAUS-INFO ---
             map.on('click', 'parkki-fill', (e) => {
                 const props = e.features[0].properties;
-                let html = '<strong>Pysäköintipaikka</strong><br><hr>';
+                let infoHtml = '<strong>Pysäköintialue</strong><br><hr style="border:0; border-top:1px solid #eee;">';
                 
-                // Käydään läpi kaikki tiedot (osoite, tyyppi, hinta jne.)
-                for (const key in props) {
-                    html += `<b>${key}:</b> ${props[key]}<br>`;
-                }
-
+                // Näytetään tärkeimmät tiedot, jos ne löytyvät datasta
+                infoHtml += `<b>Tyyppi:</b> ${props.TARKOITUS || 'Ei tiedossa'}<br>`;
+                if(props.MAKSULLISUUS) infoHtml += `<b>Maksullisuus:</b> ${props.MAKSULLISUUS}<br>`;
+                
                 new maplibregl.Popup()
                     .setLngLat(e.lngLat)
-                    .setHTML(html)
+                    .setHTML(infoHtml)
                     .addTo(map);
             });
-
-            // Muutetaan kursori sormeksi, kun ollaan alueen päällä
-            map.on('mouseenter', 'parkki-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
-            map.on('mouseleave', 'parkki-fill', () => { map.getCanvas().style.cursor = ''; });
-        });
-
-        // Virheen käsittely, jos tiedostoa ei löydy
-        map.on('error', (e) => {
-            console.log('Karttavirhe:', e.error.message);
         });
     </script>
 </body>
