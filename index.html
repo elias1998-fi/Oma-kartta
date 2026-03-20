@@ -71,7 +71,7 @@
             container: 'map',
             style: 'style.json', 
             center: [23.76, 61.494],
-            zoom: 15,
+            zoom: 12, // Aloitetaan hieman kauempaa, jotta näkee efektin
             dragRotate: false
         });
 
@@ -88,10 +88,12 @@
                 'generateId': true 
             });
 
+            // 1. ALUEEN TÄYTTÖ (minzoom lisätty)
             map.addLayer({
                 'id': 'parkki-fill',
                 'type': 'fill',
                 'source': 'parkit',
+                'minzoom': 13.06, // Parkkipaikat ilmestyvät tässä zoom-tasossa
                 'paint': {
                     'fill-color': '#7d97f4',
                     'fill-opacity': [
@@ -103,10 +105,12 @@
                 }
             });
 
+            // 2. REUNAVIIVA (minzoom lisätty myös tähän)
             map.addLayer({
                 'id': 'parkki-outline',
                 'type': 'line',
                 'source': 'parkit',
+                'minzoom': 13.06, // Reunat ilmestyvät samassa zoom-tasossa
                 'paint': {
                     'line-color': '#5a78ed',
                     'line-width': [
@@ -124,6 +128,7 @@
                 const center = map.project(map.getCenter());
                 
                 // Kysytään kartalta, mitä ominaisuuksia on tuossa pisteessä
+                // MapLibre osaa queryta vain näkyviä features, joten zoomaus hoitaa tämänkin
                 const features = map.queryRenderedFeatures(center, { layers: ['parkki-fill'] });
 
                 if (features.length > 0) {
