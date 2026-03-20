@@ -53,20 +53,17 @@
             overflow-y: auto;
         }
 
-        /* --- KARTAN KONTROLLIEN SIJAINTI JA VÄRIT --- */
-        
-        /* Nostetaan paikannusnappia ylemmäs, ettei se jää info-laatikon alle */
+        /* Nostetaan paikannusnappia ylemmäs */
         .maplibregl-ctrl-bottom-right {
             bottom: 130px !important;
             right: 10px !important;
         }
 
-        /* Ylikirjoitetaan oman sijainnin sinisen pallon väri parkkialueen väriseksi (#7d97f4) */
+        /* Ylikirjoitetaan oman sijainnin sinisen pallon väri (#7d97f4) */
         .maplibregl-user-location-dot,
         .maplibregl-user-location-dot::before {
             background-color: #7d97f4 !important;
         }
-        /* Muutetaan myös pallon ympärillä olevan "tarkkuusympyrän" väri haalean siniseksi */
         .maplibregl-user-location-accuracy-circle {
             background-color: rgba(125, 151, 244, 0.2) !important;
         }
@@ -75,14 +72,8 @@
 <body>
 
     <div id="map"></div>
-
-    <div id="center-marker">
-        <div class="p-icon"><span>P</span></div>
-    </div>
-
-    <div id="info-box">
-        <div id="info-content">Siirrä karttaa valitaksesi paikan</div>
-    </div>
+    <div id="center-marker"><div class="p-icon"><span>P</span></div></div>
+    <div id="info-box"><div id="info-content">Siirrä karttaa valitaksesi paikan</div></div>
 
     <script>
         const map = new maplibregl.Map({
@@ -100,23 +91,33 @@
         map.on('load', () => {
             map.touchZoomRotate.disableRotation();
 
-            // LISÄTÄÄN PAIKANNUSPAINIKE
+            // LISÄTÄÄN PAIKANNUSPAINIKE JA VIRHEIDEN KÄSITTELY
             const geolocate = new maplibregl.GeolocateControl({
-                positionOptions: {
-                    enableHighAccuracy: true
-                },
-                trackUserLocation: true, // Seuraa käyttäjän liikettä
-                showUserHeading: true    // Näyttää mihin suuntaan puhelin osoittaa
+                positionOptions: { enableHighAccuracy: true },
+                trackUserLocation: true,
+                showUserHeading: true
             });
             map.addControl(geolocate, 'bottom-right');
 
+            // Jos paikannus epäonnistuu, kerrotaan käyttäjälle miksi!
+            geolocate.on('error', (e) => {
+                console.error("Paikannusvirhe:", e);
+                if (e.code === 1) {
+                    alert('Paikannus epäonnistui: Laitteesi tai selaimesi on estänyt sijainnin käytön. Tarkista puhelimen asetukset!');
+                } else if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                    alert('Paikannus vaatii toimiakseen suojatun HTTPS-yhteyden. Varmista, että katsot sivua GitHub Pages -linkin kautta.');
+                } else {
+                    alert('Sijainnin hakemisessa tapahtui virhe. Yritä hetken kuluttua uudelleen.');
+                }
+            });
+
+            // Ladataan parkkidatat
             map.addSource('parkit', {
                 'type': 'geojson',
                 'data': 'tampere_pysakointi_pysakointipaikat_polygon_gk24 (1).json',
                 'generateId': true 
             });
 
-            // 1. ALUEEN TÄYTTÖ (minzoom asetettu tasan 13)
             map.addLayer({
                 'id': 'parkki-fill',
                 'type': 'fill',
@@ -124,16 +125,10 @@
                 'minzoom': 13,
                 'paint': {
                     'fill-color': '#7d97f4',
-                    'fill-opacity': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false],
-                        0.5,
-                        0.25
-                    ]
+                    'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.5, 0.25]
                 }
             });
 
-            // 2. REUNAVIIVA
             map.addLayer({
                 'id': 'parkki-outline',
                 'type': 'line',
@@ -141,16 +136,10 @@
                 'minzoom': 13,
                 'paint': {
                     'line-color': '#5a78ed',
-                    'line-width': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false],
-                        4,
-                        1.5
-                    ]
+                    'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 4, 1.5]
                 }
             });
 
-            // PÄIVITYSFUNKTIO
             function updateCenterSelection() {
                 const center = map.project(map.getCenter());
                 const features = map.queryRenderedFeatures(center, { layers: ['parkki-fill'] });
@@ -160,9 +149,7 @@
                     const newId = feature.id;
 
                     if (newId !== hoveredId) {
-                        if (hoveredId !== null) {
-                            map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: false });
-                        }
+                        if (hoveredId !== null) map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: false });
                         hoveredId = newId;
                         map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: true });
 
