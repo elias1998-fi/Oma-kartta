@@ -10,22 +10,22 @@
         body { margin: 0; padding: 0; font-family: sans-serif; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
 
-        /* Keskellä oleva P-merkki */
+        /* Keskellä oleva P-merkki - Finnair Blue */
         #center-marker {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -100%); /* Asetetaan kärki keskelle */
-            pointer-events: none; /* Ei estä kartan liikuttamista */
+            transform: translate(-50%, -100%);
+            pointer-events: none;
             z-index: 10;
         }
 
         .p-icon {
-            background-color: #5a78ed;
+            background-color: #0C0243; /* Finnair Blue */
             color: white;
             width: 30px;
             height: 30px;
-            border-radius: 50% 50% 50% 0; /* Pisaramainen muoto */
+            border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
             display: flex;
             align-items: center;
@@ -48,9 +48,27 @@
             border-radius: 12px;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             z-index: 11;
-            display: none; /* Piilotetaan kun ei aluetta alla */
+            display: none;
             max-height: 100px;
             overflow-y: auto;
+        }
+
+        /* --- KARTAN KONTROLLIEN SIJAINTI JA VÄRIT --- */
+        
+        /* Nostetaan paikannusnappia ylemmäs, ettei se jää info-laatikon alle */
+        .maplibregl-ctrl-bottom-right {
+            bottom: 130px !important;
+            right: 10px !important;
+        }
+
+        /* Ylikirjoitetaan oman sijainnin sinisen pallon väri parkkialueen väriseksi (#7d97f4) */
+        .maplibregl-user-location-dot,
+        .maplibregl-user-location-dot::before {
+            background-color: #7d97f4 !important;
+        }
+        /* Muutetaan myös pallon ympärillä olevan "tarkkuusympyrän" väri haalean siniseksi */
+        .maplibregl-user-location-accuracy-circle {
+            background-color: rgba(125, 151, 244, 0.2) !important;
         }
     </style>
 </head>
@@ -71,7 +89,7 @@
             container: 'map',
             style: 'style.json', 
             center: [23.76, 61.494],
-            zoom: 12, // Aloitetaan hieman kauempaa, jotta näkee efektin
+            zoom: 12,
             dragRotate: false
         });
 
@@ -82,18 +100,28 @@
         map.on('load', () => {
             map.touchZoomRotate.disableRotation();
 
+            // LISÄTÄÄN PAIKANNUSPAINIKE
+            const geolocate = new maplibregl.GeolocateControl({
+                positionOptions: {
+                    enableHighAccuracy: true
+                },
+                trackUserLocation: true, // Seuraa käyttäjän liikettä
+                showUserHeading: true    // Näyttää mihin suuntaan puhelin osoittaa
+            });
+            map.addControl(geolocate, 'bottom-right');
+
             map.addSource('parkit', {
                 'type': 'geojson',
                 'data': 'tampere_pysakointi_pysakointipaikat_polygon_gk24 (1).json',
                 'generateId': true 
             });
 
-            // 1. ALUEEN TÄYTTÖ (minzoom lisätty)
+            // 1. ALUEEN TÄYTTÖ (minzoom asetettu tasan 13)
             map.addLayer({
                 'id': 'parkki-fill',
                 'type': 'fill',
                 'source': 'parkit',
-                'minzoom': 13.06, // Parkkipaikat ilmestyvät tässä zoom-tasossa
+                'minzoom': 13,
                 'paint': {
                     'fill-color': '#7d97f4',
                     'fill-opacity': [
@@ -105,12 +133,12 @@
                 }
             });
 
-            // 2. REUNAVIIVA (minzoom lisätty myös tähän)
+            // 2. REUNAVIIVA
             map.addLayer({
                 'id': 'parkki-outline',
                 'type': 'line',
                 'source': 'parkit',
-                'minzoom': 13.06, // Reunat ilmestyvät samassa zoom-tasossa
+                'minzoom': 13,
                 'paint': {
                     'line-color': '#5a78ed',
                     'line-width': [
@@ -122,13 +150,9 @@
                 }
             });
 
-            // PÄIVITYSFUNKTIO: Tarkistaa mitä on keskellä
+            // PÄIVITYSFUNKTIO
             function updateCenterSelection() {
-                // Haetaan ruudun keskipisteen koordinaatit pikseleinä
                 const center = map.project(map.getCenter());
-                
-                // Kysytään kartalta, mitä ominaisuuksia on tuossa pisteessä
-                // MapLibre osaa queryta vain näkyviä features, joten zoomaus hoitaa tämänkin
                 const features = map.queryRenderedFeatures(center, { layers: ['parkki-fill'] });
 
                 if (features.length > 0) {
@@ -136,21 +160,17 @@
                     const newId = feature.id;
 
                     if (newId !== hoveredId) {
-                        // Poistetaan vanha korostus
                         if (hoveredId !== null) {
                             map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: false });
                         }
-                        // Lisätään uusi korostus
                         hoveredId = newId;
                         map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: true });
 
-                        // Päivitetään info-laatikko
                         infoBox.style.display = 'block';
                         const p = feature.properties;
                         infoContent.innerHTML = `<strong>${p.TARKOITUS || 'Pysäköintialue'}</strong><br>${p.MAKSULLISUUS || ''}`;
                     }
                 } else {
-                    // Jos keskellä ei ole aluetta
                     if (hoveredId !== null) {
                         map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: false });
                         hoveredId = null;
@@ -159,9 +179,7 @@
                 }
             }
 
-            // Suoritetaan tarkistus aina kun kartta liikkuu
             map.on('move', updateCenterSelection);
-            // Tarkistetaan kerran alussa
             updateCenterSelection();
         });
     </script>
