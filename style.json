@@ -2829,7 +2829,8 @@
         "text-max-width": 8,
         "text-offset": [0, 0.5],
         "icon-image": "icon-terminal-subway",
-        "icon-size": 0.9
+        "icon-size": 0.9,
+        "visibility": "visible"
       },
       "paint": {
         "text-color": "#666",
@@ -3282,8 +3283,68 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 16,
+      "minzoom": 15,
       "filter": ["all", ["==", "class", "grocery"]],
+      "layout": {
+        "text-field": "{name}",
+        "text-font": ["Gotham Rounded Medium"],
+        "text-size": 10,
+        "visibility": "visible"
+      },
+      "paint": {
+        "text-color": "#666",
+        "text-halo-color": "#fff",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "omat_fast food",
+      "type": "symbol",
+      "source": "vector",
+      "source-layer": "poi",
+      "minzoom": 15,
+      "filter": ["all", ["==", "class", "fast_food"]],
+      "layout": {
+        "text-field": "{name}",
+        "text-font": ["Gotham Rounded Medium"],
+        "text-size": 10
+      },
+      "paint": {
+        "text-color": "#666",
+        "text-halo-color": "#fff",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "omat_convenience",
+      "type": "symbol",
+      "source": "vector",
+      "source-layer": "poi",
+      "minzoom": 15,
+      "filter": [
+        "all",
+        ["==", "class", "shop"],
+        ["==", "subclass", "convenience"]
+      ],
+      "layout": {
+        "text-field": "{name}",
+        "text-font": ["Gotham Rounded Medium"],
+        "text-size": 10,
+        "visibility": "visible"
+      },
+      "paint": {
+        "text-color": "#666",
+        "text-halo-color": "#fff",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "omat_liikkeet",
+      "type": "symbol",
+      "source": "vector",
+      "source-layer": "poi",
+      "minzoom": 16,
+      "filter": ["all", ["==", "class", "shop"]],
       "layout": {
         "text-field": "{name}",
         "text-font": ["Gotham Rounded Medium"],
