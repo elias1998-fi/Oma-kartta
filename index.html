@@ -2,61 +2,107 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Pysäköintikartta</title>
+    <title>Pysäköintikartta - Mobiili</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
     <script src="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.css" rel="stylesheet" />
     <style>
-        body { margin: 0; padding: 0; }
+        body { margin: 0; padding: 0; font-family: sans-serif; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        /* Popupin muotoilu siistimmäksi */
-        .maplibregl-popup-content {
-            border-radius: 12px;
+
+        /* Keskellä oleva P-merkki */
+        #center-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -100%); /* Asetetaan kärki keskelle */
+            pointer-events: none; /* Ei estä kartan liikuttamista */
+            z-index: 10;
+        }
+
+        .p-icon {
+            background-color: #5a78ed;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50% 50% 50% 0; /* Pisaramainen muoto */
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .p-icon span { transform: rotate(45deg); }
+
+        /* Tietolaatikko alareunassa */
+        #info-box {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: white;
             padding: 15px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 11;
+            display: none; /* Piilotetaan kun ei aluetta alla */
+            max-height: 100px;
+            overflow-y: auto;
         }
     </style>
 </head>
 <body>
+
     <div id="map"></div>
+
+    <div id="center-marker">
+        <div class="p-icon"><span>P</span></div>
+    </div>
+
+    <div id="info-box">
+        <div id="info-content">Siirrä karttaa valitaksesi paikan</div>
+    </div>
+
     <script>
         const map = new maplibregl.Map({
             container: 'map',
             style: 'style.json', 
             center: [23.76, 61.494],
-            zoom: 14.5,
+            zoom: 15,
             dragRotate: false
         });
 
+        const infoBox = document.getElementById('info-box');
+        const infoContent = document.getElementById('info-content');
+        let hoveredId = null;
+
         map.on('load', () => {
-            // Estetään kartan pyörittäminen vahingossa
             map.touchZoomRotate.disableRotation();
 
-            // 1. Ladataan Tampereen data
             map.addSource('parkit', {
                 'type': 'geojson',
                 'data': 'tampere_pysakointi_pysakointipaikat_polygon_gk24 (1).json',
-                'generateId': true // Mahdollistaa yksittäisen alueen korostamisen
+                'generateId': true 
             });
 
-            // 2. ALUEEN TÄYTTÖ (Sävy referenssikuvasta: haalea siniliila)
             map.addLayer({
                 'id': 'parkki-fill',
                 'type': 'fill',
                 'source': 'parkit',
                 'paint': {
-                    'fill-color': '#7d97f4', // eParkingin vaaleansininen
+                    'fill-color': '#7d97f4',
                     'fill-opacity': [
                         'case',
                         ['boolean', ['feature-state', 'hover'], false],
-                        0.5, // Hieman tummempi kun hiiri on päällä
-                        0.25 // Erittäin haalea normaalisti, jotta tekstit näkyvät läpi
+                        0.5,
+                        0.25
                     ]
                 }
             });
 
-            // 3. REUNAVIIVA (Hieman vahvempi sininen)
             map.addLayer({
                 'id': 'parkki-outline',
                 'type': 'line',
@@ -66,57 +112,52 @@
                     'line-width': [
                         'case',
                         ['boolean', ['feature-state', 'hover'], false],
-                        4, // Viiva paksunee selvästi hoverissa (EasyPark-tyyli)
-                        1.5 // Ohut siisti reuna normaalisti
+                        4,
+                        1.5
                     ]
                 }
             });
 
-            // --- HOVER-TOIMINNALLISUUS ---
-            let hoveredId = null;
+            // PÄIVITYSFUNKTIO: Tarkistaa mitä on keskellä
+            function updateCenterSelection() {
+                // Haetaan ruudun keskipisteen koordinaatit pikseleinä
+                const center = map.project(map.getCenter());
+                
+                // Kysytään kartalta, mitä ominaisuuksia on tuossa pisteessä
+                const features = map.queryRenderedFeatures(center, { layers: ['parkki-fill'] });
 
-            map.on('mousemove', 'parkki-fill', (e) => {
-                if (e.features.length > 0) {
-                    if (hoveredId !== null) {
-                        map.setFeatureState(
-                            { source: 'parkit', id: hoveredId },
-                            { hover: false }
-                        );
+                if (features.length > 0) {
+                    const feature = features[0];
+                    const newId = feature.id;
+
+                    if (newId !== hoveredId) {
+                        // Poistetaan vanha korostus
+                        if (hoveredId !== null) {
+                            map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: false });
+                        }
+                        // Lisätään uusi korostus
+                        hoveredId = newId;
+                        map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: true });
+
+                        // Päivitetään info-laatikko
+                        infoBox.style.display = 'block';
+                        const p = feature.properties;
+                        infoContent.innerHTML = `<strong>${p.TARKOITUS || 'Pysäköintialue'}</strong><br>${p.MAKSULLISUUS || ''}`;
                     }
-                    hoveredId = e.features[0].id;
-                    map.setFeatureState(
-                        { source: 'parkit', id: hoveredId },
-                        { hover: true }
-                    );
-                    map.getCanvas().style.cursor = 'pointer';
+                } else {
+                    // Jos keskellä ei ole aluetta
+                    if (hoveredId !== null) {
+                        map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: false });
+                        hoveredId = null;
+                        infoBox.style.display = 'none';
+                    }
                 }
-            });
+            }
 
-            map.on('mouseleave', 'parkki-fill', () => {
-                if (hoveredId !== null) {
-                    map.setFeatureState(
-                        { source: 'parkit', id: hoveredId },
-                        { hover: false }
-                    );
-                }
-                hoveredId = null;
-                map.getCanvas().style.cursor = '';
-            });
-
-            // --- KLIKKAUS-INFO ---
-            map.on('click', 'parkki-fill', (e) => {
-                const props = e.features[0].properties;
-                let infoHtml = '<strong>Pysäköintialue</strong><br><hr style="border:0; border-top:1px solid #eee;">';
-                
-                // Näytetään tärkeimmät tiedot, jos ne löytyvät datasta
-                infoHtml += `<b>Tyyppi:</b> ${props.TARKOITUS || 'Ei tiedossa'}<br>`;
-                if(props.MAKSULLISUUS) infoHtml += `<b>Maksullisuus:</b> ${props.MAKSULLISUUS}<br>`;
-                
-                new maplibregl.Popup()
-                    .setLngLat(e.lngLat)
-                    .setHTML(infoHtml)
-                    .addTo(map);
-            });
+            // Suoritetaan tarkistus aina kun kartta liikkuu
+            map.on('move', updateCenterSelection);
+            // Tarkistetaan kerran alussa
+            updateCenterSelection();
         });
     </script>
 </body>
