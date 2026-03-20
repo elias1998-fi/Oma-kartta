@@ -3265,7 +3265,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 16,
+      "minzoom": 15,
       "filter": ["all", ["==", "class", "restaurant"]],
       "layout": {
         "text-field": "{name}",
@@ -3343,12 +3343,13 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 16,
+      "minzoom": 15,
       "filter": ["all", ["==", "class", "shop"]],
       "layout": {
         "text-field": "{name}",
         "text-font": ["Gotham Rounded Medium"],
-        "text-size": 10
+        "text-size": 10,
+        "visibility": "visible"
       },
       "paint": {
         "text-color": "#666",
