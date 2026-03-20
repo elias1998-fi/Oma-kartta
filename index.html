@@ -2,28 +2,36 @@
 <html lang="fi">
 <head>
     <meta charset="utf-8" />
-    <title>Pysäköintikartta</title>
+    <title>HSL Reittiopas - Tyylinen Pysäköintikartta</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
     <script src="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
     <style>
-        /* Täyttää koko näytön ilman valkoisia reunat */
+        /* --- PERUSTYYLIT --- */
         html, body { 
             margin: 0; 
             padding: 0; 
             width: 100%; 
             height: 100%; 
             overflow: hidden; 
-            background-color: #000;
+            background-color: white; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
         #map { 
-            position: absolute; 
-            top: 0; 
-            bottom: 0; 
+            flex-grow: 1; 
             width: 100%; 
         }
 
-        /* Keskellä oleva P-merkki - Finnair Blue */
+        /* --- TÄHTÄIN (P-MERKKI) --- */
         #center-marker {
             position: absolute;
             top: 50%;
@@ -33,7 +41,7 @@
             z-index: 10;
         }
         .p-icon {
-            background-color: #0C0243; /* Finnair Blue */
+            background-color: #0C0243;
             color: white;
             width: 32px;
             height: 32px;
@@ -49,55 +57,139 @@
         }
         .p-icon span { transform: rotate(45deg); }
 
-        /* Tietolaatikko alareunassa */
+        /* --- TIETOLAATIKKO --- */
         #info-box {
             position: absolute;
-            bottom: 25px;
+            top: calc(env(safe-area-inset-top) + 20px); 
             left: 20px;
-            right: 80px; /* Jätetään tilaa paikannusnapille */
+            right: 20px;
             background: white;
             padding: 15px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             z-index: 11;
             display: none;
-            font-family: sans-serif;
         }
 
-        /* HSL-TYYLINEN GPS-MARKKERI */
+        /* --- HSL-TYYLINEN GPS-SUUNTANUOLI (KOODILLA TOTEUTETTU) --- */
+        
+        /* 1. Valkoinen ulkorengas */
         .maplibregl-user-location-dot {
-            background-color: transparent !important;
-            border: 2px solid white !important;
+            background-color: white !important;
+            width: 28px !important;
+            height: 28px !important;
             border-radius: 50% !important;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.4) !important;
-            width: 26px !important;
-            height: 26px !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
+        
+        /* 2. Sininen sisäpallo */
         .maplibregl-user-location-dot::before {
-            background-color: #0089ff !important;
+            content: '' !important;
+            display: block !important;
+            width: 14px !important;
+            height: 14px !important;
+            background-color: #007aff !important; /* HSL-sininen */
             border-radius: 50% !important;
-            width: 12px !important;
-            height: 12px !important;
+            position: relative !important;
+            top: 0 !important;
+            left: 0 !important;
         }
+        
+        /* 3. Sininen suuntanuoli (Heading) */
         .maplibregl-user-location-heading::after {
-            border-bottom-color: #0089ff !important; /* Suuntakolmio */
-        }
-        .maplibregl-user-location-accuracy-circle {
-            background-color: rgba(0, 137, 255, 0.1) !important;
+            content: '' !important;
+            position: absolute !important;
+            bottom: 18px !important; /* Asettaa nuolen renkaan yläpuolelle */
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            border-left: 10px solid transparent !important;
+            border-right: 10px solid transparent !important;
+            border-bottom: 16px solid #007aff !important; /* Nuolen väri */
+            filter: drop-shadow(0 -1px 2px rgba(0,0,0,0.2)) !important;
         }
 
-        /* Paikannusnappi aivan oikeaan alareunaan */
+        .maplibregl-user-location-accuracy-circle {
+            background-color: rgba(0, 122, 255, 0.1) !important;
+        }
+
+        /* --- KONTROLLIT --- */
         .maplibregl-ctrl-bottom-right {
-            bottom: 20px !important;
-            right: 10px !important;
+            bottom: calc(env(safe-area-inset-bottom) + 85px) !important; 
+            right: 15px !important;
+        }
+
+        /* --- ALAPALKKI --- */
+        #bottom-nav {
+            background-color: white;
+            height: calc(65px + env(safe-area-inset-bottom));
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #eee;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #757575;
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: bold;
+            flex-grow: 1;
+        }
+
+        .nav-item.active {
+            color: #007aff;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+
+        /* Piilotetaan turhat attribution-tekstit mutta pidetään tarvittavat */
+        .maplibregl-ctrl-attrib {
+            font-size: 9px !important;
+            bottom: calc(env(safe-area-inset-bottom) + 70px) !important;
         }
     </style>
 </head>
 <body>
 
-    <div id="map"></div>
-    <div id="center-marker"><div class="p-icon"><span>P</span></div></div>
-    <div id="info-box"><div id="info-content"></div></div>
+    <div id="app-container">
+        <div id="map"></div>
+        
+        <div id="center-marker">
+            <div class="p-icon"><span>P</span></div>
+        </div>
+
+        <div id="info-box"><div id="info-content"></div></div>
+
+        <div id="bottom-nav">
+            <a href="#" class="nav-item">
+                <i class="material-icons nav-icon">home</i>
+                KOTI
+            </a>
+            <a href="#" class="nav-item">
+                <i class="material-icons nav-icon">confirmation_number</i>
+                LIPUT
+            </a>
+            <a href="#" class="nav-item active">
+                <i class="material-icons nav-icon">near_me</i>
+                REITTIOPAS
+            </a>
+            <a href="#" class="nav-item">
+                <i class="material-icons nav-icon">menu</i>
+                LISÄÄ
+            </a>
+        </div>
+    </div>
 
     <script>
         const map = new maplibregl.Map({
@@ -105,8 +197,7 @@
             style: 'style.json', 
             center: [23.76, 61.494],
             zoom: 12,
-            dragRotate: false,
-            attributionControl: false // POISTAA TEKIJÄNOIKEUSMERKIN
+            dragRotate: false
         });
 
         const infoBox = document.getElementById('info-box');
@@ -116,20 +207,13 @@
         map.on('load', () => {
             map.touchZoomRotate.disableRotation();
 
-            // Paikannusnappi
             const geolocate = new maplibregl.GeolocateControl({
                 positionOptions: { enableHighAccuracy: true },
                 trackUserLocation: true,
-                showUserHeading: true // Näyttää suuntanuolen (HSL-tyyli)
+                showUserHeading: true 
             });
             map.addControl(geolocate, 'bottom-right');
 
-            // Paikannusvirheiden seuranta
-            geolocate.on('error', (e) => {
-                if (e.code === 1) alert('Salli sijainti puhelimen asetuksista.');
-            });
-
-            // Parkkipaikka-aineisto
             map.addSource('parkit', {
                 'type': 'geojson',
                 'data': 'tampere_pysakointi_pysakointipaikat_polygon_gk24 (1).json',
@@ -140,7 +224,7 @@
                 'id': 'parkki-fill',
                 'type': 'fill',
                 'source': 'parkit',
-                'minzoom': 13.0, // Näkyy tasolta 13 alkaen
+                'minzoom': 13.0, 
                 'paint': {
                     'fill-color': '#7d97f4',
                     'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.5, 0.25]
@@ -158,7 +242,6 @@
                 }
             });
 
-            // Päivitetään tiedot keskipisteen mukaan
             function updateCenterSelection() {
                 const center = map.project(map.getCenter());
                 const features = map.queryRenderedFeatures(center, { layers: ['parkki-fill'] });
