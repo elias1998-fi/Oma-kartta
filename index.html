@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
     <meta charset="utf-8" />
-    <title>HSL Reittiopas - Tyylinen Pysäköintikartta</title>
+    <title>Pysäköintikartta</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
     <script src="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.css" rel="stylesheet" />
@@ -57,7 +57,7 @@
         }
         .p-icon span { transform: rotate(45deg); }
 
-        /* --- TIETOLAATIKKO --- */
+        /* --- TIETOLAATIKKO (Yläreunassa) --- */
         #info-box {
             position: absolute;
             top: calc(env(safe-area-inset-top) + 20px); 
@@ -71,9 +71,7 @@
             display: none;
         }
 
-        /* --- HSL-TYYLINEN GPS-SUUNTANUOLI (KOODILLA TOTEUTETTU) --- */
-        
-        /* 1. Valkoinen ulkorengas */
+        /* --- HSL-TYYLINEN GPS-SUUNTANUOLI --- */
         .maplibregl-user-location-dot {
             background-color: white !important;
             width: 28px !important;
@@ -85,29 +83,27 @@
             justify-content: center !important;
         }
         
-        /* 2. Sininen sisäpallo */
         .maplibregl-user-location-dot::before {
             content: '' !important;
             display: block !important;
             width: 14px !important;
             height: 14px !important;
-            background-color: #007aff !important; /* HSL-sininen */
+            background-color: #007aff !important;
             border-radius: 50% !important;
             position: relative !important;
             top: 0 !important;
             left: 0 !important;
         }
         
-        /* 3. Sininen suuntanuoli (Heading) */
         .maplibregl-user-location-heading::after {
             content: '' !important;
             position: absolute !important;
-            bottom: 18px !important; /* Asettaa nuolen renkaan yläpuolelle */
+            bottom: 18px !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
             border-left: 10px solid transparent !important;
             border-right: 10px solid transparent !important;
-            border-bottom: 16px solid #007aff !important; /* Nuolen väri */
+            border-bottom: 16px solid #007aff !important;
             filter: drop-shadow(0 -1px 2px rgba(0,0,0,0.2)) !important;
         }
 
@@ -115,22 +111,24 @@
             background-color: rgba(0, 122, 255, 0.1) !important;
         }
 
-        /* --- KONTROLLIT --- */
+        /* --- KONTROLLIT (Nostettu hieman) --- */
         .maplibregl-ctrl-bottom-right {
-            bottom: calc(env(safe-area-inset-bottom) + 85px) !important; 
+            bottom: calc(env(safe-area-inset-bottom) + 95px) !important; 
             right: 15px !important;
         }
 
-        /* --- ALAPALKKI --- */
+        /* --- ALAPALKKI (Nostettu selaimen palkkien yläpuolelle) --- */
         #bottom-nav {
             background-color: white;
-            height: calc(65px + env(safe-area-inset-bottom));
+            /* Lisätty kiinteää marginaalia, jotta nousee selaimen palkin yli */
+            height: calc(75px + env(safe-area-inset-bottom));
             display: flex;
             justify-content: space-around;
             align-items: center;
             border-top: 1px solid #eee;
             z-index: 100;
-            padding-bottom: env(safe-area-inset-bottom);
+            padding-bottom: calc(5px + env(safe-area-inset-bottom));
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
         }
 
         .nav-item {
@@ -153,10 +151,10 @@
             margin-bottom: 2px;
         }
 
-        /* Piilotetaan turhat attribution-tekstit mutta pidetään tarvittavat */
+        /* Attribution-tekstit */
         .maplibregl-ctrl-attrib {
             font-size: 9px !important;
-            bottom: calc(env(safe-area-inset-bottom) + 70px) !important;
+            bottom: calc(env(safe-area-inset-bottom) + 80px) !important;
         }
     </style>
 </head>
