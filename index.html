@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Minun HSL Karttani</title>
+    <title>Tampereen Pysäköintikartta</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
     <script src="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.css" rel="stylesheet" />
@@ -16,51 +16,64 @@
     <script>
         const map = new maplibregl.Map({
             container: 'map',
-            style: 'style.json', // Viittaa tyylitiedostoosi
-            center: [24.94, 60.17], // Helsinki
-            zoom: 12,
-            dragRotate: false,      
-            touchPitch: false,      
-            pitchWithRotate: false  
+            style: 'style.json', // HSL-tyylisi
+            center: [23.76, 61.494], // Keskitytään Tampereelle
+            zoom: 14,
+            dragRotate: false,
+            touchPitch: false
         });
 
         map.on('load', () => {
-            // 1. Lukitaan pohjoissuunta
             map.touchZoomRotate.disableRotation();
 
-            // 2. Lisätään maksuvyöhykkeiden datalähde (GeoJSON-tiedosto)
-            map.addSource('pysakointivyohykkeet', {
+            // 1. TUODAAN DATA GITHUBISTA
+            // HUOM: Tiedostonimen on oltava TÄSMÄLLEEN sama kuin lataamasi tiedosto
+            map.addSource('tampere-parkit', {
                 'type': 'geojson',
-                'data': 'maksuvyohykkeet.geojson' // Varmista, että tiedostonimi on GitHubissa täsmälleen tämä
+                'data': 'tampere_pysakointi_pysakointipaikat_polygon_gk24 (1).geojson'
             });
 
-            // 3. Lisätään vyöhykkeiden täyttöväri (Fill)
+            // 2. PIIRRETÄÄN ALUEIDEN TÄYTTÖ (Fill)
             map.addLayer({
-                'id': 'vyohykkeet-fill',
+                'id': 'parkki-alueet-fill',
                 'type': 'fill',
-                'source': 'pysakointivyohykkeet',
+                'source': 'tampere-parkit',
                 'paint': {
-                    'fill-color': [
-                        'match',
-                        ['get', 'vyohykkeen_nro'], // Etsitään datasta vyöhykkeen numero
-                        '1', '#ff4b4b',            // Vyöhyke 1: Punainen
-                        '2', '#4b73ff',            // Vyöhyke 2: Sininen
-                        '#888888'                  // Muut: Harmaa
-                    ],
-                    'fill-opacity': 0.35           // Läpinäkyvyys, jotta kadut näkyvät alta
+                    'fill-color': '#007AFF', // Sininen väri
+                    'fill-opacity': 0.5      // Puoliläpinäkyvä
                 }
             });
 
-            // 4. Lisätään vyöhykkeiden valkoiset reunaviivat
+            // 3. LISÄTÄÄN REUNAVIIVAT (Line)
             map.addLayer({
-                'id': 'vyohykkeet-outline',
+                'id': 'parkki-alueet-line',
                 'type': 'line',
-                'source': 'pysakointivyohykkeet',
+                'source': 'tampere-parkit',
                 'paint': {
                     'line-color': '#ffffff',
-                    'line-width': 1.5
+                    'line-width': 1
                 }
             });
+
+            // 4. NÄYTETÄÄN TIEDOT KLIKATTAESSA
+            map.on('click', 'parkki-alueet-fill', (e) => {
+                const props = e.features[0].properties;
+                let popupSisalto = '<div style="font-family:sans-serif; font-size:12px;"><strong>Pysäköintipaikka</strong><br><hr>';
+                
+                // Käydään läpi kaikki ominaisuustiedot, mitä Tampereen data sisältää
+                for (const avain in props) {
+                    popupSisalto += `<b>${avain}:</b> ${props[avain]}<br>`;
+                }
+                popupSisalto += '</div>';
+
+                new maplibregl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(popupSisalto)
+                    .addTo(map);
+            });
+
+            map.on('mouseenter', 'parkki-alueet-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
+            map.on('mouseleave', 'parkki-alueet-fill', () => { map.getCanvas().style.cursor = ''; });
         });
     </script>
 </body>
