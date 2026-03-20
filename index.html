@@ -57,7 +57,7 @@
         }
         .p-icon span { transform: rotate(45deg); }
 
-        /* --- TIETOLAATIKKO (Yläreunassa) --- */
+        /* --- TIETOLAATIKKO --- */
         #info-box {
             position: absolute;
             top: calc(env(safe-area-inset-top) + 20px); 
@@ -111,16 +111,15 @@
             background-color: rgba(0, 122, 255, 0.1) !important;
         }
 
-        /* --- KONTROLLIT (Nostettu hieman) --- */
+        /* --- KONTROLLIT --- */
         .maplibregl-ctrl-bottom-right {
-            bottom: calc(env(safe-area-inset-bottom) + 95px) !important; 
+            bottom: calc(env(safe-area-inset-bottom) + 105px) !important; 
             right: 15px !important;
         }
 
-        /* --- ALAPALKKI (Nostettu selaimen palkkien yläpuolelle) --- */
+        /* --- ALAPALKKI --- */
         #bottom-nav {
             background-color: white;
-            /* Lisätty kiinteää marginaalia, jotta nousee selaimen palkin yli */
             height: calc(75px + env(safe-area-inset-bottom));
             display: flex;
             justify-content: space-around;
@@ -151,10 +150,9 @@
             margin-bottom: 2px;
         }
 
-        /* Attribution-tekstit */
         .maplibregl-ctrl-attrib {
             font-size: 9px !important;
-            bottom: calc(env(safe-area-inset-bottom) + 80px) !important;
+            bottom: calc(env(safe-area-inset-bottom) + 90px) !important;
         }
     </style>
 </head>
@@ -183,7 +181,7 @@
                 REITTIOPAS
             </a>
             <a href="#" class="nav-item">
-                <i class="material-icons nav-icon">menu</i>
+                <i class="material-icons nav-icon)menu</i>
                 LISÄÄ
             </a>
         </div>
@@ -250,8 +248,14 @@
 
                     if (newId !== hoveredId) {
                         if (hoveredId !== null) map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: false });
+                        
                         hoveredId = newId;
                         map.setFeatureState({ source: 'parkit', id: hoveredId }, { hover: true });
+
+                        // HAPTINEN TÄRINÄ: Lyhyt 15ms värähdys kun osutaan alueelle
+                        if (navigator.vibrate) {
+                            navigator.vibrate(15);
+                        }
 
                         infoBox.style.display = 'block';
                         const p = feature.properties;
