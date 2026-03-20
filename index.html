@@ -18,7 +18,15 @@
             container: 'map',
             style: 'style.json', // Viittaa samaan kansioon ladattuun tiedostoon
             center: [24.94, 60.17], // Helsinki
-            zoom: 12
+            zoom: 12,
+            dragRotate: false,      // Estää kääntämisen hiiren oikealla painikkeella
+            touchPitch: false,      // Estää kartan kallistamisen kahdella sormella
+            pitchWithRotate: false  // Varmistaa, ettei kallistus aktivoidu vahingossa
+        });
+
+        // Lukitaan pohjoissuunta puhelimen näytöllä (estetään sormilla pyörittäminen)
+        map.on('load', () => {
+            map.touchZoomRotate.disableRotation();
         });
     </script>
 </body>
