@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="utf-8" />
+    <title>Helsinki & Tampere - Pysäköintikartta</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+    <script src="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background-color: white; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #app-container { display: flex; flex-direction: column; height: 100vh; }
+        #map { flex-grow: 1; width: 100%; padding-top: env(safe-area-inset-top); }
+
+        #center-marker {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -100%);
+            pointer-events: none; z-index: 2;
+            color: #ef5350; font-size: 40px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #info-box {
+            position: absolute; bottom: 40px; left: 50%;
+            transform: translateX(-50%);
+            background: white; padding: 15px 20px;
+            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            z-index: 3; display: none; min-width: 200px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="map">
+        <span id="center-marker" class="material-icons">location_on</span>
+        <div id="info-box">
+            <div id="info-content">Valitse paikka</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Alustetaan kartta
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: 'style.json', // Varmista että style.json on samassa kansiossa
+        center: [24.941, 60.169],
+        zoom: 13,
+        hash: true
+    });
+
+    map.on('load', function () {
+        console.log("Kartta ladattu.");
+
+        // --- ICONIN LATAUS ALKAA ---
+        // Lataa restaurant.svg ja rekisteröi se nimellä 'osm-restaurant'
+        const img = new Image(24, 24);
+        img.onload = () => {
+            map.addImage('osm-restaurant', img);
+            console.log("Ravintola-ikoni ladattu onnistuneesti.");
+        };
+        img.onerror = () => console.error("Virhe: restaurant.svg tiedostoa ei löytynyt!");
+        img.src = 'restaurant.svg'; 
+        // --- ICONIN LATAUS PÄÄTTYY ---
+
+        // Lisätään datalähteet (Pidetään aiemmat parkkipaikat)
+        map.addSource('tampere-parkit', {
+            type: 'geojson',
+            data: 'https://data.prowledge.com/tampere/pysakointipaikat_piste.json'
+        });
+
+        map.addSource('helsinki-parkit', {
+            type: 'geojson',
+            data: 'https://kartta.hel.fi/ws/geoserver/avoindata/wfs?version=1.1.0&request=GetFeature&typeName=avoindata:Pysakointipaikat_piste&outputFormat=json'
+        });
+
+        const infoBox = document.getElementById('info-box');
+        const infoContent = document.getElementById('info-content');
+        let hoveredState = null;
+
+        function updateCenterSelection() {
+            const center = map.getCenter();
+            const features = map.queryRenderedFeatures(map.project(center), {
+                layers: ['tampere-parkit-layer', 'helsinki-parkit-layer'] // Varmista että nämä nimet täsmäävät style.jsoniin jos käytät niitä
+            });
+
+            if (features.length > 0) {
+                const feature = features[0];
+                const newSource = feature.source;
+                
+                if (hoveredState) {
+                    map.setFeatureState({ source: hoveredState.source, id: hoveredState.id }, { hover: false });
+                }
+
+                hoveredState = { source: newSource, id: feature.id };
+                map.setFeatureState({ source: newSource, id: feature.id }, { hover: true });
+
+                infoBox.style.display = 'block';
+                const p = feature.properties;
+                
+                if (newSource === 'tampere-parkit') {
+                    infoContent.innerHTML = `<strong>${p.TARKOITUS || 'Pysäköintialue'}</strong><br>Vyöhyke: ${p.VYOHYKE || '-'}`;
+                } else if (newSource === 'helsinki-parkit') {
+                    infoContent.innerHTML = `<strong>${p['hel:luokka_nimi'] || 'Pysäköintialue'}</strong><br>Kesto: ${p['hel:kesto'] || '-'}`;
+                }
+            } else {
+                if (hoveredState) {
+                    map.setFeatureState({ source: hoveredState.source, id: hoveredState.id }, { hover: false });
+                    hoveredState = null;
+                    infoBox.style.display = 'none';
+                }
+            }
+        }
+
+        map.on('move', updateCenterSelection);
+        updateCenterSelection();
+    });
+</script>
+
+</body>
+</html>
