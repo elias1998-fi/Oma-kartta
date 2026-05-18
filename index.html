@@ -42,11 +42,7 @@
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
 
     function transformRequest(url, resourceType) {
-      if (
-        url.includes('digitransit.fi') ||
-        url.includes('kartat.hsl.fi') ||
-        url.includes('hslstorage')
-      ) {
+      if (url.includes('digitransit.fi')) {
         return {
           url: url,
           headers: { 'digitransit-subscription-key': API_KEY }
