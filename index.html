@@ -1,72 +1,31 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Oma HSL Kartta</title>
-    
-    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
-    
+    <meta charset="utf-8" />
+    <title>Oma Kartta</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <script src="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.css" rel="stylesheet" />
     <style>
-        body { margin: 0; padding: 0; background-color: #f9f9f9; }
+        body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        
-        /* Tehdään navigointinäppäimistä hieman isompia puhelimelle */
-        .maplibregl-ctrl-group button {
-            width: 44px;
-            height: 44px;
-        }
     </style>
 </head>
 <body>
+    <div id="map"></div>
+    <script>
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'omakartta.style.json', // Viittaa samaan kansioon ladattuun JSON-tiedostoon
+            center: [24.941, 60.170], // Helsinki
+            zoom: 13
+        });
 
-<div id="map"></div>
-
-<script>
-    // Sinun API-avaimesi ja uusi Digitransit-osoite
-    const apiKey = 'a002614565b24559b3feddfca8d01918';
-    
-    // Alustetaan kartta
-    const map = new maplibregl.Map({
-        container: 'map',
-        // Viitataan GitHubissa olevaan tyylitiedostoon
-        style: './style.json', 
-        center: [24.941, 60.172], // Helsinki
-        zoom: 13,
-        hash: true, // Tämä tallentaa sijainnin URL-osoitteeseen (kätevä päivittäessä)
-        
-        // Tämä funktio lisää API-avaimen kaikkiin Digitransitin pyyntöihin
-        transformRequest: (url, resourceType) => {
-            if (url.includes('api.digitransit.fi')) {
-                return {
-                    url: url,
-                    headers: { 'digitransit-subscription-key': apiKey }
-                };
-            }
-        }
-    });
-
-    // Lisätään navigointisäätimet (zoom ja kompassi)
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-    // Lisätään oma sijainti -nappi
-    const geolocate = new maplibregl.GeolocateControl({
-        positionOptions: {
-            enableHighAccuracy: true
-        },
-        trackUserLocation: true,
-        showUserHeading: true
-    });
-    map.addControl(geolocate, 'top-right');
-
-    // Kun kartta on ladattu, yritetään hakea käyttäjän sijainti automaattisesti
-    map.on('load', () => {
-        console.log("Kartta ladattu onnistuneesti");
-    });
-</script>
-
+        // Lisää paikannuspainike iPhonea varten
+        map.addControl(new maplibregl.GeolocateControl({
+            positionOptions: { enableHighAccuracy: true },
+            trackUserLocation: true
+        }));
+    </script>
 </body>
 </html>
