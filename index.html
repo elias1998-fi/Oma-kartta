@@ -34,7 +34,6 @@
       bottom: max(12px, env(safe-area-inset-bottom));
       left: max(12px, env(safe-area-inset-left));
     }
-    /* Hide attribution info button */
     .maplibregl-ctrl-attrib { display: none !important; }
   </style>
 </head>
@@ -75,9 +74,24 @@
     map.on('load', () => {
       map.touchZoomRotate.disableRotation();
       map.dragRotate.disable();
+
+      // Helsinki parking
+      map.addSource('helsinki-parkit', {
+        type: 'geojson',
+        data: 'helsinki_parkit.geojson'
+      });
+      map.addLayer({
+        id: 'helsinki-parkit-layer',
+        type: 'fill',
+        source: 'helsinki-parkit',
+        minzoom: 13,
+        paint: {
+          'fill-color': '#0C0243',
+          'fill-opacity': 0.5
+        }
+      });
     });
 
-    // Only geolocate button, top-right
     map.addControl(new maplibregl.GeolocateControl({
       positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true,
