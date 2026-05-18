@@ -35,10 +35,24 @@
       left: max(12px, env(safe-area-inset-left));
     }
     .maplibregl-ctrl-attrib { display: none !important; }
+
+    /* Center pointer */
+    #center-pointer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -100%);
+      width: 36px;
+      height: 36px;
+      pointer-events: none;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <img id="center-pointer" src="pointer.png" />
+
   <script>
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
 
@@ -75,13 +89,10 @@
       map.touchZoomRotate.disableRotation();
       map.dragRotate.disable();
 
-      // Helsinki parking
       map.addSource('helsinki-parkit', {
         type: 'geojson',
         data: 'helsinki_parkit.geojson'
       });
-
-      // Fill layer — light blue, transparent
       map.addLayer({
         id: 'helsinki-parkit-fill',
         type: 'fill',
@@ -92,8 +103,6 @@
           'fill-opacity': 0.25
         }
       });
-
-      // Outline layer — solid blue border
       map.addLayer({
         id: 'helsinki-parkit-outline',
         type: 'line',
