@@ -47,7 +47,6 @@
       z-index: 10;
     }
 
-    /* Bottom sheet */
     #bottom-sheet {
       position: absolute;
       left: 0;
@@ -61,10 +60,6 @@
       transform: translateY(calc(100% - 80px));
       transition: transform 0.3s ease;
       touch-action: none;
-    }
-
-    #bottom-sheet.expanded {
-      transform: translateY(0);
     }
 
     #drag-handle-area {
@@ -85,7 +80,52 @@
     #sheet-content {
       padding: 10px 20px;
       padding-bottom: max(20px, env(safe-area-inset-bottom));
+      overflow-y: auto;
+      max-height: calc(80vh - 60px);
     }
+
+    #no-parking {
+      color: #aaa;
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .parking-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #0C0243;
+      font-family: Arial, sans-serif;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+
+    .info-label {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .info-value {
+      font-size: 14px;
+      font-weight: bold;
+      color: #222;
+      text-align: right;
+      max-width: 60%;
+    }
+
+    .info-value.green { color: #2e7d32; }
+    .info-value.red { color: #c62828; }
   </style>
 </head>
 <body>
@@ -101,7 +141,7 @@
       <div id="drag-handle"></div>
     </div>
     <div id="sheet-content">
-      <!-- Content goes here later -->
+      <div id="no-parking">Siirrä karttaa pysäköintialueelle</div>
     </div>
   </div>
 
@@ -174,6 +214,60 @@
       showUserHeading: true,
     }), 'top-right');
 
+    // Check parking area under pointer after map stops moving
+    map.on('moveend', checkParking);
+    map.on('zoomend', checkParking);
+
+    function checkParking() {
+      const centerPixel = map.project(map.getCenter());
+      const features = map.queryRenderedFeatures(centerPixel, {
+        layers: ['helsinki-parkit-fill']
+      });
+
+      const content = document.getElementById('sheet-content');
+
+      if (features.length > 0) {
+        const p = features[0].properties;
+
+        const tyyppi = p['hel:luokka_nimi'] || '-';
+        const kesto = p['hel:kesto'] || 'Rajoittamaton';
+        const voimassaolo = p['hel:voimassaolo'] || 'Kaikki ajat';
+        const asento = p['hel:paikan_asento'] || '-';
+        const paikat = p['hel:paikat_ala'] || '-';
+        const ala = p['hel:pinta_ala'] ? Math.round(p['hel:pinta_ala']) + ' m²' : '-';
+
+        content.innerHTML = `
+          <div class="parking-title">🅿 Pysäköintialue</div>
+          <div class="info-row">
+            <span class="info-label">Tyyppi</span>
+            <span class="info-value">${tyyppi}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Sallittu kesto</span>
+            <span class="info-value green">${kesto}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Voimassaolo</span>
+            <span class="info-value">${voimassaolo}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Pysäköinnin asento</span>
+            <span class="info-value">${asento}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Pysäköintipaikkoja</span>
+            <span class="info-value">${paikat} kpl</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Alueen pinta-ala</span>
+            <span class="info-value">${ala}</span>
+          </div>
+        `;
+      } else {
+        content.innerHTML = '<div id="no-parking">Siirrä karttaa pysäköintialueelle</div>';
+      }
+    }
+
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
     // Bottom sheet drag logic
@@ -181,7 +275,10 @@
     const handle = document.getElementById('drag-handle-area');
     let startY = 0;
     let startTranslate = 0;
-    const collapsedY = sheet.clientHeight - 80;
+
+    function getCollapsedY() {
+      return sheet.clientHeight - 80;
+    }
 
     handle.addEventListener('touchstart', (e) => {
       startY = e.touches[0].clientY;
@@ -192,18 +289,18 @@
 
     handle.addEventListener('touchmove', (e) => {
       const delta = e.touches[0].clientY - startY;
-      const newY = Math.max(0, Math.min(collapsedY, startTranslate + delta));
+      const newY = Math.max(0, Math.min(getCollapsedY(), startTranslate + delta));
       sheet.style.transform = `translateY(${newY}px)`;
     }, { passive: true });
 
-    handle.addEventListener('touchend', (e) => {
+    handle.addEventListener('touchend', () => {
       sheet.style.transition = 'transform 0.3s ease';
       const transform = new DOMMatrix(getComputedStyle(sheet).transform);
       const currentY = transform.m42;
-      if (currentY < collapsedY / 2) {
+      if (currentY < getCollapsedY() / 2) {
         sheet.style.transform = 'translateY(0)';
       } else {
-        sheet.style.transform = `translateY(${collapsedY}px)`;
+        sheet.style.transform = `translateY(${getCollapsedY()}px)`;
       }
     });
   </script>
