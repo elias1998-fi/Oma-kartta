@@ -5,7 +5,7 @@
   "sources": {
     "vector": {
       "type": "vector",
-      "url": "https://api.digitransit.fi/map/v3/hsl-vector-map/index.json"
+      "url": "https://api.digitransit.fi/map/v3/hsl-vector-map/index.json?digitransit-subscription-key=a002614565b24559b3feddfca8d01918"
     },
     "parkandride": {
       "url": "https://api.digitransit.fi/map/v3/hsl/fi/vehicleParking/tilejson.json",
@@ -54,6 +54,10 @@
     "terminals": {
       "url": "https://kartat.hsl.fi/jore/tiles/terminals/index.json",
       "type": "vector"
+    },
+    "o03ylzdyj": {
+      "type": "vector",
+      "url": "https://localhost:3000/tilejson.json"
     }
   },
   "sprite": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/sprite",
@@ -3224,6 +3228,7 @@
       "source-layer": "rentalStations",
       "minzoom": 13,
       "maxzoom": 14,
+      "layout": {"visibility": "none"},
       "paint": {
         "circle-color": "#fff",
         "circle-radius": [
@@ -3244,6 +3249,7 @@
       "source-layer": "rentalStations",
       "minzoom": 13,
       "maxzoom": 14,
+      "layout": {"visibility": "none"},
       "paint": {
         "circle-color": "#fcbc19",
         "circle-radius": [
@@ -3267,7 +3273,8 @@
         "icon-offset": [0, -6],
         "icon-image": "icon-citybike-station",
         "icon-allow-overlap": false,
-        "icon-size": {"stops": [[13, 0.8], [20, 1.2]]}
+        "icon-size": {"stops": [[13, 0.8], [20, 1.2]]},
+        "visibility": "none"
       }
     },
     {
