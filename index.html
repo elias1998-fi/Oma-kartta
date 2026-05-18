@@ -58,4 +58,34 @@
       zoom: 12,
       minZoom: 5,
       maxZoom: 20,
-      transformRequest:
+      transformRequest: transformRequest,
+      maxTileCacheSize: 50,
+      fadeDuration: 100,
+      dragRotate: false,
+      touchPitch: false,
+      pitchWithRotate: false,
+      keyboard: false,
+    });
+
+    map.touchZoomRotate.disableRotation();
+
+    map.on('load', () => {
+      map.touchZoomRotate.disableRotation();
+      map.dragRotate.disable();
+    });
+
+    map.addControl(new maplibregl.NavigationControl({
+      visualizePitch: false,
+      showCompass: false,
+    }), 'top-right');
+    map.addControl(new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+      showUserHeading: true,
+    }), 'top-right');
+    map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
+
+    map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
+  </script>
+</body>
+</html>
