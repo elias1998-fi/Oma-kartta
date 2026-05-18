@@ -61,9 +61,15 @@
       transformRequest: transformRequest,
       maxTileCacheSize: 50,
       fadeDuration: 100,
+      dragRotate: false,
+      touchPitch: false,
+      pitchWithRotate: false,
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new maplibregl.NavigationControl({
+      visualizePitch: false,
+      showCompass: false,
+    }), 'top-right');
     map.addControl(new maplibregl.GeolocateControl({
       positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true,
