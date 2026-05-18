@@ -1,61 +1,59 @@
 {
   "version": 8,
-  "name": "HSL v2.0 Päivitetty",
-  "metadata": {
-    "maputnik:renderer": "mbgljs"
-  },
+  "name": "HSL v2.0",
+  "metadata": {"maputnik:renderer": "mbgljs"},
   "sources": {
     "vector": {
       "type": "vector",
-      "url": "https://api.digitransit.fi/map/v3/hsl/fi/index.json"
+      "url": "https://api.digitransit.fi/map/v3/hsl-vector-map/index.json?digitransit-subscription-key=a002614565b24559b3feddfca8d01918"
     },
     "parkandride": {
-      "type": "vector",
-      "url": "https://api.digitransit.fi/map/v3/hsl/fi/vehicleParking/tilejson.json"
+      "url": "https://api.digitransit.fi/map/v3/hsl/fi/vehicleParking/tilejson.json?digitransit-subscription-key=a002614565b24559b3feddfca8d01918",
+      "type": "vector"
     },
     "borders": {
-      "type": "geojson",
-      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/kuntarajat.json"
+      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/kuntarajat.json",
+      "type": "geojson"
     },
     "routes": {
-      "type": "vector",
-      "url": "https://kartat.hsl.fi/jore/tiles/routes/index.json"
+      "url": "https://kartat.hsl.fi/jore/tiles/routes/index.json",
+      "type": "vector"
     },
     "subway": {
-      "type": "geojson",
-      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/subway.geojson"
+      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/subway.geojson",
+      "type": "geojson"
     },
     "rail": {
-      "type": "geojson",
-      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/rail.geojson"
+      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/rail.geojson",
+      "type": "geojson"
     },
     "ticketzones": {
-      "type": "geojson",
-      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/ticket-zones.json"
+      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/ticket-zones.json",
+      "type": "geojson"
     },
     "ticketzone-labels": {
-      "type": "geojson",
-      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/ticket-zone-labels.json"
+      "data": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/ticket-zone-labels.json",
+      "type": "geojson"
     },
     "ticket-sales": {
-      "type": "geojson",
-      "data": "https://data-hslhrt.opendata.arcgis.com/datasets/f9388fc8a8f848fda3bc584b607afe97_0.geojson"
+      "data": "https://data-hslhrt.opendata.arcgis.com/datasets/f9388fc8a8f848fda3bc584b607afe97_0.geojson",
+      "type": "geojson"
     },
     "stops": {
-      "type": "vector",
-      "url": "https://kartat.hsl.fi/jore/tiles/stops/index.json"
+      "url": "https://kartat.hsl.fi/jore/tiles/stops/index.json",
+      "type": "vector"
     },
     "stops-by-routes": {
-      "type": "vector",
-      "url": "https://kartat.hsl.fi/jore/tiles/stops-by-routes/index.json"
+      "url": "https://kartat.hsl.fi/jore/tiles/stops-by-routes/index.json",
+      "type": "vector"
     },
     "citybike": {
-      "type": "vector",
-      "url": "https://api.digitransit.fi/map/v3/hsl/fi/rentalStations/tilejson.json"
+      "url": "https://api.digitransit.fi/map/v3/hsl/fi/rentalStations/tilejson.json?digitransit-subscription-key=a002614565b24559b3feddfca8d01918",
+      "type": "vector"
     },
     "terminals": {
-      "type": "vector",
-      "url": "https://kartat.hsl.fi/jore/tiles/terminals/index.json"
+      "url": "https://kartat.hsl.fi/jore/tiles/terminals/index.json",
+      "type": "vector"
     }
   },
   "sprite": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/sprite",
@@ -67,12 +65,8 @@
       "paint": {
         "background-color": [
           "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
+          ["linear"],
+          ["zoom"],
           7,
           "#d3e3bb",
           9,
@@ -85,67 +79,32 @@
       "type": "fill",
       "source": "vector",
       "source-layer": "landuse",
-      "filter": [
-        "==",
-        "class",
-        "hospital"
-      ],
-      "paint": {
-        "fill-color": "#fbe6e0"
-      }
+      "filter": ["==", "class", "hospital"],
+      "paint": {"fill-color": "#fbe6e0"}
     },
     {
       "id": "landuse_school",
       "type": "fill",
       "source": "vector",
       "source-layer": "landuse",
-      "filter": [
-        "in",
-        "class",
-        "university",
-        "school",
-        "kindergarten"
-      ],
-      "paint": {
-        "fill-color": "#f9f4d2"
-      }
+      "filter": ["in", "class", "university", "school", "kindergarten"],
+      "paint": {"fill-color": "#f9f4d2"}
     },
     {
       "id": "landuse_aeroway",
       "type": "fill",
       "source": "vector",
       "source-layer": "aeroway",
-      "filter": [
-        "!=",
-        "class",
-        "aerodrome"
-      ],
-      "paint": {
-        "fill-color": "#e3e3e3",
-        "fill-outline-color": "#ccc"
-      }
+      "filter": ["!=", "class", "aerodrome"],
+      "paint": {"fill-color": "#e3e3e3", "fill-outline-color": "#ccc"}
     },
     {
       "id": "landuse_park",
       "type": "fill",
       "source": "vector",
       "source-layer": "landcover",
-      "filter": [
-        "all",
-        [
-          "==",
-          "class",
-          "grass"
-        ],
-        [
-          "==",
-          "subclass",
-          "park"
-        ]
-      ],
-      "paint": {
-        "fill-color": "#dceacc"
-      }
+      "filter": ["all", ["==", "class", "grass"], ["==", "subclass", "park"]],
+      "paint": {"fill-color": "#dceacc"}
     },
     {
       "id": "landuse_grass",
@@ -154,71 +113,34 @@
       "source-layer": "landcover",
       "filter": [
         "all",
-        [
-          "==",
-          "class",
-          "grass"
-        ],
-        [
-          "!in",
-          "subclass",
-          "park",
-          "scrub"
-        ]
+        ["==", "class", "grass"],
+        ["!in", "subclass", "park", "scrub"]
       ],
-      "paint": {
-        "fill-color": "#ddeacd"
-      }
+      "paint": {"fill-color": "#ddeacd"}
     },
     {
       "id": "landuse_wood",
       "type": "fill",
       "source": "vector",
       "source-layer": "landcover",
-      "filter": [
-        "==",
-        "class",
-        "wood"
-      ],
-      "paint": {
-        "fill-color": "#d0e3b8"
-      }
+      "filter": ["==", "class", "wood"],
+      "paint": {"fill-color": "#d0e3b8"}
     },
     {
       "id": "landuse_scrub",
       "type": "fill",
       "source": "vector",
       "source-layer": "landcover",
-      "filter": [
-        "all",
-        [
-          "==",
-          "class",
-          "grass"
-        ],
-        [
-          "==",
-          "subclass",
-          "scrub"
-        ]
-      ],
-      "paint": {
-        "fill-color": "#cbdeb4"
-      }
+      "filter": ["all", ["==", "class", "grass"], ["==", "subclass", "scrub"]],
+      "paint": {"fill-color": "#cbdeb4"}
     },
     {
       "id": "landuse_playground",
       "type": "fill",
       "source": "vector",
       "source-layer": "landuse",
-      "filter": [
-        "==",
-        "class",
-        "playground"
-      ],
-      "paint": {
-        "fill-color": "#f9f4d2"
-      }
+      "filter": ["==", "class", "playground"],
+      "paint": {"fill-color": "#f9f4d2"}
     },
     {
       "id": "landuse_agriculture",
@@ -226,57 +148,32 @@
       "source": "vector",
       "source-layer": "landcover",
       "minzoom": 10,
-      "filter": [
-        "==",
-        "class",
-        "farmland"
-      ],
-      "paint": {
-        "fill-color": "#e3ecc5"
-      }
+      "filter": ["==", "class", "farmland"],
+      "paint": {"fill-color": "#e3ecc5"}
     },
     {
       "id": "landuse_sand",
       "type": "fill",
       "source": "vector",
       "source-layer": "landcover",
-      "filter": [
-        "==",
-        "class",
-        "sand"
-      ],
-      "paint": {
-        "fill-color": "#e0dfcc"
-      }
+      "filter": ["==", "class", "sand"],
+      "paint": {"fill-color": "#e0dfcc"}
     },
     {
       "id": "landuse_cemetery",
       "type": "fill",
       "source": "vector",
       "source-layer": "landuse",
-      "filter": [
-        "==",
-        "class",
-        "cemetery"
-      ],
-      "paint": {
-        "fill-color": "#cbdeb4",
-        "fill-outline-color": "#b8d19b"
-      }
+      "filter": ["==", "class", "cemetery"],
+      "paint": {"fill-color": "#cbdeb4", "fill-outline-color": "#b8d19b"}
     },
     {
       "id": "landuse_industrial",
       "type": "fill",
       "source": "vector",
       "source-layer": "landuse",
-      "filter": [
-        "==",
-        "class",
-        "industrial"
-      ],
-      "paint": {
-        "fill-color": "#ede6e3"
-      }
+      "filter": ["==", "class", "industrial"],
+      "paint": {"fill-color": "#ede6e3"}
     },
     {
       "id": "landuse_athletics",
@@ -284,15 +181,8 @@
       "source": "vector",
       "source-layer": "landuse",
       "minzoom": 13,
-      "filter": [
-        "==",
-        "class",
-        "pitch"
-      ],
-      "paint": {
-        "fill-color": "#cde0b6",
-        "fill-outline-color": "#acc78b"
-      }
+      "filter": ["==", "class", "pitch"],
+      "paint": {"fill-color": "#cde0b6", "fill-outline-color": "#acc78b"}
     },
     {
       "id": "landuse_athletics_track",
@@ -300,71 +190,8 @@
       "source": "vector",
       "source-layer": "landuse",
       "minzoom": 13,
-      "filter": [
-        "==",
-        "class",
-        "track"
-      ],
-      "paint": {
-        "fill-color": "#f0c2c2",
-        "fill-outline-color": "#cca5a5"
-      }
-    },
-    {
-      "id": "waterway_case",
-      "type": "line",
-      "source": "vector",
-      "source-layer": "waterway",
-      "filter": [
-        "all",
-        [
-          "==",
-          "$type",
-          "LineString"
-        ],
-        [
-          "in",
-          "class",
-          "canal",
-          "river",
-          "stream"
-        ],
-        [
-          "!=",
-          "brunnel",
-          "tunnel"
-        ]
-      ],
-      "layout": {
-        "line-cap": "round",
-        "line-join": "round"
-      },
-      "paint": {
-        "line-color": "#a6d8f4",
-        "line-width": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          8,
-          1,
-          20,
-          17
-        ]
-      }
-    },
-    {
-      "id": "water_case",
-      "type": "line",
-      "source": "vector",
-      "source-layer": "water",
-      "paint": {
-        "line-color": "#a6d8f4"
-      }
-    },
-    {
-      "id": "waterway",
-      "type": "line",
+      "filter": ["==", "class", "track"],
+      "paint": {"fill-color": "#f0c2c2", "fill-outline-color": "#cca5a5"}
+    }
+  ]
+}
