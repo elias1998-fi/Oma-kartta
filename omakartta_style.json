@@ -57,7 +57,7 @@
     },
     "o03ylzdyj": {
       "type": "vector",
-      "url": "https://localhost:3000/tilejson.json"
+      "url": "https://api.digitransit.fi/map/v3/hsl-vector-map/index.json"
     }
   },
   "sprite": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/sprite",
