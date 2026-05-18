@@ -66,6 +66,9 @@
       pitchWithRotate: false,
     });
 
+    // Estetään pyöritys kosketuseleiden kautta
+    map.touchZoomRotate.disableRotation();
+
     map.addControl(new maplibregl.NavigationControl({
       visualizePitch: false,
       showCompass: false,
