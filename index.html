@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>HSL Kartta</title>
@@ -58,29 +58,4 @@
       zoom: 12,
       minZoom: 5,
       maxZoom: 20,
-      transformRequest: transformRequest,
-      maxTileCacheSize: 50,
-      fadeDuration: 100,
-      dragRotate: false,
-      touchPitch: false,
-      pitchWithRotate: false,
-    });
-
-    // Estetään pyöritys kosketuseleiden kautta
-    map.touchZoomRotate.disableRotation();
-
-    map.addControl(new maplibregl.NavigationControl({
-      visualizePitch: false,
-      showCompass: false,
-    }), 'top-right');
-    map.addControl(new maplibregl.GeolocateControl({
-      positionOptions: { enableHighAccuracy: true },
-      trackUserLocation: true,
-      showUserHeading: true,
-    }), 'top-right');
-    map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
-
-    map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
-  </script>
-</body>
-</html>
+      transformRequest:
