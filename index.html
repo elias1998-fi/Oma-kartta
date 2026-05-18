@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>HSL Kartta</title>
@@ -34,6 +34,8 @@
       bottom: max(12px, env(safe-area-inset-bottom));
       left: max(12px, env(safe-area-inset-left));
     }
+    /* Hide attribution info button */
+    .maplibregl-ctrl-attrib { display: none !important; }
   </style>
 </head>
 <body>
@@ -65,9 +67,9 @@
       touchPitch: false,
       pitchWithRotate: false,
       keyboard: false,
+      attributionControl: false,
     });
 
-    // Lock rotation — also fires after map fully loads for web app mode
     map.touchZoomRotate.disableRotation();
 
     map.on('load', () => {
@@ -75,16 +77,12 @@
       map.dragRotate.disable();
     });
 
-    map.addControl(new maplibregl.NavigationControl({
-      visualizePitch: false,
-      showCompass: false,
-    }), 'top-right');
+    // Only geolocate button, top-right
     map.addControl(new maplibregl.GeolocateControl({
       positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true,
       showUserHeading: true,
     }), 'top-right');
-    map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
   </script>
