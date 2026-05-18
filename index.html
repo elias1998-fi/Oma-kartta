@@ -47,17 +47,32 @@
       z-index: 10;
     }
 
-    #info-card {
+    /* Bottom sheet */
+    #bottom-sheet {
       position: absolute;
-      bottom: 0;
       left: 0;
       right: 0;
+      bottom: 0;
+      height: 80vh;
       background: white;
       border-radius: 20px 20px 0 0;
-      padding: 16px 20px;
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
-      box-shadow: 0 -2px 16px rgba(0,0,0,0.12);
+      box-shadow: 0 -2px 16px rgba(0,0,0,0.15);
       z-index: 20;
+      transform: translateY(calc(100% - 80px));
+      transition: transform 0.3s ease;
+      touch-action: none;
+    }
+
+    #bottom-sheet.expanded {
+      transform: translateY(0);
+    }
+
+    #drag-handle-area {
+      width: 100%;
+      padding: 14px 0 10px 0;
+      display: flex;
+      justify-content: center;
+      cursor: grab;
     }
 
     #drag-handle {
@@ -65,28 +80,11 @@
       height: 4px;
       background: #ddd;
       border-radius: 2px;
-      margin: 0 auto 14px auto;
     }
 
-    #address-label {
-      font-size: 13px;
-      color: #888;
-      margin-bottom: 4px;
-      font-family: Arial, sans-serif;
-    }
-
-    #address-main {
-      font-size: 17px;
-      font-weight: bold;
-      color: #0C0243;
-      font-family: Arial, sans-serif;
-      margin-bottom: 2px;
-    }
-
-    #address-city {
-      font-size: 14px;
-      color: #555;
-      font-family: Arial, sans-serif;
+    #sheet-content {
+      padding: 10px 20px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
     }
   </style>
 </head>
@@ -98,11 +96,13 @@
     <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
   </svg>
 
-  <div id="info-card">
-    <div id="drag-handle"></div>
-    <div id="address-label">Valittu sijainti</div>
-    <div id="address-main">Haetaan osoitetta...</div>
-    <div id="address-city"></div>
+  <div id="bottom-sheet">
+    <div id="drag-handle-area">
+      <div id="drag-handle"></div>
+    </div>
+    <div id="sheet-content">
+      <!-- Content goes here later -->
+    </div>
   </div>
 
   <script>
@@ -166,9 +166,6 @@
           'line-opacity': 0.9
         }
       });
-
-      // Get address on first load
-      reverseGeocode(map.getCenter());
     });
 
     map.addControl(new maplibregl.GeolocateControl({
@@ -177,40 +174,38 @@
       showUserHeading: true,
     }), 'top-right');
 
-    // Debounce timer
-    let geocodeTimer = null;
+    map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    map.on('moveend', () => {
-      clearTimeout(geocodeTimer);
-      geocodeTimer = setTimeout(() => {
-        reverseGeocode(map.getCenter());
-      }, 400);
+    // Bottom sheet drag logic
+    const sheet = document.getElementById('bottom-sheet');
+    const handle = document.getElementById('drag-handle-area');
+    let startY = 0;
+    let startTranslate = 0;
+    const collapsedY = sheet.clientHeight - 80;
+
+    handle.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+      const transform = new DOMMatrix(getComputedStyle(sheet).transform);
+      startTranslate = transform.m42;
+      sheet.style.transition = 'none';
+    }, { passive: true });
+
+    handle.addEventListener('touchmove', (e) => {
+      const delta = e.touches[0].clientY - startY;
+      const newY = Math.max(0, Math.min(collapsedY, startTranslate + delta));
+      sheet.style.transform = `translateY(${newY}px)`;
+    }, { passive: true });
+
+    handle.addEventListener('touchend', (e) => {
+      sheet.style.transition = 'transform 0.3s ease';
+      const transform = new DOMMatrix(getComputedStyle(sheet).transform);
+      const currentY = transform.m42;
+      if (currentY < collapsedY / 2) {
+        sheet.style.transform = 'translateY(0)';
+      } else {
+        sheet.style.transform = `translateY(${collapsedY}px)`;
+      }
     });
-
-    map.on('move', () => {
-      document.getElementById('address-main').textContent = '...';
-      document.getElementById('address-city').textContent = '';
-    });
-
-    function reverseGeocode(center) {
-      const url = `https://api.digitransit.fi/geocoding/v1/reverse?point.lat=${center.lat}&point.lon=${center.lng}&size=1&lang=fi`;
-
-      fetch(url, {
-        headers: { 'digitransit-subscription-key': API_KEY }
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.features && data.features.length > 0) {
-          const props = data.features[0].properties;
-          const street = props.name || 'Tuntematon osoite';
-          const city = props.localadmin || props.locality || props.region || '';
-          document.getElementById('address-main').textContent = street;
-          document.getElementById('address-city').textContent = city;
-        } else {
-          document.getElementById('address-main').textContent = 'Osoitetta ei löydy';
-          document.getElementById('address-city').textContent = '';
-        }
-      })
-      .catch(() => {
-        document.getElementById('address-main').textContent = 'Virhe haussa';
-        document
+  </script>
+</body>
+</html>
