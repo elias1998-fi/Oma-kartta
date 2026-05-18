@@ -1,48 +1,35 @@
 <!DOCTYPE html>
-<!-- saved from url=(0045)file:///C:/Users/elias/Downloads/index_3.html -->
-<html lang="fi"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<html lang="fi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>HSL Kartta</title>
 
-  <link rel="stylesheet" href="./HSL Kartta_files/maplibre-gl.css">
-  <script src="./HSL Kartta_files/maplibre-gl.js.lataus"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
 
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       overflow: hidden;
       background: #f0f1f2;
-      /* iOS Safari full-height fix */
       height: -webkit-fill-available;
     }
-
     #map {
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       height: -webkit-fill-available;
     }
-
-    /* MapLibre controls — sijoita iPhonen safe arean sisälle */
     .maplibregl-ctrl-top-right {
       top: max(12px, env(safe-area-inset-top));
       right: max(12px, env(safe-area-inset-right));
     }
-
     .maplibregl-ctrl-bottom-right {
       bottom: max(12px, env(safe-area-inset-bottom));
       right: max(12px, env(safe-area-inset-right));
     }
-
     .maplibregl-ctrl-bottom-left {
       bottom: max(12px, env(safe-area-inset-bottom));
       left: max(12px, env(safe-area-inset-left));
@@ -50,12 +37,10 @@
   </style>
 </head>
 <body>
-  <div id="map" class="maplibregl-map"><div class="maplibregl-canvas-container maplibregl-interactive maplibregl-touch-drag-pan maplibregl-touch-zoom-rotate"><canvas class="maplibregl-canvas" tabindex="0" aria-label="Map" role="region" width="1912" height="914" style="width: 1912px; height: 914px;"></canvas></div><div class="maplibregl-control-container"><div class="maplibregl-ctrl-top-left "></div><div class="maplibregl-ctrl-top-right "><div class="maplibregl-ctrl maplibregl-ctrl-group"><button class="maplibregl-ctrl-zoom-in" type="button" title="Zoom in" aria-label="Zoom in" aria-disabled="false"><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button><button class="maplibregl-ctrl-zoom-out" type="button" title="Zoom out" aria-label="Zoom out" aria-disabled="false"><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button><button class="maplibregl-ctrl-compass" type="button" title="Reset bearing to north" aria-label="Reset bearing to north"><span class="maplibregl-ctrl-icon" aria-hidden="true" style="transform: scale(1) rotateX(0deg) rotateZ(0deg);"></span></button></div><div class="maplibregl-ctrl maplibregl-ctrl-group"><button class="maplibregl-ctrl-geolocate" type="button" title="Find my location" aria-label="Find my location" aria-pressed="false"><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button></div></div><div class="maplibregl-ctrl-bottom-left "><div class="maplibregl-ctrl maplibregl-ctrl-scale" style="width: 105.32px;">1&nbsp;km</div></div><div class="maplibregl-ctrl-bottom-right "><details class="maplibregl-ctrl maplibregl-ctrl-attrib maplibregl-compact maplibregl-compact-show" open=""><summary class="maplibregl-ctrl-attrib-button" title="Toggle attribution" aria-label="Toggle attribution"></summary><div class="maplibregl-ctrl-attrib-inner"><a href="https://maplibre.org/" target="_blank">MapLibre</a></div></details></div></div></div>
-
+  <div id="map"></div>
   <script>
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
 
-    // Lisätään API-avain headerina kaikkiin Digitransit-kutsuihin
     function transformRequest(url, resourceType) {
       if (
         url.includes('digitransit.fi') ||
@@ -67,50 +52,30 @@
           headers: { 'digitransit-subscription-key': API_KEY }
         };
       }
-      // Muut urlit (sprites, fontit, geojson jne.) menevät sellaisenaan
       return { url };
     }
 
     const map = new maplibregl.Map({
       container: 'map',
-      style: 'omakartta_style.json',   // samassa kansiossa kuin index.html
-      center: [24.9354, 60.1699],      // Helsinki keskusta
+      style: 'omakartta_style.json',
+      center: [24.9354, 60.1699],
       zoom: 12,
       minZoom: 5,
       maxZoom: 20,
       transformRequest: transformRequest,
-      // Parannettu suorituskyky mobiililla
       maxTileCacheSize: 50,
       fadeDuration: 100,
     });
 
-    // Zoom + kompassi
-    map.addControl(
-      new maplibregl.NavigationControl({ visualizePitch: true }),
-      'top-right'
-    );
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+      showUserHeading: true,
+    }), 'top-right');
+    map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
 
-    // GPS-paikannus — tärkeä mobiililla
-    map.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: true,
-        showUserHeading: true,
-      }),
-      'top-right'
-    );
-
-    // Mittakaava
-    map.addControl(
-      new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }),
-      'bottom-left'
-    );
-
-    // Debug: näytä mahdolliset virheet konsolissa
-    map.on('error', (e) => {
-      console.warn('MapLibre virhe:', e.error?.message || e);
-    });
+    map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
   </script>
-
-
-</body></html>
+</body>
+</html>
