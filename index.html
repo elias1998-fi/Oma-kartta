@@ -78,31 +78,42 @@
       border-radius: 2px;
     }
 
-    #sheet-content {
-      padding: 4px 20px 16px 20px;
+    /* Summary — always visible in collapsed state */
+    #sheet-summary {
+      padding: 0 20px 12px 20px;
+      flex-shrink: 0;
+      font-family: Arial, sans-serif;
+      height: 42px;
+      overflow: hidden;
+    }
+
+    #summary-header {
+      font-size: 15px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 3px;
+    }
+
+    #summary-type {
+      font-size: 14px;
+      color: #555;
+    }
+
+    /* Divider between summary and details */
+    #sheet-divider {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 0 20px;
+      flex-shrink: 0;
+    }
+
+    /* Details — only visible when expanded */
+    #sheet-details {
+      padding: 14px 20px 16px 20px;
       overflow-y: auto;
       flex: 1;
       font-family: Arial, sans-serif;
       background: white;
-    }
-
-    .card-header {
-      font-size: 15px;
-      font-weight: bold;
-      color: #222;
-      margin-bottom: 4px;
-    }
-
-    .card-type {
-      font-size: 14px;
-      color: #555;
-      margin-bottom: 16px;
-    }
-
-    .section-divider {
-      border: none;
-      border-top: 1px solid #eee;
-      margin: 12px 0;
     }
 
     .hours-row {
@@ -134,7 +145,7 @@
       color: #333;
     }
 
-    /* Button container — fixed at bottom, always white behind it */
+    /* Fixed button at bottom */
     #btn-container {
       position: fixed;
       bottom: 0;
@@ -160,8 +171,6 @@
       cursor: pointer;
       transition: opacity 0.2s ease;
       text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
     }
 
     #action-btn.active {
@@ -181,7 +190,12 @@
     <div id="drag-handle-area">
       <div id="drag-handle"></div>
     </div>
-    <div id="sheet-content"></div>
+    <div id="sheet-summary">
+      <div id="summary-header"></div>
+      <div id="summary-type"></div>
+    </div>
+    <hr id="sheet-divider" />
+    <div id="sheet-details"></div>
   </div>
 
   <div id="btn-container">
@@ -263,6 +277,10 @@
     map.on('zoomend', checkParking);
 
     const btn = document.getElementById('action-btn');
+    const summaryHeader = document.getElementById('summary-header');
+    const summaryType = document.getElementById('summary-type');
+    const details = document.getElementById('sheet-details');
+    const divider = document.getElementById('sheet-divider');
 
     function getOwnerName(raw) {
       if (!raw) return 'Tuntematon omistaja';
@@ -302,10 +320,12 @@
 
     function checkParking() {
       const zoom = map.getZoom();
-      const content = document.getElementById('sheet-content');
 
       if (zoom < 13) {
-        content.innerHTML = '';
+        summaryHeader.textContent = '';
+        summaryType.textContent = '';
+        details.innerHTML = '';
+        divider.style.display = 'none';
         btn.textContent = 'Zoomaa karttaa nähdäksesi pysäköintialueet';
         btn.classList.remove('active');
         return;
@@ -326,20 +346,26 @@
         const hinta = getPriceText(luokka);
         const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
 
-        content.innerHTML = `
-          <div class="card-header">${owner} &nbsp;|&nbsp; ${kestoText}</div>
-          <div class="card-type">${tyyppi}</div>
-          <hr class="section-divider" />
+        // Summary — always visible in collapsed state
+        summaryHeader.textContent = `${owner}  |  ${kestoText}`;
+        summaryType.textContent = tyyppi;
+
+        // Details — visible when expanded
+        details.innerHTML = `
           ${formatHours(voimassaolo)}
           <p class="price-label">Hinta:</p>
           <p class="price-value">${hinta}</p>
         `;
 
+        divider.style.display = 'block';
         btn.textContent = 'Pysäköi tähän';
         btn.classList.add('active');
 
       } else {
-        content.innerHTML = '';
+        summaryHeader.textContent = '';
+        summaryType.textContent = '';
+        details.innerHTML = '';
+        divider.style.display = 'none';
         btn.textContent = 'Valitse pysäköintialue';
         btn.classList.remove('active');
       }
