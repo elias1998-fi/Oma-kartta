@@ -67,6 +67,7 @@
       padding: 14px 0 10px 0;
       display: flex;
       justify-content: center;
+      cursor: grab;
     }
 
     #drag-handle {
@@ -241,7 +242,7 @@
       if (lower.includes('kadunvarsi')) return 'Kadunvarsipysäköinti';
       if (lower.includes('halli')) return 'Pysäköintihalli';
       if (lower.includes('tori') || lower.includes('kenttä')) return 'Pysäköintikenttä';
-      if (lower.includes('asukas')) return 'Asukaspysäköinti';
+      if (lower.includes('asukaspysäköinti')) return 'Asukaspysäköinti';
       return raw;
     }
 
@@ -252,3 +253,93 @@
       if (lower.includes('maksullinen')) return 'Maksullinen pysäköinti';
       if (lower.includes('asukas')) return 'Asukaspysäköinti (tunnus vaaditaan)';
       return luokka;
+    }
+
+    function formatHours(voimassaolo, kesto) {
+      // voimassaolo could be e.g. "8-20", "8-17", "8-20, (9-15)" or null
+      if (!voimassaolo) {
+        return `
+          <div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>
+        `;
+      }
+      // Show as-is with Ma-Pe / La / Su rows if we have hours
+      return `
+        <div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${voimassaolo}</span></div>
+        <div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${voimassaolo}</span></div>
+        <div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>
+      `;
+    }
+
+    function checkParking() {
+      const centerPixel = map.project(map.getCenter());
+      const features = map.queryRenderedFeatures(centerPixel, {
+        layers: ['helsinki-parkit-fill']
+      });
+
+      const content = document.getElementById('sheet-content');
+
+      if (features.length > 0) {
+        const p = features[0].properties;
+
+        const owner = getOwnerName(p['hel:datanomistaja']);
+        const kesto = p['hel:kesto'] || null;
+        const voimassaolo = p['hel:voimassaolo'] || null;
+        const luokka = p['hel:luokka_nimi'] || '';
+        const tyyppi = getTypeName(p['hel:paikan_asento']);
+        const hinta = getPriceText(luokka);
+        const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
+
+        content.innerHTML = `
+          <div class="card-header">${owner} &nbsp;|&nbsp; ${kestoText}</div>
+          <div class="card-type">${tyyppi}</div>
+
+          <hr class="section-divider" />
+
+          ${formatHours(voimassaolo, kesto)}
+
+          <p class="price-label">Hinta:</p>
+          <p class="price-value">${hinta}</p>
+        `;
+      } else {
+        content.innerHTML = '<div id="no-parking">Siirrä karttaa pysäköintialueelle</div>';
+      }
+    }
+
+    map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
+
+    // Bottom sheet drag logic
+    const sheet = document.getElementById('bottom-sheet');
+    const handle = document.getElementById('drag-handle-area');
+    let startY = 0;
+    let startTranslate = 0;
+
+    function getCollapsedY() {
+      return sheet.clientHeight - 80;
+    }
+
+    handle.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+      const transform = new DOMMatrix(getComputedStyle(sheet).transform);
+      startTranslate = transform.m42;
+      sheet.style.transition = 'none';
+    }, { passive: true });
+
+    handle.addEventListener('touchmove', (e) => {
+      const delta = e.touches[0].clientY - startY;
+      const newY = Math.max(0, Math.min(getCollapsedY(), startTranslate + delta));
+      sheet.style.transform = `translateY(${newY}px)`;
+    }, { passive: true });
+
+    handle.addEventListener('touchend', () => {
+      sheet.style.transition = 'transform 0.3s ease';
+      const transform = new DOMMatrix(getComputedStyle(sheet).transform);
+      const currentY = transform.m42;
+      if (currentY < getCollapsedY() / 2) {
+        sheet.style.transform = 'translateY(0)';
+      } else {
+        sheet.style.transform = `translateY(${getCollapsedY()}px)`;
+      }
+    });
+  </script>
+</body>
+</html>
