@@ -57,7 +57,7 @@
       border-radius: 20px 20px 0 0;
       box-shadow: 0 -2px 16px rgba(0,0,0,0.15);
       z-index: 20;
-      transform: translateY(calc(100% - 200px));
+      transform: translateY(calc(100% - 130px));
       touch-action: none;
       display: flex;
       flex-direction: column;
@@ -351,7 +351,7 @@
     let velocity = 0;
     let isDragging = false;
 
-    function getCollapsedY() { return sheet.clientHeight - 200; }
+    function getCollapsedY() { return sheet.clientHeight - 130; }
 
     function snapTo(targetY) {
       sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
