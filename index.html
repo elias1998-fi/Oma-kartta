@@ -58,8 +58,8 @@
       box-shadow: 0 -2px 16px rgba(0,0,0,0.15);
       z-index: 20;
       transform: translateY(calc(100% - 80px));
-      transition: transform 0.3s ease;
       touch-action: none;
+      /* No transition here — we handle it manually for smoothness */
     }
 
     #drag-handle-area {
@@ -299,41 +299,69 @@
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    // Bottom sheet — drag works anywhere on the sheet
+    // ---- Smooth bottom sheet with velocity snapping ----
     const sheet = document.getElementById('bottom-sheet');
     let startY = 0;
+    let currentY = 0;
     let startTranslate = 0;
+    let lastY = 0;
+    let lastTime = 0;
+    let velocity = 0;
     let isDragging = false;
+    let rafId = null;
 
-    function getCollapsedY() {
-      return sheet.clientHeight - 80;
+    function getCollapsedY() { return sheet.clientHeight - 80; }
+
+    function snapTo(targetY) {
+      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      sheet.style.transform = `translateY(${targetY}px)`;
     }
 
     sheet.addEventListener('touchstart', (e) => {
+      if (rafId) cancelAnimationFrame(rafId);
       startY = e.touches[0].clientY;
-      const transform = new DOMMatrix(getComputedStyle(sheet).transform);
-      startTranslate = transform.m42;
+      lastY = startY;
+      lastTime = Date.now();
+      velocity = 0;
+      const matrix = new DOMMatrix(getComputedStyle(sheet).transform);
+      startTranslate = matrix.m42;
+      currentY = startTranslate;
       isDragging = true;
       sheet.style.transition = 'none';
     }, { passive: true });
 
     sheet.addEventListener('touchmove', (e) => {
       if (!isDragging) return;
-      const delta = e.touches[0].clientY - startY;
-      const newY = Math.max(0, Math.min(getCollapsedY(), startTranslate + delta));
-      sheet.style.transform = `translateY(${newY}px)`;
+      const touch = e.touches[0].clientY;
+      const now = Date.now();
+      const dt = now - lastTime;
+
+      // Track velocity (pixels per ms)
+      if (dt > 0) velocity = (touch - lastY) / dt;
+      lastY = touch;
+      lastTime = now;
+
+      const delta = touch - startY;
+      currentY = Math.max(0, Math.min(getCollapsedY(), startTranslate + delta));
+      sheet.style.transform = `translateY(${currentY}px)`;
     }, { passive: true });
 
     sheet.addEventListener('touchend', () => {
       if (!isDragging) return;
       isDragging = false;
-      sheet.style.transition = 'transform 0.3s ease';
-      const transform = new DOMMatrix(getComputedStyle(sheet).transform);
-      const currentY = transform.m42;
-      if (currentY < getCollapsedY() / 2) {
-        sheet.style.transform = 'translateY(0)';
+
+      const collapsed = getCollapsedY();
+
+      // Velocity threshold — a quick flick snaps regardless of position
+      if (velocity > 0.5) {
+        // Fast flick down — collapse
+        snapTo(collapsed);
+      } else if (velocity < -0.5) {
+        // Fast flick up — expand
+        snapTo(0);
       } else {
-        sheet.style.transform = `translateY(${getCollapsedY()}px)`;
+        // No flick — snap based on position
+        snapTo(currentY < collapsed / 2 ? 0 : collapsed);
       }
     });
   </script>
