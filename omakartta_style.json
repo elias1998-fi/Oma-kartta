@@ -5,7 +5,7 @@
   "sources": {
     "vector": {
       "type": "vector",
-      "url": "https://api.digitransit.fi/map/v3/hsl-vector-map/index.json"
+      "url": "https://api.digitransit.fi/map/v3/hsl-vector-map/index.json?digitransit-subscription-key=a002614565b24559b3feddfca8d01918"
     },
     "parkandride": {
       "url": "https://api.digitransit.fi/map/v3/hsl/fi/vehicleParking/tilejson.json",
@@ -54,6 +54,10 @@
     "terminals": {
       "url": "https://kartat.hsl.fi/jore/tiles/terminals/index.json",
       "type": "vector"
+    },
+    "4y1k84tcc": {
+      "type": "vector",
+      "url": "https://localhost:3000/tilejson.json"
     }
   },
   "sprite": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/sprite",
@@ -62,6 +66,7 @@
     {
       "id": "background",
       "type": "background",
+      "layout": {"visibility": "visible"},
       "paint": {
         "background-color": [
           "interpolate",
@@ -2253,6 +2258,21 @@
       "paint": {"icon-translate-anchor": "viewport"}
     },
     {
+      "id": "park-and-ride_icon_hub",
+      "type": "symbol",
+      "source": "parkandride",
+      "source-layer": "vehicleParking",
+      "minzoom": 14,
+      "filter": ["==", ["get", "carPlaces"], true],
+      "layout": {
+        "icon-image": "icon-park-and-ride",
+        "icon-allow-overlap": false,
+        "icon-size": 1,
+        "visibility": "none"
+      },
+      "paint": {"icon-translate": [0, -5.25]}
+    },
+    {
       "id": "label_entrance",
       "type": "symbol",
       "source": "vector",
@@ -2694,20 +2714,6 @@
       }
     },
     {
-      "id": "park-and-ride_icon_hub",
-      "type": "symbol",
-      "source": "parkandride",
-      "source-layer": "vehicleParking",
-      "minzoom": 14,
-      "filter": ["==", ["get", "carPlaces"], true],
-      "layout": {
-        "icon-image": "icon-park-and-ride",
-        "icon-allow-overlap": false,
-        "icon-size": 1
-      },
-      "paint": {"icon-translate": [0, -5.25]}
-    },
-    {
       "id": "subway-entrance_icon",
       "type": "symbol",
       "source": "vector",
@@ -2913,7 +2919,7 @@
         ["==", "$type", "Point"],
         ["in", "Tyyppi", "Myyntipiste", "myyntipiste"]
       ],
-      "layout": {"icon-image": "icon-tickets-sales-point"}
+      "layout": {"icon-image": "icon-tickets-sales-point", "visibility": "none"}
     },
     {
       "id": "ticket-sales_icon_ticket-machine",
@@ -2925,7 +2931,7 @@
         ["==", "$type", "Point"],
         ["in", "Tyyppi", "Kertalippuautomaatti", "Monilippuautomaatti"]
       ],
-      "layout": {"icon-image": "icon-tickets-machine"}
+      "layout": {"icon-image": "icon-tickets-machine", "visibility": "none"}
     },
     {
       "id": "ticket-sales_icon_ticket-machine-parking",
@@ -2952,7 +2958,10 @@
         ["==", "$type", "Point"],
         ["==", "Tyyppi", "Palvelupiste"]
       ],
-      "layout": {"icon-image": "icon-tickets-service-point"}
+      "layout": {
+        "icon-image": "icon-tickets-service-point",
+        "visibility": "none"
+      }
     },
     {
       "id": "stops_case",
@@ -3070,6 +3079,7 @@
       "source-layer": "stops",
       "minzoom": 13,
       "filter": ["==", ["get", "mode"], "FERRY"],
+      "layout": {"visibility": "none"},
       "paint": {
         "circle-color": "#00b9e4",
         "circle-radius": [
@@ -3224,6 +3234,7 @@
       "source-layer": "rentalStations",
       "minzoom": 13,
       "maxzoom": 14,
+      "layout": {"visibility": "none"},
       "paint": {
         "circle-color": "#fff",
         "circle-radius": [
@@ -3244,6 +3255,7 @@
       "source-layer": "rentalStations",
       "minzoom": 13,
       "maxzoom": 14,
+      "layout": {"visibility": "none"},
       "paint": {
         "circle-color": "#fcbc19",
         "circle-radius": [
@@ -3267,7 +3279,8 @@
         "icon-offset": [0, -6],
         "icon-image": "icon-citybike-station",
         "icon-allow-overlap": false,
-        "icon-size": {"stops": [[13, 0.8], [20, 1.2]]}
+        "icon-size": {"stops": [[13, 0.8], [20, 1.2]]},
+        "visibility": "none"
       }
     },
     {
