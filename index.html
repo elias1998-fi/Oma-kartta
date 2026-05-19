@@ -63,18 +63,9 @@
       left: max(16px, env(safe-area-inset-left));
     }
 
-    #filter-btn.active {
-      background: #0C0243;
-    }
-
-    #filter-btn.active svg line,
-    #filter-btn.active svg circle {
-      stroke: white;
-    }
-
-    #filter-btn.active svg circle {
-      fill: white;
-    }
+    #filter-btn.active { background: #0C0243; }
+    #filter-btn.active svg line { stroke: white; }
+    #filter-btn.active svg circle { fill: white; stroke: none; }
 
     #plus-btn {
       top: max(16px, env(safe-area-inset-top));
@@ -86,7 +77,6 @@
       right: max(16px, env(safe-area-inset-right));
     }
 
-    /* Bottom sheet */
     #bottom-sheet {
       position: absolute;
       left: 0;
@@ -101,12 +91,6 @@
       touch-action: none;
       display: flex;
       flex-direction: column;
-      transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-
-    #bottom-sheet.filter-mode {
-      transform: translateY(50%) !important;
-      touch-action: none;
     }
 
     #drag-handle-area {
@@ -125,7 +109,6 @@
       border-radius: 2px;
     }
 
-    /* Close button inside sheet */
     #filter-close-btn {
       position: absolute;
       right: 16px;
@@ -144,11 +127,8 @@
       z-index: 5;
     }
 
-    #filter-close-btn.visible {
-      display: flex;
-    }
+    #filter-close-btn.visible { display: flex; }
 
-    /* Normal sheet content */
     #sheet-normal {
       display: flex;
       flex-direction: column;
@@ -169,10 +149,7 @@
       margin-bottom: 3px;
     }
 
-    #summary-type {
-      font-size: 14px;
-      color: #555;
-    }
+    #summary-type { font-size: 14px; color: #555; }
 
     #sheet-divider {
       border: none;
@@ -207,12 +184,8 @@
       margin-bottom: 4px;
     }
 
-    .price-value {
-      font-size: 14px;
-      color: #333;
-    }
+    .price-value { font-size: 14px; color: #333; }
 
-    /* Filter panel content */
     #sheet-filter {
       display: none;
       flex-direction: column;
@@ -221,9 +194,7 @@
       font-family: Arial, sans-serif;
     }
 
-    #sheet-filter.visible {
-      display: flex;
-    }
+    #sheet-filter.visible { display: flex; }
 
     #filter-title {
       font-size: 16px;
@@ -244,10 +215,7 @@
       margin-bottom: 6px;
     }
 
-    #slider-value {
-      font-weight: bold;
-      color: #0C0243;
-    }
+    #slider-value { font-weight: bold; color: #0C0243; }
 
     #duration-slider {
       -webkit-appearance: none;
@@ -286,7 +254,6 @@
       text-align: center;
     }
 
-    /* Fixed button */
     #btn-container {
       position: fixed;
       bottom: 0;
@@ -367,7 +334,6 @@
       <button id="filter-close-btn">✕</button>
     </div>
 
-    <!-- Normal parking info -->
     <div id="sheet-normal">
       <div id="sheet-summary">
         <div id="summary-header"></div>
@@ -377,7 +343,6 @@
       <div id="sheet-details"></div>
     </div>
 
-    <!-- Filter panel -->
     <div id="sheet-filter">
       <div id="filter-title">Suodata pysäköintialueet</div>
       <div id="filter-subtitle">Näytä vain alueet joilla sallittu pysäköintiaika on:</div>
@@ -427,9 +392,8 @@
 
     map.touchZoomRotate.disableRotation();
 
-    // Parse kesto string to minutes
     function kestoToMinutes(kesto) {
-      if (!kesto) return 9999; // unlimited
+      if (!kesto) return 9999;
       const lower = kesto.toLowerCase().trim();
       if (lower.includes('h')) {
         const h = parseFloat(lower);
@@ -442,13 +406,10 @@
       return 9999;
     }
 
-    let parkingData = null;
-
     map.on('load', () => {
       map.touchZoomRotate.disableRotation();
       map.dragRotate.disable();
 
-      // Fetch and preprocess geojson — add kesto_min property
       fetch('helsinki_parkit.geojson')
         .then(r => r.json())
         .then(data => {
@@ -456,9 +417,8 @@
             f.properties.kesto_min = kestoToMinutes(f.properties['hel:kesto']);
             return f;
           });
-          parkingData = data;
 
-          map.addSource('helsinki-parkit', { type: 'geojson', data: parkingData });
+          map.addSource('helsinki-parkit', { type: 'geojson', data });
 
           map.addLayer({
             id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13,
@@ -490,9 +450,7 @@
     document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
     document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
-    // --- Filter mode ---
     let filterMode = false;
-
     const sheet = document.getElementById('bottom-sheet');
     const filterBtn = document.getElementById('filter-btn');
     const filterCloseBtn = document.getElementById('filter-close-btn');
@@ -502,14 +460,18 @@
     const sliderValue = document.getElementById('slider-value');
     const filterResult = document.getElementById('filter-result');
 
+    function getCollapsedY() { return sheet.clientHeight - 130; }
+    function getHalfY() { return window.innerHeight * 0.5; }
+
     function openFilter() {
       filterMode = true;
       filterBtn.classList.add('active');
       filterCloseBtn.classList.add('visible');
       sheetNormal.style.display = 'none';
       sheetFilter.classList.add('visible');
-      sheet.classList.add('filter-mode');
       sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      sheet.style.transform = `translateY(${getHalfY()}px)`;
+      currentY = getHalfY();
     }
 
     function closeFilter() {
@@ -518,64 +480,48 @@
       filterCloseBtn.classList.remove('visible');
       sheetNormal.style.display = 'flex';
       sheetFilter.classList.remove('visible');
-      sheet.classList.remove('filter-mode');
       sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       sheet.style.transform = `translateY(${getCollapsedY()}px)`;
-      // Reset filter to show all
+      currentY = getCollapsedY();
       applyDurationFilter(25);
     }
 
-    filterBtn.addEventListener('click', () => {
-      if (filterMode) closeFilter();
-      else openFilter();
-    });
-
+    filterBtn.addEventListener('click', () => filterMode ? closeFilter() : openFilter());
     filterCloseBtn.addEventListener('click', closeFilter);
 
     function applyDurationFilter(val) {
       if (!map.getSource('helsinki-parkit')) return;
-
       if (val >= 25) {
-        // Show all
         map.setFilter('helsinki-parkit-fill', null);
         map.setFilter('helsinki-parkit-outline', null);
         sliderValue.textContent = 'Kaikki';
         filterResult.textContent = '';
         return;
       }
-
       const maxMinutes = val * 60;
-      // Show areas where kesto_min <= maxMinutes OR unlimited (9999)
       map.setFilter('helsinki-parkit-fill', ['<=', ['get', 'kesto_min'], maxMinutes]);
       map.setFilter('helsinki-parkit-outline', ['<=', ['get', 'kesto_min'], maxMinutes]);
-
-      const h = val;
-      sliderValue.textContent = h < 1 ? `${val * 60} min` : `${h}h`;
-      filterResult.textContent = `Näytetään max. ${h}h pysäköintialueet`;
+      sliderValue.textContent = val < 1 ? `${val * 60} min` : `${val}h`;
+      filterResult.textContent = `Näytetään max. ${val}h pysäköintialueet`;
     }
 
-    slider.addEventListener('input', () => {
-      applyDurationFilter(parseInt(slider.value));
-    });
+    slider.addEventListener('input', () => applyDurationFilter(parseInt(slider.value)));
 
-    // --- Map events ---
     let moveTimer = null;
     map.on('move', () => {
-      if (!filterMode) {
-        highlightParking();
-        clearTimeout(moveTimer);
-        moveTimer = setTimeout(checkParking, 150);
-      }
+      highlightParking();
+      clearTimeout(moveTimer);
+      moveTimer = setTimeout(checkParking, 150);
     });
-    map.on('zoomend', () => { if (!filterMode) checkParking(); });
+    map.on('zoomend', checkParking);
 
     const btn = document.getElementById('action-btn');
     const summaryHeader = document.getElementById('summary-header');
     const summaryType = document.getElementById('summary-type');
     const details = document.getElementById('sheet-details');
     const divider = document.getElementById('sheet-divider');
-
     let currentHighlightId = null;
+    let currentY = getCollapsedY();
 
     function highlightParking() {
       if (!map.getLayer('helsinki-parkit-highlight')) return;
@@ -632,6 +578,7 @@
     }
 
     function checkParking() {
+      if (filterMode) return;
       const zoom = map.getZoom();
       if (zoom < 13) {
         summaryHeader.textContent = '';
@@ -642,10 +589,8 @@
         btn.classList.remove('active');
         return;
       }
-
       const centerPixel = map.project(map.getCenter());
       const features = map.queryRenderedFeatures(centerPixel, { layers: ['helsinki-parkit-fill'] });
-
       if (features.length > 0) {
         const p = features[0].properties;
         const owner = getOwnerName(p['hel:datanomistaja']);
@@ -655,7 +600,6 @@
         const tyyppi = getTypeName(p['hel:paikan_asento']);
         const hinta = getPriceText(luokka);
         const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
-
         summaryHeader.textContent = `${owner}  |  ${kestoText}`;
         summaryType.textContent = tyyppi;
         details.innerHTML = `
@@ -678,26 +622,24 @@
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    // Bottom sheet drag
+    // Bottom sheet drag — works in all modes
     let startY = 0;
-    let currentY = 0;
     let startTranslate = 0;
     let lastY = 0;
     let lastTime = 0;
     let velocity = 0;
     let isDragging = false;
-    let rafId = null;
-
-    function getCollapsedY() { return sheet.clientHeight - 130; }
 
     function snapTo(targetY) {
       sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       sheet.style.transform = `translateY(${targetY}px)`;
+      currentY = targetY;
     }
 
     sheet.addEventListener('touchstart', (e) => {
-      if (filterMode) return;
-      if (rafId) cancelAnimationFrame(rafId);
+      // Only drag from handle area to avoid interfering with slider
+      const handle = document.getElementById('drag-handle-area');
+      if (!handle.contains(e.target)) return;
       startY = e.touches[0].clientY;
       lastY = startY;
       lastTime = Date.now();
@@ -710,7 +652,7 @@
     }, { passive: true });
 
     sheet.addEventListener('touchmove', (e) => {
-      if (!isDragging || filterMode) return;
+      if (!isDragging) return;
       const touch = e.touches[0].clientY;
       const now = Date.now();
       const dt = now - lastTime;
@@ -723,7 +665,7 @@
     }, { passive: true });
 
     sheet.addEventListener('touchend', () => {
-      if (!isDragging || filterMode) return;
+      if (!isDragging) return;
       isDragging = false;
       const collapsed = getCollapsedY();
       if (velocity > 0.5) {
