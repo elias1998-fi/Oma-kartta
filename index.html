@@ -206,30 +206,58 @@
     #filter-subtitle {
       font-size: 13px;
       color: #888;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     #slider-label {
       font-size: 15px;
       color: #222;
-      margin-bottom: 6px;
+      margin-bottom: 16px;
+      text-align: center;
     }
 
-    #slider-value { font-weight: bold; color: #0C0243; }
+    #slider-value {
+      font-weight: bold;
+      color: #0C0243;
+      font-size: 17px;
+    }
 
-    #duration-slider {
-      -webkit-appearance: none;
-      appearance: none;
+    /* Dual range slider */
+    .range-container {
+      position: relative;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .range-track {
+      position: absolute;
       width: 100%;
       height: 4px;
-      border-radius: 2px;
       background: #ddd;
-      outline: none;
-      margin-bottom: 8px;
-      touch-action: none;
+      border-radius: 2px;
     }
 
-    #duration-slider::-webkit-slider-thumb {
+    .range-fill {
+      position: absolute;
+      height: 4px;
+      background: #0C0243;
+      border-radius: 2px;
+    }
+
+    .range-input {
+      position: absolute;
+      width: 100%;
+      height: 4px;
+      background: transparent;
+      -webkit-appearance: none;
+      appearance: none;
+      outline: none;
+      pointer-events: none;
+    }
+
+    .range-input::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
       width: 28px;
@@ -237,7 +265,9 @@
       border-radius: 50%;
       background: #0C0243;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      pointer-events: all;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      border: 3px solid white;
     }
 
     .slider-ticks {
@@ -245,14 +275,15 @@
       justify-content: space-between;
       font-size: 11px;
       color: #aaa;
-      margin-top: 2px;
+      margin-top: 4px;
     }
 
     #filter-result {
-      margin-top: 20px;
+      margin-top: 16px;
       font-size: 13px;
       color: #555;
       text-align: center;
+      min-height: 20px;
     }
 
     #btn-container {
@@ -346,9 +377,17 @@
 
     <div id="sheet-filter">
       <div id="filter-title">Suodata pysäköintialueet</div>
-      <div id="filter-subtitle">Näytä vain alueet joilla sallittu pysäköintiaika on:</div>
-      <div id="slider-label">Maksimiaika: <span id="slider-value">Kaikki</span></div>
-      <input type="range" id="duration-slider" min="0" max="25" step="1" value="25" />
+      <div id="filter-subtitle">Näytä vain alueet joilla sallittu pysäköintiaika on valitulla välillä:</div>
+
+      <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
+
+      <div class="range-container">
+        <div class="range-track"></div>
+        <div class="range-fill" id="range-fill"></div>
+        <input type="range" class="range-input" id="slider-min" min="0" max="25" step="1" value="0" />
+        <input type="range" class="range-input" id="slider-max" min="0" max="25" step="1" value="25" />
+      </div>
+
       <div class="slider-ticks">
         <span>0h</span>
         <span>6h</span>
@@ -356,6 +395,7 @@
         <span>18h</span>
         <span>24h+</span>
       </div>
+
       <div id="filter-result"></div>
     </div>
   </div>
@@ -448,15 +488,92 @@
     document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
     document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
+    // --- Dual range slider ---
+    const sliderMin = document.getElementById('slider-min');
+    const sliderMax = document.getElementById('slider-max');
+    const rangeFill = document.getElementById('range-fill');
+    const sliderValueEl = document.getElementById('slider-value');
+    const filterResult = document.getElementById('filter-result');
+
+    function formatHourLabel(val) {
+      if (val === 0) return '0h';
+      if (val >= 25) return '24h+';
+      return `${val}h`;
+    }
+
+    function updateSliderUI() {
+      const min = parseInt(sliderMin.value);
+      const max = parseInt(sliderMax.value);
+      const pctMin = (min / 25) * 100;
+      const pctMax = (max / 25) * 100;
+      rangeFill.style.left = pctMin + '%';
+      rangeFill.style.width = (pctMax - pctMin) + '%';
+
+      if (min === 0 && max >= 25) {
+        sliderValueEl.textContent = 'Kaikki';
+        filterResult.textContent = '';
+      } else {
+        sliderValueEl.textContent = `${formatHourLabel(min)} – ${formatHourLabel(max)}`;
+        filterResult.textContent = `Näytetään ${formatHourLabel(min)} – ${formatHourLabel(max)} pysäköintialueet`;
+      }
+    }
+
+    function applyRangeFilter() {
+      if (!map.getSource('helsinki-parkit')) return;
+      const min = parseInt(sliderMin.value);
+      const max = parseInt(sliderMax.value);
+      const minMinutes = min * 60;
+      const maxMinutes = max >= 25 ? 99999 : max * 60;
+
+      if (min === 0 && max >= 25) {
+        map.setFilter('helsinki-parkit-fill', null);
+        map.setFilter('helsinki-parkit-outline', null);
+      } else {
+        map.setFilter('helsinki-parkit-fill', [
+          'all',
+          ['>=', ['get', 'kesto_min'], minMinutes],
+          ['<=', ['get', 'kesto_min'], maxMinutes]
+        ]);
+        map.setFilter('helsinki-parkit-outline', [
+          'all',
+          ['>=', ['get', 'kesto_min'], minMinutes],
+          ['<=', ['get', 'kesto_min'], maxMinutes]
+        ]);
+      }
+    }
+
+    let sliderTouching = false;
+
+    sliderMin.addEventListener('touchstart', () => { sliderTouching = true; }, { passive: true });
+    sliderMax.addEventListener('touchstart', () => { sliderTouching = true; }, { passive: true });
+    sliderMin.addEventListener('touchend', () => { sliderTouching = false; }, { passive: true });
+    sliderMax.addEventListener('touchend', () => { sliderTouching = false; }, { passive: true });
+
+    sliderMin.addEventListener('input', () => {
+      if (parseInt(sliderMin.value) > parseInt(sliderMax.value)) {
+        sliderMin.value = sliderMax.value;
+      }
+      updateSliderUI();
+      applyRangeFilter();
+    });
+
+    sliderMax.addEventListener('input', () => {
+      if (parseInt(sliderMax.value) < parseInt(sliderMin.value)) {
+        sliderMax.value = sliderMin.value;
+      }
+      updateSliderUI();
+      applyRangeFilter();
+    });
+
+    updateSliderUI();
+
+    // --- Filter mode ---
     let filterMode = false;
     const sheet = document.getElementById('bottom-sheet');
     const filterBtn = document.getElementById('filter-btn');
     const filterCloseBtn = document.getElementById('filter-close-btn');
     const sheetNormal = document.getElementById('sheet-normal');
     const sheetFilter = document.getElementById('sheet-filter');
-    const slider = document.getElementById('duration-slider');
-    const sliderValue = document.getElementById('slider-value');
-    const filterResult = document.getElementById('filter-result');
 
     function getCollapsedY() { return sheet.clientHeight - 130; }
     function getHalfY() { return window.innerHeight * 0.5; }
@@ -481,34 +598,15 @@
       sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       sheet.style.transform = `translateY(${getCollapsedY()}px)`;
       currentY = getCollapsedY();
-      applyDurationFilter(25);
-      slider.value = 25;
+      // Reset sliders
+      sliderMin.value = 0;
+      sliderMax.value = 25;
+      updateSliderUI();
+      applyRangeFilter();
     }
 
     filterBtn.addEventListener('click', () => filterMode ? closeFilter() : openFilter());
     filterCloseBtn.addEventListener('click', closeFilter);
-
-    function applyDurationFilter(val) {
-      if (!map.getSource('helsinki-parkit')) return;
-      if (val >= 25) {
-        map.setFilter('helsinki-parkit-fill', null);
-        map.setFilter('helsinki-parkit-outline', null);
-        sliderValue.textContent = 'Kaikki';
-        filterResult.textContent = '';
-        return;
-      }
-      const maxMinutes = val * 60;
-      map.setFilter('helsinki-parkit-fill', ['<=', ['get', 'kesto_min'], maxMinutes]);
-      map.setFilter('helsinki-parkit-outline', ['<=', ['get', 'kesto_min'], maxMinutes]);
-      sliderValue.textContent = val < 1 ? `${val * 60} min` : `${val}h`;
-      filterResult.textContent = `Näytetään max. ${val}h pysäköintialueet`;
-    }
-
-    // Slider: handle touch separately so it doesn't trigger sheet drag
-    let sliderTouching = false;
-    slider.addEventListener('touchstart', () => { sliderTouching = true; }, { passive: true });
-    slider.addEventListener('touchend', () => { sliderTouching = false; }, { passive: true });
-    slider.addEventListener('input', () => applyDurationFilter(parseInt(slider.value)));
 
     let moveTimer = null;
     map.on('move', () => {
@@ -625,7 +723,7 @@
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    // Sheet drag — anywhere on sheet EXCEPT slider
+    // Sheet drag — anywhere except sliders
     let startY = 0;
     let startTranslate = 0;
     let lastY = 0;
@@ -640,8 +738,7 @@
     }
 
     sheet.addEventListener('touchstart', (e) => {
-      // Skip if touching the slider
-      if (sliderTouching || e.target === slider) return;
+      if (sliderTouching || e.target === sliderMin || e.target === sliderMax) return;
       startY = e.touches[0].clientY;
       lastY = startY;
       lastTime = Date.now();
