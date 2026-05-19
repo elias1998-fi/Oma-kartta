@@ -18,102 +18,59 @@
       background: #f0f1f2;
       height: -webkit-fill-available;
     }
-    #map {
-      width: 100%; height: 100%;
-      height: -webkit-fill-available;
-    }
+    #map { width: 100%; height: 100%; height: -webkit-fill-available; }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
 
     #center-pointer {
       position: absolute;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -100%);
-      width: 48px;
-      height: 48px;
+      width: 48px; height: 48px;
       pointer-events: none;
       z-index: 10;
     }
 
     .map-btn {
-      position: fixed;
-      z-index: 25;
-      width: 39px;
-      height: 39px;
-      background: white;
-      border: none;
+      position: fixed; z-index: 25;
+      width: 39px; height: 39px;
+      background: white; border: none;
       border-radius: 50%;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
     }
     .map-btn svg { width: 18px; height: 18px; }
-
-    #menu-btn {
-      top: max(16px, env(safe-area-inset-top));
-      left: max(16px, env(safe-area-inset-left));
-    }
-    #filter-btn {
-      top: max(64px, calc(env(safe-area-inset-top) + 48px));
-      left: max(16px, env(safe-area-inset-left));
-    }
+    #menu-btn { top: max(16px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left)); }
+    #filter-btn { top: max(64px, calc(env(safe-area-inset-top) + 48px)); left: max(16px, env(safe-area-inset-left)); }
     #filter-btn.active { background: #0C0243; }
     #filter-btn.active svg line { stroke: white; }
     #filter-btn.active svg circle { fill: white; stroke: none; }
-    #plus-btn {
-      top: max(16px, env(safe-area-inset-top));
-      right: max(16px, env(safe-area-inset-right));
-    }
-    #location-btn {
-      top: max(64px, calc(env(safe-area-inset-top) + 48px));
-      right: max(16px, env(safe-area-inset-right));
-    }
+    #plus-btn { top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); }
+    #location-btn { top: max(64px, calc(env(safe-area-inset-top) + 48px)); right: max(16px, env(safe-area-inset-right)); }
 
-    /* Bottom sheet */
     #bottom-sheet {
-      position: absolute;
-      left: 0; right: 0; bottom: 0;
-      height: 80vh;
-      background: white;
+      position: absolute; left: 0; right: 0; bottom: 0;
+      height: 80vh; background: white;
       border-radius: 20px 20px 0 0;
       box-shadow: 0 -2px 16px rgba(0,0,0,0.15);
       z-index: 20;
       transform: translateY(calc(100% - 130px));
       touch-action: none;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
     }
     #drag-handle-area {
-      width: 100%;
-      padding: 14px 0 10px 0;
-      display: flex;
-      justify-content: center;
-      flex-shrink: 0;
-      position: relative;
+      width: 100%; padding: 14px 0 10px 0;
+      display: flex; justify-content: center;
+      flex-shrink: 0; position: relative;
     }
-    #drag-handle {
-      width: 40px;
-      height: 4px;
-      background: #ddd;
-      border-radius: 2px;
-    }
+    #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
     #filter-close-btn {
-      position: absolute;
-      right: 16px; top: 10px;
-      width: 28px; height: 28px;
-      background: #f0f0f0;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      color: #555;
-      z-index: 5;
+      position: absolute; right: 16px; top: 10px;
+      width: 28px; height: 28px; background: #f0f0f0;
+      border: none; border-radius: 50%; cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+      font-size: 16px; color: #555; z-index: 5;
     }
     #filter-close-btn.visible { display: flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
@@ -143,252 +100,184 @@
     #filter-result { margin-top: 16px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
 
     #btn-container {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      z-index: 30;
-      background: white;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      z-index: 30; background: white;
       padding: 12px 16px;
       padding-bottom: max(24px, env(safe-area-inset-bottom));
     }
     #action-btn {
-      width: 100%; height: 58px;
-      border: none; border-radius: 16px;
-      font-size: 17px; font-weight: bold;
-      font-family: Arial, sans-serif;
-      color: white; background: #0C0243;
-      opacity: 0.7; cursor: pointer;
-      transition: opacity 0.2s ease;
-      text-align: center;
+      width: 100%; height: 58px; border: none; border-radius: 16px;
+      font-size: 17px; font-weight: bold; font-family: Arial, sans-serif;
+      color: white; background: #0C0243; opacity: 0.7;
+      cursor: pointer; transition: opacity 0.2s ease; text-align: center;
     }
     #action-btn.active { opacity: 1; }
 
-    /* ========== PARKING SESSION OVERLAY ========== */
+    /* ===== PARKING OVERLAY ===== */
     #parking-overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: #f2f3f5;
       z-index: 100;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       transform: translateX(100%);
       transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      overflow-y: auto;
     }
-    #parking-overlay.open {
-      transform: translateX(0);
-    }
+    #parking-overlay.open { transform: translateX(0); }
 
-    /* Header */
     #parking-header {
-      display: flex;
-      align-items: center;
-      padding: max(16px, env(safe-area-inset-top)) 16px 16px 16px;
+      display: flex; align-items: center;
+      padding: max(14px, env(safe-area-inset-top)) 16px 12px 16px;
       background: white;
       border-bottom: 1px solid #eee;
       flex-shrink: 0;
     }
     #back-btn {
-      width: 36px; height: 36px;
-      background: #f0f0f0;
-      border: none; border-radius: 50%;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      margin-right: 12px;
-      font-size: 18px;
-      color: #333;
+      width: 34px; height: 34px;
+      background: #f0f0f0; border: none; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #333; margin-right: 10px;
     }
-    #parking-header-title {
-      font-family: Arial, sans-serif;
-      font-size: 17px;
-      font-weight: bold;
-      color: #222;
-    }
+    #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
 
     /* Cards */
+    .p-cards-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 14px 0 14px;
+      gap: 8px;
+      overflow: hidden;
+    }
+
     .p-card {
       background: white;
-      border-radius: 16px;
-      margin: 12px 16px 0 16px;
-      padding: 16px;
+      border-radius: 14px;
+      padding: 12px 14px;
       font-family: Arial, sans-serif;
+      flex-shrink: 0;
     }
 
     .p-card-title {
-      font-size: 12px;
-      font-weight: bold;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 10px;
+      font-size: 11px; font-weight: bold; color: #888;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 8px;
     }
 
-    /* Box 1 - Area info */
+    /* Box 1 */
+    .area-row { display: flex; align-items: center; gap: 10px; }
     .area-code-badge {
-      display: inline-block;
-      background: #0C0243;
-      color: white;
-      font-size: 13px;
-      font-weight: bold;
-      padding: 3px 10px;
-      border-radius: 6px;
-      margin-bottom: 8px;
+      background: #0C0243; color: white;
+      font-size: 12px; font-weight: bold;
+      padding: 3px 8px; border-radius: 6px;
       font-family: Arial, sans-serif;
     }
-    .area-name {
-      font-size: 16px;
-      font-weight: bold;
-      color: #222;
-      margin-bottom: 4px;
-    }
-    .area-meta {
-      font-size: 14px;
-      color: #555;
-    }
+    .area-name { font-size: 14px; font-weight: bold; color: #222; }
+    .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
 
-    /* Box 2 - Time selector */
-    .time-display {
-      font-size: 36px;
-      font-weight: bold;
-      color: #222;
-      margin-bottom: 4px;
+    /* Box 2 - Time drum */
+    .time-box-row {
+      display: flex; align-items: center; gap: 12px;
     }
-    .time-controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+    .drum-wrapper {
+      flex: 1;
+      height: 72px;
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+      user-select: none;
     }
-    .time-ctrl-btn {
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      border: 2px solid #ddd;
-      background: white;
-      font-size: 22px;
-      color: #333;
-      cursor: pointer;
+    .drum-wrapper::before, .drum-wrapper::after {
+      content: '';
+      position: absolute; left: 0; right: 0; height: 22px;
+      z-index: 2; pointer-events: none;
+    }
+    .drum-wrapper::before { top: 0; background: linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0)); }
+    .drum-wrapper::after { bottom: 0; background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0)); }
+    .drum-highlight {
+      position: absolute; left: 0; right: 0;
+      top: 50%; transform: translateY(-50%);
+      height: 28px;
+      border-top: 1.5px solid #0C0243;
+      border-bottom: 1.5px solid #0C0243;
+      z-index: 1; pointer-events: none;
+    }
+    .drum-track {
+      display: flex; flex-direction: column;
+      transition: transform 0.15s ease;
+    }
+    .drum-item {
+      height: 24px;
       display: flex; align-items: center; justify-content: center;
-      line-height: 1;
+      font-size: 15px; font-weight: 500; color: #aaa;
+      flex-shrink: 0;
     }
-    .time-slider {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 6px;
-      border-radius: 3px;
-      background: #eee;
-      outline: none;
-      margin-bottom: 6px;
-    }
-    .time-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 26px; height: 26px;
-      border-radius: 50%;
-      background: #0C0243;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      border: 3px solid white;
-    }
-    .time-slider-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: #aaa;
-    }
-    .price-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid #f0f0f0;
-    }
-    .price-row-label { font-size: 14px; color: #555; }
-    .price-row-value { font-size: 16px; font-weight: bold; color: #0C0243; }
+    .drum-item.active { color: #0C0243; font-weight: bold; font-size: 17px; }
+
+    .time-price-col { text-align: right; }
+    .time-price-label { font-size: 11px; color: #888; }
+    .time-price-val { font-size: 18px; font-weight: bold; color: #0C0243; }
 
     /* Box 3 - Vehicle */
-    .vehicle-selector {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid #eee;
-      border-radius: 12px;
-      font-size: 15px;
-      font-family: Arial, sans-serif;
-      color: #222;
-      background: white;
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 14px center;
+    .vehicle-display {
+      display: flex; align-items: center; gap: 10px;
     }
-    .add-vehicle-btn {
-      width: 100%;
-      margin-top: 10px;
-      padding: 10px;
-      border: 1.5px dashed #ddd;
-      border-radius: 12px;
+    .plate {
+      display: flex; align-items: center;
+      border: 2px solid #333; border-radius: 5px;
+      overflow: hidden; height: 30px;
+      font-family: 'Arial', sans-serif;
+      flex-shrink: 0;
+    }
+    .plate-eu {
+      background: #0C0243; color: white;
+      font-size: 8px; font-weight: bold;
+      padding: 0 3px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%;
+      letter-spacing: 0;
+    }
+    .plate-eu .eu-stars { font-size: 6px; margin-bottom: 1px; }
+    .plate-eu .eu-fi { font-size: 7px; }
+    .plate-text {
+      padding: 0 8px;
+      font-size: 14px; font-weight: bold; color: #222;
+      letter-spacing: 1px;
+    }
+    .vehicle-nickname { font-size: 14px; color: #444; }
+    .vehicle-selector-wrap { margin-top: 8px; }
+    .vehicle-select {
+      width: 100%; padding: 8px 12px;
+      border: 1.5px solid #eee; border-radius: 10px;
+      font-size: 13px; font-family: Arial, sans-serif; color: #333;
       background: white;
-      font-size: 14px;
-      color: #888;
-      cursor: pointer;
-      font-family: Arial, sans-serif;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
     }
 
     /* Box 4 - Payment */
-    .payment-option {
-      display: flex;
-      align-items: center;
-      padding: 12px 14px;
-      border: 1.5px solid #eee;
-      border-radius: 12px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-    .payment-option.selected {
-      border-color: #0C0243;
-      background: #f5f5ff;
-    }
-    .payment-icon {
-      font-size: 20px;
-      margin-right: 12px;
-    }
-    .payment-label {
-      font-size: 15px;
-      color: #222;
-      font-family: Arial, sans-serif;
-    }
-    .payment-radio {
-      margin-left: auto;
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      border: 2px solid #ddd;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .payment-option.selected .payment-radio {
-      border-color: #0C0243;
-      background: #0C0243;
-    }
-    .payment-option.selected .payment-radio::after {
-      content: '';
-      width: 8px; height: 8px;
+    .payment-select {
+      width: 100%; padding: 8px 12px;
+      border: 1.5px solid #eee; border-radius: 10px;
+      font-size: 14px; font-family: Arial, sans-serif; color: #333;
       background: white;
-      border-radius: 50%;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
     }
 
     /* Start button */
     #start-btn-container {
-      padding: 16px;
-      padding-bottom: max(32px, env(safe-area-inset-bottom));
+      padding: 10px 14px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
       flex-shrink: 0;
     }
     #start-btn {
-      width: 100%; height: 58px;
-      border: none; border-radius: 16px;
-      font-size: 17px; font-weight: bold;
-      font-family: Arial, sans-serif;
-      color: white; background: #0C0243;
-      cursor: pointer;
+      width: 100%; height: 54px; border: none; border-radius: 16px;
+      font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;
+      color: white; background: #0C0243; cursor: pointer;
     }
   </style>
 </head>
@@ -405,24 +294,18 @@
       <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
     </svg>
   </button>
-
   <button class="map-btn" id="filter-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-      <line x1="4" y1="6" x2="20" y2="6"/>
-      <circle cx="8" cy="6" r="2" fill="#333" stroke="none"/>
-      <line x1="4" y1="12" x2="20" y2="12"/>
-      <circle cx="16" cy="12" r="2" fill="#333" stroke="none"/>
-      <line x1="4" y1="18" x2="20" y2="18"/>
-      <circle cx="10" cy="18" r="2" fill="#333" stroke="none"/>
+      <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="#333" stroke="none"/>
+      <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="#333" stroke="none"/>
+      <line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2" fill="#333" stroke="none"/>
     </svg>
   </button>
-
   <button class="map-btn" id="plus-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
   </button>
-
   <button class="map-btn" id="location-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="3"/>
@@ -465,67 +348,73 @@
     <button id="action-btn">Valitse pysäköintialue</button>
   </div>
 
-  <!-- PARKING SESSION OVERLAY -->
+  <!-- PARKING OVERLAY -->
   <div id="parking-overlay">
     <div id="parking-header">
       <button id="back-btn">←</button>
       <div id="parking-header-title">Pysäköinti</div>
     </div>
 
-    <!-- Box 1: Area info -->
-    <div class="p-card">
-      <div class="p-card-title">Valittu alue</div>
-      <div class="area-code-badge" id="p-code">—</div>
-      <div class="area-name" id="p-owner">—</div>
-      <div class="area-meta" id="p-meta">—</div>
-    </div>
+    <div class="p-cards-container">
 
-    <!-- Box 2: Time & price -->
-    <div class="p-card">
-      <div class="p-card-title">Pysäköintiaika</div>
-      <div class="time-display" id="p-time-display">1h 00min</div>
-      <div class="time-controls">
-        <button class="time-ctrl-btn" id="time-minus">−</button>
-        <button class="time-ctrl-btn" id="time-plus">+</button>
+      <!-- Box 1: Area -->
+      <div class="p-card">
+        <div class="p-card-title">Valittu alue</div>
+        <div class="area-row">
+          <div class="area-code-badge" id="p-code">—</div>
+          <div>
+            <div class="area-name" id="p-owner">—</div>
+            <div class="area-meta" id="p-meta">—</div>
+          </div>
+        </div>
       </div>
-      <input type="range" class="time-slider" id="p-time-slider" min="1" max="24" step="1" value="1" />
-      <div class="time-slider-labels">
-        <span>15min</span>
-        <span id="p-time-max-label">Max</span>
-      </div>
-      <div class="price-row">
-        <span class="price-row-label">Arvioitu hinta</span>
-        <span class="price-row-value" id="p-price">Ilmainen</span>
-      </div>
-    </div>
 
-    <!-- Box 3: Vehicle -->
-    <div class="p-card">
-      <div class="p-card-title">Ajoneuvo</div>
-      <select class="vehicle-selector" id="vehicle-select">
-        <option value="">Valitse ajoneuvo...</option>
-      </select>
-      <button class="add-vehicle-btn" id="add-vehicle-btn">+ Lisää rekisterinumero</button>
-    </div>
+      <!-- Box 2: Time drum -->
+      <div class="p-card">
+        <div class="p-card-title">Pysäköintiaika</div>
+        <div class="time-box-row">
+          <div class="drum-wrapper" id="drum-wrapper">
+            <div class="drum-highlight"></div>
+            <div class="drum-track" id="drum-track"></div>
+          </div>
+          <div class="time-price-col">
+            <div class="time-price-label">Arvioitu hinta</div>
+            <div class="time-price-val" id="p-price">Ilmainen</div>
+          </div>
+        </div>
+      </div>
 
-    <!-- Box 4: Payment -->
-    <div class="p-card">
-      <div class="p-card-title">Maksutapa</div>
-      <div class="payment-option selected" data-payment="kiekko">
-        <span class="payment-icon">🕐</span>
-        <span class="payment-label">Pysäköintikiekko</span>
-        <div class="payment-radio"><div></div></div>
+      <!-- Box 3: Vehicle -->
+      <div class="p-card">
+        <div class="p-card-title">Ajoneuvo</div>
+        <div class="vehicle-display" id="vehicle-display">
+          <div class="plate">
+            <div class="plate-eu">
+              <div class="eu-stars">★★★</div>
+              <div class="eu-fi">FI</div>
+            </div>
+            <div class="plate-text" id="plate-text">FHY-857</div>
+          </div>
+          <div class="vehicle-nickname" id="vehicle-nickname">Äitin auto</div>
+        </div>
+        <div class="vehicle-selector-wrap">
+          <select class="vehicle-select" id="vehicle-select">
+            <option value="FHY-857|Äitin auto">Äitin auto — FHY-857</option>
+            <option value="add">+ Lisää uusi ajoneuvo...</option>
+          </select>
+        </div>
       </div>
-      <div class="payment-option" data-payment="card">
-        <span class="payment-icon">💳</span>
-        <span class="payment-label">Maksukortti</span>
-        <div class="payment-radio"></div>
+
+      <!-- Box 4: Payment -->
+      <div class="p-card">
+        <div class="p-card-title">Maksutapa</div>
+        <select class="payment-select" id="payment-select">
+          <option value="applepay">Apple Pay</option>
+          <option value="card">Maksukortti</option>
+          <option value="mobilepay">MobilePay</option>
+        </select>
       </div>
-      <div class="payment-option" data-payment="mobilepay">
-        <span class="payment-icon">📱</span>
-        <span class="payment-label">MobilePay</span>
-        <div class="payment-radio"></div>
-      </div>
+
     </div>
 
     <div id="start-btn-container">
@@ -537,27 +426,16 @@
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
 
     function transformRequest(url, resourceType) {
-      if (url.includes('digitransit.fi')) {
-        return { url, headers: { 'digitransit-subscription-key': API_KEY } };
-      }
+      if (url.includes('digitransit.fi')) return { url, headers: { 'digitransit-subscription-key': API_KEY } };
       return { url };
     }
 
     const map = new maplibregl.Map({
-      container: 'map',
-      style: 'omakartta_style.json',
-      center: [24.9354, 60.1699],
-      zoom: 12,
-      minZoom: 5,
-      maxZoom: 20,
-      transformRequest,
-      maxTileCacheSize: 50,
-      fadeDuration: 100,
-      dragRotate: false,
-      touchPitch: false,
-      pitchWithRotate: false,
-      keyboard: false,
-      attributionControl: false,
+      container: 'map', style: 'omakartta_style.json',
+      center: [24.9354, 60.1699], zoom: 12, minZoom: 5, maxZoom: 20,
+      transformRequest, maxTileCacheSize: 50, fadeDuration: 100,
+      dragRotate: false, touchPitch: false, pitchWithRotate: false,
+      keyboard: false, attributionControl: false,
     });
 
     map.touchZoomRotate.disableRotation();
@@ -573,19 +451,14 @@
     map.on('load', () => {
       map.touchZoomRotate.disableRotation();
       map.dragRotate.disable();
-      fetch('helsinki_parkit.geojson')
-        .then(r => r.json())
-        .then(data => {
-          data.features = data.features.map(f => {
-            f.properties.kesto_min = kestoToMinutes(f.properties['hel:kesto']);
-            return f;
-          });
-          map.addSource('helsinki-parkit', { type: 'geojson', data });
-          map.addLayer({ id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13, paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 } });
-          map.addLayer({ id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13, paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 } });
-          map.addLayer({ id: 'helsinki-parkit-highlight', type: 'line', source: 'helsinki-parkit', minzoom: 13, paint: { 'line-color': '#0C0243', 'line-width': 4, 'line-opacity': 1 }, filter: ['==', ['get', 'hel:id'], -1] });
-          checkParking();
-        });
+      fetch('helsinki_parkit.geojson').then(r => r.json()).then(data => {
+        data.features = data.features.map(f => { f.properties.kesto_min = kestoToMinutes(f.properties['hel:kesto']); return f; });
+        map.addSource('helsinki-parkit', { type: 'geojson', data });
+        map.addLayer({ id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13, paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 } });
+        map.addLayer({ id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13, paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 } });
+        map.addLayer({ id: 'helsinki-parkit-highlight', type: 'line', source: 'helsinki-parkit', minzoom: 13, paint: { 'line-color': '#0C0243', 'line-width': 4, 'line-opacity': 1 }, filter: ['==', ['get', 'hel:id'], -1] });
+        checkParking();
+      });
     });
 
     const geolocate = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showUserHeading: true });
@@ -593,28 +466,17 @@
     document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
     document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
-    // ---- Dual range slider ----
+    // Filter slider
     const sliderMin = document.getElementById('slider-min');
     const sliderMax = document.getElementById('slider-max');
     const rangeFill = document.getElementById('range-fill');
     const sliderValueEl = document.getElementById('slider-value');
     const filterResult = document.getElementById('filter-result');
 
-    function idxToMinutes(idx) {
-      if (idx === 0) return 0;
-      if (idx === 1) return 30;
-      if (idx >= 26) return 9999;
-      return (idx - 1) * 60;
-    }
-    function formatHourLabel(idx) {
-      if (idx === 0) return '0h';
-      if (idx === 1) return '30min';
-      if (idx >= 26) return '24h+';
-      return `${idx - 1}h`;
-    }
+    function idxToMinutes(idx) { if (idx === 0) return 0; if (idx === 1) return 30; if (idx >= 26) return 9999; return (idx - 1) * 60; }
+    function formatHourLabel(idx) { if (idx === 0) return '0h'; if (idx === 1) return '30min'; if (idx >= 26) return '24h+'; return `${idx - 1}h`; }
     function updateSliderUI() {
-      const minIdx = parseInt(sliderMin.value);
-      const maxIdx = parseInt(sliderMax.value);
+      const minIdx = parseInt(sliderMin.value), maxIdx = parseInt(sliderMax.value);
       rangeFill.style.left = (minIdx / 26 * 100) + '%';
       rangeFill.style.width = ((maxIdx - minIdx) / 26 * 100) + '%';
       if (minIdx === 0 && maxIdx === 26) { sliderValueEl.textContent = 'Kaikki'; filterResult.textContent = ''; }
@@ -622,13 +484,9 @@
     }
     function applyRangeFilter() {
       if (!map.getSource('helsinki-parkit')) return;
-      const minIdx = parseInt(sliderMin.value);
-      const maxIdx = parseInt(sliderMax.value);
+      const minIdx = parseInt(sliderMin.value), maxIdx = parseInt(sliderMax.value);
       if (minIdx === 0 && maxIdx === 26) { map.setFilter('helsinki-parkit-fill', null); map.setFilter('helsinki-parkit-outline', null); }
-      else {
-        const f = ['all', ['>=', ['get', 'kesto_min'], idxToMinutes(minIdx)], ['<=', ['get', 'kesto_min'], idxToMinutes(maxIdx)]];
-        map.setFilter('helsinki-parkit-fill', f); map.setFilter('helsinki-parkit-outline', f);
-      }
+      else { const f = ['all', ['>=', ['get', 'kesto_min'], idxToMinutes(minIdx)], ['<=', ['get', 'kesto_min'], idxToMinutes(maxIdx)]]; map.setFilter('helsinki-parkit-fill', f); map.setFilter('helsinki-parkit-outline', f); }
     }
     let sliderTouching = false;
     sliderMin.addEventListener('touchstart', () => { sliderTouching = true; }, { passive: true });
@@ -639,7 +497,6 @@
     sliderMax.addEventListener('input', () => { if (parseInt(sliderMax.value) < parseInt(sliderMin.value)) sliderMax.value = sliderMin.value; updateSliderUI(); applyRangeFilter(); });
     updateSliderUI();
 
-    // ---- Filter mode ----
     let filterMode = false;
     const sheet = document.getElementById('bottom-sheet');
     const filterBtn = document.getElementById('filter-btn');
@@ -663,7 +520,6 @@
     filterBtn.addEventListener('click', () => filterMode ? closeFilter() : openFilter());
     filterCloseBtn.addEventListener('click', closeFilter);
 
-    // ---- Map events ----
     let moveTimer = null;
     map.on('move', () => { highlightParking(); clearTimeout(moveTimer); moveTimer = setTimeout(checkParking, 150); });
     map.on('zoomend', checkParking);
@@ -673,182 +529,166 @@
     const summaryType = document.getElementById('summary-type');
     const details = document.getElementById('sheet-details');
     const divider = document.getElementById('sheet-divider');
-    let currentHighlightId = null;
-    let currentY = getCollapsedY();
-    let currentParkingProps = null;
+    let currentHighlightId = null, currentY = getCollapsedY(), currentParkingProps = null;
 
     function highlightParking() {
       if (!map.getLayer('helsinki-parkit-highlight')) return;
       const features = map.queryRenderedFeatures(map.project(map.getCenter()), { layers: ['helsinki-parkit-fill'] });
-      if (features.length > 0) {
-        const id = features[0].properties['hel:id'];
-        if (id !== currentHighlightId) { currentHighlightId = id; map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], id]); }
-      } else {
-        if (currentHighlightId !== null) { currentHighlightId = null; map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], -1]); }
-      }
+      if (features.length > 0) { const id = features[0].properties['hel:id']; if (id !== currentHighlightId) { currentHighlightId = id; map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], id]); } }
+      else { if (currentHighlightId !== null) { currentHighlightId = null; map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], -1]); } }
     }
-
-    function getOwnerName(raw) {
-      if (!raw) return 'Tuntematon omistaja';
-      if (raw.includes('KYMP') || raw.includes('HEL') || raw.includes('Helsinki')) return 'Helsingin kaupunki';
-      return raw;
+    function getOwnerName(raw) { if (!raw) return 'Tuntematon'; if (raw.includes('KYMP') || raw.includes('HEL') || raw.includes('Helsinki')) return 'Helsingin kaupunki'; return raw; }
+    function getTypeName(raw) { if (!raw) return '-'; const l = raw.toLowerCase(); if (l.includes('kadunvarsi')) return 'Kadunvarsipysäköinti'; if (l.includes('halli')) return 'Pysäköintihalli'; if (l.includes('tori') || l.includes('kenttä')) return 'Pysäköintikenttä'; return raw; }
+    function getPriceText(luokka) { if (!luokka) return '-'; const l = luokka.toLowerCase(); if (l.includes('ilmainen')) return 'Ilmainen pysäköintikiekolla'; if (l.includes('maksullinen')) return 'Maksullinen'; if (l.includes('asukas')) return 'Asukaspysäköinti'; return luokka; }
+    function formatHours(v) {
+      if (!v) return `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;
+      return `<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;
     }
-    function getTypeName(raw) {
-      if (!raw) return '-';
-      const lower = raw.toLowerCase();
-      if (lower.includes('kadunvarsi')) return 'Kadunvarsipysäköinti';
-      if (lower.includes('halli')) return 'Pysäköintihalli';
-      if (lower.includes('tori') || lower.includes('kenttä')) return 'Pysäköintikenttä';
-      if (lower.includes('asukaspysäköinti')) return 'Asukaspysäköinti';
-      return raw;
-    }
-    function getPriceText(luokka) {
-      if (!luokka) return '-';
-      const lower = luokka.toLowerCase();
-      if (lower.includes('ilmainen')) return 'Ilmainen pysäköinti pysäköintikiekolla';
-      if (lower.includes('maksullinen')) return 'Maksullinen pysäköinti';
-      if (lower.includes('asukas')) return 'Asukaspysäköinti (tunnus vaaditaan)';
-      return luokka;
-    }
-    function formatHours(voimassaolo) {
-      if (!voimassaolo) return `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;
-      return `
-        <div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${voimassaolo}</span></div>
-        <div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${voimassaolo}</span></div>
-        <div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;
-    }
-
     function checkParking() {
       if (filterMode) return;
       const zoom = map.getZoom();
-      if (zoom < 13) {
-        summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = '';
-        divider.style.display = 'none'; btn.textContent = 'Zoomaa karttaa nähdäksesi pysäköintialueet';
-        btn.classList.remove('active'); currentParkingProps = null; return;
-      }
+      if (zoom < 13) { summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = ''; divider.style.display = 'none'; btn.textContent = 'Zoomaa karttaa nähdäksesi pysäköintialueet'; btn.classList.remove('active'); currentParkingProps = null; return; }
       const features = map.queryRenderedFeatures(map.project(map.getCenter()), { layers: ['helsinki-parkit-fill'] });
       if (features.length > 0) {
-        const p = features[0].properties;
-        currentParkingProps = p;
-        const owner = getOwnerName(p['hel:datanomistaja']);
-        const kesto = p['hel:kesto'] || null;
-        const voimassaolo = p['hel:voimassaolo'] || null;
-        const luokka = p['hel:luokka_nimi'] || '';
-        const tyyppi = getTypeName(p['hel:paikan_asento']);
-        const hinta = getPriceText(luokka);
-        const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
-        summaryHeader.textContent = `${owner}  |  ${kestoText}`;
-        summaryType.textContent = tyyppi;
-        details.innerHTML = `${formatHours(voimassaolo)}<p class="price-label">Hinta:</p><p class="price-value">${hinta}</p>`;
+        const p = features[0].properties; currentParkingProps = p;
+        const kestoText = p['hel:kesto'] ? `Max. ${p['hel:kesto']}` : 'Rajoittamaton';
+        summaryHeader.textContent = `${getOwnerName(p['hel:datanomistaja'])}  |  ${kestoText}`;
+        summaryType.textContent = getTypeName(p['hel:paikan_asento']);
+        details.innerHTML = `${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi'] || '')}</p>`;
         divider.style.display = 'block'; btn.textContent = 'Pysäköi tähän'; btn.classList.add('active');
       } else {
-        currentParkingProps = null;
-        summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = '';
+        currentParkingProps = null; summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = '';
         divider.style.display = 'none'; btn.textContent = 'Valitse pysäköintialue'; btn.classList.remove('active');
       }
     }
 
-    // ---- PARKING OVERLAY ----
+    // ===== DRUM ROLLER =====
+    const DRUM_STEP = 15; // minutes per step
+    let drumIndex = 4; // default = 4 steps = 60min
+    let drumMaxSteps = 96; // default 24h
+    let isIlmainen = false;
+
+    function buildDrum(maxSteps) {
+      const track = document.getElementById('drum-track');
+      track.innerHTML = '';
+      // padding items top/bottom
+      for (let i = 0; i < 2; i++) { const d = document.createElement('div'); d.className = 'drum-item'; d.textContent = ''; track.appendChild(d); }
+      for (let i = 1; i <= maxSteps; i++) {
+        const d = document.createElement('div'); d.className = 'drum-item';
+        const totalMin = i * DRUM_STEP;
+        const h = Math.floor(totalMin / 60), m = totalMin % 60;
+        d.textContent = h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m}min`;
+        d.dataset.idx = i;
+        track.appendChild(d);
+      }
+      for (let i = 0; i < 2; i++) { const d = document.createElement('div'); d.className = 'drum-item'; d.textContent = ''; track.appendChild(d); }
+    }
+
+    function setDrumIndex(idx, maxSteps) {
+      drumIndex = Math.max(1, Math.min(idx, maxSteps));
+      const track = document.getElementById('drum-track');
+      const itemH = 24;
+      // item at drumIndex+2 (offset by 2 padding items) should be centered
+      // center = 36px (half of 72px), item center = (drumIndex+2-1)*itemH + itemH/2 = (drumIndex+1)*24+12
+      const offset = 36 - ((drumIndex + 1) * itemH + itemH / 2);
+      track.style.transform = `translateY(${offset}px)`;
+      // update active
+      track.querySelectorAll('.drum-item').forEach(d => {
+        d.classList.toggle('active', parseInt(d.dataset.idx) === drumIndex);
+      });
+      updatePriceDisplay();
+    }
+
+    function updatePriceDisplay() {
+      const totalMin = drumIndex * DRUM_STEP;
+      document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(totalMin / 60 * 1.5).toFixed(2)} €`;
+    }
+
+    // Drum touch/drag
+    let drumDragStart = null, drumDragStartIdx = null;
+    const drumWrapper = document.getElementById('drum-wrapper');
+
+    drumWrapper.addEventListener('touchstart', e => {
+      drumDragStart = e.touches[0].clientY;
+      drumDragStartIdx = drumIndex;
+      document.getElementById('drum-track').style.transition = 'none';
+    }, { passive: true });
+
+    drumWrapper.addEventListener('touchmove', e => {
+      if (drumDragStart === null) return;
+      const delta = drumDragStart - e.touches[0].clientY;
+      const steps = Math.round(delta / 24);
+      setDrumIndex(drumDragStartIdx + steps, drumMaxSteps);
+    }, { passive: true });
+
+    drumWrapper.addEventListener('touchend', () => {
+      document.getElementById('drum-track').style.transition = 'transform 0.15s ease';
+      drumDragStart = null;
+    }, { passive: true });
+
+    // Mouse drag for desktop testing
+    let mouseDragStart = null, mouseDragStartIdx = null;
+    drumWrapper.addEventListener('mousedown', e => { mouseDragStart = e.clientY; mouseDragStartIdx = drumIndex; document.getElementById('drum-track').style.transition = 'none'; });
+    window.addEventListener('mousemove', e => { if (mouseDragStart === null) return; const delta = mouseDragStart - e.clientY; setDrumIndex(mouseDragStartIdx + Math.round(delta / 24), drumMaxSteps); });
+    window.addEventListener('mouseup', () => { if (mouseDragStart !== null) { document.getElementById('drum-track').style.transition = 'transform 0.15s ease'; mouseDragStart = null; } });
+
+    // ===== OPEN OVERLAY =====
     const overlay = document.getElementById('parking-overlay');
 
     function openParkingOverlay(p) {
-      // Fill Box 1
       const areaCode = p['hel:id'] || '—';
       const owner = getOwnerName(p['hel:datanomistaja']);
       const kesto = p['hel:kesto'] || null;
-      const luokka = p['hel:luokka_nimi'] || '';
       const tyyppi = getTypeName(p['hel:paikan_asento']);
       const voimassaolo = p['hel:voimassaolo'] || 'Kaikki ajat';
       const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
-      const isIlmainen = luokka.toLowerCase().includes('ilmainen');
+      const luokka = p['hel:luokka_nimi'] || '';
+      isIlmainen = luokka.toLowerCase().includes('ilmainen');
+      drumMaxSteps = kesto ? Math.round(kestoToMinutes(kesto) / DRUM_STEP) : 96;
 
       document.getElementById('p-code').textContent = areaCode;
       document.getElementById('p-owner').textContent = owner;
       document.getElementById('p-meta').textContent = `${tyyppi} · ${kestoText} · ${voimassaolo}`;
 
-      // Box 2 — time slider
-      const maxHours = kesto ? (kestoToMinutes(kesto) / 60) : 24;
-      const sliderSteps = Math.max(1, Math.round(maxHours * 4)); // 15min steps
-      const timeSlider = document.getElementById('p-time-slider');
-      timeSlider.min = 1;
-      timeSlider.max = sliderSteps;
-      timeSlider.value = Math.min(4, sliderSteps); // default 1h
-      document.getElementById('p-time-max-label').textContent = `Max. ${kestoText}`;
-      updateTimeDisplay(isIlmainen);
-
-      timeSlider.oninput = () => updateTimeDisplay(isIlmainen);
-      document.getElementById('time-minus').onclick = () => { if (parseInt(timeSlider.value) > 1) { timeSlider.value = parseInt(timeSlider.value) - 1; updateTimeDisplay(isIlmainen); } };
-      document.getElementById('time-plus').onclick = () => { if (parseInt(timeSlider.value) < parseInt(timeSlider.max)) { timeSlider.value = parseInt(timeSlider.value) + 1; updateTimeDisplay(isIlmainen); } };
-
-      // Box 3 — vehicles from localStorage
-      loadVehicles();
+      buildDrum(drumMaxSteps);
+      document.getElementById('drum-track').style.transition = 'none';
+      setDrumIndex(Math.min(4, drumMaxSteps), drumMaxSteps);
+      setTimeout(() => { document.getElementById('drum-track').style.transition = 'transform 0.15s ease'; }, 50);
 
       overlay.classList.add('open');
     }
 
-    function updateTimeDisplay(isIlmainen) {
-      const steps = parseInt(document.getElementById('p-time-slider').value);
-      const totalMin = steps * 15;
-      const h = Math.floor(totalMin / 60);
-      const m = totalMin % 60;
-      const label = h > 0 ? `${h}h ${m > 0 ? m + 'min' : ''}`.trim() : `${m}min`;
-      document.getElementById('p-time-display').textContent = label;
-      document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(steps * 0.5).toFixed(2)} €`;
-    }
+    document.getElementById('back-btn').addEventListener('click', () => overlay.classList.remove('open'));
+    btn.addEventListener('click', () => { if (currentParkingProps) openParkingOverlay(currentParkingProps); });
 
-    document.getElementById('back-btn').addEventListener('click', () => {
-      overlay.classList.remove('open');
-    });
-
-    btn.addEventListener('click', () => {
-      if (currentParkingProps) openParkingOverlay(currentParkingProps);
-    });
-
-    // ---- Vehicles ----
-    function loadVehicles() {
-      const sel = document.getElementById('vehicle-select');
-      const saved = JSON.parse(localStorage.getItem('vehicles') || '[]');
-      sel.innerHTML = '<option value="">Valitse ajoneuvo...</option>';
-      saved.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
-      const last = localStorage.getItem('lastVehicle');
-      if (last) sel.value = last;
-      sel.onchange = () => localStorage.setItem('lastVehicle', sel.value);
-    }
-
-    document.getElementById('add-vehicle-btn').addEventListener('click', () => {
-      const reg = prompt('Syötä rekisterinumero (esim. ABC-123)');
-      if (reg && reg.trim()) {
-        const saved = JSON.parse(localStorage.getItem('vehicles') || '[]');
-        if (!saved.includes(reg.trim().toUpperCase())) {
-          saved.push(reg.trim().toUpperCase());
-          localStorage.setItem('vehicles', JSON.stringify(saved));
-        }
-        localStorage.setItem('lastVehicle', reg.trim().toUpperCase());
-        loadVehicles();
+    // Vehicle selector
+    document.getElementById('vehicle-select').addEventListener('change', function() {
+      if (this.value === 'add') {
+        const reg = prompt('Rekisterinumero (esim. ABC-123):');
+        const nick = reg ? prompt('Lempinimi (esim. Oma auto):') : null;
+        if (reg && nick) {
+          const opt = document.createElement('option');
+          const val = `${reg.trim().toUpperCase()}|${nick.trim()}`;
+          opt.value = val; opt.textContent = `${nick.trim()} — ${reg.trim().toUpperCase()}`;
+          this.insertBefore(opt, this.querySelector('option[value="add"]'));
+          this.value = val;
+        } else { this.value = this.options[0].value; }
       }
-    });
-
-    // ---- Payment options ----
-    document.querySelectorAll('.payment-option').forEach(opt => {
-      opt.addEventListener('click', () => {
-        document.querySelectorAll('.payment-option').forEach(o => {
-          o.classList.remove('selected');
-          o.querySelector('.payment-radio').innerHTML = '';
-        });
-        opt.classList.add('selected');
-        opt.querySelector('.payment-radio').innerHTML = '<div></div>';
-      });
+      const parts = this.value.split('|');
+      document.getElementById('plate-text').textContent = parts[0] || '—';
+      document.getElementById('vehicle-nickname').textContent = parts[1] || '';
     });
 
     document.getElementById('start-btn').addEventListener('click', () => {
       const vehicle = document.getElementById('vehicle-select').value;
-      if (!vehicle) { alert('Valitse ensin ajoneuvo'); return; }
-      alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${vehicle}\nAlue: ${document.getElementById('p-code').textContent}`);
+      if (!vehicle || vehicle === 'add') { alert('Valitse ensin ajoneuvo'); return; }
+      const parts = vehicle.split('|');
+      alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${parts[1]} (${parts[0]})\nAlue: ${document.getElementById('p-code').textContent}`);
     });
 
-    map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
+    map.on('error', e => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    // ---- Sheet drag ----
+    // Sheet drag
     let startY = 0, startTranslate = 0, lastY = 0, lastTime = 0, velocity = 0, isDragging = false;
     function snapTo(targetY) { sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; sheet.style.transform = `translateY(${targetY}px)`; currentY = targetY; }
     sheet.addEventListener('touchstart', (e) => {
