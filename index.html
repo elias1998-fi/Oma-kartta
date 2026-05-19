@@ -36,7 +36,6 @@
       z-index: 10;
     }
 
-    /* Shared button style */
     .map-btn {
       position: fixed;
       z-index: 25;
@@ -52,12 +51,8 @@
       justify-content: center;
     }
 
-    .map-btn svg {
-      width: 18px;
-      height: 18px;
-    }
+    .map-btn svg { width: 18px; height: 18px; }
 
-    /* Positions */
     #menu-btn {
       top: max(16px, env(safe-area-inset-top));
       left: max(16px, env(safe-area-inset-left));
@@ -66,6 +61,19 @@
     #filter-btn {
       top: max(64px, calc(env(safe-area-inset-top) + 48px));
       left: max(16px, env(safe-area-inset-left));
+    }
+
+    #filter-btn.active {
+      background: #0C0243;
+    }
+
+    #filter-btn.active svg line,
+    #filter-btn.active svg circle {
+      stroke: white;
+    }
+
+    #filter-btn.active svg circle {
+      fill: white;
     }
 
     #plus-btn {
@@ -78,6 +86,7 @@
       right: max(16px, env(safe-area-inset-right));
     }
 
+    /* Bottom sheet */
     #bottom-sheet {
       position: absolute;
       left: 0;
@@ -92,6 +101,12 @@
       touch-action: none;
       display: flex;
       flex-direction: column;
+      transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    #bottom-sheet.filter-mode {
+      transform: translateY(50%) !important;
+      touch-action: none;
     }
 
     #drag-handle-area {
@@ -100,6 +115,7 @@
       display: flex;
       justify-content: center;
       flex-shrink: 0;
+      position: relative;
     }
 
     #drag-handle {
@@ -107,6 +123,37 @@
       height: 4px;
       background: #ddd;
       border-radius: 2px;
+    }
+
+    /* Close button inside sheet */
+    #filter-close-btn {
+      position: absolute;
+      right: 16px;
+      top: 10px;
+      width: 28px;
+      height: 28px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #555;
+      z-index: 5;
+    }
+
+    #filter-close-btn.visible {
+      display: flex;
+    }
+
+    /* Normal sheet content */
+    #sheet-normal {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
     }
 
     #sheet-summary {
@@ -165,6 +212,81 @@
       color: #333;
     }
 
+    /* Filter panel content */
+    #sheet-filter {
+      display: none;
+      flex-direction: column;
+      padding: 4px 24px 24px 24px;
+      flex: 1;
+      font-family: Arial, sans-serif;
+    }
+
+    #sheet-filter.visible {
+      display: flex;
+    }
+
+    #filter-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 6px;
+    }
+
+    #filter-subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 24px;
+    }
+
+    #slider-label {
+      font-size: 15px;
+      color: #222;
+      margin-bottom: 6px;
+    }
+
+    #slider-value {
+      font-weight: bold;
+      color: #0C0243;
+    }
+
+    #duration-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: #ddd;
+      outline: none;
+      margin-bottom: 8px;
+    }
+
+    #duration-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #0C0243;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .slider-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+
+    #filter-result {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #555;
+      text-align: center;
+    }
+
+    /* Fixed button */
     #btn-container {
       position: fixed;
       bottom: 0;
@@ -203,7 +325,6 @@
     <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
   </svg>
 
-  <!-- Top left: Hamburger -->
   <button class="map-btn" id="menu-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
       <line x1="3" y1="6" x2="21" y2="6"/>
@@ -212,7 +333,6 @@
     </svg>
   </button>
 
-  <!-- Below hamburger: Filter/adjust -->
   <button class="map-btn" id="filter-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
       <line x1="4" y1="6" x2="20" y2="6"/>
@@ -224,15 +344,13 @@
     </svg>
   </button>
 
-  <!-- Top right: Plus -->
-  <button class="map-btn" id="plus-btn" onclick="map.zoomIn()">
+  <button class="map-btn" id="plus-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/>
       <line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
   </button>
 
-  <!-- Below plus: Location -->
   <button class="map-btn" id="location-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="3"/>
@@ -246,13 +364,34 @@
   <div id="bottom-sheet">
     <div id="drag-handle-area">
       <div id="drag-handle"></div>
+      <button id="filter-close-btn">✕</button>
     </div>
-    <div id="sheet-summary">
-      <div id="summary-header"></div>
-      <div id="summary-type"></div>
+
+    <!-- Normal parking info -->
+    <div id="sheet-normal">
+      <div id="sheet-summary">
+        <div id="summary-header"></div>
+        <div id="summary-type"></div>
+      </div>
+      <hr id="sheet-divider" />
+      <div id="sheet-details"></div>
     </div>
-    <hr id="sheet-divider" />
-    <div id="sheet-details"></div>
+
+    <!-- Filter panel -->
+    <div id="sheet-filter">
+      <div id="filter-title">Suodata pysäköintialueet</div>
+      <div id="filter-subtitle">Näytä vain alueet joilla sallittu pysäköintiaika on:</div>
+      <div id="slider-label">Maksimiaika: <span id="slider-value">Kaikki</span></div>
+      <input type="range" id="duration-slider" min="0" max="25" step="1" value="25" />
+      <div class="slider-ticks">
+        <span>0h</span>
+        <span>6h</span>
+        <span>12h</span>
+        <span>18h</span>
+        <span>24h+</span>
+      </div>
+      <div id="filter-result"></div>
+    </div>
   </div>
 
   <div id="btn-container">
@@ -288,32 +427,59 @@
 
     map.touchZoomRotate.disableRotation();
 
+    // Parse kesto string to minutes
+    function kestoToMinutes(kesto) {
+      if (!kesto) return 9999; // unlimited
+      const lower = kesto.toLowerCase().trim();
+      if (lower.includes('h')) {
+        const h = parseFloat(lower);
+        return isNaN(h) ? 9999 : h * 60;
+      }
+      if (lower.includes('min')) {
+        const m = parseFloat(lower);
+        return isNaN(m) ? 9999 : m;
+      }
+      return 9999;
+    }
+
+    let parkingData = null;
+
     map.on('load', () => {
       map.touchZoomRotate.disableRotation();
       map.dragRotate.disable();
 
-      map.addSource('helsinki-parkit', { type: 'geojson', data: 'helsinki_parkit.geojson' });
+      // Fetch and preprocess geojson — add kesto_min property
+      fetch('helsinki_parkit.geojson')
+        .then(r => r.json())
+        .then(data => {
+          data.features = data.features.map(f => {
+            f.properties.kesto_min = kestoToMinutes(f.properties['hel:kesto']);
+            return f;
+          });
+          parkingData = data;
 
-      map.addLayer({
-        id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13,
-        paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 }
-      });
+          map.addSource('helsinki-parkit', { type: 'geojson', data: parkingData });
 
-      map.addLayer({
-        id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13,
-        paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 }
-      });
+          map.addLayer({
+            id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13,
+            paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 }
+          });
 
-      map.addLayer({
-        id: 'helsinki-parkit-highlight', type: 'line', source: 'helsinki-parkit', minzoom: 13,
-        paint: { 'line-color': '#0C0243', 'line-width': 4, 'line-opacity': 1 },
-        filter: ['==', ['get', 'hel:id'], -1]
-      });
+          map.addLayer({
+            id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13,
+            paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 }
+          });
 
-      checkParking();
+          map.addLayer({
+            id: 'helsinki-parkit-highlight', type: 'line', source: 'helsinki-parkit', minzoom: 13,
+            paint: { 'line-color': '#0C0243', 'line-width': 4, 'line-opacity': 1 },
+            filter: ['==', ['get', 'hel:id'], -1]
+          });
+
+          checkParking();
+        });
     });
 
-    // Location button — geolocate
     const geolocate = new maplibregl.GeolocateControl({
       positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true,
@@ -321,17 +487,87 @@
     });
     map.addControl(geolocate);
 
-    document.getElementById('location-btn').addEventListener('click', () => {
-      geolocate.trigger();
+    document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
+    document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
+
+    // --- Filter mode ---
+    let filterMode = false;
+
+    const sheet = document.getElementById('bottom-sheet');
+    const filterBtn = document.getElementById('filter-btn');
+    const filterCloseBtn = document.getElementById('filter-close-btn');
+    const sheetNormal = document.getElementById('sheet-normal');
+    const sheetFilter = document.getElementById('sheet-filter');
+    const slider = document.getElementById('duration-slider');
+    const sliderValue = document.getElementById('slider-value');
+    const filterResult = document.getElementById('filter-result');
+
+    function openFilter() {
+      filterMode = true;
+      filterBtn.classList.add('active');
+      filterCloseBtn.classList.add('visible');
+      sheetNormal.style.display = 'none';
+      sheetFilter.classList.add('visible');
+      sheet.classList.add('filter-mode');
+      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    }
+
+    function closeFilter() {
+      filterMode = false;
+      filterBtn.classList.remove('active');
+      filterCloseBtn.classList.remove('visible');
+      sheetNormal.style.display = 'flex';
+      sheetFilter.classList.remove('visible');
+      sheet.classList.remove('filter-mode');
+      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      sheet.style.transform = `translateY(${getCollapsedY()}px)`;
+      // Reset filter to show all
+      applyDurationFilter(25);
+    }
+
+    filterBtn.addEventListener('click', () => {
+      if (filterMode) closeFilter();
+      else openFilter();
     });
 
+    filterCloseBtn.addEventListener('click', closeFilter);
+
+    function applyDurationFilter(val) {
+      if (!map.getSource('helsinki-parkit')) return;
+
+      if (val >= 25) {
+        // Show all
+        map.setFilter('helsinki-parkit-fill', null);
+        map.setFilter('helsinki-parkit-outline', null);
+        sliderValue.textContent = 'Kaikki';
+        filterResult.textContent = '';
+        return;
+      }
+
+      const maxMinutes = val * 60;
+      // Show areas where kesto_min <= maxMinutes OR unlimited (9999)
+      map.setFilter('helsinki-parkit-fill', ['<=', ['get', 'kesto_min'], maxMinutes]);
+      map.setFilter('helsinki-parkit-outline', ['<=', ['get', 'kesto_min'], maxMinutes]);
+
+      const h = val;
+      sliderValue.textContent = h < 1 ? `${val * 60} min` : `${h}h`;
+      filterResult.textContent = `Näytetään max. ${h}h pysäköintialueet`;
+    }
+
+    slider.addEventListener('input', () => {
+      applyDurationFilter(parseInt(slider.value));
+    });
+
+    // --- Map events ---
     let moveTimer = null;
     map.on('move', () => {
-      highlightParking();
-      clearTimeout(moveTimer);
-      moveTimer = setTimeout(checkParking, 150);
+      if (!filterMode) {
+        highlightParking();
+        clearTimeout(moveTimer);
+        moveTimer = setTimeout(checkParking, 150);
+      }
     });
-    map.on('zoomend', checkParking);
+    map.on('zoomend', () => { if (!filterMode) checkParking(); });
 
     const btn = document.getElementById('action-btn');
     const summaryHeader = document.getElementById('summary-header');
@@ -397,7 +633,6 @@
 
     function checkParking() {
       const zoom = map.getZoom();
-
       if (zoom < 13) {
         summaryHeader.textContent = '';
         summaryType.textContent = '';
@@ -423,17 +658,14 @@
 
         summaryHeader.textContent = `${owner}  |  ${kestoText}`;
         summaryType.textContent = tyyppi;
-
         details.innerHTML = `
           ${formatHours(voimassaolo)}
           <p class="price-label">Hinta:</p>
           <p class="price-value">${hinta}</p>
         `;
-
         divider.style.display = 'block';
         btn.textContent = 'Pysäköi tähän';
         btn.classList.add('active');
-
       } else {
         summaryHeader.textContent = '';
         summaryType.textContent = '';
@@ -446,7 +678,7 @@
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    const sheet = document.getElementById('bottom-sheet');
+    // Bottom sheet drag
     let startY = 0;
     let currentY = 0;
     let startTranslate = 0;
@@ -464,6 +696,7 @@
     }
 
     sheet.addEventListener('touchstart', (e) => {
+      if (filterMode) return;
       if (rafId) cancelAnimationFrame(rafId);
       startY = e.touches[0].clientY;
       lastY = startY;
@@ -477,7 +710,7 @@
     }, { passive: true });
 
     sheet.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
+      if (!isDragging || filterMode) return;
       const touch = e.touches[0].clientY;
       const now = Date.now();
       const dt = now - lastTime;
@@ -490,7 +723,7 @@
     }, { passive: true });
 
     sheet.addEventListener('touchend', () => {
-      if (!isDragging) return;
+      if (!isDragging || filterMode) return;
       isDragging = false;
       const collapsed = getCollapsedY();
       if (velocity > 0.5) {
