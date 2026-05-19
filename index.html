@@ -22,19 +22,8 @@
       width: 100%; height: 100%;
       height: -webkit-fill-available;
     }
-    .maplibregl-ctrl-top-right {
-      top: max(12px, env(safe-area-inset-top));
-      right: max(12px, env(safe-area-inset-right));
-    }
-    .maplibregl-ctrl-bottom-right {
-      bottom: max(12px, env(safe-area-inset-bottom));
-      right: max(12px, env(safe-area-inset-right));
-    }
-    .maplibregl-ctrl-bottom-left {
-      bottom: max(12px, env(safe-area-inset-bottom));
-      left: max(12px, env(safe-area-inset-left));
-    }
     .maplibregl-ctrl-attrib { display: none !important; }
+    .maplibregl-ctrl { display: none !important; }
 
     #center-pointer {
       position: absolute;
@@ -47,32 +36,46 @@
       z-index: 10;
     }
 
-    /* Hamburger menu button */
-    #menu-btn {
+    /* Shared button style */
+    .map-btn {
       position: fixed;
-      top: max(16px, env(safe-area-inset-top));
-      left: max(16px, env(safe-area-inset-left));
       z-index: 25;
-      width: 52px;
-      height: 52px;
+      width: 39px;
+      height: 39px;
       background: white;
       border: none;
       border-radius: 50%;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       cursor: pointer;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 5px;
     }
 
-    #menu-btn span {
-      display: block;
-      width: 22px;
-      height: 2.5px;
-      background: #333;
-      border-radius: 2px;
+    .map-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Positions */
+    #menu-btn {
+      top: max(16px, env(safe-area-inset-top));
+      left: max(16px, env(safe-area-inset-left));
+    }
+
+    #filter-btn {
+      top: max(64px, calc(env(safe-area-inset-top) + 48px));
+      left: max(16px, env(safe-area-inset-left));
+    }
+
+    #plus-btn {
+      top: max(16px, env(safe-area-inset-top));
+      right: max(16px, env(safe-area-inset-right));
+    }
+
+    #location-btn {
+      top: max(64px, calc(env(safe-area-inset-top) + 48px));
+      right: max(16px, env(safe-area-inset-right));
     }
 
     #bottom-sheet {
@@ -200,11 +203,44 @@
     <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
   </svg>
 
-  <!-- Hamburger menu button -->
-  <button id="menu-btn" onclick="alert('Valikko tulossa!')">
-    <span></span>
-    <span></span>
-    <span></span>
+  <!-- Top left: Hamburger -->
+  <button class="map-btn" id="menu-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+
+  <!-- Below hamburger: Filter/adjust -->
+  <button class="map-btn" id="filter-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
+      <line x1="4" y1="6" x2="20" y2="6"/>
+      <circle cx="8" cy="6" r="2" fill="#333" stroke="none"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <circle cx="16" cy="12" r="2" fill="#333" stroke="none"/>
+      <line x1="4" y1="18" x2="20" y2="18"/>
+      <circle cx="10" cy="18" r="2" fill="#333" stroke="none"/>
+    </svg>
+  </button>
+
+  <!-- Top right: Plus -->
+  <button class="map-btn" id="plus-btn" onclick="map.zoomIn()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+
+  <!-- Below plus: Location -->
+  <button class="map-btn" id="location-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <line x1="12" y1="2" x2="12" y2="6"/>
+      <line x1="12" y1="18" x2="12" y2="22"/>
+      <line x1="2" y1="12" x2="6" y2="12"/>
+      <line x1="18" y1="12" x2="22" y2="12"/>
+    </svg>
   </button>
 
   <div id="bottom-sheet">
@@ -277,11 +313,17 @@
       checkParking();
     });
 
-    map.addControl(new maplibregl.GeolocateControl({
+    // Location button — geolocate
+    const geolocate = new maplibregl.GeolocateControl({
       positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true,
       showUserHeading: true,
-    }), 'top-right');
+    });
+    map.addControl(geolocate);
+
+    document.getElementById('location-btn').addEventListener('click', () => {
+      geolocate.trigger();
+    });
 
     let moveTimer = null;
     map.on('move', () => {
