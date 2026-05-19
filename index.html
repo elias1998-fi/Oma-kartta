@@ -48,14 +48,19 @@
     }
 
     #bottom-sheet {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      height: 100vh;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 80vh;
       background: white;
       border-radius: 20px 20px 0 0;
       box-shadow: 0 -2px 16px rgba(0,0,0,0.15);
       z-index: 20;
+      transform: translateY(calc(100% - 80px));
       touch-action: none;
+      display: flex;
+      flex-direction: column;
     }
 
     #drag-handle-area {
@@ -63,6 +68,7 @@
       padding: 14px 0 10px 0;
       display: flex;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     #drag-handle {
@@ -72,13 +78,13 @@
       border-radius: 2px;
     }
 
-    .sheet-section {
-      padding: 0 20px;
+    /* Summary — always visible in collapsed state */
+    #sheet-summary {
+      padding: 0 20px 12px 20px;
+      flex-shrink: 0;
       font-family: Arial, sans-serif;
-    }
-
-    #section-summary {
-      padding-bottom: 12px;
+      height: 42px;
+      overflow: hidden;
     }
 
     #summary-header {
@@ -93,36 +99,44 @@
       color: #555;
     }
 
-    .divider {
+    /* Divider between summary and details */
+    #sheet-divider {
       border: none;
       border-top: 1px solid #eee;
       margin: 0 20px;
+      flex-shrink: 0;
     }
 
-    #section-hours {
-      padding-top: 12px;
-      padding-bottom: 12px;
-    }
-
-    #section-price {
-      padding-top: 4px;
-      padding-bottom: 12px;
+    /* Details — only visible when expanded */
+    #sheet-details {
+      padding: 14px 20px 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+      font-family: Arial, sans-serif;
+      background: white;
     }
 
     .hours-row {
       display: flex;
       justify-content: space-between;
-      padding: 5px 0;
+      padding: 3px 0;
       font-size: 14px;
       color: #333;
     }
 
-    .hours-day { color: #555; min-width: 60px; }
-    .hours-time { font-weight: 500; }
+    .hours-day {
+      color: #555;
+      min-width: 60px;
+    }
+
+    .hours-time {
+      font-weight: 500;
+    }
 
     .price-label {
       font-size: 13px;
       color: #888;
+      margin-top: 14px;
       margin-bottom: 4px;
     }
 
@@ -131,9 +145,12 @@
       color: #333;
     }
 
+    /* Fixed button at bottom */
     #btn-container {
       position: fixed;
-      bottom: 0; left: 0; right: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
       z-index: 30;
       background: white;
       padding: 12px 16px;
@@ -156,7 +173,9 @@
       text-align: center;
     }
 
-    #action-btn.active { opacity: 1; }
+    #action-btn.active {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -171,27 +190,12 @@
     <div id="drag-handle-area">
       <div id="drag-handle"></div>
     </div>
-
-    <!-- Level 1: always visible when parking selected -->
-    <div class="sheet-section" id="section-summary">
+    <div id="sheet-summary">
       <div id="summary-header"></div>
       <div id="summary-type"></div>
     </div>
-
-    <hr class="divider" id="divider-hours" style="display:none" />
-
-    <!-- Level 2: visible at mid and full -->
-    <div class="sheet-section" id="section-hours" style="display:none">
-      <div id="hours-content"></div>
-    </div>
-
-    <hr class="divider" id="divider-price" style="display:none" />
-
-    <!-- Level 3: visible only when fully expanded -->
-    <div class="sheet-section" id="section-price" style="display:none">
-      <p class="price-label">Hinta:</p>
-      <p id="price-value" class="price-value"></p>
-    </div>
+    <hr id="sheet-divider" />
+    <div id="sheet-details"></div>
   </div>
 
   <div id="btn-container">
@@ -201,9 +205,12 @@
   <script>
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
 
-    function transformRequest(url) {
+    function transformRequest(url, resourceType) {
       if (url.includes('digitransit.fi')) {
-        return { url, headers: { 'digitransit-subscription-key': API_KEY } };
+        return {
+          url: url,
+          headers: { 'digitransit-subscription-key': API_KEY }
+        };
       }
       return { url };
     }
@@ -215,7 +222,7 @@
       zoom: 12,
       minZoom: 5,
       maxZoom: 20,
-      transformRequest,
+      transformRequest: transformRequest,
       maxTileCacheSize: 50,
       fadeDuration: 100,
       dragRotate: false,
@@ -231,14 +238,30 @@
       map.touchZoomRotate.disableRotation();
       map.dragRotate.disable();
 
-      map.addSource('helsinki-parkit', { type: 'geojson', data: 'helsinki_parkit.geojson' });
-      map.addLayer({
-        id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13,
-        paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 }
+      map.addSource('helsinki-parkit', {
+        type: 'geojson',
+        data: 'helsinki_parkit.geojson'
       });
       map.addLayer({
-        id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13,
-        paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 }
+        id: 'helsinki-parkit-fill',
+        type: 'fill',
+        source: 'helsinki-parkit',
+        minzoom: 13,
+        paint: {
+          'fill-color': '#4A90D9',
+          'fill-opacity': 0.25
+        }
+      });
+      map.addLayer({
+        id: 'helsinki-parkit-outline',
+        type: 'line',
+        source: 'helsinki-parkit',
+        minzoom: 13,
+        paint: {
+          'line-color': '#2B6CB0',
+          'line-width': 1.5,
+          'line-opacity': 0.9
+        }
       });
 
       checkParking();
@@ -254,8 +277,10 @@
     map.on('zoomend', checkParking);
 
     const btn = document.getElementById('action-btn');
-    const sheet = document.getElementById('bottom-sheet');
-    const btnContainer = document.getElementById('btn-container');
+    const summaryHeader = document.getElementById('summary-header');
+    const summaryType = document.getElementById('summary-type');
+    const details = document.getElementById('sheet-details');
+    const divider = document.getElementById('sheet-divider');
 
     function getOwnerName(raw) {
       if (!raw) return 'Tuntematon omistaja';
@@ -282,22 +307,34 @@
       return luokka;
     }
 
-    let parkingFound = false;
+    function formatHours(voimassaolo) {
+      if (!voimassaolo) {
+        return `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;
+      }
+      return `
+        <div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${voimassaolo}</span></div>
+        <div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${voimassaolo}</span></div>
+        <div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>
+      `;
+    }
 
     function checkParking() {
       const zoom = map.getZoom();
 
       if (zoom < 13) {
-        clearSheet();
+        summaryHeader.textContent = '';
+        summaryType.textContent = '';
+        details.innerHTML = '';
+        divider.style.display = 'none';
         btn.textContent = 'Zoomaa karttaa nähdäksesi pysäköintialueet';
         btn.classList.remove('active');
-        parkingFound = false;
-        snapTo(SNAP_1);
         return;
       }
 
       const centerPixel = map.project(map.getCenter());
-      const features = map.queryRenderedFeatures(centerPixel, { layers: ['helsinki-parkit-fill'] });
+      const features = map.queryRenderedFeatures(centerPixel, {
+        layers: ['helsinki-parkit-fill']
+      });
 
       if (features.length > 0) {
         const p = features[0].properties;
@@ -309,101 +346,60 @@
         const hinta = getPriceText(luokka);
         const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
 
-        document.getElementById('summary-header').textContent = `${owner} | ${kestoText}`;
-        document.getElementById('summary-type').textContent = tyyppi;
+        // Summary — always visible in collapsed state
+        summaryHeader.textContent = `${owner}  |  ${kestoText}`;
+        summaryType.textContent = tyyppi;
 
-        const hoursHtml = voimassaolo ? `
-          <div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${voimassaolo}</span></div>
-          <div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${voimassaolo}</span></div>
-          <div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>
-        ` : `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;
+        // Details — visible when expanded
+        details.innerHTML = `
+          ${formatHours(voimassaolo)}
+          <p class="price-label">Hinta:</p>
+          <p class="price-value">${hinta}</p>
+        `;
 
-        document.getElementById('hours-content').innerHTML = hoursHtml;
-        document.getElementById('price-value').textContent = hinta;
-
-        document.getElementById('divider-hours').style.display = 'block';
-        document.getElementById('section-hours').style.display = 'block';
-        document.getElementById('divider-price').style.display = 'block';
-        document.getElementById('section-price').style.display = 'block';
-
+        divider.style.display = 'block';
         btn.textContent = 'Pysäköi tähän';
         btn.classList.add('active');
 
-        if (!parkingFound) {
-          snapTo(SNAP_1);
-        }
-        parkingFound = true;
-
       } else {
-        clearSheet();
+        summaryHeader.textContent = '';
+        summaryType.textContent = '';
+        details.innerHTML = '';
+        divider.style.display = 'none';
         btn.textContent = 'Valitse pysäköintialue';
         btn.classList.remove('active');
-        parkingFound = false;
-        snapTo(SNAP_1);
       }
-    }
-
-    function clearSheet() {
-      document.getElementById('summary-header').textContent = '';
-      document.getElementById('summary-type').textContent = '';
-      document.getElementById('hours-content').innerHTML = '';
-      document.getElementById('price-value').textContent = '';
-      document.getElementById('divider-hours').style.display = 'none';
-      document.getElementById('section-hours').style.display = 'none';
-      document.getElementById('divider-price').style.display = 'none';
-      document.getElementById('section-price').style.display = 'none';
     }
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    // --- Three-position snap sheet ---
-    // Snap positions: translateY from top of screen
-    // Sheet height = 100vh, so translateY = windowH - visible_height
-
-    const HANDLE_H = 38;   // drag handle area
-    const SUMMARY_H = 58;  // header + type text
-    const HOURS_H = 90;    // 3 hours rows + divider
-    const PRICE_H = 60;    // price label + value + divider
-
-    function getSnaps() {
-      const h = window.innerHeight;
-      const SNAP_1_visible = HANDLE_H + SUMMARY_H;               // level 1
-      const SNAP_2_visible = SNAP_1_visible + HOURS_H;           // level 2
-      const SNAP_3_visible = SNAP_2_visible + PRICE_H;           // level 3
-      return [
-        h - SNAP_1_visible,
-        h - SNAP_2_visible,
-        h - SNAP_3_visible,
-      ];
-    }
-
-    const [SNAP_1, SNAP_2, SNAP_3] = getSnaps();
-    let currentTranslate = getSnaps()[0];
-
-    function snapTo(target) {
-      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      sheet.style.transform = `translateY(${target}px)`;
-      currentTranslate = target;
-    }
-
-    // Start collapsed
-    sheet.style.transform = `translateY(${SNAP_1}px)`;
-
+    // Smooth bottom sheet with velocity snapping
+    const sheet = document.getElementById('bottom-sheet');
     let startY = 0;
+    let currentY = 0;
     let startTranslate = 0;
     let lastY = 0;
     let lastTime = 0;
     let velocity = 0;
     let isDragging = false;
+    let rafId = null;
+
+    function getCollapsedY() { return sheet.clientHeight - 80; }
+
+    function snapTo(targetY) {
+      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      sheet.style.transform = `translateY(${targetY}px)`;
+    }
 
     sheet.addEventListener('touchstart', (e) => {
+      if (rafId) cancelAnimationFrame(rafId);
       startY = e.touches[0].clientY;
       lastY = startY;
       lastTime = Date.now();
       velocity = 0;
       const matrix = new DOMMatrix(getComputedStyle(sheet).transform);
       startTranslate = matrix.m42;
-      currentTranslate = startTranslate;
+      currentY = startTranslate;
       isDragging = true;
       sheet.style.transition = 'none';
     }, { passive: true });
@@ -416,38 +412,22 @@
       if (dt > 0) velocity = (touch - lastY) / dt;
       lastY = touch;
       lastTime = now;
-
-      const snaps = getSnaps();
-      const min = snaps[snaps.length - 1];
-      const max = snaps[0];
       const delta = touch - startY;
-      currentTranslate = Math.max(min, Math.min(max, startTranslate + delta));
-      sheet.style.transform = `translateY(${currentTranslate}px)`;
+      currentY = Math.max(0, Math.min(getCollapsedY(), startTranslate + delta));
+      sheet.style.transform = `translateY(${currentY}px)`;
     }, { passive: true });
 
     sheet.addEventListener('touchend', () => {
       if (!isDragging) return;
       isDragging = false;
-
-      const snaps = getSnaps();
-
-      let target;
-      if (velocity > 0.4) {
-        // Flick down — move to next lower snap (higher translateY number)
-        const lower = snaps.filter(s => s > currentTranslate);
-        target = lower.length > 0 ? Math.min(...lower) : snaps[0];
-      } else if (velocity < -0.4) {
-        // Flick up — move to next higher snap (lower translateY number)
-        const higher = snaps.filter(s => s < currentTranslate);
-        target = higher.length > 0 ? Math.max(...higher) : snaps[snaps.length - 1];
+      const collapsed = getCollapsedY();
+      if (velocity > 0.5) {
+        snapTo(collapsed);
+      } else if (velocity < -0.5) {
+        snapTo(0);
       } else {
-        // No flick — snap to nearest
-        target = snaps.reduce((prev, curr) =>
-          Math.abs(curr - currentTranslate) < Math.abs(prev - currentTranslate) ? curr : prev
-        );
+        snapTo(currentY < collapsed / 2 ? 0 : collapsed);
       }
-
-      snapTo(target);
     });
   </script>
 </body>
