@@ -226,13 +226,14 @@
       background: #ddd;
       outline: none;
       margin-bottom: 8px;
+      touch-action: none;
     }
 
     #duration-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       background: #0C0243;
       cursor: pointer;
@@ -419,17 +420,14 @@
           });
 
           map.addSource('helsinki-parkit', { type: 'geojson', data });
-
           map.addLayer({
             id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13,
             paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 }
           });
-
           map.addLayer({
             id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13,
             paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 }
           });
-
           map.addLayer({
             id: 'helsinki-parkit-highlight', type: 'line', source: 'helsinki-parkit', minzoom: 13,
             paint: { 'line-color': '#0C0243', 'line-width': 4, 'line-opacity': 1 },
@@ -484,6 +482,7 @@
       sheet.style.transform = `translateY(${getCollapsedY()}px)`;
       currentY = getCollapsedY();
       applyDurationFilter(25);
+      slider.value = 25;
     }
 
     filterBtn.addEventListener('click', () => filterMode ? closeFilter() : openFilter());
@@ -505,6 +504,10 @@
       filterResult.textContent = `Näytetään max. ${val}h pysäköintialueet`;
     }
 
+    // Slider: handle touch separately so it doesn't trigger sheet drag
+    let sliderTouching = false;
+    slider.addEventListener('touchstart', () => { sliderTouching = true; }, { passive: true });
+    slider.addEventListener('touchend', () => { sliderTouching = false; }, { passive: true });
     slider.addEventListener('input', () => applyDurationFilter(parseInt(slider.value)));
 
     let moveTimer = null;
@@ -622,7 +625,7 @@
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    // Bottom sheet drag — works in all modes
+    // Sheet drag — anywhere on sheet EXCEPT slider
     let startY = 0;
     let startTranslate = 0;
     let lastY = 0;
@@ -637,9 +640,8 @@
     }
 
     sheet.addEventListener('touchstart', (e) => {
-      // Only drag from handle area to avoid interfering with slider
-      const handle = document.getElementById('drag-handle-area');
-      if (!handle.contains(e.target)) return;
+      // Skip if touching the slider
+      if (sliderTouching || e.target === slider) return;
       startY = e.touches[0].clientY;
       lastY = startY;
       lastTime = Date.now();
