@@ -50,38 +50,32 @@
       align-items: center;
       justify-content: center;
     }
-
     .map-btn svg { width: 18px; height: 18px; }
 
     #menu-btn {
       top: max(16px, env(safe-area-inset-top));
       left: max(16px, env(safe-area-inset-left));
     }
-
     #filter-btn {
       top: max(64px, calc(env(safe-area-inset-top) + 48px));
       left: max(16px, env(safe-area-inset-left));
     }
-
     #filter-btn.active { background: #0C0243; }
     #filter-btn.active svg line { stroke: white; }
     #filter-btn.active svg circle { fill: white; stroke: none; }
-
     #plus-btn {
       top: max(16px, env(safe-area-inset-top));
       right: max(16px, env(safe-area-inset-right));
     }
-
     #location-btn {
       top: max(64px, calc(env(safe-area-inset-top) + 48px));
       right: max(16px, env(safe-area-inset-right));
     }
 
+    /* Bottom sheet */
     #bottom-sheet {
       position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      left: 0; right: 0; bottom: 0;
       height: 80vh;
       background: white;
       border-radius: 20px 20px 0 0;
@@ -92,7 +86,6 @@
       display: flex;
       flex-direction: column;
     }
-
     #drag-handle-area {
       width: 100%;
       padding: 14px 0 10px 0;
@@ -101,20 +94,16 @@
       flex-shrink: 0;
       position: relative;
     }
-
     #drag-handle {
       width: 40px;
       height: 4px;
       background: #ddd;
       border-radius: 2px;
     }
-
     #filter-close-btn {
       position: absolute;
-      right: 16px;
-      top: 10px;
-      width: 28px;
-      height: 28px;
+      right: 16px; top: 10px;
+      width: 28px; height: 28px;
       background: #f0f0f0;
       border: none;
       border-radius: 50%;
@@ -126,193 +115,281 @@
       color: #555;
       z-index: 5;
     }
-
     #filter-close-btn.visible { display: flex; }
-
-    #sheet-normal {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    #sheet-summary {
-      padding: 0 20px 12px 20px;
-      flex-shrink: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    #summary-header {
-      font-size: 15px;
-      font-weight: bold;
-      color: #222;
-      margin-bottom: 3px;
-    }
-
+    #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    #sheet-summary { padding: 0 20px 12px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
+    #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
     #summary-type { font-size: 14px; color: #555; }
-
-    #sheet-divider {
-      border: none;
-      border-top: 1px solid #eee;
-      margin: 0 20px;
-      flex-shrink: 0;
-    }
-
-    #sheet-details {
-      padding: 14px 20px 16px 20px;
-      overflow-y: auto;
-      flex: 1;
-      font-family: Arial, sans-serif;
-      background: white;
-    }
-
-    .hours-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 3px 0;
-      font-size: 14px;
-      color: #333;
-    }
-
+    #sheet-divider { border: none; border-top: 1px solid #eee; margin: 0 20px; flex-shrink: 0; }
+    #sheet-details { padding: 14px 20px 16px 20px; overflow-y: auto; flex: 1; font-family: Arial, sans-serif; background: white; }
+    .hours-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; color: #333; }
     .hours-day { color: #555; min-width: 60px; }
     .hours-time { font-weight: 500; }
-
-    .price-label {
-      font-size: 13px;
-      color: #888;
-      margin-top: 14px;
-      margin-bottom: 4px;
-    }
-
+    .price-label { font-size: 13px; color: #888; margin-top: 14px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
 
-    #sheet-filter {
-      display: none;
-      flex-direction: column;
-      padding: 4px 24px 24px 24px;
-      flex: 1;
-      font-family: Arial, sans-serif;
-    }
-
+    #sheet-filter { display: none; flex-direction: column; padding: 4px 24px 24px 24px; flex: 1; font-family: Arial, sans-serif; }
     #sheet-filter.visible { display: flex; }
-
-    #filter-title {
-      font-size: 16px;
-      font-weight: bold;
-      color: #222;
-      margin-bottom: 6px;
-    }
-
-    #filter-subtitle {
-      font-size: 13px;
-      color: #888;
-      margin-bottom: 28px;
-    }
-
-    #slider-label {
-      font-size: 15px;
-      color: #222;
-      margin-bottom: 16px;
-      text-align: center;
-    }
-
-    #slider-value {
-      font-weight: bold;
-      color: #0C0243;
-      font-size: 17px;
-    }
-
-    .range-container {
-      position: relative;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .range-track {
-      position: absolute;
-      width: 100%;
-      height: 4px;
-      background: #ddd;
-      border-radius: 2px;
-    }
-
-    .range-fill {
-      position: absolute;
-      height: 4px;
-      background: #0C0243;
-      border-radius: 2px;
-    }
-
-    .range-input {
-      position: absolute;
-      width: 100%;
-      height: 4px;
-      background: transparent;
-      -webkit-appearance: none;
-      appearance: none;
-      outline: none;
-      pointer-events: none;
-    }
-
-    .range-input::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: #0C0243;
-      cursor: pointer;
-      pointer-events: all;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-      border: 3px solid white;
-    }
-
-    .slider-ticks {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: #aaa;
-      margin-top: 4px;
-    }
-
-    #filter-result {
-      margin-top: 16px;
-      font-size: 13px;
-      color: #555;
-      text-align: center;
-      min-height: 20px;
-    }
+    #filter-title { font-size: 16px; font-weight: bold; color: #222; margin-bottom: 6px; }
+    #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 28px; }
+    #slider-label { font-size: 15px; color: #222; margin-bottom: 16px; text-align: center; }
+    #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
+    .range-container { position: relative; height: 40px; display: flex; align-items: center; margin-bottom: 8px; }
+    .range-track { position: absolute; width: 100%; height: 4px; background: #ddd; border-radius: 2px; }
+    .range-fill { position: absolute; height: 4px; background: #0C0243; border-radius: 2px; }
+    .range-input { position: absolute; width: 100%; height: 4px; background: transparent; -webkit-appearance: none; appearance: none; outline: none; pointer-events: none; }
+    .range-input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #0C0243; cursor: pointer; pointer-events: all; box-shadow: 0 2px 6px rgba(0,0,0,0.25); border: 3px solid white; }
+    .slider-ticks { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-top: 4px; }
+    #filter-result { margin-top: 16px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
 
     #btn-container {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 0; left: 0; right: 0;
       z-index: 30;
       background: white;
       padding: 12px 16px;
       padding-bottom: max(24px, env(safe-area-inset-bottom));
     }
-
     #action-btn {
-      width: 100%;
-      height: 58px;
-      border: none;
-      border-radius: 16px;
-      font-size: 17px;
-      font-weight: bold;
+      width: 100%; height: 58px;
+      border: none; border-radius: 16px;
+      font-size: 17px; font-weight: bold;
       font-family: Arial, sans-serif;
-      color: white;
-      background: #0C0243;
-      opacity: 0.7;
-      cursor: pointer;
+      color: white; background: #0C0243;
+      opacity: 0.7; cursor: pointer;
       transition: opacity 0.2s ease;
       text-align: center;
     }
-
     #action-btn.active { opacity: 1; }
+
+    /* ========== PARKING SESSION OVERLAY ========== */
+    #parking-overlay {
+      position: fixed;
+      inset: 0;
+      background: #f2f3f5;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      overflow-y: auto;
+    }
+    #parking-overlay.open {
+      transform: translateX(0);
+    }
+
+    /* Header */
+    #parking-header {
+      display: flex;
+      align-items: center;
+      padding: max(16px, env(safe-area-inset-top)) 16px 16px 16px;
+      background: white;
+      border-bottom: 1px solid #eee;
+      flex-shrink: 0;
+    }
+    #back-btn {
+      width: 36px; height: 36px;
+      background: #f0f0f0;
+      border: none; border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      margin-right: 12px;
+      font-size: 18px;
+      color: #333;
+    }
+    #parking-header-title {
+      font-family: Arial, sans-serif;
+      font-size: 17px;
+      font-weight: bold;
+      color: #222;
+    }
+
+    /* Cards */
+    .p-card {
+      background: white;
+      border-radius: 16px;
+      margin: 12px 16px 0 16px;
+      padding: 16px;
+      font-family: Arial, sans-serif;
+    }
+
+    .p-card-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    /* Box 1 - Area info */
+    .area-code-badge {
+      display: inline-block;
+      background: #0C0243;
+      color: white;
+      font-size: 13px;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-family: Arial, sans-serif;
+    }
+    .area-name {
+      font-size: 16px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 4px;
+    }
+    .area-meta {
+      font-size: 14px;
+      color: #555;
+    }
+
+    /* Box 2 - Time selector */
+    .time-display {
+      font-size: 36px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 4px;
+    }
+    .time-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .time-ctrl-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+      background: white;
+      font-size: 22px;
+      color: #333;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+    }
+    .time-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #eee;
+      outline: none;
+      margin-bottom: 6px;
+    }
+    .time-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #0C0243;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      border: 3px solid white;
+    }
+    .time-slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #aaa;
+    }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .price-row-label { font-size: 14px; color: #555; }
+    .price-row-value { font-size: 16px; font-weight: bold; color: #0C0243; }
+
+    /* Box 3 - Vehicle */
+    .vehicle-selector {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #eee;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: Arial, sans-serif;
+      color: #222;
+      background: white;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+    .add-vehicle-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1.5px dashed #ddd;
+      border-radius: 12px;
+      background: white;
+      font-size: 14px;
+      color: #888;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Box 4 - Payment */
+    .payment-option {
+      display: flex;
+      align-items: center;
+      padding: 12px 14px;
+      border: 1.5px solid #eee;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .payment-option.selected {
+      border-color: #0C0243;
+      background: #f5f5ff;
+    }
+    .payment-icon {
+      font-size: 20px;
+      margin-right: 12px;
+    }
+    .payment-label {
+      font-size: 15px;
+      color: #222;
+      font-family: Arial, sans-serif;
+    }
+    .payment-radio {
+      margin-left: auto;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .payment-option.selected .payment-radio {
+      border-color: #0C0243;
+      background: #0C0243;
+    }
+    .payment-option.selected .payment-radio::after {
+      content: '';
+      width: 8px; height: 8px;
+      background: white;
+      border-radius: 50%;
+    }
+
+    /* Start button */
+    #start-btn-container {
+      padding: 16px;
+      padding-bottom: max(32px, env(safe-area-inset-bottom));
+      flex-shrink: 0;
+    }
+    #start-btn {
+      width: 100%; height: 58px;
+      border: none; border-radius: 16px;
+      font-size: 17px; font-weight: bold;
+      font-family: Arial, sans-serif;
+      color: white; background: #0C0243;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -325,9 +402,7 @@
 
   <button class="map-btn" id="menu-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="3" y1="12" x2="21" y2="12"/>
-      <line x1="3" y1="18" x2="21" y2="18"/>
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
     </svg>
   </button>
 
@@ -344,18 +419,15 @@
 
   <button class="map-btn" id="plus-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-      <line x1="12" y1="5" x2="12" y2="19"/>
-      <line x1="5" y1="12" x2="19" y2="12"/>
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
   </button>
 
   <button class="map-btn" id="location-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="3"/>
-      <line x1="12" y1="2" x2="12" y2="6"/>
-      <line x1="12" y1="18" x2="12" y2="22"/>
-      <line x1="2" y1="12" x2="6" y2="12"/>
-      <line x1="18" y1="12" x2="22" y2="12"/>
+      <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+      <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
     </svg>
   </button>
 
@@ -364,7 +436,6 @@
       <div id="drag-handle"></div>
       <button id="filter-close-btn">✕</button>
     </div>
-
     <div id="sheet-normal">
       <div id="sheet-summary">
         <div id="summary-header"></div>
@@ -373,35 +444,93 @@
       <hr id="sheet-divider" />
       <div id="sheet-details"></div>
     </div>
-
     <div id="sheet-filter">
       <div id="filter-title">Suodata pysäköintialueet</div>
       <div id="filter-subtitle">Näytä vain alueet joilla sallittu pysäköintiaika on valitulla välillä:</div>
-
       <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
-
       <div class="range-container">
         <div class="range-track"></div>
         <div class="range-fill" id="range-fill"></div>
-        <!-- max=26: 0=0h, 1=0.5h(hidden), 2=1h ... 25=24h, 26=24h+ -->
         <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0" />
         <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26" />
       </div>
-
       <div class="slider-ticks">
-        <span>0h</span>
-        <span>6h</span>
-        <span>12h</span>
-        <span>18h</span>
-        <span>24h+</span>
+        <span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span>
       </div>
-
       <div id="filter-result"></div>
     </div>
   </div>
 
   <div id="btn-container">
     <button id="action-btn">Valitse pysäköintialue</button>
+  </div>
+
+  <!-- PARKING SESSION OVERLAY -->
+  <div id="parking-overlay">
+    <div id="parking-header">
+      <button id="back-btn">←</button>
+      <div id="parking-header-title">Pysäköinti</div>
+    </div>
+
+    <!-- Box 1: Area info -->
+    <div class="p-card">
+      <div class="p-card-title">Valittu alue</div>
+      <div class="area-code-badge" id="p-code">—</div>
+      <div class="area-name" id="p-owner">—</div>
+      <div class="area-meta" id="p-meta">—</div>
+    </div>
+
+    <!-- Box 2: Time & price -->
+    <div class="p-card">
+      <div class="p-card-title">Pysäköintiaika</div>
+      <div class="time-display" id="p-time-display">1h 00min</div>
+      <div class="time-controls">
+        <button class="time-ctrl-btn" id="time-minus">−</button>
+        <button class="time-ctrl-btn" id="time-plus">+</button>
+      </div>
+      <input type="range" class="time-slider" id="p-time-slider" min="1" max="24" step="1" value="1" />
+      <div class="time-slider-labels">
+        <span>15min</span>
+        <span id="p-time-max-label">Max</span>
+      </div>
+      <div class="price-row">
+        <span class="price-row-label">Arvioitu hinta</span>
+        <span class="price-row-value" id="p-price">Ilmainen</span>
+      </div>
+    </div>
+
+    <!-- Box 3: Vehicle -->
+    <div class="p-card">
+      <div class="p-card-title">Ajoneuvo</div>
+      <select class="vehicle-selector" id="vehicle-select">
+        <option value="">Valitse ajoneuvo...</option>
+      </select>
+      <button class="add-vehicle-btn" id="add-vehicle-btn">+ Lisää rekisterinumero</button>
+    </div>
+
+    <!-- Box 4: Payment -->
+    <div class="p-card">
+      <div class="p-card-title">Maksutapa</div>
+      <div class="payment-option selected" data-payment="kiekko">
+        <span class="payment-icon">🕐</span>
+        <span class="payment-label">Pysäköintikiekko</span>
+        <div class="payment-radio"><div></div></div>
+      </div>
+      <div class="payment-option" data-payment="card">
+        <span class="payment-icon">💳</span>
+        <span class="payment-label">Maksukortti</span>
+        <div class="payment-radio"></div>
+      </div>
+      <div class="payment-option" data-payment="mobilepay">
+        <span class="payment-icon">📱</span>
+        <span class="payment-label">MobilePay</span>
+        <div class="payment-radio"></div>
+      </div>
+    </div>
+
+    <div id="start-btn-container">
+      <button id="start-btn">Aloita pysäköinti</button>
+    </div>
   </div>
 
   <script>
@@ -412,23 +541,6 @@
         return { url, headers: { 'digitransit-subscription-key': API_KEY } };
       }
       return { url };
-    }
-
-    // Convert slider index to minutes
-    // 0=0min, 1=30min(0.5h hidden step), 2=60min(1h), 3=120min(2h)...
-    // n>=2: (n-1)*60 min, 26=9999(24h+)
-    function idxToMinutes(idx) {
-      if (idx === 0) return 0;
-      if (idx === 1) return 30;
-      if (idx >= 26) return 9999;
-      return (idx - 1) * 60;
-    }
-
-    function formatHourLabel(idx) {
-      if (idx === 0) return '0h';
-      if (idx === 1) return '30min';
-      if (idx >= 26) return '24h+';
-      return `${idx - 1}h`;
     }
 
     const map = new maplibregl.Map({
@@ -453,21 +565,14 @@
     function kestoToMinutes(kesto) {
       if (!kesto) return 9999;
       const lower = kesto.toLowerCase().trim();
-      if (lower.includes('h')) {
-        const h = parseFloat(lower);
-        return isNaN(h) ? 9999 : h * 60;
-      }
-      if (lower.includes('min')) {
-        const m = parseFloat(lower);
-        return isNaN(m) ? 9999 : m;
-      }
+      if (lower.includes('h')) { const h = parseFloat(lower); return isNaN(h) ? 9999 : h * 60; }
+      if (lower.includes('min')) { const m = parseFloat(lower); return isNaN(m) ? 9999 : m; }
       return 9999;
     }
 
     map.on('load', () => {
       map.touchZoomRotate.disableRotation();
       map.dragRotate.disable();
-
       fetch('helsinki_parkit.geojson')
         .then(r => r.json())
         .then(data => {
@@ -475,148 +580,92 @@
             f.properties.kesto_min = kestoToMinutes(f.properties['hel:kesto']);
             return f;
           });
-
           map.addSource('helsinki-parkit', { type: 'geojson', data });
-          map.addLayer({
-            id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13,
-            paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 }
-          });
-          map.addLayer({
-            id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13,
-            paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 }
-          });
-          map.addLayer({
-            id: 'helsinki-parkit-highlight', type: 'line', source: 'helsinki-parkit', minzoom: 13,
-            paint: { 'line-color': '#0C0243', 'line-width': 4, 'line-opacity': 1 },
-            filter: ['==', ['get', 'hel:id'], -1]
-          });
-
+          map.addLayer({ id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13, paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 } });
+          map.addLayer({ id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13, paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 } });
+          map.addLayer({ id: 'helsinki-parkit-highlight', type: 'line', source: 'helsinki-parkit', minzoom: 13, paint: { 'line-color': '#0C0243', 'line-width': 4, 'line-opacity': 1 }, filter: ['==', ['get', 'hel:id'], -1] });
           checkParking();
         });
     });
 
-    const geolocate = new maplibregl.GeolocateControl({
-      positionOptions: { enableHighAccuracy: true },
-      trackUserLocation: true,
-      showUserHeading: true,
-    });
+    const geolocate = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showUserHeading: true });
     map.addControl(geolocate);
-
     document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
     document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
+    // ---- Dual range slider ----
     const sliderMin = document.getElementById('slider-min');
     const sliderMax = document.getElementById('slider-max');
     const rangeFill = document.getElementById('range-fill');
     const sliderValueEl = document.getElementById('slider-value');
     const filterResult = document.getElementById('filter-result');
 
+    function idxToMinutes(idx) {
+      if (idx === 0) return 0;
+      if (idx === 1) return 30;
+      if (idx >= 26) return 9999;
+      return (idx - 1) * 60;
+    }
+    function formatHourLabel(idx) {
+      if (idx === 0) return '0h';
+      if (idx === 1) return '30min';
+      if (idx >= 26) return '24h+';
+      return `${idx - 1}h`;
+    }
     function updateSliderUI() {
       const minIdx = parseInt(sliderMin.value);
       const maxIdx = parseInt(sliderMax.value);
-      const pctMin = (minIdx / 26) * 100;
-      const pctMax = (maxIdx / 26) * 100;
-      rangeFill.style.left = pctMin + '%';
-      rangeFill.style.width = (pctMax - pctMin) + '%';
-
-      if (minIdx === 0 && maxIdx === 26) {
-        sliderValueEl.textContent = 'Kaikki';
-        filterResult.textContent = '';
-      } else {
-        sliderValueEl.textContent = `${formatHourLabel(minIdx)} – ${formatHourLabel(maxIdx)}`;
-        filterResult.textContent = `Näytetään ${formatHourLabel(minIdx)} – ${formatHourLabel(maxIdx)} pysäköintialueet`;
-      }
+      rangeFill.style.left = (minIdx / 26 * 100) + '%';
+      rangeFill.style.width = ((maxIdx - minIdx) / 26 * 100) + '%';
+      if (minIdx === 0 && maxIdx === 26) { sliderValueEl.textContent = 'Kaikki'; filterResult.textContent = ''; }
+      else { sliderValueEl.textContent = `${formatHourLabel(minIdx)} – ${formatHourLabel(maxIdx)}`; filterResult.textContent = `Näytetään ${formatHourLabel(minIdx)} – ${formatHourLabel(maxIdx)} pysäköintialueet`; }
     }
-
     function applyRangeFilter() {
       if (!map.getSource('helsinki-parkit')) return;
       const minIdx = parseInt(sliderMin.value);
       const maxIdx = parseInt(sliderMax.value);
-      const minMinutes = idxToMinutes(minIdx);
-      const maxMinutes = idxToMinutes(maxIdx);
-
-      if (minIdx === 0 && maxIdx === 26) {
-        map.setFilter('helsinki-parkit-fill', null);
-        map.setFilter('helsinki-parkit-outline', null);
-      } else {
-        map.setFilter('helsinki-parkit-fill', [
-          'all',
-          ['>=', ['get', 'kesto_min'], minMinutes],
-          ['<=', ['get', 'kesto_min'], maxMinutes]
-        ]);
-        map.setFilter('helsinki-parkit-outline', [
-          'all',
-          ['>=', ['get', 'kesto_min'], minMinutes],
-          ['<=', ['get', 'kesto_min'], maxMinutes]
-        ]);
+      if (minIdx === 0 && maxIdx === 26) { map.setFilter('helsinki-parkit-fill', null); map.setFilter('helsinki-parkit-outline', null); }
+      else {
+        const f = ['all', ['>=', ['get', 'kesto_min'], idxToMinutes(minIdx)], ['<=', ['get', 'kesto_min'], idxToMinutes(maxIdx)]];
+        map.setFilter('helsinki-parkit-fill', f); map.setFilter('helsinki-parkit-outline', f);
       }
     }
-
     let sliderTouching = false;
     sliderMin.addEventListener('touchstart', () => { sliderTouching = true; }, { passive: true });
     sliderMax.addEventListener('touchstart', () => { sliderTouching = true; }, { passive: true });
     sliderMin.addEventListener('touchend', () => { sliderTouching = false; }, { passive: true });
     sliderMax.addEventListener('touchend', () => { sliderTouching = false; }, { passive: true });
-
-    sliderMin.addEventListener('input', () => {
-      if (parseInt(sliderMin.value) > parseInt(sliderMax.value)) sliderMin.value = sliderMax.value;
-      updateSliderUI();
-      applyRangeFilter();
-    });
-
-    sliderMax.addEventListener('input', () => {
-      if (parseInt(sliderMax.value) < parseInt(sliderMin.value)) sliderMax.value = sliderMin.value;
-      updateSliderUI();
-      applyRangeFilter();
-    });
-
+    sliderMin.addEventListener('input', () => { if (parseInt(sliderMin.value) > parseInt(sliderMax.value)) sliderMin.value = sliderMax.value; updateSliderUI(); applyRangeFilter(); });
+    sliderMax.addEventListener('input', () => { if (parseInt(sliderMax.value) < parseInt(sliderMin.value)) sliderMax.value = sliderMin.value; updateSliderUI(); applyRangeFilter(); });
     updateSliderUI();
 
+    // ---- Filter mode ----
     let filterMode = false;
     const sheet = document.getElementById('bottom-sheet');
     const filterBtn = document.getElementById('filter-btn');
     const filterCloseBtn = document.getElementById('filter-close-btn');
     const sheetNormal = document.getElementById('sheet-normal');
     const sheetFilter = document.getElementById('sheet-filter');
-
     function getCollapsedY() { return sheet.clientHeight - 130; }
-    function getHalfY() { return window.innerHeight * 0.5; }
-
     function openFilter() {
-      filterMode = true;
-      filterBtn.classList.add('active');
-      filterCloseBtn.classList.add('visible');
-      sheetNormal.style.display = 'none';
-      sheetFilter.classList.add('visible');
+      filterMode = true; filterBtn.classList.add('active'); filterCloseBtn.classList.add('visible');
+      sheetNormal.style.display = 'none'; sheetFilter.classList.add('visible');
       sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      sheet.style.transform = `translateY(${getHalfY()}px)`;
-      currentY = getHalfY();
+      sheet.style.transform = `translateY(${window.innerHeight * 0.5}px)`; currentY = window.innerHeight * 0.5;
     }
-
     function closeFilter() {
-      filterMode = false;
-      filterBtn.classList.remove('active');
-      filterCloseBtn.classList.remove('visible');
-      sheetNormal.style.display = 'flex';
-      sheetFilter.classList.remove('visible');
+      filterMode = false; filterBtn.classList.remove('active'); filterCloseBtn.classList.remove('visible');
+      sheetNormal.style.display = 'flex'; sheetFilter.classList.remove('visible');
       sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      sheet.style.transform = `translateY(${getCollapsedY()}px)`;
-      currentY = getCollapsedY();
-      sliderMin.value = 0;
-      sliderMax.value = 26;
-      updateSliderUI();
-      applyRangeFilter();
+      sheet.style.transform = `translateY(${getCollapsedY()}px)`; currentY = getCollapsedY();
+      sliderMin.value = 0; sliderMax.value = 26; updateSliderUI(); applyRangeFilter();
     }
-
     filterBtn.addEventListener('click', () => filterMode ? closeFilter() : openFilter());
     filterCloseBtn.addEventListener('click', closeFilter);
 
+    // ---- Map events ----
     let moveTimer = null;
-    map.on('move', () => {
-      highlightParking();
-      clearTimeout(moveTimer);
-      moveTimer = setTimeout(checkParking, 150);
-    });
+    map.on('move', () => { highlightParking(); clearTimeout(moveTimer); moveTimer = setTimeout(checkParking, 150); });
     map.on('zoomend', checkParking);
 
     const btn = document.getElementById('action-btn');
@@ -626,22 +675,16 @@
     const divider = document.getElementById('sheet-divider');
     let currentHighlightId = null;
     let currentY = getCollapsedY();
+    let currentParkingProps = null;
 
     function highlightParking() {
       if (!map.getLayer('helsinki-parkit-highlight')) return;
-      const centerPixel = map.project(map.getCenter());
-      const features = map.queryRenderedFeatures(centerPixel, { layers: ['helsinki-parkit-fill'] });
+      const features = map.queryRenderedFeatures(map.project(map.getCenter()), { layers: ['helsinki-parkit-fill'] });
       if (features.length > 0) {
         const id = features[0].properties['hel:id'];
-        if (id !== currentHighlightId) {
-          currentHighlightId = id;
-          map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], id]);
-        }
+        if (id !== currentHighlightId) { currentHighlightId = id; map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], id]); }
       } else {
-        if (currentHighlightId !== null) {
-          currentHighlightId = null;
-          map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], -1]);
-        }
+        if (currentHighlightId !== null) { currentHighlightId = null; map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], -1]); }
       }
     }
 
@@ -650,7 +693,6 @@
       if (raw.includes('KYMP') || raw.includes('HEL') || raw.includes('Helsinki')) return 'Helsingin kaupunki';
       return raw;
     }
-
     function getTypeName(raw) {
       if (!raw) return '-';
       const lower = raw.toLowerCase();
@@ -660,7 +702,6 @@
       if (lower.includes('asukaspysäköinti')) return 'Asukaspysäköinti';
       return raw;
     }
-
     function getPriceText(luokka) {
       if (!luokka) return '-';
       const lower = luokka.toLowerCase();
@@ -669,34 +710,26 @@
       if (lower.includes('asukas')) return 'Asukaspysäköinti (tunnus vaaditaan)';
       return luokka;
     }
-
     function formatHours(voimassaolo) {
-      if (!voimassaolo) {
-        return `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;
-      }
+      if (!voimassaolo) return `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;
       return `
         <div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${voimassaolo}</span></div>
         <div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${voimassaolo}</span></div>
-        <div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>
-      `;
+        <div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;
     }
 
     function checkParking() {
       if (filterMode) return;
       const zoom = map.getZoom();
       if (zoom < 13) {
-        summaryHeader.textContent = '';
-        summaryType.textContent = '';
-        details.innerHTML = '';
-        divider.style.display = 'none';
-        btn.textContent = 'Zoomaa karttaa nähdäksesi pysäköintialueet';
-        btn.classList.remove('active');
-        return;
+        summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = '';
+        divider.style.display = 'none'; btn.textContent = 'Zoomaa karttaa nähdäksesi pysäköintialueet';
+        btn.classList.remove('active'); currentParkingProps = null; return;
       }
-      const centerPixel = map.project(map.getCenter());
-      const features = map.queryRenderedFeatures(centerPixel, { layers: ['helsinki-parkit-fill'] });
+      const features = map.queryRenderedFeatures(map.project(map.getCenter()), { layers: ['helsinki-parkit-fill'] });
       if (features.length > 0) {
         const p = features[0].properties;
+        currentParkingProps = p;
         const owner = getOwnerName(p['hel:datanomistaja']);
         const kesto = p['hel:kesto'] || null;
         const voimassaolo = p['hel:voimassaolo'] || null;
@@ -706,76 +739,137 @@
         const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
         summaryHeader.textContent = `${owner}  |  ${kestoText}`;
         summaryType.textContent = tyyppi;
-        details.innerHTML = `
-          ${formatHours(voimassaolo)}
-          <p class="price-label">Hinta:</p>
-          <p class="price-value">${hinta}</p>
-        `;
-        divider.style.display = 'block';
-        btn.textContent = 'Pysäköi tähän';
-        btn.classList.add('active');
+        details.innerHTML = `${formatHours(voimassaolo)}<p class="price-label">Hinta:</p><p class="price-value">${hinta}</p>`;
+        divider.style.display = 'block'; btn.textContent = 'Pysäköi tähän'; btn.classList.add('active');
       } else {
-        summaryHeader.textContent = '';
-        summaryType.textContent = '';
-        details.innerHTML = '';
-        divider.style.display = 'none';
-        btn.textContent = 'Valitse pysäköintialue';
-        btn.classList.remove('active');
+        currentParkingProps = null;
+        summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = '';
+        divider.style.display = 'none'; btn.textContent = 'Valitse pysäköintialue'; btn.classList.remove('active');
       }
     }
+
+    // ---- PARKING OVERLAY ----
+    const overlay = document.getElementById('parking-overlay');
+
+    function openParkingOverlay(p) {
+      // Fill Box 1
+      const areaCode = p['hel:id'] || '—';
+      const owner = getOwnerName(p['hel:datanomistaja']);
+      const kesto = p['hel:kesto'] || null;
+      const luokka = p['hel:luokka_nimi'] || '';
+      const tyyppi = getTypeName(p['hel:paikan_asento']);
+      const voimassaolo = p['hel:voimassaolo'] || 'Kaikki ajat';
+      const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
+      const isIlmainen = luokka.toLowerCase().includes('ilmainen');
+
+      document.getElementById('p-code').textContent = areaCode;
+      document.getElementById('p-owner').textContent = owner;
+      document.getElementById('p-meta').textContent = `${tyyppi} · ${kestoText} · ${voimassaolo}`;
+
+      // Box 2 — time slider
+      const maxHours = kesto ? (kestoToMinutes(kesto) / 60) : 24;
+      const sliderSteps = Math.max(1, Math.round(maxHours * 4)); // 15min steps
+      const timeSlider = document.getElementById('p-time-slider');
+      timeSlider.min = 1;
+      timeSlider.max = sliderSteps;
+      timeSlider.value = Math.min(4, sliderSteps); // default 1h
+      document.getElementById('p-time-max-label').textContent = `Max. ${kestoText}`;
+      updateTimeDisplay(isIlmainen);
+
+      timeSlider.oninput = () => updateTimeDisplay(isIlmainen);
+      document.getElementById('time-minus').onclick = () => { if (parseInt(timeSlider.value) > 1) { timeSlider.value = parseInt(timeSlider.value) - 1; updateTimeDisplay(isIlmainen); } };
+      document.getElementById('time-plus').onclick = () => { if (parseInt(timeSlider.value) < parseInt(timeSlider.max)) { timeSlider.value = parseInt(timeSlider.value) + 1; updateTimeDisplay(isIlmainen); } };
+
+      // Box 3 — vehicles from localStorage
+      loadVehicles();
+
+      overlay.classList.add('open');
+    }
+
+    function updateTimeDisplay(isIlmainen) {
+      const steps = parseInt(document.getElementById('p-time-slider').value);
+      const totalMin = steps * 15;
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      const label = h > 0 ? `${h}h ${m > 0 ? m + 'min' : ''}`.trim() : `${m}min`;
+      document.getElementById('p-time-display').textContent = label;
+      document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(steps * 0.5).toFixed(2)} €`;
+    }
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      overlay.classList.remove('open');
+    });
+
+    btn.addEventListener('click', () => {
+      if (currentParkingProps) openParkingOverlay(currentParkingProps);
+    });
+
+    // ---- Vehicles ----
+    function loadVehicles() {
+      const sel = document.getElementById('vehicle-select');
+      const saved = JSON.parse(localStorage.getItem('vehicles') || '[]');
+      sel.innerHTML = '<option value="">Valitse ajoneuvo...</option>';
+      saved.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+      const last = localStorage.getItem('lastVehicle');
+      if (last) sel.value = last;
+      sel.onchange = () => localStorage.setItem('lastVehicle', sel.value);
+    }
+
+    document.getElementById('add-vehicle-btn').addEventListener('click', () => {
+      const reg = prompt('Syötä rekisterinumero (esim. ABC-123)');
+      if (reg && reg.trim()) {
+        const saved = JSON.parse(localStorage.getItem('vehicles') || '[]');
+        if (!saved.includes(reg.trim().toUpperCase())) {
+          saved.push(reg.trim().toUpperCase());
+          localStorage.setItem('vehicles', JSON.stringify(saved));
+        }
+        localStorage.setItem('lastVehicle', reg.trim().toUpperCase());
+        loadVehicles();
+      }
+    });
+
+    // ---- Payment options ----
+    document.querySelectorAll('.payment-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.payment-option').forEach(o => {
+          o.classList.remove('selected');
+          o.querySelector('.payment-radio').innerHTML = '';
+        });
+        opt.classList.add('selected');
+        opt.querySelector('.payment-radio').innerHTML = '<div></div>';
+      });
+    });
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      const vehicle = document.getElementById('vehicle-select').value;
+      if (!vehicle) { alert('Valitse ensin ajoneuvo'); return; }
+      alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${vehicle}\nAlue: ${document.getElementById('p-code').textContent}`);
+    });
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    let startY = 0;
-    let startTranslate = 0;
-    let lastY = 0;
-    let lastTime = 0;
-    let velocity = 0;
-    let isDragging = false;
-
-    function snapTo(targetY) {
-      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      sheet.style.transform = `translateY(${targetY}px)`;
-      currentY = targetY;
-    }
-
+    // ---- Sheet drag ----
+    let startY = 0, startTranslate = 0, lastY = 0, lastTime = 0, velocity = 0, isDragging = false;
+    function snapTo(targetY) { sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; sheet.style.transform = `translateY(${targetY}px)`; currentY = targetY; }
     sheet.addEventListener('touchstart', (e) => {
       if (sliderTouching || e.target === sliderMin || e.target === sliderMax) return;
-      startY = e.touches[0].clientY;
-      lastY = startY;
-      lastTime = Date.now();
-      velocity = 0;
-      const matrix = new DOMMatrix(getComputedStyle(sheet).transform);
-      startTranslate = matrix.m42;
-      currentY = startTranslate;
-      isDragging = true;
-      sheet.style.transition = 'none';
+      startY = e.touches[0].clientY; lastY = startY; lastTime = Date.now(); velocity = 0;
+      const matrix = new DOMMatrix(getComputedStyle(sheet).transform); startTranslate = matrix.m42; currentY = startTranslate;
+      isDragging = true; sheet.style.transition = 'none';
     }, { passive: true });
-
     sheet.addEventListener('touchmove', (e) => {
       if (!isDragging) return;
-      const touch = e.touches[0].clientY;
-      const now = Date.now();
-      const dt = now - lastTime;
-      if (dt > 0) velocity = (touch - lastY) / dt;
-      lastY = touch;
-      lastTime = now;
-      const delta = touch - startY;
-      currentY = Math.max(0, Math.min(getCollapsedY(), startTranslate + delta));
+      const touch = e.touches[0].clientY; const now = Date.now(); const dt = now - lastTime;
+      if (dt > 0) velocity = (touch - lastY) / dt; lastY = touch; lastTime = now;
+      currentY = Math.max(0, Math.min(getCollapsedY(), startTranslate + (touch - startY)));
       sheet.style.transform = `translateY(${currentY}px)`;
     }, { passive: true });
-
     sheet.addEventListener('touchend', () => {
-      if (!isDragging) return;
-      isDragging = false;
+      if (!isDragging) return; isDragging = false;
       const collapsed = getCollapsedY();
-      if (velocity > 0.5) {
-        snapTo(collapsed);
-      } else if (velocity < -0.5) {
-        snapTo(0);
-      } else {
-        snapTo(currentY < collapsed / 2 ? 0 : collapsed);
-      }
+      if (velocity > 0.5) snapTo(collapsed);
+      else if (velocity < -0.5) snapTo(0);
+      else snapTo(currentY < collapsed / 2 ? 0 : collapsed);
     });
   </script>
 </body>
