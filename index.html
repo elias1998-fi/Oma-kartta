@@ -12,32 +12,21 @@
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      width: 100%; height: 100%;
-      overflow: hidden;
-      background: #f0f1f2;
-      height: -webkit-fill-available;
-    }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
     #map { width: 100%; height: 100%; height: -webkit-fill-available; }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
 
     #center-pointer {
-      position: absolute;
-      top: 50%; left: 50%;
+      position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -100%);
-      width: 48px; height: 48px;
-      pointer-events: none;
-      z-index: 10;
+      width: 48px; height: 48px; pointer-events: none; z-index: 10;
     }
 
     .map-btn {
-      position: fixed; z-index: 25;
-      width: 39px; height: 39px;
-      background: white; border: none;
-      border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      cursor: pointer;
+      position: fixed; z-index: 25; width: 39px; height: 39px;
+      background: white; border: none; border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
     }
     .map-btn svg { width: 18px; height: 18px; }
@@ -50,28 +39,15 @@
     #location-btn { top: max(64px, calc(env(safe-area-inset-top) + 48px)); right: max(16px, env(safe-area-inset-right)); }
 
     #bottom-sheet {
-      position: absolute; left: 0; right: 0; bottom: 0;
-      height: 80vh; background: white;
-      border-radius: 20px 20px 0 0;
-      box-shadow: 0 -2px 16px rgba(0,0,0,0.15);
-      z-index: 20;
-      transform: translateY(calc(100% - 130px));
-      touch-action: none;
+      position: absolute; left: 0; right: 0; bottom: 0; height: 80vh;
+      background: white; border-radius: 20px 20px 0 0;
+      box-shadow: 0 -2px 16px rgba(0,0,0,0.15); z-index: 20;
+      transform: translateY(calc(100% - 130px)); touch-action: none;
       display: flex; flex-direction: column;
     }
-    #drag-handle-area {
-      width: 100%; padding: 14px 0 10px 0;
-      display: flex; justify-content: center;
-      flex-shrink: 0; position: relative;
-    }
+    #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
-    #filter-close-btn {
-      position: absolute; right: 16px; top: 10px;
-      width: 28px; height: 28px; background: #f0f0f0;
-      border: none; border-radius: 50%; cursor: pointer;
-      display: none; align-items: center; justify-content: center;
-      font-size: 16px; color: #555; z-index: 5;
-    }
+    #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
     #filter-close-btn.visible { display: flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
     #sheet-summary { padding: 0 20px 12px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
@@ -99,25 +75,13 @@
     .slider-ticks { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-top: 4px; }
     #filter-result { margin-top: 16px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
 
-    #btn-container {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      z-index: 30; background: white;
-      padding: 12px 16px;
-      padding-bottom: max(24px, env(safe-area-inset-bottom));
-    }
-    #action-btn {
-      width: 100%; height: 58px; border: none; border-radius: 16px;
-      font-size: 17px; font-weight: bold; font-family: Arial, sans-serif;
-      color: white; background: #0C0243; opacity: 0.7;
-      cursor: pointer; transition: opacity 0.2s ease; text-align: center;
-    }
+    #btn-container { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: white; padding: 12px 16px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+    #action-btn { width: 100%; height: 58px; border: none; border-radius: 16px; font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; opacity: 0.7; cursor: pointer; transition: opacity 0.2s ease; text-align: center; }
     #action-btn.active { opacity: 1; }
 
     /* ===== PARKING OVERLAY ===== */
     #parking-overlay {
-      position: fixed; inset: 0;
-      background: #f2f3f5;
-      z-index: 100;
+      position: fixed; inset: 0; background: #f2f3f5; z-index: 100;
       display: flex; flex-direction: column;
       transform: translateX(100%);
       transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -127,158 +91,79 @@
     #parking-header {
       display: flex; align-items: center;
       padding: max(14px, env(safe-area-inset-top)) 16px 12px 16px;
-      background: white;
-      border-bottom: 1px solid #eee;
-      flex-shrink: 0;
+      background: white; border-bottom: 1px solid #eee; flex-shrink: 0;
     }
-    #back-btn {
-      width: 34px; height: 34px;
-      background: #f0f0f0; border: none; border-radius: 50%;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      font-size: 16px; color: #333; margin-right: 10px;
-    }
+    #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
 
-    /* Cards */
-    .p-cards-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 10px 14px 0 14px;
-      gap: 8px;
-      overflow: hidden;
-    }
+    .p-cards-container { flex: 1; display: flex; flex-direction: column; padding: 10px 14px 0 14px; gap: 8px; overflow: hidden; }
 
-    .p-card {
-      background: white;
-      border-radius: 14px;
-      padding: 12px 14px;
-      font-family: Arial, sans-serif;
-      flex-shrink: 0;
-    }
-
-    .p-card-title {
-      font-size: 11px; font-weight: bold; color: #888;
-      text-transform: uppercase; letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
+    .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
+    .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
 
     /* Box 1 */
     .area-row { display: flex; align-items: center; gap: 10px; }
-    .area-code-badge {
-      background: #0C0243; color: white;
-      font-size: 12px; font-weight: bold;
-      padding: 3px 8px; border-radius: 6px;
-      font-family: Arial, sans-serif;
-    }
+    .area-code-badge { background: #0C0243; color: white; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; font-family: Arial, sans-serif; }
     .area-name { font-size: 14px; font-weight: bold; color: #222; }
     .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
 
-    /* Box 2 - Time drum */
-    .time-box-row {
-      display: flex; align-items: center; gap: 12px;
+    /* Box 2 - Time */
+    .time-card-inner {
+      display: flex; align-items: center; gap: 0;
     }
-    .drum-wrapper {
-      flex: 1;
-      height: 72px;
-      overflow: hidden;
-      position: relative;
-      cursor: grab;
-      user-select: none;
-    }
-    .drum-wrapper::before, .drum-wrapper::after {
-      content: '';
-      position: absolute; left: 0; right: 0; height: 22px;
-      z-index: 2; pointer-events: none;
-    }
-    .drum-wrapper::before { top: 0; background: linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0)); }
-    .drum-wrapper::after { bottom: 0; background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0)); }
-    .drum-highlight {
-      position: absolute; left: 0; right: 0;
-      top: 50%; transform: translateY(-50%);
-      height: 28px;
-      border-top: 1.5px solid #0C0243;
-      border-bottom: 1.5px solid #0C0243;
-      z-index: 1; pointer-events: none;
-    }
-    .drum-track {
-      display: flex; flex-direction: column;
-      transition: transform 0.15s ease;
-    }
-    .drum-item {
-      height: 24px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 15px; font-weight: 500; color: #aaa;
-      flex-shrink: 0;
-    }
-    .drum-item.active { color: #0C0243; font-weight: bold; font-size: 17px; }
 
-    .time-price-col { text-align: right; }
-    .time-price-label { font-size: 11px; color: #888; }
-    .time-price-val { font-size: 18px; font-weight: bold; color: #0C0243; }
+    .time-big-display {
+      flex: 1;
+    }
+    .time-big-number {
+      font-size: 42px; font-weight: bold; color: #0C0243;
+      line-height: 1; font-family: Arial, sans-serif;
+    }
+    .time-big-unit {
+      font-size: 14px; color: #888; margin-top: 2px; font-family: Arial, sans-serif;
+    }
+
+    /* Drum roller — invisible scroll wheel */
+    .drum-scroll-zone {
+      width: 60px; height: 80px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: grab; user-select: none; flex-shrink: 0;
+      position: relative;
+    }
+    .drum-scroll-zone::before {
+      content: '';
+      position: absolute; inset: 0;
+      border: 2px solid #eee; border-radius: 12px;
+      background: #f8f8f8;
+    }
+    .drum-arrows {
+      display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; z-index: 1;
+    }
+    .drum-arrow { font-size: 14px; color: #bbb; line-height: 1; }
+    .drum-arrow.mid { font-size: 10px; color: #ddd; }
+
+    .time-price-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;
+    }
+    .time-price-label { font-size: 13px; color: #888; }
+    .time-price-val { font-size: 16px; font-weight: bold; color: #0C0243; }
 
     /* Box 3 - Vehicle */
-    .vehicle-display {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .plate {
-      display: flex; align-items: center;
-      border: 2px solid #333; border-radius: 5px;
-      overflow: hidden; height: 30px;
-      font-family: 'Arial', sans-serif;
-      flex-shrink: 0;
-    }
-    .plate-eu {
-      background: #0C0243; color: white;
-      font-size: 8px; font-weight: bold;
-      padding: 0 3px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      height: 100%;
-      letter-spacing: 0;
-    }
+    .vehicle-display { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .plate { display: flex; align-items: center; border: 2px solid #333; border-radius: 5px; overflow: hidden; height: 30px; flex-shrink: 0; }
+    .plate-eu { background: #0C0243; color: white; font-size: 8px; font-weight: bold; padding: 0 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
     .plate-eu .eu-stars { font-size: 6px; margin-bottom: 1px; }
     .plate-eu .eu-fi { font-size: 7px; }
-    .plate-text {
-      padding: 0 8px;
-      font-size: 14px; font-weight: bold; color: #222;
-      letter-spacing: 1px;
-    }
+    .plate-text { padding: 0 8px; font-size: 14px; font-weight: bold; color: #222; letter-spacing: 1px; }
     .vehicle-nickname { font-size: 14px; color: #444; }
-    .vehicle-selector-wrap { margin-top: 8px; }
-    .vehicle-select {
-      width: 100%; padding: 8px 12px;
-      border: 1.5px solid #eee; border-radius: 10px;
-      font-size: 13px; font-family: Arial, sans-serif; color: #333;
-      background: white;
-      appearance: none; -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-    }
+    .vehicle-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 13px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
 
     /* Box 4 - Payment */
-    .payment-select {
-      width: 100%; padding: 8px 12px;
-      border: 1.5px solid #eee; border-radius: 10px;
-      font-size: 14px; font-family: Arial, sans-serif; color: #333;
-      background: white;
-      appearance: none; -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-    }
+    .payment-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 14px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
 
-    /* Start button */
-    #start-btn-container {
-      padding: 10px 14px;
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
-      flex-shrink: 0;
-    }
-    #start-btn {
-      width: 100%; height: 54px; border: none; border-radius: 16px;
-      font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;
-      color: white; background: #0C0243; cursor: pointer;
-    }
+    #start-btn-container { padding: 10px 14px; padding-bottom: max(20px, env(safe-area-inset-bottom)); flex-shrink: 0; }
+    #start-btn { width: 100%; height: 54px; border: none; border-radius: 16px; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -320,10 +205,7 @@
       <button id="filter-close-btn">✕</button>
     </div>
     <div id="sheet-normal">
-      <div id="sheet-summary">
-        <div id="summary-header"></div>
-        <div id="summary-type"></div>
-      </div>
+      <div id="sheet-summary"><div id="summary-header"></div><div id="summary-type"></div></div>
       <hr id="sheet-divider" />
       <div id="sheet-details"></div>
     </div>
@@ -337,9 +219,7 @@
         <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0" />
         <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26" />
       </div>
-      <div class="slider-ticks">
-        <span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span>
-      </div>
+      <div class="slider-ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span></div>
       <div id="filter-result"></div>
     </div>
   </div>
@@ -357,7 +237,7 @@
 
     <div class="p-cards-container">
 
-      <!-- Box 1: Area -->
+      <!-- Box 1 -->
       <div class="p-card">
         <div class="p-card-title">Valittu alue</div>
         <div class="area-row">
@@ -369,43 +249,45 @@
         </div>
       </div>
 
-      <!-- Box 2: Time drum -->
+      <!-- Box 2 -->
       <div class="p-card">
         <div class="p-card-title">Pysäköintiaika</div>
-        <div class="time-box-row">
-          <div class="drum-wrapper" id="drum-wrapper">
-            <div class="drum-highlight"></div>
-            <div class="drum-track" id="drum-track"></div>
+        <div class="time-card-inner">
+          <div class="time-big-display">
+            <div class="time-big-number" id="time-big">1h 00min</div>
+            <div class="time-big-unit">Pyöritä rullaa muuttaaksesi aikaa</div>
           </div>
-          <div class="time-price-col">
-            <div class="time-price-label">Arvioitu hinta</div>
-            <div class="time-price-val" id="p-price">Ilmainen</div>
+          <div class="drum-scroll-zone" id="drum-scroll-zone">
+            <div class="drum-arrows">
+              <div class="drum-arrow">▲</div>
+              <div class="drum-arrow mid">—</div>
+              <div class="drum-arrow">▼</div>
+            </div>
           </div>
+        </div>
+        <div class="time-price-row">
+          <span class="time-price-label">Arvioitu hinta</span>
+          <span class="time-price-val" id="p-price">Ilmainen</span>
         </div>
       </div>
 
-      <!-- Box 3: Vehicle -->
+      <!-- Box 3 -->
       <div class="p-card">
         <div class="p-card-title">Ajoneuvo</div>
-        <div class="vehicle-display" id="vehicle-display">
+        <div class="vehicle-display">
           <div class="plate">
-            <div class="plate-eu">
-              <div class="eu-stars">★★★</div>
-              <div class="eu-fi">FI</div>
-            </div>
+            <div class="plate-eu"><div class="eu-stars">★★★</div><div class="eu-fi">FI</div></div>
             <div class="plate-text" id="plate-text">FHY-857</div>
           </div>
           <div class="vehicle-nickname" id="vehicle-nickname">Äitin auto</div>
         </div>
-        <div class="vehicle-selector-wrap">
-          <select class="vehicle-select" id="vehicle-select">
-            <option value="FHY-857|Äitin auto">Äitin auto — FHY-857</option>
-            <option value="add">+ Lisää uusi ajoneuvo...</option>
-          </select>
-        </div>
+        <select class="vehicle-select" id="vehicle-select">
+          <option value="FHY-857|Äitin auto">Äitin auto — FHY-857</option>
+          <option value="add">+ Lisää uusi ajoneuvo...</option>
+        </select>
       </div>
 
-      <!-- Box 4: Payment -->
+      <!-- Box 4 -->
       <div class="p-card">
         <div class="p-card-title">Maksutapa</div>
         <select class="payment-select" id="payment-select">
@@ -424,20 +306,9 @@
 
   <script>
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
+    function transformRequest(url) { if (url.includes('digitransit.fi')) return { url, headers: { 'digitransit-subscription-key': API_KEY } }; return { url }; }
 
-    function transformRequest(url, resourceType) {
-      if (url.includes('digitransit.fi')) return { url, headers: { 'digitransit-subscription-key': API_KEY } };
-      return { url };
-    }
-
-    const map = new maplibregl.Map({
-      container: 'map', style: 'omakartta_style.json',
-      center: [24.9354, 60.1699], zoom: 12, minZoom: 5, maxZoom: 20,
-      transformRequest, maxTileCacheSize: 50, fadeDuration: 100,
-      dragRotate: false, touchPitch: false, pitchWithRotate: false,
-      keyboard: false, attributionControl: false,
-    });
-
+    const map = new maplibregl.Map({ container: 'map', style: 'omakartta_style.json', center: [24.9354, 60.1699], zoom: 12, minZoom: 5, maxZoom: 20, transformRequest, maxTileCacheSize: 50, fadeDuration: 100, dragRotate: false, touchPitch: false, pitchWithRotate: false, keyboard: false, attributionControl: false });
     map.touchZoomRotate.disableRotation();
 
     function kestoToMinutes(kesto) {
@@ -449,8 +320,7 @@
     }
 
     map.on('load', () => {
-      map.touchZoomRotate.disableRotation();
-      map.dragRotate.disable();
+      map.touchZoomRotate.disableRotation(); map.dragRotate.disable();
       fetch('helsinki_parkit.geojson').then(r => r.json()).then(data => {
         data.features = data.features.map(f => { f.properties.kesto_min = kestoToMinutes(f.properties['hel:kesto']); return f; });
         map.addSource('helsinki-parkit', { type: 'geojson', data });
@@ -467,18 +337,13 @@
     document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
     // Filter slider
-    const sliderMin = document.getElementById('slider-min');
-    const sliderMax = document.getElementById('slider-max');
-    const rangeFill = document.getElementById('range-fill');
-    const sliderValueEl = document.getElementById('slider-value');
-    const filterResult = document.getElementById('filter-result');
-
+    const sliderMin = document.getElementById('slider-min'), sliderMax = document.getElementById('slider-max');
+    const rangeFill = document.getElementById('range-fill'), sliderValueEl = document.getElementById('slider-value'), filterResult = document.getElementById('filter-result');
     function idxToMinutes(idx) { if (idx === 0) return 0; if (idx === 1) return 30; if (idx >= 26) return 9999; return (idx - 1) * 60; }
     function formatHourLabel(idx) { if (idx === 0) return '0h'; if (idx === 1) return '30min'; if (idx >= 26) return '24h+'; return `${idx - 1}h`; }
     function updateSliderUI() {
       const minIdx = parseInt(sliderMin.value), maxIdx = parseInt(sliderMax.value);
-      rangeFill.style.left = (minIdx / 26 * 100) + '%';
-      rangeFill.style.width = ((maxIdx - minIdx) / 26 * 100) + '%';
+      rangeFill.style.left = (minIdx / 26 * 100) + '%'; rangeFill.style.width = ((maxIdx - minIdx) / 26 * 100) + '%';
       if (minIdx === 0 && maxIdx === 26) { sliderValueEl.textContent = 'Kaikki'; filterResult.textContent = ''; }
       else { sliderValueEl.textContent = `${formatHourLabel(minIdx)} – ${formatHourLabel(maxIdx)}`; filterResult.textContent = `Näytetään ${formatHourLabel(minIdx)} – ${formatHourLabel(maxIdx)} pysäköintialueet`; }
     }
@@ -498,25 +363,11 @@
     updateSliderUI();
 
     let filterMode = false;
-    const sheet = document.getElementById('bottom-sheet');
-    const filterBtn = document.getElementById('filter-btn');
-    const filterCloseBtn = document.getElementById('filter-close-btn');
-    const sheetNormal = document.getElementById('sheet-normal');
-    const sheetFilter = document.getElementById('sheet-filter');
+    const sheet = document.getElementById('bottom-sheet'), filterBtn = document.getElementById('filter-btn');
+    const filterCloseBtn = document.getElementById('filter-close-btn'), sheetNormal = document.getElementById('sheet-normal'), sheetFilter = document.getElementById('sheet-filter');
     function getCollapsedY() { return sheet.clientHeight - 130; }
-    function openFilter() {
-      filterMode = true; filterBtn.classList.add('active'); filterCloseBtn.classList.add('visible');
-      sheetNormal.style.display = 'none'; sheetFilter.classList.add('visible');
-      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      sheet.style.transform = `translateY(${window.innerHeight * 0.5}px)`; currentY = window.innerHeight * 0.5;
-    }
-    function closeFilter() {
-      filterMode = false; filterBtn.classList.remove('active'); filterCloseBtn.classList.remove('visible');
-      sheetNormal.style.display = 'flex'; sheetFilter.classList.remove('visible');
-      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      sheet.style.transform = `translateY(${getCollapsedY()}px)`; currentY = getCollapsedY();
-      sliderMin.value = 0; sliderMax.value = 26; updateSliderUI(); applyRangeFilter();
-    }
+    function openFilter() { filterMode = true; filterBtn.classList.add('active'); filterCloseBtn.classList.add('visible'); sheetNormal.style.display = 'none'; sheetFilter.classList.add('visible'); sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; sheet.style.transform = `translateY(${window.innerHeight * 0.5}px)`; currentY = window.innerHeight * 0.5; }
+    function closeFilter() { filterMode = false; filterBtn.classList.remove('active'); filterCloseBtn.classList.remove('visible'); sheetNormal.style.display = 'flex'; sheetFilter.classList.remove('visible'); sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; sheet.style.transform = `translateY(${getCollapsedY()}px)`; currentY = getCollapsedY(); sliderMin.value = 0; sliderMax.value = 26; updateSliderUI(); applyRangeFilter(); }
     filterBtn.addEventListener('click', () => filterMode ? closeFilter() : openFilter());
     filterCloseBtn.addEventListener('click', closeFilter);
 
@@ -524,11 +375,7 @@
     map.on('move', () => { highlightParking(); clearTimeout(moveTimer); moveTimer = setTimeout(checkParking, 150); });
     map.on('zoomend', checkParking);
 
-    const btn = document.getElementById('action-btn');
-    const summaryHeader = document.getElementById('summary-header');
-    const summaryType = document.getElementById('summary-type');
-    const details = document.getElementById('sheet-details');
-    const divider = document.getElementById('sheet-divider');
+    const btn = document.getElementById('action-btn'), summaryHeader = document.getElementById('summary-header'), summaryType = document.getElementById('summary-type'), details = document.getElementById('sheet-details'), divider = document.getElementById('sheet-divider');
     let currentHighlightId = null, currentY = getCollapsedY(), currentParkingProps = null;
 
     function highlightParking() {
@@ -540,10 +387,8 @@
     function getOwnerName(raw) { if (!raw) return 'Tuntematon'; if (raw.includes('KYMP') || raw.includes('HEL') || raw.includes('Helsinki')) return 'Helsingin kaupunki'; return raw; }
     function getTypeName(raw) { if (!raw) return '-'; const l = raw.toLowerCase(); if (l.includes('kadunvarsi')) return 'Kadunvarsipysäköinti'; if (l.includes('halli')) return 'Pysäköintihalli'; if (l.includes('tori') || l.includes('kenttä')) return 'Pysäköintikenttä'; return raw; }
     function getPriceText(luokka) { if (!luokka) return '-'; const l = luokka.toLowerCase(); if (l.includes('ilmainen')) return 'Ilmainen pysäköintikiekolla'; if (l.includes('maksullinen')) return 'Maksullinen'; if (l.includes('asukas')) return 'Asukaspysäköinti'; return luokka; }
-    function formatHours(v) {
-      if (!v) return `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;
-      return `<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;
-    }
+    function formatHours(v) { if (!v) return `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`; return `<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`; }
+
     function checkParking() {
       if (filterMode) return;
       const zoom = map.getZoom();
@@ -556,83 +401,54 @@
         summaryType.textContent = getTypeName(p['hel:paikan_asento']);
         details.innerHTML = `${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi'] || '')}</p>`;
         divider.style.display = 'block'; btn.textContent = 'Pysäköi tähän'; btn.classList.add('active');
-      } else {
-        currentParkingProps = null; summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = '';
-        divider.style.display = 'none'; btn.textContent = 'Valitse pysäköintialue'; btn.classList.remove('active');
-      }
+      } else { currentParkingProps = null; summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = ''; divider.style.display = 'none'; btn.textContent = 'Valitse pysäköintialue'; btn.classList.remove('active'); }
     }
 
-    // ===== DRUM ROLLER =====
-    const DRUM_STEP = 15; // minutes per step
-    let drumIndex = 4; // default = 4 steps = 60min
-    let drumMaxSteps = 96; // default 24h
+    // ===== TIME DRUM =====
+    let parkingMinutes = 60;
+    let parkingMaxMinutes = 9999;
     let isIlmainen = false;
+    let drumDragStartY = null, drumDragStartMinutes = null;
+    const PIXELS_PER_MINUTE = 2; // sensitivity: 2px = 1 min
 
-    function buildDrum(maxSteps) {
-      const track = document.getElementById('drum-track');
-      track.innerHTML = '';
-      // padding items top/bottom
-      for (let i = 0; i < 2; i++) { const d = document.createElement('div'); d.className = 'drum-item'; d.textContent = ''; track.appendChild(d); }
-      for (let i = 1; i <= maxSteps; i++) {
-        const d = document.createElement('div'); d.className = 'drum-item';
-        const totalMin = i * DRUM_STEP;
-        const h = Math.floor(totalMin / 60), m = totalMin % 60;
-        d.textContent = h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m}min`;
-        d.dataset.idx = i;
-        track.appendChild(d);
-      }
-      for (let i = 0; i < 2; i++) { const d = document.createElement('div'); d.className = 'drum-item'; d.textContent = ''; track.appendChild(d); }
+    function formatTimeDisplay(mins) {
+      mins = Math.max(1, Math.min(mins, parkingMaxMinutes));
+      if (mins < 60) return `${mins}min`;
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return m > 0 ? `${h}h ${m}min` : `${h}h`;
     }
 
-    function setDrumIndex(idx, maxSteps) {
-      drumIndex = Math.max(1, Math.min(idx, maxSteps));
-      const track = document.getElementById('drum-track');
-      const itemH = 24;
-      // item at drumIndex+2 (offset by 2 padding items) should be centered
-      // center = 36px (half of 72px), item center = (drumIndex+2-1)*itemH + itemH/2 = (drumIndex+1)*24+12
-      const offset = 36 - ((drumIndex + 1) * itemH + itemH / 2);
-      track.style.transform = `translateY(${offset}px)`;
-      // update active
-      track.querySelectorAll('.drum-item').forEach(d => {
-        d.classList.toggle('active', parseInt(d.dataset.idx) === drumIndex);
-      });
-      updatePriceDisplay();
+    function updateTimeDisplay() {
+      parkingMinutes = Math.max(1, Math.min(parkingMinutes, parkingMaxMinutes));
+      document.getElementById('time-big').textContent = formatTimeDisplay(parkingMinutes);
+      document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(parkingMinutes / 60 * 1.5).toFixed(2)} €`;
     }
 
-    function updatePriceDisplay() {
-      const totalMin = drumIndex * DRUM_STEP;
-      document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(totalMin / 60 * 1.5).toFixed(2)} €`;
-    }
+    const drumZone = document.getElementById('drum-scroll-zone');
 
-    // Drum touch/drag
-    let drumDragStart = null, drumDragStartIdx = null;
-    const drumWrapper = document.getElementById('drum-wrapper');
-
-    drumWrapper.addEventListener('touchstart', e => {
-      drumDragStart = e.touches[0].clientY;
-      drumDragStartIdx = drumIndex;
-      document.getElementById('drum-track').style.transition = 'none';
+    drumZone.addEventListener('touchstart', e => {
+      drumDragStartY = e.touches[0].clientY;
+      drumDragStartMinutes = parkingMinutes;
     }, { passive: true });
 
-    drumWrapper.addEventListener('touchmove', e => {
-      if (drumDragStart === null) return;
-      const delta = drumDragStart - e.touches[0].clientY;
-      const steps = Math.round(delta / 24);
-      setDrumIndex(drumDragStartIdx + steps, drumMaxSteps);
+    drumZone.addEventListener('touchmove', e => {
+      if (drumDragStartY === null) return;
+      // swipe up = more time, swipe down = less
+      const delta = drumDragStartY - e.touches[0].clientY;
+      const minsDelta = Math.round(delta / PIXELS_PER_MINUTE);
+      parkingMinutes = Math.max(1, Math.min(drumDragStartMinutes + minsDelta, parkingMaxMinutes));
+      updateTimeDisplay();
     }, { passive: true });
 
-    drumWrapper.addEventListener('touchend', () => {
-      document.getElementById('drum-track').style.transition = 'transform 0.15s ease';
-      drumDragStart = null;
-    }, { passive: true });
+    drumZone.addEventListener('touchend', () => { drumDragStartY = null; }, { passive: true });
 
-    // Mouse drag for desktop testing
-    let mouseDragStart = null, mouseDragStartIdx = null;
-    drumWrapper.addEventListener('mousedown', e => { mouseDragStart = e.clientY; mouseDragStartIdx = drumIndex; document.getElementById('drum-track').style.transition = 'none'; });
-    window.addEventListener('mousemove', e => { if (mouseDragStart === null) return; const delta = mouseDragStart - e.clientY; setDrumIndex(mouseDragStartIdx + Math.round(delta / 24), drumMaxSteps); });
-    window.addEventListener('mouseup', () => { if (mouseDragStart !== null) { document.getElementById('drum-track').style.transition = 'transform 0.15s ease'; mouseDragStart = null; } });
+    // Mouse for desktop testing
+    let mouseDragStartY = null, mouseDragStartMin = null;
+    drumZone.addEventListener('mousedown', e => { mouseDragStartY = e.clientY; mouseDragStartMin = parkingMinutes; drumZone.style.cursor = 'grabbing'; });
+    window.addEventListener('mousemove', e => { if (mouseDragStartY === null) return; const delta = mouseDragStartY - e.clientY; parkingMinutes = Math.max(1, Math.min(mouseDragStartMin + Math.round(delta / PIXELS_PER_MINUTE), parkingMaxMinutes)); updateTimeDisplay(); });
+    window.addEventListener('mouseup', () => { if (mouseDragStartY !== null) { mouseDragStartY = null; drumZone.style.cursor = 'grab'; } });
 
-    // ===== OPEN OVERLAY =====
+    // ===== OVERLAY =====
     const overlay = document.getElementById('parking-overlay');
 
     function openParkingOverlay(p) {
@@ -644,24 +460,19 @@
       const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
       const luokka = p['hel:luokka_nimi'] || '';
       isIlmainen = luokka.toLowerCase().includes('ilmainen');
-      drumMaxSteps = kesto ? Math.round(kestoToMinutes(kesto) / DRUM_STEP) : 96;
+      parkingMaxMinutes = kesto ? kestoToMinutes(kesto) : 1440;
+      parkingMinutes = Math.min(60, parkingMaxMinutes);
 
       document.getElementById('p-code').textContent = areaCode;
       document.getElementById('p-owner').textContent = owner;
       document.getElementById('p-meta').textContent = `${tyyppi} · ${kestoText} · ${voimassaolo}`;
-
-      buildDrum(drumMaxSteps);
-      document.getElementById('drum-track').style.transition = 'none';
-      setDrumIndex(Math.min(4, drumMaxSteps), drumMaxSteps);
-      setTimeout(() => { document.getElementById('drum-track').style.transition = 'transform 0.15s ease'; }, 50);
-
+      updateTimeDisplay();
       overlay.classList.add('open');
     }
 
     document.getElementById('back-btn').addEventListener('click', () => overlay.classList.remove('open'));
     btn.addEventListener('click', () => { if (currentParkingProps) openParkingOverlay(currentParkingProps); });
 
-    // Vehicle selector
     document.getElementById('vehicle-select').addEventListener('change', function() {
       if (this.value === 'add') {
         const reg = prompt('Rekisterinumero (esim. ABC-123):');
@@ -683,7 +494,7 @@
       const vehicle = document.getElementById('vehicle-select').value;
       if (!vehicle || vehicle === 'add') { alert('Valitse ensin ajoneuvo'); return; }
       const parts = vehicle.split('|');
-      alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${parts[1]} (${parts[0]})\nAlue: ${document.getElementById('p-code').textContent}`);
+      alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${parts[1]} (${parts[0]})\nAika: ${formatTimeDisplay(parkingMinutes)}\nAlue: ${document.getElementById('p-code').textContent}`);
     });
 
     map.on('error', e => { console.warn('MapLibre virhe:', e.error?.message || e); });
@@ -691,26 +502,9 @@
     // Sheet drag
     let startY = 0, startTranslate = 0, lastY = 0, lastTime = 0, velocity = 0, isDragging = false;
     function snapTo(targetY) { sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; sheet.style.transform = `translateY(${targetY}px)`; currentY = targetY; }
-    sheet.addEventListener('touchstart', (e) => {
-      if (sliderTouching || e.target === sliderMin || e.target === sliderMax) return;
-      startY = e.touches[0].clientY; lastY = startY; lastTime = Date.now(); velocity = 0;
-      const matrix = new DOMMatrix(getComputedStyle(sheet).transform); startTranslate = matrix.m42; currentY = startTranslate;
-      isDragging = true; sheet.style.transition = 'none';
-    }, { passive: true });
-    sheet.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      const touch = e.touches[0].clientY; const now = Date.now(); const dt = now - lastTime;
-      if (dt > 0) velocity = (touch - lastY) / dt; lastY = touch; lastTime = now;
-      currentY = Math.max(0, Math.min(getCollapsedY(), startTranslate + (touch - startY)));
-      sheet.style.transform = `translateY(${currentY}px)`;
-    }, { passive: true });
-    sheet.addEventListener('touchend', () => {
-      if (!isDragging) return; isDragging = false;
-      const collapsed = getCollapsedY();
-      if (velocity > 0.5) snapTo(collapsed);
-      else if (velocity < -0.5) snapTo(0);
-      else snapTo(currentY < collapsed / 2 ? 0 : collapsed);
-    });
+    sheet.addEventListener('touchstart', (e) => { if (sliderTouching || e.target === sliderMin || e.target === sliderMax) return; startY = e.touches[0].clientY; lastY = startY; lastTime = Date.now(); velocity = 0; const matrix = new DOMMatrix(getComputedStyle(sheet).transform); startTranslate = matrix.m42; currentY = startTranslate; isDragging = true; sheet.style.transition = 'none'; }, { passive: true });
+    sheet.addEventListener('touchmove', (e) => { if (!isDragging) return; const touch = e.touches[0].clientY; const now = Date.now(); const dt = now - lastTime; if (dt > 0) velocity = (touch - lastY) / dt; lastY = touch; lastTime = now; currentY = Math.max(0, Math.min(getCollapsedY(), startTranslate + (touch - startY))); sheet.style.transform = `translateY(${currentY}px)`; }, { passive: true });
+    sheet.addEventListener('touchend', () => { if (!isDragging) return; isDragging = false; const collapsed = getCollapsedY(); if (velocity > 0.5) snapTo(collapsed); else if (velocity < -0.5) snapTo(0); else snapTo(currentY < collapsed / 2 ? 0 : collapsed); });
   </script>
 </body>
 </html>
