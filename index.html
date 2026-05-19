@@ -52,12 +52,11 @@
       left: 0;
       right: 0;
       bottom: 0;
-      height: 80vh;
+      height: 100vh;
       background: white;
       border-radius: 20px 20px 0 0;
       box-shadow: 0 -2px 16px rgba(0,0,0,0.15);
       z-index: 20;
-      transform: translateY(calc(100% - 80px));
       touch-action: none;
       display: flex;
       flex-direction: column;
@@ -78,13 +77,10 @@
       border-radius: 2px;
     }
 
-    /* Summary — always visible in collapsed state */
     #sheet-summary {
       padding: 0 20px 12px 20px;
       flex-shrink: 0;
       font-family: Arial, sans-serif;
-      height: 42px;
-      overflow: hidden;
     }
 
     #summary-header {
@@ -99,7 +95,6 @@
       color: #555;
     }
 
-    /* Divider between summary and details */
     #sheet-divider {
       border: none;
       border-top: 1px solid #eee;
@@ -107,7 +102,6 @@
       flex-shrink: 0;
     }
 
-    /* Details — only visible when expanded */
     #sheet-details {
       padding: 14px 20px 16px 20px;
       overflow-y: auto;
@@ -119,24 +113,18 @@
     .hours-row {
       display: flex;
       justify-content: space-between;
-      padding: 3px 0;
+      padding: 5px 0;
       font-size: 14px;
       color: #333;
     }
 
-    .hours-day {
-      color: #555;
-      min-width: 60px;
-    }
-
-    .hours-time {
-      font-weight: 500;
-    }
+    .hours-day { color: #555; min-width: 60px; }
+    .hours-time { font-weight: 500; }
 
     .price-label {
       font-size: 13px;
       color: #888;
-      margin-top: 14px;
+      margin-top: 16px;
       margin-bottom: 4px;
     }
 
@@ -145,7 +133,6 @@
       color: #333;
     }
 
-    /* Fixed button at bottom */
     #btn-container {
       position: fixed;
       bottom: 0;
@@ -173,9 +160,7 @@
       text-align: center;
     }
 
-    #action-btn.active {
-      opacity: 1;
-    }
+    #action-btn.active { opacity: 1; }
   </style>
 </head>
 <body>
@@ -194,7 +179,7 @@
       <div id="summary-header"></div>
       <div id="summary-type"></div>
     </div>
-    <hr id="sheet-divider" />
+    <hr id="sheet-divider" style="display:none" />
     <div id="sheet-details"></div>
   </div>
 
@@ -207,10 +192,7 @@
 
     function transformRequest(url, resourceType) {
       if (url.includes('digitransit.fi')) {
-        return {
-          url: url,
-          headers: { 'digitransit-subscription-key': API_KEY }
-        };
+        return { url, headers: { 'digitransit-subscription-key': API_KEY } };
       }
       return { url };
     }
@@ -222,7 +204,7 @@
       zoom: 12,
       minZoom: 5,
       maxZoom: 20,
-      transformRequest: transformRequest,
+      transformRequest,
       maxTileCacheSize: 50,
       fadeDuration: 100,
       dragRotate: false,
@@ -238,30 +220,14 @@
       map.touchZoomRotate.disableRotation();
       map.dragRotate.disable();
 
-      map.addSource('helsinki-parkit', {
-        type: 'geojson',
-        data: 'helsinki_parkit.geojson'
+      map.addSource('helsinki-parkit', { type: 'geojson', data: 'helsinki_parkit.geojson' });
+      map.addLayer({
+        id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13,
+        paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 }
       });
       map.addLayer({
-        id: 'helsinki-parkit-fill',
-        type: 'fill',
-        source: 'helsinki-parkit',
-        minzoom: 13,
-        paint: {
-          'fill-color': '#4A90D9',
-          'fill-opacity': 0.25
-        }
-      });
-      map.addLayer({
-        id: 'helsinki-parkit-outline',
-        type: 'line',
-        source: 'helsinki-parkit',
-        minzoom: 13,
-        paint: {
-          'line-color': '#2B6CB0',
-          'line-width': 1.5,
-          'line-opacity': 0.9
-        }
+        id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13,
+        paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 }
       });
 
       checkParking();
@@ -307,17 +273,6 @@
       return luokka;
     }
 
-    function formatHours(voimassaolo) {
-      if (!voimassaolo) {
-        return `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;
-      }
-      return `
-        <div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${voimassaolo}</span></div>
-        <div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${voimassaolo}</span></div>
-        <div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>
-      `;
-    }
-
     function checkParking() {
       const zoom = map.getZoom();
 
@@ -332,9 +287,7 @@
       }
 
       const centerPixel = map.project(map.getCenter());
-      const features = map.queryRenderedFeatures(centerPixel, {
-        layers: ['helsinki-parkit-fill']
-      });
+      const features = map.queryRenderedFeatures(centerPixel, { layers: ['helsinki-parkit-fill'] });
 
       if (features.length > 0) {
         const p = features[0].properties;
@@ -346,13 +299,17 @@
         const hinta = getPriceText(luokka);
         const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
 
-        // Summary — always visible in collapsed state
-        summaryHeader.textContent = `${owner}  |  ${kestoText}`;
+        summaryHeader.textContent = `${owner} | ${kestoText}`;
         summaryType.textContent = tyyppi;
 
-        // Details — visible when expanded
+        const hoursHtml = voimassaolo ? `
+          <div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${voimassaolo}</span></div>
+          <div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${voimassaolo}</span></div>
+          <div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>
+        ` : `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;
+
         details.innerHTML = `
-          ${formatHours(voimassaolo)}
+          ${hoursHtml}
           <p class="price-label">Hinta:</p>
           <p class="price-value">${hinta}</p>
         `;
@@ -373,26 +330,62 @@
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    // Smooth bottom sheet with velocity snapping
+    // Three-position bottom sheet
     const sheet = document.getElementById('bottom-sheet');
-    let startY = 0;
+    const btnContainer = document.getElementById('btn-container');
+
+    // Snap positions calculated after layout
+    function getSnapPoints() {
+      const h = window.innerHeight;
+      const btnH = btnContainer.offsetHeight;
+      // Position 1 — collapsed: just summary visible (~130px from bottom)
+      const collapsed = h - 130;
+      // Position 2 — mid: summary + hours (~300px from bottom)
+      const mid = h - 300;
+      // Position 3 — fully expanded: near top
+      const expanded = 60;
+      return [collapsed, mid, expanded];
+    }
+
     let currentY = 0;
+    let startY = 0;
     let startTranslate = 0;
     let lastY = 0;
     let lastTime = 0;
     let velocity = 0;
     let isDragging = false;
-    let rafId = null;
 
-    function getCollapsedY() { return sheet.clientHeight - 80; }
+    // Start collapsed
+    window.addEventListener('load', () => {
+      const snaps = getSnapPoints();
+      sheet.style.transform = `translateY(${snaps[0]}px)`;
+      currentY = snaps[0];
+    });
 
-    function snapTo(targetY) {
+    function snapToNearest(vel) {
+      const snaps = getSnapPoints();
+
+      let target;
+      if (vel > 0.5) {
+        // Flick down — go to next lower snap
+        target = snaps.find(s => s > currentY) || snaps[snaps.length - 1];
+      } else if (vel < -0.5) {
+        // Flick up — go to next higher snap
+        const reversed = [...snaps].reverse();
+        target = reversed.find(s => s < currentY) || snaps[0];
+      } else {
+        // No flick — snap to nearest
+        target = snaps.reduce((prev, curr) =>
+          Math.abs(curr - currentY) < Math.abs(prev - currentY) ? curr : prev
+        );
+      }
+
       sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      sheet.style.transform = `translateY(${targetY}px)`;
+      sheet.style.transform = `translateY(${target}px)`;
+      currentY = target;
     }
 
     sheet.addEventListener('touchstart', (e) => {
-      if (rafId) cancelAnimationFrame(rafId);
       startY = e.touches[0].clientY;
       lastY = startY;
       lastTime = Date.now();
@@ -412,22 +405,18 @@
       if (dt > 0) velocity = (touch - lastY) / dt;
       lastY = touch;
       lastTime = now;
+      const snaps = getSnapPoints();
+      const min = snaps[snaps.length - 1];
+      const max = snaps[0];
       const delta = touch - startY;
-      currentY = Math.max(0, Math.min(getCollapsedY(), startTranslate + delta));
+      currentY = Math.max(min, Math.min(max, startTranslate + delta));
       sheet.style.transform = `translateY(${currentY}px)`;
     }, { passive: true });
 
     sheet.addEventListener('touchend', () => {
       if (!isDragging) return;
       isDragging = false;
-      const collapsed = getCollapsedY();
-      if (velocity > 0.5) {
-        snapTo(collapsed);
-      } else if (velocity < -0.5) {
-        snapTo(0);
-      } else {
-        snapTo(currentY < collapsed / 2 ? 0 : collapsed);
-      }
+      snapToNearest(velocity);
     });
   </script>
 </body>
