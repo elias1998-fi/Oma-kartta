@@ -78,54 +78,67 @@
     }
 
     #sheet-content {
-      padding: 10px 20px;
+      padding: 4px 20px;
       padding-bottom: max(20px, env(safe-area-inset-bottom));
       overflow-y: auto;
       max-height: calc(80vh - 60px);
+      font-family: Arial, sans-serif;
     }
 
     #no-parking {
       color: #aaa;
-      font-family: Arial, sans-serif;
       font-size: 15px;
       text-align: center;
       margin-top: 10px;
     }
 
-    .parking-title {
-      font-size: 16px;
-      font-weight: bold;
-      color: #0C0243;
-      font-family: Arial, sans-serif;
-      margin-bottom: 14px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #f0f0f0;
-      font-family: Arial, sans-serif;
-    }
-
-    .info-label {
-      font-size: 13px;
-      color: #888;
-    }
-
-    .info-value {
-      font-size: 14px;
+    .card-header {
+      font-size: 15px;
       font-weight: bold;
       color: #222;
-      text-align: right;
-      max-width: 60%;
+      margin-bottom: 4px;
     }
 
-    .info-value.green { color: #2e7d32; }
-    .info-value.red { color: #c62828; }
+    .card-type {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 16px;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 12px 0;
+    }
+
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .hours-day {
+      color: #555;
+      min-width: 60px;
+    }
+
+    .hours-time {
+      font-weight: 500;
+    }
+
+    .price-label {
+      font-size: 13px;
+      color: #888;
+      margin-top: 14px;
+      margin-bottom: 4px;
+    }
+
+    .price-value {
+      font-size: 14px;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -214,9 +227,48 @@
       showUserHeading: true,
     }), 'top-right');
 
-    // Check parking area under pointer after map stops moving
     map.on('moveend', checkParking);
     map.on('zoomend', checkParking);
+
+    function getOwnerName(raw) {
+      if (!raw) return 'Tuntematon omistaja';
+      if (raw.includes('KYMP') || raw.includes('HEL') || raw.includes('Helsinki')) return 'Helsingin kaupunki';
+      return raw;
+    }
+
+    function getTypeName(raw) {
+      if (!raw) return '-';
+      const lower = raw.toLowerCase();
+      if (lower.includes('kadunvarsi')) return 'Kadunvarsipysäköinti';
+      if (lower.includes('halli')) return 'Pysäköintihalli';
+      if (lower.includes('tori') || lower.includes('kenttä')) return 'Pysäköintikenttä';
+      if (lower.includes('asukaspysäköinti')) return 'Asukaspysäköinti';
+      return raw;
+    }
+
+    function getPriceText(luokka) {
+      if (!luokka) return '-';
+      const lower = luokka.toLowerCase();
+      if (lower.includes('ilmainen')) return 'Ilmainen pysäköinti pysäköintikiekolla';
+      if (lower.includes('maksullinen')) return 'Maksullinen pysäköinti';
+      if (lower.includes('asukas')) return 'Asukaspysäköinti (tunnus vaaditaan)';
+      return luokka;
+    }
+
+    function formatHours(voimassaolo, kesto) {
+      // voimassaolo could be e.g. "8-20", "8-17", "8-20, (9-15)" or null
+      if (!voimassaolo) {
+        return `
+          <div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>
+        `;
+      }
+      // Show as-is with Ma-Pe / La / Su rows if we have hours
+      return `
+        <div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${voimassaolo}</span></div>
+        <div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${voimassaolo}</span></div>
+        <div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>
+      `;
+    }
 
     function checkParking() {
       const centerPixel = map.project(map.getCenter());
@@ -229,39 +281,24 @@
       if (features.length > 0) {
         const p = features[0].properties;
 
-        const tyyppi = p['hel:luokka_nimi'] || '-';
-        const kesto = p['hel:kesto'] || 'Rajoittamaton';
-        const voimassaolo = p['hel:voimassaolo'] || 'Kaikki ajat';
-        const asento = p['hel:paikan_asento'] || '-';
-        const paikat = p['hel:paikat_ala'] || '-';
-        const ala = p['hel:pinta_ala'] ? Math.round(p['hel:pinta_ala']) + ' m²' : '-';
+        const owner = getOwnerName(p['hel:datanomistaja']);
+        const kesto = p['hel:kesto'] || null;
+        const voimassaolo = p['hel:voimassaolo'] || null;
+        const luokka = p['hel:luokka_nimi'] || '';
+        const tyyppi = getTypeName(p['hel:paikan_asento']);
+        const hinta = getPriceText(luokka);
+        const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
 
         content.innerHTML = `
-          <div class="parking-title">🅿 Pysäköintialue</div>
-          <div class="info-row">
-            <span class="info-label">Tyyppi</span>
-            <span class="info-value">${tyyppi}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Sallittu kesto</span>
-            <span class="info-value green">${kesto}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Voimassaolo</span>
-            <span class="info-value">${voimassaolo}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Pysäköinnin asento</span>
-            <span class="info-value">${asento}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Pysäköintipaikkoja</span>
-            <span class="info-value">${paikat} kpl</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Alueen pinta-ala</span>
-            <span class="info-value">${ala}</span>
-          </div>
+          <div class="card-header">${owner} &nbsp;|&nbsp; ${kestoText}</div>
+          <div class="card-type">${tyyppi}</div>
+
+          <hr class="section-divider" />
+
+          ${formatHours(voimassaolo, kesto)}
+
+          <p class="price-label">Hinta:</p>
+          <p class="price-value">${hinta}</p>
         `;
       } else {
         content.innerHTML = '<div id="no-parking">Siirrä karttaa pysäköintialueelle</div>';
