@@ -59,7 +59,6 @@
       z-index: 20;
       transform: translateY(calc(100% - 80px));
       touch-action: none;
-      /* No transition here — we handle it manually for smoothness */
     }
 
     #drag-handle-area {
@@ -79,7 +78,7 @@
 
     #sheet-content {
       padding: 4px 20px;
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      padding-bottom: max(100px, calc(env(safe-area-inset-bottom) + 90px));
       overflow-y: auto;
       max-height: calc(80vh - 60px);
       font-family: Arial, sans-serif;
@@ -139,6 +138,35 @@
       font-size: 14px;
       color: #333;
     }
+
+    /* Fixed action button — always at bottom of screen */
+    #action-btn {
+      position: fixed;
+      bottom: max(24px, env(safe-area-inset-bottom));
+      left: 16px;
+      right: 16px;
+      z-index: 30;
+      padding: 18px;
+      border: none;
+      border-radius: 16px;
+      font-size: 17px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      color: white;
+      background: #0C0243;
+      opacity: 0.4;
+      cursor: pointer;
+      transition: opacity 0.2s ease, background 0.2s ease;
+      text-align: center;
+    }
+
+    #action-btn.active {
+      opacity: 1;
+    }
+
+    #action-btn.zoom-out {
+      opacity: 0.4;
+    }
   </style>
 </head>
 <body>
@@ -157,6 +185,8 @@
       <div id="no-parking">Siirrä karttaa pysäköintialueelle</div>
     </div>
   </div>
+
+  <button id="action-btn">Valitse pysäköintialue</button>
 
   <script>
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
@@ -219,6 +249,8 @@
           'line-opacity': 0.9
         }
       });
+
+      checkParking();
     });
 
     map.addControl(new maplibregl.GeolocateControl({
@@ -229,6 +261,8 @@
 
     map.on('moveend', checkParking);
     map.on('zoomend', checkParking);
+
+    const btn = document.getElementById('action-btn');
 
     function getOwnerName(raw) {
       if (!raw) return 'Tuntematon omistaja';
@@ -267,12 +301,21 @@
     }
 
     function checkParking() {
+      const zoom = map.getZoom();
+      const content = document.getElementById('sheet-content');
+
+      // Zoom too far out
+      if (zoom < 13) {
+        content.innerHTML = '<div id="no-parking">Siirrä karttaa pysäköintialueelle</div>';
+        btn.textContent = 'Zoomaa karttaa nähdäksesi pysäköintialueet';
+        btn.classList.remove('active');
+        return;
+      }
+
       const centerPixel = map.project(map.getCenter());
       const features = map.queryRenderedFeatures(centerPixel, {
         layers: ['helsinki-parkit-fill']
       });
-
-      const content = document.getElementById('sheet-content');
 
       if (features.length > 0) {
         const p = features[0].properties;
@@ -292,14 +335,20 @@
           <p class="price-label">Hinta:</p>
           <p class="price-value">${hinta}</p>
         `;
+
+        btn.textContent = 'Pysäköi tähän';
+        btn.classList.add('active');
+
       } else {
         content.innerHTML = '<div id="no-parking">Siirrä karttaa pysäköintialueelle</div>';
+        btn.textContent = 'Valitse pysäköintialue';
+        btn.classList.remove('active');
       }
     }
 
     map.on('error', (e) => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    // ---- Smooth bottom sheet with velocity snapping ----
+    // Smooth bottom sheet with velocity snapping
     const sheet = document.getElementById('bottom-sheet');
     let startY = 0;
     let currentY = 0;
@@ -335,12 +384,9 @@
       const touch = e.touches[0].clientY;
       const now = Date.now();
       const dt = now - lastTime;
-
-      // Track velocity (pixels per ms)
       if (dt > 0) velocity = (touch - lastY) / dt;
       lastY = touch;
       lastTime = now;
-
       const delta = touch - startY;
       currentY = Math.max(0, Math.min(getCollapsedY(), startTranslate + delta));
       sheet.style.transform = `translateY(${currentY}px)`;
@@ -349,18 +395,12 @@
     sheet.addEventListener('touchend', () => {
       if (!isDragging) return;
       isDragging = false;
-
       const collapsed = getCollapsedY();
-
-      // Velocity threshold — a quick flick snaps regardless of position
       if (velocity > 0.5) {
-        // Fast flick down — collapse
         snapTo(collapsed);
       } else if (velocity < -0.5) {
-        // Fast flick up — expand
         snapTo(0);
       } else {
-        // No flick — snap based on position
         snapTo(currentY < collapsed / 2 ? 0 : collapsed);
       }
     });
