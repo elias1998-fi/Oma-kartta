@@ -21,7 +21,6 @@
       background: white; border: none; border-radius: 50%; 
       box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; 
       display: flex; align-items: center; justify-content: center;
-      transition: bottom 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
     }
     .map-btn svg { width: 20px; height: 20px; }
     
@@ -75,9 +74,11 @@
     
     #plus-btn { 
       left: max(16px,env(safe-area-inset-left));
+      bottom: 0;
     }
     #location-btn { 
       right: max(16px,env(safe-area-inset-right));
+      bottom: 0;
     }
     
     #profile-overlay, #search-overlay {
@@ -125,7 +126,7 @@
       border-radius: 20px 20px 0 0; 
       box-shadow: 0 -2px 16px rgba(0,0,0,0.15); 
       z-index: 20; 
-      transform: translateY(calc(100% - 90px)); 
+      transform: translateY(calc(100% - 60px)); 
       touch-action: none; 
       display: flex; 
       flex-direction: column;
@@ -391,8 +392,8 @@
     </svg>
   </button>
   <button class="map-btn" id="location-btn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#333"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#333" stroke="none"/>
     </svg>
   </button>
 
@@ -661,9 +662,9 @@
     
     function getCollapsedY(){
       if(currentParkingProps){
-        return sheet.clientHeight - 180;
+        return sheet.clientHeight - 140;
       }
-      return sheet.clientHeight - 90;
+      return sheet.clientHeight - 60;
     }
     
     function updateMapButtonPositions() {
