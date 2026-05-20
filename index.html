@@ -88,9 +88,23 @@
     }
     
     #location-btn {
+      position: fixed;
+      z-index: 25;
+      width: 48px;
+      height: 48px;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       right: max(16px,env(safe-area-inset-right));
-      bottom: 120px;
+      top: max(16px,env(safe-area-inset-top));
     }
+    
+    #location-btn svg { width: 20px; height: 20px; }
     
     #profile-overlay, #search-overlay {
       position: fixed; inset: 0;
@@ -151,6 +165,7 @@
     #sheet-summary { padding: 0 20px 12px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
     #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
     #summary-type { font-size: 14px; color: #555; }
+    #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
     #sheet-divider { border: none; border-top: 1px solid #eee; margin: 0 20px; flex-shrink: 0; }
     #sheet-details { padding: 14px 20px 16px 20px; overflow-y: auto; flex: 1; font-family: Arial, sans-serif; background: white; }
     .hours-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; color: #333; }
@@ -403,9 +418,9 @@
     </svg>
   </button>
   
-  <button class="map-control-btn" id="location-btn">
+  <button id="location-btn">
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#333"/>
+      <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#333" transform="rotate(45 12 12)"/>
     </svg>
   </button>
 
@@ -428,7 +443,11 @@
   <div id="bottom-sheet">
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
     <div id="sheet-normal">
-      <div id="sheet-summary"><div id="summary-header"></div><div id="summary-type"></div></div>
+      <div id="sheet-summary">
+        <div id="summary-header"></div>
+        <div id="summary-type"></div>
+        <div id="summary-operator"></div>
+      </div>
       <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
     </div>
@@ -606,7 +625,6 @@
       const sheetTop = sheetRect.top;
       const buttonBottom = sheetTop - 16;
       plusBtn.style.bottom = `${window.innerHeight - buttonBottom}px`;
-      locationBtn.style.bottom = `${window.innerHeight - buttonBottom}px`;
     }
     
     plusBtn.addEventListener('click', () => map.zoomIn());
@@ -724,15 +742,15 @@
     map.on('move',()=>{highlightParking();clearTimeout(moveTimer);moveTimer=setTimeout(checkParking,150);});
     map.on('zoomend',checkParking);
 
-    const btn=document.getElementById('action-btn'),summaryHeader=document.getElementById('summary-header'),summaryType=document.getElementById('summary-type'),details=document.getElementById('sheet-details'),divider=document.getElementById('sheet-divider');
+    const btn=document.getElementById('action-btn'),summaryHeader=document.getElementById('summary-header'),summaryType=document.getElementById('summary-type'),summaryOperator=document.getElementById('summary-operator'),details=document.getElementById('sheet-details'),divider=document.getElementById('sheet-divider');
     let currentHighlightId=null,currentY=0,currentParkingProps=null;
 
     function highlightParking(){if(!map.getLayer('helsinki-parkit-highlight'))return;const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const id=f[0].properties['hel:id'];if(id!==currentHighlightId){currentHighlightId=id;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],id]);}}else{if(currentHighlightId!==null){currentHighlightId=null;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],-1]);}}}
-    function getOwnerName(r){if(!r)return'Tuntematon';if(r.includes('KYMP')||r.includes('HEL')||r.includes('Helsinki'))return'Helsingin kaupunki';return r;}
-    function getTypeName(r){if(!r)return'-';const l=r.toLowerCase();if(l.includes('kadunvarsi'))return'Kadunvarsipysäköinti';if(l.includes('halli'))return'Pysäköintihalli';if(l.includes('tori')||l.includes('kenttä'))return'Pysäköintikenttä';return r;}
+    function getOwnerName(r){if(!r)return'Tuntematon';if(r.includes('KYMP')||r.includes('HEL')||r.includes('Helsinki'))return'Helsinki Vyöhyke 2';return r;}
+    function getTypeName(r){if(!r)return'-';const l=r.toLowerCase();if(l.includes('kadunvarsi')||l.includes('kadunsuuntainen'))return'Kadunvarsipysäköinti';if(l.includes('halli'))return'Pysäköintihalli';if(l.includes('tori')||l.includes('kenttä'))return'Pysäköintikenttä';return r;}
     function getPriceText(l){if(!l)return'-';const s=l.toLowerCase();if(s.includes('ilmainen'))return'Ilmainen pysäköintikiekolla';if(s.includes('maksullinen'))return'Maksullinen';if(s.includes('asukas'))return'Asukaspysäköinti';return l;}
     function formatHours(v){if(!v)return`<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;return`<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;}
-    function checkParking(){if(filterMode)return;const zoom=map.getZoom();if(zoom<13){summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Lähennä karttaa';btn.classList.remove('active');currentParkingProps=null;return;}const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const p=f[0].properties;currentParkingProps=p;const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;summaryType.textContent=getTypeName(p['hel:paikan_asento']);details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;divider.style.display='block';btn.textContent='Pysäköi tähän';btn.classList.add('active');}else{currentParkingProps=null;summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Valitse pysäköintialue';btn.classList.remove('active');}}
+    function checkParking(){if(filterMode)return;const zoom=map.getZoom();if(zoom<13){summaryHeader.textContent='';summaryType.textContent='';summaryOperator.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Lähennä karttaa';btn.classList.remove('active');currentParkingProps=null;return;}const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const p=f[0].properties;currentParkingProps=p;const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;summaryType.textContent=getTypeName(p['hel:paikan_asento']);summaryOperator.textContent='Helsingin kaupungin pysäköinti';details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;divider.style.display='block';btn.textContent='Pysäköi tähän';btn.classList.add('active');}else{currentParkingProps=null;summaryHeader.textContent='';summaryType.textContent='';summaryOperator.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Valitse pysäköintialue';btn.classList.remove('active');}}
 
     const PARKING_RATE = 3;
     const SERVICE_FEE_PERCENT = 0.10;
