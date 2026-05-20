@@ -15,15 +15,100 @@
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
-    .map-btn { position: fixed; z-index: 25; width: 39px; height: 39px; background: white; border: none; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    
+    .map-btn { 
+      position: fixed; z-index: 25; width: 39px; height: 39px; 
+      background: white; border: none; border-radius: 50%; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; 
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
     .map-btn svg { width: 18px; height: 18px; }
-    #menu-btn { top: max(16px,env(safe-area-inset-top)); left: max(16px,env(safe-area-inset-left)); }
-    #filter-btn { top: max(64px,calc(env(safe-area-inset-top)+48px)); left: max(16px,env(safe-area-inset-left)); }
+    
+    #left-menu-container {
+      position: fixed;
+      top: max(16px,env(safe-area-inset-top));
+      left: max(16px,env(safe-area-inset-left));
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    #menu-btn { position: relative; }
+    
+    .menu-secondary-btn {
+      opacity: 0;
+      transform: scale(0.8);
+      pointer-events: none;
+    }
+    
+    #left-menu-container.expanded .menu-secondary-btn {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: all;
+    }
+    
+    #profile-btn svg { width: 20px; height: 20px; }
+    #filter-btn svg { width: 18px; height: 18px; }
+    #search-btn svg { width: 18px; height: 18px; }
+    
     #filter-btn.active { background: #0C0243; }
     #filter-btn.active svg line { stroke: white; }
     #filter-btn.active svg circle { fill: white; stroke: none; }
-    #plus-btn { top: max(16px,env(safe-area-inset-top)); right: max(16px,env(safe-area-inset-right)); }
-    #location-btn { top: max(64px,calc(env(safe-area-inset-top)+48px)); right: max(16px,env(safe-area-inset-right)); }
+    
+    #plus-btn { 
+      position: fixed;
+      top: max(16px,env(safe-area-inset-top)); 
+      right: max(16px,env(safe-area-inset-right));
+      z-index: 25;
+    }
+    #location-btn { 
+      position: fixed;
+      top: max(64px,calc(env(safe-area-inset-top)+48px)); 
+      right: max(16px,env(safe-area-inset-right));
+      z-index: 25;
+    }
+    
+    #profile-overlay, #search-overlay {
+      position: fixed; inset: 0;
+      background: #f2f3f5;
+      z-index: 100;
+      display: flex; flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    #profile-overlay.open, #search-overlay.open { transform: translateX(0); }
+    
+    .overlay-header {
+      display: flex; align-items: center;
+      padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px;
+      background: white;
+      border-bottom: 1px solid #eee;
+      flex-shrink: 0;
+    }
+    .overlay-back-btn {
+      width: 34px; height: 34px;
+      background: #f0f0f0;
+      border: none; border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #333;
+      margin-right: 10px;
+    }
+    .overlay-title {
+      font-family: Arial, sans-serif;
+      font-size: 16px; font-weight: bold;
+      color: #222;
+    }
+    .overlay-content {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-family: Arial, sans-serif;
+      color: #888;
+      font-size: 14px;
+    }
+    
     #bottom-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 80vh; background: white; border-radius: 20px 20px 0 0; box-shadow: 0 -2px 16px rgba(0,0,0,0.15); z-index: 20; transform: translateY(calc(100% - 130px)); touch-action: none; display: flex; flex-direction: column; }
     #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
@@ -222,10 +307,6 @@
       padding: 20px;
       font-family: Arial, sans-serif;
     }
-    .detail-title {
-      font-size: 16px; font-weight: bold; color: #222;
-      margin-bottom: 16px;
-    }
     .detail-row {
       display: flex; justify-content: space-between;
       padding: 10px 0;
@@ -254,18 +335,34 @@
     <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
   </svg>
 
-  <button class="map-btn" id="menu-btn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-    </svg>
-  </button>
-  <button class="map-btn" id="filter-btn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-      <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="#333" stroke="none"/>
-      <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="#333" stroke="none"/>
-      <line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2" fill="#333" stroke="none"/>
-    </svg>
-  </button>
+  <div id="left-menu-container">
+    <button class="map-btn" id="menu-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    
+    <button class="map-btn menu-secondary-btn" id="profile-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="5"/><path d="M3 21c0-4 4-7 9-7s9 3 9 7"/>
+      </svg>
+    </button>
+    
+    <button class="map-btn menu-secondary-btn" id="filter-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
+        <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="#333" stroke="none"/>
+        <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="#333" stroke="none"/>
+        <line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2" fill="#333" stroke="none"/>
+      </svg>
+    </button>
+    
+    <button class="map-btn menu-secondary-btn" id="search-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+    </button>
+  </div>
+
   <button class="map-btn" id="plus-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -278,6 +375,22 @@
       <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
     </svg>
   </button>
+
+  <div id="profile-overlay">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeProfileOverlay()">←</button>
+      <div class="overlay-title">Asetukset</div>
+    </div>
+    <div class="overlay-content">Asetukset tulevat tähän</div>
+  </div>
+
+  <div id="search-overlay">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeSearchOverlay()">←</button>
+      <div class="overlay-title">Hae osoite</div>
+    </div>
+    <div class="overlay-content">Osoitehaku tulee tähän</div>
+  </div>
 
   <div id="bottom-sheet">
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
@@ -364,7 +477,6 @@
     <div id="parking-header"><button id="back-btn">←</button><div id="parking-header-title">Pysäköinti</div></div>
     
     <div class="p-cards-container">
-      <!-- 1. Valittu alue -->
       <div class="p-card">
         <div class="p-card-title">Valittu alue</div>
         <div class="area-select-row" onclick="goBackToMap()">
@@ -374,7 +486,6 @@
         </div>
       </div>
 
-      <!-- 2. Ajoneuvo -->
       <div class="p-card">
         <div class="p-card-title">Ajoneuvo</div>
         <div class="vehicle-display" onclick="openVehicleSheet()">
@@ -387,7 +498,6 @@
         </div>
       </div>
 
-      <!-- 3. Maksutapa -->
       <div class="p-card">
         <div class="p-card-title">Maksutapa</div>
         <div class="payment-display" onclick="openPaymentSheet()">
@@ -397,7 +507,6 @@
         </div>
       </div>
 
-      <!-- 4. Pysäköintiaika -->
       <div class="p-card">
         <div class="p-card-title">Pysäköintiaika</div>
         <div class="time-card-inner">
@@ -412,7 +521,6 @@
       </div>
     </div>
 
-    <!-- Total price above button -->
     <div id="total-price-container">
       <div class="total-price-row">
         <span class="total-price-label">
@@ -458,6 +566,42 @@
     document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
     document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
+    let menuExpanded = false;
+    const menuContainer = document.getElementById('left-menu-container');
+    const menuBtn = document.getElementById('menu-btn');
+    const profileBtn = document.getElementById('profile-btn');
+    const filterBtn = document.getElementById('filter-btn');
+    const searchBtn = document.getElementById('search-btn');
+    
+    menuBtn.addEventListener('click', () => {
+      menuExpanded = !menuExpanded;
+      if (menuExpanded) {
+        menuContainer.classList.add('expanded');
+      } else {
+        menuContainer.classList.remove('expanded');
+      }
+    });
+    
+    profileBtn.addEventListener('click', () => {
+      document.getElementById('profile-overlay').classList.add('open');
+      menuExpanded = false;
+      menuContainer.classList.remove('expanded');
+    });
+    
+    searchBtn.addEventListener('click', () => {
+      document.getElementById('search-overlay').classList.add('open');
+      menuExpanded = false;
+      menuContainer.classList.remove('expanded');
+    });
+    
+    function closeProfileOverlay() {
+      document.getElementById('profile-overlay').classList.remove('open');
+    }
+    
+    function closeSearchOverlay() {
+      document.getElementById('search-overlay').classList.remove('open');
+    }
+
     const sliderMin=document.getElementById('slider-min'), sliderMax=document.getElementById('slider-max');
     const rangeFill=document.getElementById('range-fill'), sliderValueEl=document.getElementById('slider-value'), filterResult=document.getElementById('filter-result');
     function idxToMinutes(i){if(i===0)return 0;if(i===1)return 30;if(i>=26)return 9999;return(i-1)*60;}
@@ -474,11 +618,35 @@
     updateSliderUI();
 
     let filterMode=false;
-    const sheet=document.getElementById('bottom-sheet'),filterBtn=document.getElementById('filter-btn');
+    const sheet=document.getElementById('bottom-sheet');
     const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
     function getCollapsedY(){return sheet.clientHeight-130;}
-    function openFilter(){filterMode=true;filterBtn.classList.add('active');filterCloseBtn.classList.add('visible');sheetNormal.style.display='none';sheetFilter.classList.add('visible');sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;currentY=window.innerHeight*0.5;}
-    function closeFilter(){filterMode=false;filterBtn.classList.remove('active');filterCloseBtn.classList.remove('visible');sheetNormal.style.display='flex';sheetFilter.classList.remove('visible');sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${getCollapsedY()}px)`;currentY=getCollapsedY();sliderMin.value=0;sliderMax.value=26;updateSliderUI();applyRangeFilter();}
+    function openFilter(){
+      filterMode=true;
+      filterBtn.classList.add('active');
+      filterCloseBtn.classList.add('visible');
+      sheetNormal.style.display='none';
+      sheetFilter.classList.add('visible');
+      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+      sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;
+      currentY=window.innerHeight*0.5;
+      menuExpanded = false;
+      menuContainer.classList.remove('expanded');
+    }
+    function closeFilter(){
+      filterMode=false;
+      filterBtn.classList.remove('active');
+      filterCloseBtn.classList.remove('visible');
+      sheetNormal.style.display='flex';
+      sheetFilter.classList.remove('visible');
+      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+      sheet.style.transform=`translateY(${getCollapsedY()}px)`;
+      currentY=getCollapsedY();
+      sliderMin.value=0;
+      sliderMax.value=26;
+      updateSliderUI();
+      applyRangeFilter();
+    }
     filterBtn.addEventListener('click',()=>filterMode?closeFilter():openFilter());
     filterCloseBtn.addEventListener('click',closeFilter);
 
@@ -496,20 +664,18 @@
     function formatHours(v){if(!v)return`<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;return`<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;}
     function checkParking(){if(filterMode)return;const zoom=map.getZoom();if(zoom<13){summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Zoomaa karttaa nähdäksesi pysäköintialueet';btn.classList.remove('active');currentParkingProps=null;return;}const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const p=f[0].properties;currentParkingProps=p;const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;summaryType.textContent=getTypeName(p['hel:paikan_asento']);details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;divider.style.display='block';btn.textContent='Pysäköi tähän';btn.classList.add('active');}else{currentParkingProps=null;summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Valitse pysäköintialue';btn.classList.remove('active');}}
 
-    const PARKING_RATE = 3; // €/h
-    const SERVICE_FEE_PERCENT = 0.10; // 10%
-    const VAT_PERCENT = 0.255; // 25.5%
+    const PARKING_RATE = 3;
+    const SERVICE_FEE_PERCENT = 0.10;
+    const VAT_PERCENT = 0.255;
 
     function calculatePrice(minutes) {
       if (minutes === 0) return { parking: 0, service: 0, subtotal: 0, vat: 0, total: 0 };
-      
       const hours = minutes / 60;
       const parking = hours * PARKING_RATE;
       const service = parking * SERVICE_FEE_PERCENT;
       const subtotal = parking + service;
       const vat = subtotal * VAT_PERCENT;
       const total = subtotal + vat;
-      
       return { parking, service, subtotal, vat, total };
     }
 
@@ -536,13 +702,11 @@
       const h = end.getHours();
       const m = end.getMinutes();
       const time = `${h}:${m.toString().padStart(2,'0')}`;
-      
       const today = new Date(now);
       today.setHours(0,0,0,0);
       const endDay = new Date(end);
       endDay.setHours(0,0,0,0);
       const diffDays = Math.floor((endDay - today) / 86400000);
-      
       if (diffDays === 0) return `Pysäköinti päättyy tänään ${time}`;
       if (diffDays === 1) return `Pysäköinti päättyy huomenna ${time}`;
       const d = end.getDate();
@@ -559,10 +723,8 @@
       if(rounded!==lastDisplayedMinutes){
         document.getElementById('time-big').textContent=formatTimeDisplay(rounded);
         document.getElementById('time-end-text').textContent=formatEndTime(rounded);
-        
         const price = calculatePrice(rounded);
         document.getElementById('p-price').textContent = formatPrice(price.total);
-        
         const startBtn = document.getElementById('start-btn');
         if (rounded === 0) {
           startBtn.classList.add('disabled');
@@ -571,12 +733,10 @@
           startBtn.classList.remove('disabled');
           startBtn.textContent = 'Aloita pysäköinti';
         }
-        
         if(rounded > 0 && rounded !== lastVibrateMinute && navigator.vibrate){
           navigator.vibrate(10);
           lastVibrateMinute = rounded;
         }
-        
         lastDisplayedMinutes=rounded;
       }
       drawDrum();
