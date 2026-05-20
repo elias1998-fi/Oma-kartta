@@ -124,6 +124,90 @@
       overflow-y: auto;
     }
     
+    #search-input-container {
+      padding: 16px;
+      background: white;
+      border-bottom: 1px solid #eee;
+    }
+    
+    #search-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 16px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    
+    #search-input:focus {
+      border-color: #0C0243;
+    }
+    
+    #search-results {
+      flex: 1;
+      overflow-y: auto;
+    }
+    
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      background: white;
+      transition: background 0.2s ease;
+    }
+    
+    .search-result-item:active {
+      background: #f8f8f8;
+    }
+    
+    .search-result-icon {
+      width: 40px;
+      height: 40px;
+      background: #f0f0f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      flex-shrink: 0;
+      font-size: 18px;
+    }
+    
+    .search-result-text {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .search-result-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: #222;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .search-result-address {
+      font-size: 13px;
+      color: #888;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .search-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+    }
+    
     .settings-section {
       background: white;
       margin: 10px 0;
@@ -576,9 +660,10 @@
       <button class="overlay-back-btn" onclick="closeSearchOverlay()">←</button>
       <div class="overlay-title">Hae osoite</div>
     </div>
-    <div class="overlay-content" style="align-items: center; justify-content: center; color: #888; font-size: 14px;">
-      Osoitehaku tulee tähän
+    <div id="search-input-container">
+      <input type="text" id="search-input" placeholder="Hae osoitetta tai paikkaa..." autocomplete="off">
     </div>
+    <div id="search-results"></div>
   </div>
 
   <div id="plus-overlay">
@@ -812,6 +897,10 @@
         searchBtn.classList.remove('active');
         closeMenu();
         document.getElementById('search-overlay').classList.add('open');
+        // Focus hakukenttään
+        setTimeout(() => {
+          document.getElementById('search-input').focus();
+        }, 100);
       }, 200);
     });
     
@@ -830,6 +919,8 @@
     
     function closeSearchOverlay() {
       document.getElementById('search-overlay').classList.remove('open');
+      document.getElementById('search-input').value = '';
+      document.getElementById('search-results').innerHTML = '';
     }
     
     function closePlusOverlay() {
@@ -866,6 +957,86 @@
     
     function openAboutSettings() {
       alert('Tietoja - tulossa pian');
+    }
+
+    // Digitransit Geocoding API haku
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    let searchTimeout = null;
+    
+    function getPlaceIcon(layer) {
+      if (layer === 'address') return '📍';
+      if (layer === 'venue') return '🏢';
+      if (layer === 'street') return '🛣️';
+      if (layer === 'locality') return '🏘️';
+      return '📍';
+    }
+    
+    async function searchPlaces(query) {
+      if (!query || query.length < 2) {
+        searchResults.innerHTML = '';
+        return;
+      }
+      
+      try {
+        const url = `https://api.digitransit.fi/geocoding/v1/search?text=${encodeURIComponent(query)}&size=10&focus.point.lat=60.1699&focus.point.lon=24.9354&boundary.circle.lat=60.1699&boundary.circle.lon=24.9354&boundary.circle.radius=50`;
+        
+        const response = await fetch(url, {
+          headers: {
+            'digitransit-subscription-key': API_KEY
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.features && data.features.length > 0) {
+          searchResults.innerHTML = data.features.map(feature => {
+            const props = feature.properties;
+            const coords = feature.geometry.coordinates;
+            const name = props.name || props.label || 'Tuntematon';
+            const locality = props.locality || props.localadmin || '';
+            const icon = getPlaceIcon(props.layer);
+            
+            return `
+              <div class="search-result-item" onclick="selectPlace(${coords[1]}, ${coords[0]}, '${name.replace(/'/g, "\\'")}')">
+                <div class="search-result-icon">${icon}</div>
+                <div class="search-result-text">
+                  <div class="search-result-name">${name}</div>
+                  <div class="search-result-address">${locality}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          searchResults.innerHTML = '<div class="search-empty">Ei hakutuloksia</div>';
+        }
+      } catch (error) {
+        console.error('Hakuvirhe:', error);
+        searchResults.innerHTML = '<div class="search-empty">Haku epäonnistui</div>';
+      }
+    }
+    
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      const query = e.target.value.trim();
+      
+      if (query.length < 2) {
+        searchResults.innerHTML = '';
+        return;
+      }
+      
+      searchTimeout = setTimeout(() => {
+        searchPlaces(query);
+      }, 300);
+    });
+    
+    function selectPlace(lat, lon, name) {
+      closeSearchOverlay();
+      map.flyTo({
+        center: [lon, lat],
+        zoom: 15,
+        duration: 1500
+      });
     }
 
     const sliderMin=document.getElementById('slider-min'), sliderMax=document.getElementById('slider-max');
