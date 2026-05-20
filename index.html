@@ -61,7 +61,7 @@
     #parking-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
     #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
-    .p-cards-container { flex: 1; display: flex; flex-direction: column; padding: 10px 14px 0 14px; gap: 8px; overflow: hidden; }
+    .p-cards-container { flex: 1; display: flex; flex-direction: column; padding: 10px 14px 0 14px; gap: 8px; overflow-y: auto; }
     .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
     .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .area-row { display: flex; align-items: center; gap: 10px; }
@@ -72,14 +72,10 @@
     .time-big-display { flex: 1; }
     .time-big-number { font-size: 42px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; }
     .time-big-unit { font-size: 13px; color: #aaa; margin-top: 3px; font-family: Arial, sans-serif; }
-    .time-price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
-    .time-price-label { font-size: 13px; color: #888; }
-    .time-price-val { font-size: 16px; font-weight: bold; color: #0C0243; }
     .drum-scroll-zone { width: 52px; height: 80px; border: 1.5px solid #d8d8d8; border-radius: 12px; cursor: grab; user-select: none; flex-shrink: 0; overflow: hidden; position: relative; }
     .drum-scroll-zone:active { cursor: grabbing; }
     #drum-canvas { display: block; width: 52px; height: 80px; }
 
-    /* Vehicle row */
     .vehicle-display {
       display: flex; align-items: center; gap: 10px;
       padding: 8px 10px;
@@ -96,7 +92,6 @@
     .vehicle-nickname { font-size: 14px; color: #444; flex: 1; }
     .vehicle-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
 
-    /* Payment row */
     .payment-display {
       display: flex; align-items: center; gap: 12px;
       padding: 10px 12px;
@@ -117,7 +112,6 @@
     .payment-name { font-size: 14px; color: #333; flex: 1; font-family: Arial, sans-serif; }
     .payment-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
 
-    /* Bottom sheets */
     #vehicle-sheet, #payment-sheet {
       position: fixed; inset: 0;
       z-index: 200;
@@ -171,6 +165,19 @@
     }
     .add-option:active { background: #f5f5f5; }
     .sheet-divider { border: none; border-top: 1px solid #eee; margin: 4px 0; }
+
+    #total-price-container {
+      padding: 12px 14px 0 14px;
+      flex-shrink: 0;
+    }
+    .total-price-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: white; border-radius: 14px;
+      padding: 14px 16px;
+      font-family: Arial, sans-serif;
+    }
+    .total-price-label { font-size: 15px; color: #555; }
+    .total-price-val { font-size: 22px; font-weight: bold; color: #0C0243; }
 
     #start-btn-container { padding: 10px 14px; padding-bottom: max(20px,env(safe-area-inset-bottom)); flex-shrink: 0; }
     #start-btn { width: 100%; height: 54px; border: none; border-radius: 16px; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; cursor: pointer; }
@@ -231,7 +238,6 @@
 
   <div id="btn-container"><button id="action-btn">Valitse pysäköintialue</button></div>
 
-  <!-- Vehicle picker sheet -->
   <div id="vehicle-sheet">
     <div class="sheet-backdrop" onclick="closeVehicleSheet()"></div>
     <div class="sheet-panel">
@@ -242,7 +248,6 @@
     </div>
   </div>
 
-  <!-- Payment picker sheet -->
   <div id="payment-sheet">
     <div class="sheet-backdrop" onclick="closePaymentSheet()"></div>
     <div class="sheet-panel">
@@ -253,8 +258,9 @@
 
   <div id="parking-overlay">
     <div id="parking-header"><button id="back-btn">←</button><div id="parking-header-title">Pysäköinti</div></div>
+    
     <div class="p-cards-container">
-
+      <!-- 1. Valittu alue -->
       <div class="p-card">
         <div class="p-card-title">Valittu alue</div>
         <div class="area-row">
@@ -263,23 +269,7 @@
         </div>
       </div>
 
-      <div class="p-card">
-        <div class="p-card-title">Pysäköintiaika</div>
-        <div class="time-card-inner">
-          <div class="time-big-display">
-            <div class="time-big-number" id="time-big">1h</div>
-            <div class="time-big-unit">Pyöritä rullaa →</div>
-          </div>
-          <div class="drum-scroll-zone" id="drum-scroll-zone">
-            <canvas id="drum-canvas" width="52" height="80"></canvas>
-          </div>
-        </div>
-        <div class="time-price-row">
-          <span class="time-price-label">Arvioitu hinta</span>
-          <span class="time-price-val" id="p-price">Ilmainen</span>
-        </div>
-      </div>
-
+      <!-- 2. Ajoneuvo -->
       <div class="p-card">
         <div class="p-card-title">Ajoneuvo</div>
         <div class="vehicle-display" onclick="openVehicleSheet()">
@@ -292,6 +282,21 @@
         </div>
       </div>
 
+      <!-- 3. Pysäköintiaika (no price row) -->
+      <div class="p-card">
+        <div class="p-card-title">Pysäköintiaika</div>
+        <div class="time-card-inner">
+          <div class="time-big-display">
+            <div class="time-big-number" id="time-big">1h</div>
+            <div class="time-big-unit">Pyöritä rullaa →</div>
+          </div>
+          <div class="drum-scroll-zone" id="drum-scroll-zone">
+            <canvas id="drum-canvas" width="52" height="80"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Maksutapa -->
       <div class="p-card">
         <div class="p-card-title">Maksutapa</div>
         <div class="payment-display" onclick="openPaymentSheet()">
@@ -300,8 +305,16 @@
           <div class="payment-chevron">⌄</div>
         </div>
       </div>
-
     </div>
+
+    <!-- Total price above button -->
+    <div id="total-price-container">
+      <div class="total-price-row">
+        <span class="total-price-label">Yhteensä</span>
+        <span class="total-price-val" id="p-price">Ilmainen</span>
+      </div>
+    </div>
+
     <div id="start-btn-container"><button id="start-btn">Aloita pysäköinti</button></div>
   </div>
 
@@ -375,7 +388,6 @@
     function formatHours(v){if(!v)return`<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;return`<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;}
     function checkParking(){if(filterMode)return;const zoom=map.getZoom();if(zoom<13){summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Zoomaa karttaa nähdäksesi pysäköintialueet';btn.classList.remove('active');currentParkingProps=null;return;}const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const p=f[0].properties;currentParkingProps=p;const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;summaryType.textContent=getTypeName(p['hel:paikan_asento']);details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;divider.style.display='block';btn.textContent='Pysäköi tähän';btn.classList.add('active');}else{currentParkingProps=null;summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Valitse pysäköintialue';btn.classList.remove('active');}}
 
-    // ===== DRUM =====
     let parkingMinutes=60, parkingMaxMinutes=1440, isIlmainen=false;
     const PIXELS_PER_MINUTE=2, RADIANS_PER_PX=0.055, N_LINES=12;
     const CW=52, CH=80, CY=CH/2, R=33;
@@ -406,7 +418,6 @@
     window.addEventListener('mouseup',()=>{if(mStartY===null)return;mStartY=null;inertiaVel=mVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);});
     drawDrum();
 
-    // ===== VEHICLE PICKER =====
     let vehicles = [{ reg:'FHY-857', name:'Äitin auto' }];
     let selectedVehicleIdx = 0;
 
@@ -447,7 +458,6 @@
       closeVehicleSheet();
     }
 
-    // ===== PAYMENT PICKER =====
     const paymentMethods = [
       { id:'applepay', name:'Apple Pay', icon:'applepay' },
       { id:'card', name:'Maksukortti', icon:'card' },
@@ -492,7 +502,6 @@
     function openPaymentSheet() { renderPaymentOptions(); document.getElementById('payment-sheet').classList.add('open'); }
     function closePaymentSheet() { document.getElementById('payment-sheet').classList.remove('open'); }
 
-    // ===== OVERLAY =====
     const overlay=document.getElementById('parking-overlay');
     function openParkingOverlay(p){const areaCode=p['hel:id']||'—',kesto=p['hel:kesto']||null;const tyyppi=getTypeName(p['hel:paikan_asento']),voimassaolo=p['hel:voimassaolo']||'Kaikki ajat';const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';isIlmainen=luokka.toLowerCase().includes('ilmainen');parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;parkingMinutes=Math.min(60,parkingMaxMinutes);lastDisplayedMinutes=-1;drumPhase=0;document.getElementById('p-code').textContent=areaCode;document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText} · ${voimassaolo}`;renderVehicleDisplay();renderPaymentDisplay();updateDisplay();overlay.classList.add('open');}
 
