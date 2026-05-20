@@ -6,29 +6,24 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>HSL Kartta</title>
-
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
   <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
-
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
     #map { width: 100%; height: 100%; height: -webkit-fill-available; }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
-
-    #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
-
+    #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
     .map-btn { position: fixed; z-index: 25; width: 39px; height: 39px; background: white; border: none; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .map-btn svg { width: 18px; height: 18px; }
-    #menu-btn { top: max(16px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left)); }
-    #filter-btn { top: max(64px, calc(env(safe-area-inset-top) + 48px)); left: max(16px, env(safe-area-inset-left)); }
+    #menu-btn { top: max(16px,env(safe-area-inset-top)); left: max(16px,env(safe-area-inset-left)); }
+    #filter-btn { top: max(64px,calc(env(safe-area-inset-top)+48px)); left: max(16px,env(safe-area-inset-left)); }
     #filter-btn.active { background: #0C0243; }
     #filter-btn.active svg line { stroke: white; }
     #filter-btn.active svg circle { fill: white; stroke: none; }
-    #plus-btn { top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); }
-    #location-btn { top: max(64px, calc(env(safe-area-inset-top) + 48px)); right: max(16px, env(safe-area-inset-right)); }
-
+    #plus-btn { top: max(16px,env(safe-area-inset-top)); right: max(16px,env(safe-area-inset-right)); }
+    #location-btn { top: max(64px,calc(env(safe-area-inset-top)+48px)); right: max(16px,env(safe-area-inset-right)); }
     #bottom-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 80vh; background: white; border-radius: 20px 20px 0 0; box-shadow: 0 -2px 16px rgba(0,0,0,0.15); z-index: 20; transform: translateY(calc(100% - 130px)); touch-action: none; display: flex; flex-direction: column; }
     #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
@@ -45,7 +40,6 @@
     .hours-time { font-weight: 500; }
     .price-label { font-size: 13px; color: #888; margin-top: 14px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
-
     #sheet-filter { display: none; flex-direction: column; padding: 4px 24px 24px 24px; flex: 1; font-family: Arial, sans-serif; }
     #sheet-filter.visible { display: flex; }
     #filter-title { font-size: 16px; font-weight: bold; color: #222; margin-bottom: 6px; }
@@ -59,27 +53,23 @@
     .range-input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #0C0243; cursor: pointer; pointer-events: all; box-shadow: 0 2px 6px rgba(0,0,0,0.25); border: 3px solid white; }
     .slider-ticks { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-top: 4px; }
     #filter-result { margin-top: 16px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
-
-    #btn-container { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: white; padding: 12px 16px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+    #btn-container { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: white; padding: 12px 16px; padding-bottom: max(24px,env(safe-area-inset-bottom)); }
     #action-btn { width: 100%; height: 58px; border: none; border-radius: 16px; font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; opacity: 0.7; cursor: pointer; transition: opacity 0.2s ease; text-align: center; }
     #action-btn.active { opacity: 1; }
 
     /* PARKING OVERLAY */
-    #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
     #parking-overlay.open { transform: translateX(0); }
-    #parking-header { display: flex; align-items: center; padding: max(14px, env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
+    #parking-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
     #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
-
     .p-cards-container { flex: 1; display: flex; flex-direction: column; padding: 10px 14px 0 14px; gap: 8px; overflow: hidden; }
     .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
     .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-
     .area-row { display: flex; align-items: center; gap: 10px; }
     .area-code-badge { background: #0C0243; color: white; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; font-family: Arial, sans-serif; }
     .area-name { font-size: 14px; font-weight: bold; color: #222; }
     .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
-
     .time-card-inner { display: flex; align-items: center; gap: 12px; }
     .time-big-display { flex: 1; }
     .time-big-number { font-size: 42px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; }
@@ -88,39 +78,19 @@
     .time-price-label { font-size: 13px; color: #888; }
     .time-price-val { font-size: 16px; font-weight: bold; color: #0C0243; }
 
-    /* Drum roller */
+    /* Canvas drum */
     .drum-scroll-zone {
       width: 52px; height: 80px;
-      border: 1.5px solid #e0e0e0;
+      border: 1.5px solid #d8d8d8;
       border-radius: 12px;
-      background: #f8f8f8;
       cursor: grab;
       user-select: none;
       flex-shrink: 0;
-      position: relative;
       overflow: hidden;
+      position: relative;
     }
     .drum-scroll-zone:active { cursor: grabbing; }
-
-    .drum-ridges {
-      position: absolute;
-      left: 0; right: 0;
-      top: 0;
-    }
-    .drum-ridge {
-      width: 100%; height: 2px;
-      background: #d0d0d0;
-      border-radius: 1px;
-      position: absolute;
-      left: 0; right: 0;
-    }
-    .drum-ridge.center-line {
-      background: #999;
-      height: 2.5px;
-    }
-    .drum-fade-top { position: absolute; top: 0; left: 0; right: 0; height: 26px; background: linear-gradient(to bottom, #f8f8f8 40%, transparent); pointer-events: none; z-index: 2; }
-    .drum-fade-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 26px; background: linear-gradient(to top, #f8f8f8 40%, transparent); pointer-events: none; z-index: 2; }
-    .drum-center-highlight { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); height: 18px; border-top: 1px solid #c0c0c0; border-bottom: 1px solid #c0c0c0; pointer-events: none; z-index: 1; }
+    #drum-canvas { display: block; width: 52px; height: 80px; }
 
     .vehicle-display { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .plate { display: flex; align-items: center; border: 2px solid #333; border-radius: 5px; overflow: hidden; height: 30px; flex-shrink: 0; }
@@ -131,8 +101,7 @@
     .vehicle-nickname { font-size: 14px; color: #444; }
     .vehicle-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 13px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
     .payment-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 14px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
-
-    #start-btn-container { padding: 10px 14px; padding-bottom: max(20px, env(safe-area-inset-bottom)); flex-shrink: 0; }
+    #start-btn-container { padding: 10px 14px; padding-bottom: max(20px,env(safe-area-inset-bottom)); flex-shrink: 0; }
     #start-btn { width: 100%; height: 54px; border: none; border-radius: 16px; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; cursor: pointer; }
   </style>
 </head>
@@ -175,7 +144,7 @@
     </div>
     <div id="sheet-normal">
       <div id="sheet-summary"><div id="summary-header"></div><div id="summary-type"></div></div>
-      <hr id="sheet-divider" />
+      <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
     </div>
     <div id="sheet-filter">
@@ -185,8 +154,8 @@
       <div class="range-container">
         <div class="range-track"></div>
         <div class="range-fill" id="range-fill"></div>
-        <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0" />
-        <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26" />
+        <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0"/>
+        <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26"/>
       </div>
       <div class="slider-ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span></div>
       <div id="filter-result"></div>
@@ -218,10 +187,7 @@
             <div class="time-big-unit">Pyöritä rullaa →</div>
           </div>
           <div class="drum-scroll-zone" id="drum-scroll-zone">
-            <div class="drum-center-highlight"></div>
-            <div class="drum-ridges" id="drum-ridges"></div>
-            <div class="drum-fade-top"></div>
-            <div class="drum-fade-bottom"></div>
+            <canvas id="drum-canvas" width="52" height="80"></canvas>
           </div>
         </div>
         <div class="time-price-row">
@@ -261,304 +227,337 @@
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
     function transformRequest(url) { if (url.includes('digitransit.fi')) return { url, headers: { 'digitransit-subscription-key': API_KEY } }; return { url }; }
 
-    const map = new maplibregl.Map({ container: 'map', style: 'omakartta_style.json', center: [24.9354, 60.1699], zoom: 12, minZoom: 5, maxZoom: 20, transformRequest, maxTileCacheSize: 50, fadeDuration: 100, dragRotate: false, touchPitch: false, pitchWithRotate: false, keyboard: false, attributionControl: false });
+    const map = new maplibregl.Map({ container: 'map', style: 'omakartta_style.json', center: [24.9354,60.1699], zoom: 12, minZoom: 5, maxZoom: 20, transformRequest, maxTileCacheSize: 50, fadeDuration: 100, dragRotate: false, touchPitch: false, pitchWithRotate: false, keyboard: false, attributionControl: false });
     map.touchZoomRotate.disableRotation();
 
     function kestoToMinutes(kesto) {
       if (!kesto) return 9999;
-      const lower = kesto.toLowerCase().trim();
-      if (lower.includes('h')) { const h = parseFloat(lower); return isNaN(h) ? 9999 : h * 60; }
-      if (lower.includes('min')) { const m = parseFloat(lower); return isNaN(m) ? 9999 : m; }
+      const l = kesto.toLowerCase().trim();
+      if (l.includes('h')) { const h = parseFloat(l); return isNaN(h) ? 9999 : h*60; }
+      if (l.includes('min')) { const m = parseFloat(l); return isNaN(m) ? 9999 : m; }
       return 9999;
     }
 
     map.on('load', () => {
       map.touchZoomRotate.disableRotation(); map.dragRotate.disable();
-      fetch('helsinki_parkit.geojson').then(r => r.json()).then(data => {
+      fetch('helsinki_parkit.geojson').then(r=>r.json()).then(data => {
         data.features = data.features.map(f => { f.properties.kesto_min = kestoToMinutes(f.properties['hel:kesto']); return f; });
-        map.addSource('helsinki-parkit', { type: 'geojson', data });
-        map.addLayer({ id: 'helsinki-parkit-fill', type: 'fill', source: 'helsinki-parkit', minzoom: 13, paint: { 'fill-color': '#4A90D9', 'fill-opacity': 0.25 } });
-        map.addLayer({ id: 'helsinki-parkit-outline', type: 'line', source: 'helsinki-parkit', minzoom: 13, paint: { 'line-color': '#2B6CB0', 'line-width': 1.5, 'line-opacity': 0.9 } });
-        map.addLayer({ id: 'helsinki-parkit-highlight', type: 'line', source: 'helsinki-parkit', minzoom: 13, paint: { 'line-color': '#0C0243', 'line-width': 4, 'line-opacity': 1 }, filter: ['==', ['get', 'hel:id'], -1] });
+        map.addSource('helsinki-parkit', { type:'geojson', data });
+        map.addLayer({ id:'helsinki-parkit-fill', type:'fill', source:'helsinki-parkit', minzoom:13, paint:{'fill-color':'#4A90D9','fill-opacity':0.25} });
+        map.addLayer({ id:'helsinki-parkit-outline', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#2B6CB0','line-width':1.5,'line-opacity':0.9} });
+        map.addLayer({ id:'helsinki-parkit-highlight', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#0C0243','line-width':4,'line-opacity':1}, filter:['==',['get','hel:id'],-1] });
         checkParking();
       });
     });
 
-    const geolocate = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showUserHeading: true });
+    const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
     map.addControl(geolocate);
     document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
     document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
     const sliderMin = document.getElementById('slider-min'), sliderMax = document.getElementById('slider-max');
     const rangeFill = document.getElementById('range-fill'), sliderValueEl = document.getElementById('slider-value'), filterResult = document.getElementById('filter-result');
-    function idxToMinutes(idx) { if (idx === 0) return 0; if (idx === 1) return 30; if (idx >= 26) return 9999; return (idx - 1) * 60; }
-    function formatHourLabel(idx) { if (idx === 0) return '0h'; if (idx === 1) return '30min'; if (idx >= 26) return '24h+'; return `${idx - 1}h`; }
+    function idxToMinutes(i) { if(i===0)return 0; if(i===1)return 30; if(i>=26)return 9999; return(i-1)*60; }
+    function formatHourLabel(i) { if(i===0)return'0h'; if(i===1)return'30min'; if(i>=26)return'24h+'; return`${i-1}h`; }
     function updateSliderUI() {
-      const minIdx = parseInt(sliderMin.value), maxIdx = parseInt(sliderMax.value);
-      rangeFill.style.left = (minIdx / 26 * 100) + '%'; rangeFill.style.width = ((maxIdx - minIdx) / 26 * 100) + '%';
-      if (minIdx === 0 && maxIdx === 26) { sliderValueEl.textContent = 'Kaikki'; filterResult.textContent = ''; }
-      else { sliderValueEl.textContent = `${formatHourLabel(minIdx)} – ${formatHourLabel(maxIdx)}`; filterResult.textContent = `Näytetään ${formatHourLabel(minIdx)} – ${formatHourLabel(maxIdx)} pysäköintialueet`; }
+      const a=parseInt(sliderMin.value), b=parseInt(sliderMax.value);
+      rangeFill.style.left=(a/26*100)+'%'; rangeFill.style.width=((b-a)/26*100)+'%';
+      if(a===0&&b===26){sliderValueEl.textContent='Kaikki';filterResult.textContent='';}
+      else{sliderValueEl.textContent=`${formatHourLabel(a)} – ${formatHourLabel(b)}`;filterResult.textContent=`Näytetään ${formatHourLabel(a)} – ${formatHourLabel(b)} pysäköintialueet`;}
     }
     function applyRangeFilter() {
-      if (!map.getSource('helsinki-parkit')) return;
-      const minIdx = parseInt(sliderMin.value), maxIdx = parseInt(sliderMax.value);
-      if (minIdx === 0 && maxIdx === 26) { map.setFilter('helsinki-parkit-fill', null); map.setFilter('helsinki-parkit-outline', null); }
-      else { const f = ['all', ['>=', ['get', 'kesto_min'], idxToMinutes(minIdx)], ['<=', ['get', 'kesto_min'], idxToMinutes(maxIdx)]]; map.setFilter('helsinki-parkit-fill', f); map.setFilter('helsinki-parkit-outline', f); }
+      if(!map.getSource('helsinki-parkit'))return;
+      const a=parseInt(sliderMin.value),b=parseInt(sliderMax.value);
+      if(a===0&&b===26){map.setFilter('helsinki-parkit-fill',null);map.setFilter('helsinki-parkit-outline',null);}
+      else{const f=['all',['>=',['get','kesto_min'],idxToMinutes(a)],['<=',['get','kesto_min'],idxToMinutes(b)]];map.setFilter('helsinki-parkit-fill',f);map.setFilter('helsinki-parkit-outline',f);}
     }
     let sliderTouching = false;
-    sliderMin.addEventListener('touchstart', () => { sliderTouching = true; }, { passive: true });
-    sliderMax.addEventListener('touchstart', () => { sliderTouching = true; }, { passive: true });
-    sliderMin.addEventListener('touchend', () => { sliderTouching = false; }, { passive: true });
-    sliderMax.addEventListener('touchend', () => { sliderTouching = false; }, { passive: true });
-    sliderMin.addEventListener('input', () => { if (parseInt(sliderMin.value) > parseInt(sliderMax.value)) sliderMin.value = sliderMax.value; updateSliderUI(); applyRangeFilter(); });
-    sliderMax.addEventListener('input', () => { if (parseInt(sliderMax.value) < parseInt(sliderMin.value)) sliderMax.value = sliderMin.value; updateSliderUI(); applyRangeFilter(); });
+    sliderMin.addEventListener('touchstart',()=>{sliderTouching=true;},{passive:true});
+    sliderMax.addEventListener('touchstart',()=>{sliderTouching=true;},{passive:true});
+    sliderMin.addEventListener('touchend',()=>{sliderTouching=false;},{passive:true});
+    sliderMax.addEventListener('touchend',()=>{sliderTouching=false;},{passive:true});
+    sliderMin.addEventListener('input',()=>{if(parseInt(sliderMin.value)>parseInt(sliderMax.value))sliderMin.value=sliderMax.value;updateSliderUI();applyRangeFilter();});
+    sliderMax.addEventListener('input',()=>{if(parseInt(sliderMax.value)<parseInt(sliderMin.value))sliderMax.value=sliderMin.value;updateSliderUI();applyRangeFilter();});
     updateSliderUI();
 
-    let filterMode = false;
-    const sheet = document.getElementById('bottom-sheet'), filterBtn = document.getElementById('filter-btn');
-    const filterCloseBtn = document.getElementById('filter-close-btn'), sheetNormal = document.getElementById('sheet-normal'), sheetFilter = document.getElementById('sheet-filter');
-    function getCollapsedY() { return sheet.clientHeight - 130; }
-    function openFilter() { filterMode = true; filterBtn.classList.add('active'); filterCloseBtn.classList.add('visible'); sheetNormal.style.display = 'none'; sheetFilter.classList.add('visible'); sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; sheet.style.transform = `translateY(${window.innerHeight * 0.5}px)`; currentY = window.innerHeight * 0.5; }
-    function closeFilter() { filterMode = false; filterBtn.classList.remove('active'); filterCloseBtn.classList.remove('visible'); sheetNormal.style.display = 'flex'; sheetFilter.classList.remove('visible'); sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; sheet.style.transform = `translateY(${getCollapsedY()}px)`; currentY = getCollapsedY(); sliderMin.value = 0; sliderMax.value = 26; updateSliderUI(); applyRangeFilter(); }
-    filterBtn.addEventListener('click', () => filterMode ? closeFilter() : openFilter());
-    filterCloseBtn.addEventListener('click', closeFilter);
+    let filterMode=false;
+    const sheet=document.getElementById('bottom-sheet'),filterBtn=document.getElementById('filter-btn');
+    const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
+    function getCollapsedY(){return sheet.clientHeight-130;}
+    function openFilter(){filterMode=true;filterBtn.classList.add('active');filterCloseBtn.classList.add('visible');sheetNormal.style.display='none';sheetFilter.classList.add('visible');sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;currentY=window.innerHeight*0.5;}
+    function closeFilter(){filterMode=false;filterBtn.classList.remove('active');filterCloseBtn.classList.remove('visible');sheetNormal.style.display='flex';sheetFilter.classList.remove('visible');sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${getCollapsedY()}px)`;currentY=getCollapsedY();sliderMin.value=0;sliderMax.value=26;updateSliderUI();applyRangeFilter();}
+    filterBtn.addEventListener('click',()=>filterMode?closeFilter():openFilter());
+    filterCloseBtn.addEventListener('click',closeFilter);
 
-    let moveTimer = null;
-    map.on('move', () => { highlightParking(); clearTimeout(moveTimer); moveTimer = setTimeout(checkParking, 150); });
-    map.on('zoomend', checkParking);
+    let moveTimer=null;
+    map.on('move',()=>{highlightParking();clearTimeout(moveTimer);moveTimer=setTimeout(checkParking,150);});
+    map.on('zoomend',checkParking);
 
-    const btn = document.getElementById('action-btn'), summaryHeader = document.getElementById('summary-header'), summaryType = document.getElementById('summary-type'), details = document.getElementById('sheet-details'), divider = document.getElementById('sheet-divider');
-    let currentHighlightId = null, currentY = getCollapsedY(), currentParkingProps = null;
+    const btn=document.getElementById('action-btn'),summaryHeader=document.getElementById('summary-header'),summaryType=document.getElementById('summary-type'),details=document.getElementById('sheet-details'),divider=document.getElementById('sheet-divider');
+    let currentHighlightId=null,currentY=getCollapsedY(),currentParkingProps=null;
 
-    function highlightParking() {
-      if (!map.getLayer('helsinki-parkit-highlight')) return;
-      const features = map.queryRenderedFeatures(map.project(map.getCenter()), { layers: ['helsinki-parkit-fill'] });
-      if (features.length > 0) { const id = features[0].properties['hel:id']; if (id !== currentHighlightId) { currentHighlightId = id; map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], id]); } }
-      else { if (currentHighlightId !== null) { currentHighlightId = null; map.setFilter('helsinki-parkit-highlight', ['==', ['get', 'hel:id'], -1]); } }
+    function highlightParking(){
+      if(!map.getLayer('helsinki-parkit-highlight'))return;
+      const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});
+      if(f.length>0){const id=f[0].properties['hel:id'];if(id!==currentHighlightId){currentHighlightId=id;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],id]);}}
+      else{if(currentHighlightId!==null){currentHighlightId=null;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],-1]);}}
     }
-    function getOwnerName(raw) { if (!raw) return 'Tuntematon'; if (raw.includes('KYMP') || raw.includes('HEL') || raw.includes('Helsinki')) return 'Helsingin kaupunki'; return raw; }
-    function getTypeName(raw) { if (!raw) return '-'; const l = raw.toLowerCase(); if (l.includes('kadunvarsi')) return 'Kadunvarsipysäköinti'; if (l.includes('halli')) return 'Pysäköintihalli'; if (l.includes('tori') || l.includes('kenttä')) return 'Pysäköintikenttä'; return raw; }
-    function getPriceText(luokka) { if (!luokka) return '-'; const l = luokka.toLowerCase(); if (l.includes('ilmainen')) return 'Ilmainen pysäköintikiekolla'; if (l.includes('maksullinen')) return 'Maksullinen'; if (l.includes('asukas')) return 'Asukaspysäköinti'; return luokka; }
-    function formatHours(v) { if (!v) return `<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`; return `<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`; }
+    function getOwnerName(r){if(!r)return'Tuntematon';if(r.includes('KYMP')||r.includes('HEL')||r.includes('Helsinki'))return'Helsingin kaupunki';return r;}
+    function getTypeName(r){if(!r)return'-';const l=r.toLowerCase();if(l.includes('kadunvarsi'))return'Kadunvarsipysäköinti';if(l.includes('halli'))return'Pysäköintihalli';if(l.includes('tori')||l.includes('kenttä'))return'Pysäköintikenttä';return r;}
+    function getPriceText(l){if(!l)return'-';const s=l.toLowerCase();if(s.includes('ilmainen'))return'Ilmainen pysäköintikiekolla';if(s.includes('maksullinen'))return'Maksullinen';if(s.includes('asukas'))return'Asukaspysäköinti';return l;}
+    function formatHours(v){if(!v)return`<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;return`<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;}
 
-    function checkParking() {
-      if (filterMode) return;
-      const zoom = map.getZoom();
-      if (zoom < 13) { summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = ''; divider.style.display = 'none'; btn.textContent = 'Zoomaa karttaa nähdäksesi pysäköintialueet'; btn.classList.remove('active'); currentParkingProps = null; return; }
-      const features = map.queryRenderedFeatures(map.project(map.getCenter()), { layers: ['helsinki-parkit-fill'] });
-      if (features.length > 0) {
-        const p = features[0].properties; currentParkingProps = p;
-        const kestoText = p['hel:kesto'] ? `Max. ${p['hel:kesto']}` : 'Rajoittamaton';
-        summaryHeader.textContent = `${getOwnerName(p['hel:datanomistaja'])}  |  ${kestoText}`;
-        summaryType.textContent = getTypeName(p['hel:paikan_asento']);
-        details.innerHTML = `${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi'] || '')}</p>`;
-        divider.style.display = 'block'; btn.textContent = 'Pysäköi tähän'; btn.classList.add('active');
-      } else { currentParkingProps = null; summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = ''; divider.style.display = 'none'; btn.textContent = 'Valitse pysäköintialue'; btn.classList.remove('active'); }
+    function checkParking(){
+      if(filterMode)return;
+      const zoom=map.getZoom();
+      if(zoom<13){summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Zoomaa karttaa nähdäksesi pysäköintialueet';btn.classList.remove('active');currentParkingProps=null;return;}
+      const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});
+      if(f.length>0){
+        const p=f[0].properties;currentParkingProps=p;
+        const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';
+        summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;
+        summaryType.textContent=getTypeName(p['hel:paikan_asento']);
+        details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;
+        divider.style.display='block';btn.textContent='Pysäköi tähän';btn.classList.add('active');
+      } else {currentParkingProps=null;summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Valitse pysäköintialue';btn.classList.remove('active');}
     }
 
-    // ===== DRUM ROLLER =====
+    // ===== 3D CANVAS DRUM =====
     let parkingMinutes = 60;
     let parkingMaxMinutes = 1440;
     let isIlmainen = false;
-    const PIXELS_PER_MINUTE = 2;
-    const RIDGE_COUNT = 9;
-    const RIDGE_SPACING = 80 / (RIDGE_COUNT - 1); // even spacing across 80px height
 
-    // Build ridge elements once
-    const drumRidgesEl = document.getElementById('drum-ridges');
-    for (let i = 0; i < RIDGE_COUNT; i++) {
-      const r = document.createElement('div');
-      r.className = 'drum-ridge' + (i === Math.floor(RIDGE_COUNT / 2) ? ' center-line' : '');
-      r.style.top = (i * RIDGE_SPACING) + 'px';
-      drumRidgesEl.appendChild(r);
-    }
+    const PIXELS_PER_MINUTE = 2;        // px of drag = 1 min
+    const RADIANS_PER_PX = 0.055;       // drum spin speed
+    const N_LINES = 12;                  // ridges around cylinder
+    const CW = 52, CH = 80;             // canvas size
+    const CY = CH / 2;                  // canvas vertical center
+    const R = 33;                        // cylinder radius (px)
 
-    // ridgePhase: 0..RIDGE_SPACING, how far ridges have scrolled
-    let ridgePhase = 0;
+    let drumPhase = 0; // radians, increases = drum rolls down
 
-    function setRidgePhase(phase) {
-      ridgePhase = ((phase % RIDGE_SPACING) + RIDGE_SPACING) % RIDGE_SPACING;
-      const ridges = drumRidgesEl.children;
-      for (let i = 0; i < ridges.length; i++) {
-        const base = i * RIDGE_SPACING;
-        let pos = base + ridgePhase;
-        // wrap around within drum height
-        pos = ((pos % 80) + 80) % 80;
-        ridges[i].style.top = pos + 'px';
-        // darken ridge near center for depth illusion
-        const distFromCenter = Math.abs(pos - 40);
-        const alpha = Math.max(0.15, 1 - distFromCenter / 40);
-        ridges[i].style.opacity = alpha;
-        ridges[i].style.height = (distFromCenter < 8 ? 2.5 : 1.5) + 'px';
+    const drumCanvas = document.getElementById('drum-canvas');
+    const dctx = drumCanvas.getContext('2d');
+
+    function drawDrum() {
+      dctx.clearRect(0, 0, CW, CH);
+
+      // Cylinder body: subtle vertical shading to give 3D rounded feel
+      for (let x = 0; x < CW; x++) {
+        const nx = (x - CW/2) / (CW/2);
+        const shade = Math.sqrt(Math.max(0, 1 - nx*nx));
+        const g = Math.round(245 + shade * 8);
+        const edge = Math.round(220 + shade * 20);
+        dctx.fillStyle = `rgb(${edge},${edge},${edge})`;
+        dctx.fillRect(x, 0, 1, CH);
       }
+
+      // Draw ridges on rotating cylinder surface
+      // A line at angle alpha from "facing viewer" appears at y = CY + R*sin(alpha)
+      // Opacity = cos(alpha) (bright when facing, dark at sides)
+      // Only draw front half: -π/2 < alpha < π/2
+      for (let i = 0; i < N_LINES; i++) {
+        const alpha = (i / N_LINES) * Math.PI * 2 + drumPhase;
+        // Normalize to -π..π
+        const a = ((alpha % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+        // facing factor: cos(a), front = 0 or 2π (cos=1), back = π (cos=-1)
+        const cosA = Math.cos(a);
+        if (cosA < 0) continue; // back of cylinder, hidden
+
+        // y position on screen
+        const sinA = Math.sin(a);
+        const y = CY + R * sinA;
+        if (y < 1 || y > CH-1) continue;
+
+        // Visual properties based on facing
+        const opacity = cosA * 0.8;
+        const lineWidth = 0.8 + cosA * 2.2;
+        // Color: darker near center of drum (more contrast), blueish-gray
+        const colorVal = Math.round(60 + (1-cosA)*60);
+
+        dctx.save();
+        dctx.globalAlpha = opacity;
+        dctx.strokeStyle = `rgb(${colorVal},${colorVal-5},${colorVal+20})`;
+        dctx.lineWidth = lineWidth;
+        dctx.lineCap = 'round';
+        dctx.beginPath();
+        dctx.moveTo(6, y);
+        dctx.lineTo(CW-6, y);
+        dctx.stroke();
+        dctx.restore();
+      }
+
+      // Top fade (cylinder curves away)
+      const tg = dctx.createLinearGradient(0,0,0,24);
+      tg.addColorStop(0,'rgba(232,232,232,0.98)');
+      tg.addColorStop(1,'rgba(232,232,232,0)');
+      dctx.fillStyle=tg; dctx.fillRect(0,0,CW,24);
+
+      // Bottom fade
+      const bg = dctx.createLinearGradient(0,CH-24,0,CH);
+      bg.addColorStop(0,'rgba(232,232,232,0)');
+      bg.addColorStop(1,'rgba(232,232,232,0.98)');
+      dctx.fillStyle=bg; dctx.fillRect(0,CH-24,CW,24);
+
+      // Center selection line
+      dctx.save();
+      dctx.strokeStyle='rgba(12,2,67,0.18)';
+      dctx.lineWidth=1;
+      dctx.setLineDash([2,2]);
+      dctx.beginPath();
+      dctx.moveTo(4,CY);
+      dctx.lineTo(CW-4,CY);
+      dctx.stroke();
+      dctx.restore();
     }
 
     function formatTimeDisplay(mins) {
       mins = Math.max(1, Math.min(mins, parkingMaxMinutes));
       if (mins < 60) return `${mins}min`;
-      const h = Math.floor(mins / 60), m = mins % 60;
+      const h = Math.floor(mins/60), m = mins%60;
       return m > 0 ? `${h}h ${m}min` : `${h}h`;
     }
 
     let lastDisplayedMinutes = -1;
-    function updateTimeDisplay() {
-      parkingMinutes = Math.max(1, Math.min(Math.round(parkingMinutes), parkingMaxMinutes));
-      if (parkingMinutes !== lastDisplayedMinutes) {
-        document.getElementById('time-big').textContent = formatTimeDisplay(parkingMinutes);
-        document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(parkingMinutes / 60 * 1.5).toFixed(2)} €`;
-        // Haptic tick on each minute change (Android only)
-        if (navigator.vibrate) navigator.vibrate(8);
-        lastDisplayedMinutes = parkingMinutes;
+    function updateDisplay() {
+      const rounded = Math.max(1, Math.min(Math.round(parkingMinutes), parkingMaxMinutes));
+      parkingMinutes = rounded;
+      if (rounded !== lastDisplayedMinutes) {
+        document.getElementById('time-big').textContent = formatTimeDisplay(rounded);
+        document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(rounded/60*1.5).toFixed(2)} €`;
+        if (navigator.vibrate) navigator.vibrate(6);
+        lastDisplayedMinutes = rounded;
       }
+      drawDrum();
     }
 
-    // Inertia state
+    // Inertia
     let inertiaRAF = null;
-    let inertiaVelocity = 0; // px/ms
-    const FRICTION = 0.92; // deceleration factor per frame
-    const MIN_VELOCITY = 0.05;
+    let inertiaVel = 0; // px/ms, positive = finger was going down
+    const FRICTION = 0.88;
+    const MIN_VEL = 0.025;
 
-    function stopInertia() {
-      if (inertiaRAF) { cancelAnimationFrame(inertiaRAF); inertiaRAF = null; }
-    }
+    function stopInertia() { if (inertiaRAF) { cancelAnimationFrame(inertiaRAF); inertiaRAF = null; } }
 
     function runInertia() {
-      if (Math.abs(inertiaVelocity) < MIN_VELOCITY) { inertiaRAF = null; return; }
-      // velocity in px/ms, assume ~16ms per frame
-      const deltaPx = inertiaVelocity * 16;
-      const minsDelta = deltaPx / PIXELS_PER_MINUTE;
-      const prevMins = parkingMinutes;
-      parkingMinutes = Math.max(1, Math.min(parkingMinutes - minsDelta, parkingMaxMinutes));
-      setRidgePhase(ridgePhase + deltaPx);
-      updateTimeDisplay();
-      // stop at limits
-      if (parkingMinutes === 1 || parkingMinutes === parkingMaxMinutes) { inertiaRAF = null; return; }
-      inertiaVelocity *= FRICTION;
+      if (Math.abs(inertiaVel) < MIN_VEL) { inertiaRAF = null; drawDrum(); return; }
+      const dpx = inertiaVel * 16; // positive = moving down
+      drumPhase += dpx * RADIANS_PER_PX;         // down = phase increases = drum rolls down ✓
+      parkingMinutes = Math.max(1, Math.min(parkingMinutes - dpx / PIXELS_PER_MINUTE, parkingMaxMinutes));
+      updateDisplay();
+      if (parkingMinutes <= 1 || parkingMinutes >= parkingMaxMinutes) { inertiaRAF = null; return; }
+      inertiaVel *= FRICTION;
       inertiaRAF = requestAnimationFrame(runInertia);
     }
 
-    // Touch tracking for velocity
+    // Touch
     const drumZone = document.getElementById('drum-scroll-zone');
-    let dragStartY = null, dragStartMins = null;
-    let lastTouchY = null, lastTouchTime = null, touchVelocity = 0;
+    let tStartY=null, tStartMins, tStartPhase, tLastY, tLastT, tVel;
 
     drumZone.addEventListener('touchstart', e => {
       stopInertia();
-      dragStartY = e.touches[0].clientY;
-      dragStartMins = parkingMinutes;
-      lastTouchY = dragStartY;
-      lastTouchTime = Date.now();
-      touchVelocity = 0;
-    }, { passive: true });
+      tStartY = e.touches[0].clientY;
+      tStartMins = parkingMinutes;
+      tStartPhase = drumPhase;
+      tLastY = tStartY; tLastT = Date.now(); tVel = 0;
+    }, {passive:true});
 
     drumZone.addEventListener('touchmove', e => {
-      if (dragStartY === null) return;
+      if (tStartY===null) return;
       const y = e.touches[0].clientY;
-      const now = Date.now();
-      const dt = now - lastTouchTime;
-      if (dt > 0) touchVelocity = (lastTouchY - y) / dt; // px/ms, positive = scrolling up = more time
-      lastTouchY = y; lastTouchTime = now;
+      const now = Date.now(), dt = now - tLastT;
+      if (dt>0) tVel = (y - tLastY) / dt; // positive when finger going down
+      tLastY = y; tLastT = now;
 
-      const totalDeltaPx = dragStartY - y;
-      const minsDelta = totalDeltaPx / PIXELS_PER_MINUTE;
-      parkingMinutes = Math.max(1, Math.min(dragStartMins + minsDelta, parkingMaxMinutes));
-      setRidgePhase(ridgePhase - (y - lastTouchY));
-      setRidgePhase(totalDeltaPx % (RIDGE_SPACING * RIDGE_COUNT));
-      updateTimeDisplay();
-    }, { passive: true });
+      const fingerDelta = y - tStartY;          // positive when finger moved down
+      drumPhase = tStartPhase + fingerDelta * RADIANS_PER_PX;  // drum rolls down ✓
+      parkingMinutes = tStartMins - fingerDelta / PIXELS_PER_MINUTE; // down = fewer mins
+      parkingMinutes = Math.max(1, Math.min(parkingMinutes, parkingMaxMinutes));
+      updateDisplay();
+    }, {passive:true});
 
     drumZone.addEventListener('touchend', () => {
-      dragStartY = null;
-      // Launch inertia with current velocity
-      inertiaVelocity = touchVelocity;
-      if (Math.abs(inertiaVelocity) > MIN_VELOCITY) {
-        inertiaRAF = requestAnimationFrame(runInertia);
-      }
-    }, { passive: true });
+      tStartY = null;
+      inertiaVel = tVel;
+      if (Math.abs(inertiaVel) > MIN_VEL) inertiaRAF = requestAnimationFrame(runInertia);
+    }, {passive:true});
 
-    // Mouse support for desktop testing
-    let mouseDragStartY = null, mouseDragStartMins = null, lastMouseY = null, lastMouseTime = null, mouseVelocity = 0;
+    // Mouse (desktop)
+    let mStartY=null, mStartMins, mStartPhase, mLastY, mLastT, mVel;
     drumZone.addEventListener('mousedown', e => {
       stopInertia();
-      mouseDragStartY = e.clientY; mouseDragStartMins = parkingMinutes;
-      lastMouseY = e.clientY; lastMouseTime = Date.now(); mouseVelocity = 0;
+      mStartY=e.clientY; mStartMins=parkingMinutes; mStartPhase=drumPhase;
+      mLastY=e.clientY; mLastT=Date.now(); mVel=0;
     });
     window.addEventListener('mousemove', e => {
-      if (mouseDragStartY === null) return;
-      const now = Date.now(), dt = now - lastMouseTime;
-      if (dt > 0) mouseVelocity = (lastMouseY - e.clientY) / dt;
-      lastMouseY = e.clientY; lastMouseTime = now;
-      const totalDeltaPx = mouseDragStartY - e.clientY;
-      parkingMinutes = Math.max(1, Math.min(mouseDragStartMins + totalDeltaPx / PIXELS_PER_MINUTE, parkingMaxMinutes));
-      setRidgePhase(totalDeltaPx % (RIDGE_SPACING * RIDGE_COUNT));
-      updateTimeDisplay();
+      if(mStartY===null) return;
+      const dt=Date.now()-mLastT;
+      if(dt>0) mVel=(e.clientY-mLastY)/dt;
+      mLastY=e.clientY; mLastT=Date.now();
+      const fd=e.clientY-mStartY;
+      drumPhase=mStartPhase+fd*RADIANS_PER_PX;
+      parkingMinutes=Math.max(1,Math.min(mStartMins-fd/PIXELS_PER_MINUTE,parkingMaxMinutes));
+      updateDisplay();
     });
     window.addEventListener('mouseup', () => {
-      if (mouseDragStartY === null) return;
-      mouseDragStartY = null;
-      inertiaVelocity = mouseVelocity;
-      if (Math.abs(inertiaVelocity) > MIN_VELOCITY) inertiaRAF = requestAnimationFrame(runInertia);
+      if(mStartY===null) return; mStartY=null;
+      inertiaVel=mVel;
+      if(Math.abs(inertiaVel)>MIN_VEL) inertiaRAF=requestAnimationFrame(runInertia);
     });
 
-    // Init ridges
-    setRidgePhase(0);
+    drawDrum();
 
-    // ===== OVERLAY =====
+    // Overlay
     const overlay = document.getElementById('parking-overlay');
     function openParkingOverlay(p) {
-      const areaCode = p['hel:id'] || '—';
-      const owner = getOwnerName(p['hel:datanomistaja']);
-      const kesto = p['hel:kesto'] || null;
-      const tyyppi = getTypeName(p['hel:paikan_asento']);
-      const voimassaolo = p['hel:voimassaolo'] || 'Kaikki ajat';
-      const kestoText = kesto ? `Max. ${kesto}` : 'Rajoittamaton';
-      const luokka = p['hel:luokka_nimi'] || '';
-      isIlmainen = luokka.toLowerCase().includes('ilmainen');
-      parkingMaxMinutes = kesto ? kestoToMinutes(kesto) : 1440;
-      parkingMinutes = Math.min(60, parkingMaxMinutes);
-      lastDisplayedMinutes = -1;
-      document.getElementById('p-code').textContent = areaCode;
-      document.getElementById('p-owner').textContent = owner;
-      document.getElementById('p-meta').textContent = `${tyyppi} · ${kestoText} · ${voimassaolo}`;
-      setRidgePhase(0);
-      updateTimeDisplay();
+      const areaCode=p['hel:id']||'—';
+      const kesto=p['hel:kesto']||null;
+      const tyyppi=getTypeName(p['hel:paikan_asento']);
+      const voimassaolo=p['hel:voimassaolo']||'Kaikki ajat';
+      const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton';
+      const luokka=p['hel:luokka_nimi']||'';
+      isIlmainen=luokka.toLowerCase().includes('ilmainen');
+      parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;
+      parkingMinutes=Math.min(60,parkingMaxMinutes);
+      lastDisplayedMinutes=-1;
+      drumPhase=0;
+      document.getElementById('p-code').textContent=areaCode;
+      document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);
+      document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText} · ${voimassaolo}`;
+      updateDisplay();
       overlay.classList.add('open');
     }
 
-    document.getElementById('back-btn').addEventListener('click', () => { stopInertia(); overlay.classList.remove('open'); });
-    btn.addEventListener('click', () => { if (currentParkingProps) openParkingOverlay(currentParkingProps); });
+    document.getElementById('back-btn').addEventListener('click',()=>{stopInertia();overlay.classList.remove('open');});
+    btn.addEventListener('click',()=>{if(currentParkingProps)openParkingOverlay(currentParkingProps);});
 
     document.getElementById('vehicle-select').addEventListener('change', function() {
-      if (this.value === 'add') {
-        const reg = prompt('Rekisterinumero (esim. ABC-123):');
-        const nick = reg ? prompt('Lempinimi (esim. Oma auto):') : null;
-        if (reg && nick) {
-          const opt = document.createElement('option');
-          const val = `${reg.trim().toUpperCase()}|${nick.trim()}`;
-          opt.value = val; opt.textContent = `${nick.trim()} — ${reg.trim().toUpperCase()}`;
-          this.insertBefore(opt, this.querySelector('option[value="add"]'));
-          this.value = val;
-        } else { this.value = this.options[0].value; }
+      if(this.value==='add'){
+        const reg=prompt('Rekisterinumero (esim. ABC-123):');
+        const nick=reg?prompt('Lempinimi (esim. Oma auto):'):null;
+        if(reg&&nick){const opt=document.createElement('option');const val=`${reg.trim().toUpperCase()}|${nick.trim()}`;opt.value=val;opt.textContent=`${nick.trim()} — ${reg.trim().toUpperCase()}`;this.insertBefore(opt,this.querySelector('option[value="add"]'));this.value=val;}
+        else{this.value=this.options[0].value;}
       }
-      const parts = this.value.split('|');
-      document.getElementById('plate-text').textContent = parts[0] || '—';
-      document.getElementById('vehicle-nickname').textContent = parts[1] || '';
+      const parts=this.value.split('|');
+      document.getElementById('plate-text').textContent=parts[0]||'—';
+      document.getElementById('vehicle-nickname').textContent=parts[1]||'';
     });
 
-    document.getElementById('start-btn').addEventListener('click', () => {
-      const vehicle = document.getElementById('vehicle-select').value;
-      if (!vehicle || vehicle === 'add') { alert('Valitse ensin ajoneuvo'); return; }
-      const parts = vehicle.split('|');
+    document.getElementById('start-btn').addEventListener('click',()=>{
+      const v=document.getElementById('vehicle-select').value;
+      if(!v||v==='add'){alert('Valitse ensin ajoneuvo');return;}
+      const parts=v.split('|');
       alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${parts[1]} (${parts[0]})\nAika: ${formatTimeDisplay(parkingMinutes)}\nAlue: ${document.getElementById('p-code').textContent}`);
     });
 
-    map.on('error', e => { console.warn('MapLibre virhe:', e.error?.message || e); });
+    map.on('error',e=>{console.warn('MapLibre virhe:',e.error?.message||e);});
 
-    let startY = 0, startTranslate = 0, lastY = 0, lastTime = 0, velocity = 0, isDragging = false;
-    function snapTo(targetY) { sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; sheet.style.transform = `translateY(${targetY}px)`; currentY = targetY; }
-    sheet.addEventListener('touchstart', (e) => { if (sliderTouching || e.target === sliderMin || e.target === sliderMax) return; startY = e.touches[0].clientY; lastY = startY; lastTime = Date.now(); velocity = 0; const matrix = new DOMMatrix(getComputedStyle(sheet).transform); startTranslate = matrix.m42; currentY = startTranslate; isDragging = true; sheet.style.transition = 'none'; }, { passive: true });
-    sheet.addEventListener('touchmove', (e) => { if (!isDragging) return; const touch = e.touches[0].clientY; const now = Date.now(); const dt = now - lastTime; if (dt > 0) velocity = (touch - lastY) / dt; lastY = touch; lastTime = now; currentY = Math.max(0, Math.min(getCollapsedY(), startTranslate + (touch - startY))); sheet.style.transform = `translateY(${currentY}px)`; }, { passive: true });
-    sheet.addEventListener('touchend', () => { if (!isDragging) return; isDragging = false; const collapsed = getCollapsedY(); if (velocity > 0.5) snapTo(collapsed); else if (velocity < -0.5) snapTo(0); else snapTo(currentY < collapsed / 2 ? 0 : collapsed); });
+    // Sheet drag
+    let startY=0,startTranslate=0,lastY=0,lastTime=0,velocity=0,isDragging=false;
+    function snapTo(t){sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${t}px)`;currentY=t;}
+    sheet.addEventListener('touchstart',(e)=>{if(sliderTouching||e.target===sliderMin||e.target===sliderMax)return;startY=e.touches[0].clientY;lastY=startY;lastTime=Date.now();velocity=0;const matrix=new DOMMatrix(getComputedStyle(sheet).transform);startTranslate=matrix.m42;currentY=startTranslate;isDragging=true;sheet.style.transition='none';},{passive:true});
+    sheet.addEventListener('touchmove',(e)=>{if(!isDragging)return;const touch=e.touches[0].clientY;const now=Date.now();const dt=now-lastTime;if(dt>0)velocity=(touch-lastY)/dt;lastY=touch;lastTime=now;currentY=Math.max(0,Math.min(getCollapsedY(),startTranslate+(touch-startY)));sheet.style.transform=`translateY(${currentY}px)`;},{passive:true});
+    sheet.addEventListener('touchend',()=>{if(!isDragging)return;isDragging=false;const c=getCollapsedY();if(velocity>0.5)snapTo(c);else if(velocity<-0.5)snapTo(0);else snapTo(currentY<c/2?0:c);});
   </script>
 </body>
 </html>
