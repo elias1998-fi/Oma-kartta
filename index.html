@@ -16,32 +16,6 @@
     .maplibregl-ctrl { display: none !important; }
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
     
-    .map-btn { 
-      position: fixed; 
-      z-index: 25; 
-      width: 48px; 
-      height: 48px; 
-      background: white; 
-      border: none; 
-      border-radius: 50%; 
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
-      cursor: pointer; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center;
-      transition: bottom 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
-    }
-    
-    #plus-btn { 
-      left: max(16px,env(safe-area-inset-left));
-      bottom: 120px;
-    }
-    
-    #location-btn { 
-      right: max(16px,env(safe-area-inset-right));
-      bottom: 120px;
-    }
-    
     #left-menu-pill {
       position: fixed;
       top: max(16px,env(safe-area-inset-top));
@@ -70,14 +44,14 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: background 0.2s ease;
+      transition: background 0.2s ease, border-radius 0.2s ease;
     }
     
-    .pill-btn svg { width: 18px; height: 18px; }
+    .pill-btn svg { width: 18px; height: 18px; transition: stroke 0.2s ease; }
     .pill-btn#profile-btn svg { width: 20px; height: 20px; }
     
     #menu-btn svg { width: 16px; height: 16px; }
-    
+    #menu-btn.active { background: #0C0243; border-radius: 50%; }
     #menu-btn.active svg line { stroke: white; }
     
     #profile-btn.active { background: #0C0243; border-radius: 50%; }
@@ -89,6 +63,34 @@
     
     #search-btn.active { background: #0C0243; border-radius: 50%; }
     #search-btn.active svg { stroke: white; }
+    
+    .map-control-btn {
+      position: fixed;
+      z-index: 25;
+      width: 48px;
+      height: 48px;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: bottom 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    
+    .map-control-btn svg { width: 20px; height: 20px; }
+    
+    #plus-btn {
+      left: max(16px,env(safe-area-inset-left));
+      bottom: 120px;
+    }
+    
+    #location-btn {
+      right: max(16px,env(safe-area-inset-right));
+      bottom: 120px;
+    }
     
     #profile-overlay, #search-overlay {
       position: fixed; inset: 0;
@@ -395,13 +397,13 @@
     </button>
   </div>
 
-  <button class="map-btn" id="plus-btn">
+  <button class="map-control-btn" id="plus-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
   </button>
   
-  <button class="map-btn" id="location-btn">
+  <button class="map-control-btn" id="location-btn">
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#333"/>
     </svg>
@@ -597,6 +599,15 @@
     
     const plusBtn = document.getElementById('plus-btn');
     const locationBtn = document.getElementById('location-btn');
+    const sheet = document.getElementById('bottom-sheet');
+    
+    function updateMapButtonPositions() {
+      const sheetRect = sheet.getBoundingClientRect();
+      const sheetTop = sheetRect.top;
+      const buttonBottom = sheetTop - 16;
+      plusBtn.style.bottom = `${window.innerHeight - buttonBottom}px`;
+      locationBtn.style.bottom = `${window.innerHeight - buttonBottom}px`;
+    }
     
     plusBtn.addEventListener('click', () => map.zoomIn());
     locationBtn.addEventListener('click', () => geolocate.trigger());
@@ -612,12 +623,14 @@
     function closeMenu() {
       menuExpanded = false;
       menuPill.classList.remove('expanded');
+      menuBtn.classList.remove('active');
     }
     
     menuBtn.addEventListener('click', () => {
       menuExpanded = !menuExpanded;
       if (menuExpanded) {
         menuPill.classList.add('expanded');
+        menuBtn.classList.add('active');
       } else {
         closeMenu();
       }
@@ -665,7 +678,6 @@
     updateSliderUI();
 
     let filterMode=false;
-    const sheet=document.getElementById('bottom-sheet');
     const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
     function openFilter(){
       filterMode=true;
@@ -677,6 +689,7 @@
       sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;
       currentY=window.innerHeight*0.5;
       btnContainer.classList.add('hidden');
+      setTimeout(updateMapButtonPositions, 350);
     }
     function closeFilter(){
       filterMode=false;
@@ -692,6 +705,7 @@
       updateSliderUI();
       applyRangeFilter();
       btnContainer.classList.remove('hidden');
+      setTimeout(updateMapButtonPositions, 350);
     }
     filterBtn.addEventListener('click',()=>{
       if (filterMode) {
@@ -957,10 +971,18 @@
     map.on('error',e=>{console.warn('MapLibre virhe:',e.error?.message||e);});
 
     let startY=0,startTranslate=0,lastY=0,lastTime=0,velocity=0,isDragging=false;
-    function snapTo(t){sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${t}px)`;currentY=t;}
+    function snapTo(t){
+      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+      sheet.style.transform=`translateY(${t}px)`;
+      currentY=t;
+      setTimeout(updateMapButtonPositions, 350);
+    }
     sheet.addEventListener('touchstart',(e)=>{if(sliderTouching||e.target===sliderMin||e.target===sliderMax)return;startY=e.touches[0].clientY;lastY=startY;lastTime=Date.now();velocity=0;const matrix=new DOMMatrix(getComputedStyle(sheet).transform);startTranslate=matrix.m42;currentY=startTranslate;isDragging=true;sheet.style.transition='none';},{passive:true});
-    sheet.addEventListener('touchmove',(e)=>{if(!isDragging)return;const touch=e.touches[0].clientY;const now=Date.now();const dt=now-lastTime;if(dt>0)velocity=(touch-lastY)/dt;lastY=touch;lastTime=now;const maxY=sheet.clientHeight-90;currentY=Math.max(0,Math.min(maxY,startTranslate+(touch-startY)));sheet.style.transform=`translateY(${currentY}px)`;},{passive:true});
+    sheet.addEventListener('touchmove',(e)=>{if(!isDragging)return;const touch=e.touches[0].clientY;const now=Date.now();const dt=now-lastTime;if(dt>0)velocity=(touch-lastY)/dt;lastY=touch;lastTime=now;const maxY=sheet.clientHeight-90;currentY=Math.max(0,Math.min(maxY,startTranslate+(touch-startY)));sheet.style.transform=`translateY(${currentY}px)`;updateMapButtonPositions();},{passive:true});
     sheet.addEventListener('touchend',()=>{if(!isDragging)return;isDragging=false;const maxY=sheet.clientHeight-90;if(velocity>0.5)snapTo(maxY);else if(velocity<-0.5)snapTo(0);else snapTo(currentY<maxY/2?0:maxY);});
+    
+    updateMapButtonPositions();
+    window.addEventListener('resize', updateMapButtonPositions);
   </script>
 </body>
 </html>
