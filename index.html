@@ -79,7 +79,7 @@
     .drum-scroll-zone:active { cursor: grabbing; }
     #drum-canvas { display: block; width: 52px; height: 80px; }
 
-    /* Vehicle row — clickable, looks like a single control */
+    /* Vehicle row */
     .vehicle-display {
       display: flex; align-items: center; gap: 10px;
       padding: 8px 10px;
@@ -96,51 +96,72 @@
     .vehicle-nickname { font-size: 14px; color: #444; flex: 1; }
     .vehicle-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
 
-    /* Vehicle bottom sheet */
-    #vehicle-sheet {
+    /* Payment row */
+    .payment-display {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px;
+      border: 1.5px solid #eee; border-radius: 10px;
+      cursor: pointer;
+      background: white;
+    }
+    .payment-display:active { background: #f8f8f8; }
+    .payment-icon-box {
+      width: 44px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      background: white;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .payment-icon-box svg { width: 32px; height: auto; }
+    .payment-name { font-size: 14px; color: #333; flex: 1; font-family: Arial, sans-serif; }
+    .payment-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
+
+    /* Bottom sheets */
+    #vehicle-sheet, #payment-sheet {
       position: fixed; inset: 0;
       z-index: 200;
       display: none;
     }
-    #vehicle-sheet.open { display: block; }
-    #vehicle-sheet-backdrop {
+    #vehicle-sheet.open, #payment-sheet.open { display: block; }
+    .sheet-backdrop {
       position: absolute; inset: 0;
       background: rgba(0,0,0,0.3);
     }
-    #vehicle-sheet-panel {
+    .sheet-panel {
       position: absolute; left: 0; right: 0; bottom: 0;
       background: white;
       border-radius: 20px 20px 0 0;
       padding: 16px 0;
       padding-bottom: max(24px, env(safe-area-inset-bottom));
     }
-    .vehicle-sheet-title {
+    .sheet-title {
       font-family: Arial, sans-serif; font-size: 13px; font-weight: bold;
       color: #888; text-transform: uppercase; letter-spacing: 0.5px;
       padding: 0 20px 12px 20px;
     }
-    .vehicle-option {
+    .option-row {
       display: flex; align-items: center; gap: 12px;
       padding: 12px 20px;
       cursor: pointer;
       font-family: Arial, sans-serif;
     }
-    .vehicle-option:active { background: #f5f5f5; }
-    .vehicle-option-check {
+    .option-row:active { background: #f5f5f5; }
+    .option-check {
       width: 20px; height: 20px; border-radius: 50%;
       border: 2px solid #ddd;
       flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
     }
-    .vehicle-option-check.selected {
+    .option-check.selected {
       background: #0C0243; border-color: #0C0243;
     }
-    .vehicle-option-check.selected::after {
+    .option-check.selected::after {
       content: '✓'; color: white; font-size: 12px; font-weight: bold;
     }
-    .vehicle-option-name { font-size: 15px; color: #222; }
-    .vehicle-option-reg { font-size: 13px; color: #888; }
-    .vehicle-add-option {
+    .option-name { font-size: 15px; color: #222; }
+    .option-reg { font-size: 13px; color: #888; }
+    .add-option {
       display: flex; align-items: center; gap: 12px;
       padding: 12px 20px;
       cursor: pointer;
@@ -148,10 +169,9 @@
       color: #0C0243;
       font-size: 15px;
     }
-    .vehicle-add-option:active { background: #f5f5f5; }
-    #vehicle-sheet-divider { border: none; border-top: 1px solid #eee; margin: 4px 0; }
+    .add-option:active { background: #f5f5f5; }
+    .sheet-divider { border: none; border-top: 1px solid #eee; margin: 4px 0; }
 
-    .payment-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 14px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
     #start-btn-container { padding: 10px 14px; padding-bottom: max(20px,env(safe-area-inset-bottom)); flex-shrink: 0; }
     #start-btn { width: 100%; height: 54px; border: none; border-radius: 16px; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; cursor: pointer; }
   </style>
@@ -213,12 +233,21 @@
 
   <!-- Vehicle picker sheet -->
   <div id="vehicle-sheet">
-    <div id="vehicle-sheet-backdrop" onclick="closeVehicleSheet()"></div>
-    <div id="vehicle-sheet-panel">
-      <div class="vehicle-sheet-title">Valitse ajoneuvo</div>
+    <div class="sheet-backdrop" onclick="closeVehicleSheet()"></div>
+    <div class="sheet-panel">
+      <div class="sheet-title">Valitse ajoneuvo</div>
       <div id="vehicle-options"></div>
-      <div id="vehicle-sheet-divider"></div>
-      <div class="vehicle-add-option" onclick="addVehicle()">＋ Lisää uusi ajoneuvo...</div>
+      <div class="sheet-divider"></div>
+      <div class="add-option" onclick="addVehicle()">＋ Lisää uusi ajoneuvo...</div>
+    </div>
+  </div>
+
+  <!-- Payment picker sheet -->
+  <div id="payment-sheet">
+    <div class="sheet-backdrop" onclick="closePaymentSheet()"></div>
+    <div class="sheet-panel">
+      <div class="sheet-title">Valitse maksutapa</div>
+      <div id="payment-options"></div>
     </div>
   </div>
 
@@ -226,7 +255,6 @@
     <div id="parking-header"><button id="back-btn">←</button><div id="parking-header-title">Pysäköinti</div></div>
     <div class="p-cards-container">
 
-      <!-- Box 1 -->
       <div class="p-card">
         <div class="p-card-title">Valittu alue</div>
         <div class="area-row">
@@ -235,7 +263,6 @@
         </div>
       </div>
 
-      <!-- Box 2 -->
       <div class="p-card">
         <div class="p-card-title">Pysäköintiaika</div>
         <div class="time-card-inner">
@@ -253,10 +280,9 @@
         </div>
       </div>
 
-      <!-- Box 3 — single row, no separate dropdown -->
       <div class="p-card">
         <div class="p-card-title">Ajoneuvo</div>
-        <div class="vehicle-display" id="vehicle-display" onclick="openVehicleSheet()">
+        <div class="vehicle-display" onclick="openVehicleSheet()">
           <div class="plate">
             <div class="plate-eu"><div class="eu-stars">★★★</div><div class="eu-fi">FI</div></div>
             <div class="plate-text" id="plate-text">FHY-857</div>
@@ -266,14 +292,13 @@
         </div>
       </div>
 
-      <!-- Box 4 -->
       <div class="p-card">
         <div class="p-card-title">Maksutapa</div>
-        <select class="payment-select" id="payment-select">
-          <option value="applepay">Apple Pay</option>
-          <option value="card">Maksukortti</option>
-          <option value="mobilepay">MobilePay</option>
-        </select>
+        <div class="payment-display" onclick="openPaymentSheet()">
+          <div class="payment-icon-box" id="payment-icon"></div>
+          <div class="payment-name" id="payment-name">Apple Pay</div>
+          <div class="payment-chevron">⌄</div>
+        </div>
       </div>
 
     </div>
@@ -396,12 +421,12 @@
       container.innerHTML = '';
       vehicles.forEach((v, i) => {
         const row = document.createElement('div');
-        row.className = 'vehicle-option';
+        row.className = 'option-row';
         row.innerHTML = `
-          <div class="vehicle-option-check ${i===selectedVehicleIdx?'selected':''}"></div>
+          <div class="option-check ${i===selectedVehicleIdx?'selected':''}"></div>
           <div>
-            <div class="vehicle-option-name">${v.name}</div>
-            <div class="vehicle-option-reg">${v.reg}</div>
+            <div class="option-name">${v.name}</div>
+            <div class="option-reg">${v.reg}</div>
           </div>`;
         row.addEventListener('click', () => { selectedVehicleIdx=i; renderVehicleDisplay(); closeVehicleSheet(); });
         container.appendChild(row);
@@ -422,14 +447,59 @@
       closeVehicleSheet();
     }
 
+    // ===== PAYMENT PICKER =====
+    const paymentMethods = [
+      { id:'applepay', name:'Apple Pay', icon:'applepay' },
+      { id:'card', name:'Maksukortti', icon:'card' },
+      { id:'mobilepay', name:'MobilePay', icon:'mobilepay' }
+    ];
+    let selectedPaymentIdx = 0;
+
+    function getPaymentIcon(icon) {
+      if (icon === 'applepay') {
+        return `<svg viewBox="0 0 48 20" xmlns="http://www.w3.org/2000/svg"><path d="M8.4 3.8c.5-.6.8-1.5.7-2.4-.7 0-1.6.5-2.1 1.1-.5.5-.9 1.4-.8 2.2.8.1 1.7-.4 2.2-1zm.8 1.3c-1.2-.1-2.2.7-2.8.7-.6 0-1.5-.7-2.5-.6-1.3.1-2.5.7-3.1 1.9-1.3 2.3-.3 5.7 1 7.6.6.9 1.4 2 2.4 1.9.9 0 1.3-.6 2.4-.6s1.4.6 2.4.6c1 0 1.7-.9 2.3-1.8.7-1 1-2 1-2.1 0 0-2-.8-2-3.1-.1-1.9 1.5-2.8 1.6-2.9-.9-1.3-2.3-1.5-2.7-1.6zm9.5-2.4v13.6h2.1v-4.7h2.9c2.7 0 4.5-1.8 4.5-4.5s-1.8-4.4-4.4-4.4h-5.1zm2.1 1.9h2.4c1.8 0 2.9 1 2.9 2.6s-1 2.6-2.9 2.6h-2.4v-5.2zm11.3 11.8c1.3 0 2.5-.7 3.1-1.7h0v1.6h2v-7.2c0-2.1-1.7-3.4-4.2-3.4-2.4 0-4.1 1.4-4.2 3.3h1.9c.2-.9 1-1.5 2.2-1.5 1.4 0 2.2.7 2.2 1.9v.8l-2.9.2c-2.7.2-4.1 1.2-4.1 3.1 0 1.9 1.5 3.2 3.6 3.2zm.6-1.7c-1.2 0-2-.6-2-1.5s.8-1.5 2.2-1.6l2.6-.2v1c0 1.3-1.1 2.3-2.8 2.3zm8.4 4.7c2.1 0 3.1-.8 4-3.2l3.8-10.7h-2.2l-2.6 8.3h0l-2.6-8.3h-2.2l3.7 10.3-.2.6c-.3 1-.8 1.4-1.7 1.4-.2 0-.5 0-.6-.1v1.7c.1.1.4.1.7.1z" fill="#000"/></svg>`;
+      }
+      if (icon === 'card') {
+        return `<svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/><rect x="1" y="5" width="30" height="3" fill="#555"/><rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/><rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/></svg>`;
+      }
+      if (icon === 'mobilepay') {
+        return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="#5A78FF" stroke-width="1.8"/><circle cx="12" cy="18" r="1.2" fill="#5A78FF"/><path d="M9 7h6M9 10h6M9 13h4" stroke="#5A78FF" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+      }
+      return '';
+    }
+
+    function renderPaymentDisplay() {
+      const p = paymentMethods[selectedPaymentIdx];
+      document.getElementById('payment-icon').innerHTML = getPaymentIcon(p.icon);
+      document.getElementById('payment-name').textContent = p.name;
+    }
+
+    function renderPaymentOptions() {
+      const container = document.getElementById('payment-options');
+      container.innerHTML = '';
+      paymentMethods.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'option-row';
+        row.innerHTML = `
+          <div class="option-check ${i===selectedPaymentIdx?'selected':''}"></div>
+          <div class="payment-icon-box">${getPaymentIcon(p.icon)}</div>
+          <div class="option-name">${p.name}</div>`;
+        row.addEventListener('click', () => { selectedPaymentIdx=i; renderPaymentDisplay(); closePaymentSheet(); });
+        container.appendChild(row);
+      });
+    }
+
+    function openPaymentSheet() { renderPaymentOptions(); document.getElementById('payment-sheet').classList.add('open'); }
+    function closePaymentSheet() { document.getElementById('payment-sheet').classList.remove('open'); }
+
     // ===== OVERLAY =====
     const overlay=document.getElementById('parking-overlay');
-    function openParkingOverlay(p){const areaCode=p['hel:id']||'—',kesto=p['hel:kesto']||null;const tyyppi=getTypeName(p['hel:paikan_asento']),voimassaolo=p['hel:voimassaolo']||'Kaikki ajat';const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';isIlmainen=luokka.toLowerCase().includes('ilmainen');parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;parkingMinutes=Math.min(60,parkingMaxMinutes);lastDisplayedMinutes=-1;drumPhase=0;document.getElementById('p-code').textContent=areaCode;document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText} · ${voimassaolo}`;renderVehicleDisplay();updateDisplay();overlay.classList.add('open');}
+    function openParkingOverlay(p){const areaCode=p['hel:id']||'—',kesto=p['hel:kesto']||null;const tyyppi=getTypeName(p['hel:paikan_asento']),voimassaolo=p['hel:voimassaolo']||'Kaikki ajat';const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';isIlmainen=luokka.toLowerCase().includes('ilmainen');parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;parkingMinutes=Math.min(60,parkingMaxMinutes);lastDisplayedMinutes=-1;drumPhase=0;document.getElementById('p-code').textContent=areaCode;document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText} · ${voimassaolo}`;renderVehicleDisplay();renderPaymentDisplay();updateDisplay();overlay.classList.add('open');}
 
     document.getElementById('back-btn').addEventListener('click',()=>{stopInertia();overlay.classList.remove('open');});
     btn.addEventListener('click',()=>{if(currentParkingProps)openParkingOverlay(currentParkingProps);});
 
-    document.getElementById('start-btn').addEventListener('click',()=>{const v=vehicles[selectedVehicleIdx];alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${v.name} (${v.reg})\nAika: ${formatTimeDisplay(parkingMinutes)}\nAlue: ${document.getElementById('p-code').textContent}`);});
+    document.getElementById('start-btn').addEventListener('click',()=>{const v=vehicles[selectedVehicleIdx];const p=paymentMethods[selectedPaymentIdx];alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${v.name} (${v.reg})\nAika: ${formatTimeDisplay(parkingMinutes)}\nMaksutapa: ${p.name}\nAlue: ${document.getElementById('p-code').textContent}`);});
 
     map.on('error',e=>{console.warn('MapLibre virhe:',e.error?.message||e);});
 
