@@ -70,8 +70,8 @@
     .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
     .time-card-inner { display: flex; align-items: center; gap: 12px; }
     .time-big-display { flex: 1; }
-    .time-big-number { font-size: 32px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; }
-    .time-big-unit { font-size: 15px; color: #888; margin-top: 4px; font-family: Arial, sans-serif; }
+    .time-big-number { font-size: 28px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; }
+    .time-big-unit { font-size: 16px; color: #666; margin-top: 4px; font-family: Arial, sans-serif; }
     .drum-scroll-zone { width: 52px; height: 80px; border: 1.5px solid #d8d8d8; border-radius: 12px; cursor: grab; user-select: none; flex-shrink: 0; overflow: hidden; position: relative; }
     .drum-scroll-zone:active { cursor: grabbing; }
     #drum-canvas { display: block; width: 52px; height: 80px; }
@@ -84,11 +84,11 @@
       background: white;
     }
     .vehicle-display:active { background: #f8f8f8; }
-    .plate { display: flex; align-items: center; border: 2px solid #333; border-radius: 4px; overflow: hidden; height: 28px; flex-shrink: 0; }
-    .plate-eu { background: #0C0243; color: white; font-size: 7px; font-weight: bold; padding: 0 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
-    .plate-eu .eu-stars { font-size: 5px; margin-bottom: 1px; }
-    .plate-eu .eu-fi { font-size: 6px; }
-    .plate-text { padding: 0 7px; font-size: 12px; font-weight: bold; color: #222; letter-spacing: 0.5px; }
+    .plate { display: flex; align-items: center; border: 1.5px solid #333; border-radius: 3px; overflow: hidden; height: 24px; flex-shrink: 0; }
+    .plate-eu { background: #0C0243; color: white; font-size: 6px; font-weight: bold; padding: 0 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .plate-eu .eu-stars { font-size: 4px; margin-bottom: 1px; }
+    .plate-eu .eu-fi { font-size: 5px; }
+    .plate-text { padding: 0 6px; font-size: 11px; font-weight: bold; color: #222; letter-spacing: 0.3px; }
     .vehicle-nickname { font-size: 14px; color: #444; flex: 1; }
     .vehicle-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
 
@@ -483,7 +483,7 @@
 
     let parkingMinutes=0, parkingMaxMinutes=1440, isIlmainen=false;
     let parkingStartTime = null;
-    const PIXELS_PER_MINUTE=4.5, RADIANS_PER_PX=0.055, N_LINES=12;
+    const PIXELS_PER_MINUTE=8, RADIANS_PER_PX=0.055, N_LINES=12;
     const CW=52, CH=80, CY=CH/2, R=33;
     let drumPhase=0;
     const drumCanvas=document.getElementById('drum-canvas');
@@ -515,6 +515,8 @@
     }
 
     let lastDisplayedMinutes=-1;
+    let lastVibrateMinute=-1;
+    
     function updateDisplay(){
       const rounded=Math.max(0,Math.min(Math.round(parkingMinutes),parkingMaxMinutes));
       parkingMinutes=rounded;
@@ -532,7 +534,11 @@
           startBtn.classList.remove('disabled');
         }
         
-        if(navigator.vibrate && rounded > 0) navigator.vibrate(6);
+        if(rounded > 0 && rounded !== lastVibrateMinute && navigator.vibrate){
+          navigator.vibrate(10);
+          lastVibrateMinute = rounded;
+        }
+        
         lastDisplayedMinutes=rounded;
       }
       drawDrum();
@@ -667,6 +673,7 @@
       parkingMinutes=0;
       parkingStartTime=new Date();
       lastDisplayedMinutes=-1;
+      lastVibrateMinute=-1;
       drumPhase=0;
       document.getElementById('p-code').textContent=areaCode;
       document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);
