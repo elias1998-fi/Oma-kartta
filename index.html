@@ -17,12 +17,12 @@
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
     
     .map-btn { 
-      position: fixed; z-index: 25; width: 39px; height: 39px; 
+      position: fixed; z-index: 25; width: 48px; height: 48px; 
       background: white; border: none; border-radius: 50%; 
       box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; 
       display: flex; align-items: center; justify-content: center;
     }
-    .map-btn svg { width: 18px; height: 18px; }
+    .map-btn svg { width: 20px; height: 20px; }
     
     #left-menu-pill {
       position: fixed;
@@ -52,28 +52,35 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      transition: background 0.15s ease;
     }
     
     .pill-btn svg { width: 18px; height: 18px; }
     .pill-btn#profile-btn svg { width: 20px; height: 20px; }
     
-    #menu-btn svg { width: 15px; height: 15px; }
+    #menu-btn svg { width: 13px; height: 13px; }
     #menu-btn.active { background: #0C0243; border-radius: 50%; }
     #menu-btn.active svg line { stroke: white; }
+    
+    #profile-btn.active { background: #0C0243; border-radius: 50%; }
+    #profile-btn.active svg { stroke: white; }
     
     #filter-btn.active { background: #0C0243; border-radius: 50%; }
     #filter-btn.active svg line { stroke: white; }
     #filter-btn.active svg circle { fill: white; stroke: none; }
     
+    #search-btn.active { background: #0C0243; border-radius: 50%; }
+    #search-btn.active svg { stroke: white; }
+    
     #plus-btn { 
       position: fixed;
-      bottom: max(160px, calc(160px + env(safe-area-inset-bottom)));
+      bottom: max(190px, calc(190px + env(safe-area-inset-bottom)));
       left: max(16px,env(safe-area-inset-left));
       z-index: 25;
     }
     #location-btn { 
       position: fixed;
-      bottom: max(160px, calc(160px + env(safe-area-inset-bottom)));
+      bottom: max(190px, calc(190px + env(safe-area-inset-bottom)));
       right: max(16px,env(safe-area-inset-right));
       z-index: 25;
     }
@@ -346,7 +353,7 @@
 
   <div id="left-menu-pill">
     <button class="pill-btn" id="menu-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="3.5" stroke-linecap="round">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
@@ -600,13 +607,21 @@
     });
     
     profileBtn.addEventListener('click', () => {
-      closeMenu();
-      document.getElementById('profile-overlay').classList.add('open');
+      profileBtn.classList.add('active');
+      setTimeout(() => {
+        profileBtn.classList.remove('active');
+        closeMenu();
+        document.getElementById('profile-overlay').classList.add('open');
+      }, 200);
     });
     
     searchBtn.addEventListener('click', () => {
-      closeMenu();
-      document.getElementById('search-overlay').classList.add('open');
+      searchBtn.classList.add('active');
+      setTimeout(() => {
+        searchBtn.classList.remove('active');
+        closeMenu();
+        document.getElementById('search-overlay').classList.add('open');
+      }, 200);
     });
     
     function closeProfileOverlay() {
@@ -667,8 +682,11 @@
       if (filterMode) {
         closeFilter();
       } else {
-        closeMenu();
-        openFilter();
+        filterBtn.classList.add('active');
+        setTimeout(() => {
+          closeMenu();
+          openFilter();
+        }, 200);
       }
     });
     filterCloseBtn.addEventListener('click',closeFilter);
