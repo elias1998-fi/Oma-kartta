@@ -78,14 +78,79 @@
     .drum-scroll-zone { width: 52px; height: 80px; border: 1.5px solid #d8d8d8; border-radius: 12px; cursor: grab; user-select: none; flex-shrink: 0; overflow: hidden; position: relative; }
     .drum-scroll-zone:active { cursor: grabbing; }
     #drum-canvas { display: block; width: 52px; height: 80px; }
-    .vehicle-display { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+
+    /* Vehicle row — clickable, looks like a single control */
+    .vehicle-display {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border: 1.5px solid #eee; border-radius: 10px;
+      cursor: pointer;
+      background: white;
+    }
+    .vehicle-display:active { background: #f8f8f8; }
     .plate { display: flex; align-items: center; border: 2px solid #333; border-radius: 5px; overflow: hidden; height: 30px; flex-shrink: 0; }
     .plate-eu { background: #0C0243; color: white; font-size: 8px; font-weight: bold; padding: 0 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
     .plate-eu .eu-stars { font-size: 6px; margin-bottom: 1px; }
     .plate-eu .eu-fi { font-size: 7px; }
     .plate-text { padding: 0 8px; font-size: 14px; font-weight: bold; color: #222; letter-spacing: 1px; }
-    .vehicle-nickname { font-size: 14px; color: #444; }
-    .vehicle-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 13px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+    .vehicle-nickname { font-size: 14px; color: #444; flex: 1; }
+    .vehicle-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
+
+    /* Vehicle bottom sheet */
+    #vehicle-sheet {
+      position: fixed; inset: 0;
+      z-index: 200;
+      display: none;
+    }
+    #vehicle-sheet.open { display: block; }
+    #vehicle-sheet-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.3);
+    }
+    #vehicle-sheet-panel {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 16px 0;
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+    }
+    .vehicle-sheet-title {
+      font-family: Arial, sans-serif; font-size: 13px; font-weight: bold;
+      color: #888; text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 0 20px 12px 20px;
+    }
+    .vehicle-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+    }
+    .vehicle-option:active { background: #f5f5f5; }
+    .vehicle-option-check {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #ddd;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .vehicle-option-check.selected {
+      background: #0C0243; border-color: #0C0243;
+    }
+    .vehicle-option-check.selected::after {
+      content: '✓'; color: white; font-size: 12px; font-weight: bold;
+    }
+    .vehicle-option-name { font-size: 15px; color: #222; }
+    .vehicle-option-reg { font-size: 13px; color: #888; }
+    .vehicle-add-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      color: #0C0243;
+      font-size: 15px;
+    }
+    .vehicle-add-option:active { background: #f5f5f5; }
+    #vehicle-sheet-divider { border: none; border-top: 1px solid #eee; margin: 4px 0; }
+
     .payment-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 14px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
     #start-btn-container { padding: 10px 14px; padding-bottom: max(20px,env(safe-area-inset-bottom)); flex-shrink: 0; }
     #start-btn { width: 100%; height: 54px; border: none; border-radius: 16px; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; cursor: pointer; }
@@ -146,9 +211,22 @@
 
   <div id="btn-container"><button id="action-btn">Valitse pysäköintialue</button></div>
 
+  <!-- Vehicle picker sheet -->
+  <div id="vehicle-sheet">
+    <div id="vehicle-sheet-backdrop" onclick="closeVehicleSheet()"></div>
+    <div id="vehicle-sheet-panel">
+      <div class="vehicle-sheet-title">Valitse ajoneuvo</div>
+      <div id="vehicle-options"></div>
+      <div id="vehicle-sheet-divider"></div>
+      <div class="vehicle-add-option" onclick="addVehicle()">＋ Lisää uusi ajoneuvo...</div>
+    </div>
+  </div>
+
   <div id="parking-overlay">
     <div id="parking-header"><button id="back-btn">←</button><div id="parking-header-title">Pysäköinti</div></div>
     <div class="p-cards-container">
+
+      <!-- Box 1 -->
       <div class="p-card">
         <div class="p-card-title">Valittu alue</div>
         <div class="area-row">
@@ -156,6 +234,8 @@
           <div><div class="area-name" id="p-owner">—</div><div class="area-meta" id="p-meta">—</div></div>
         </div>
       </div>
+
+      <!-- Box 2 -->
       <div class="p-card">
         <div class="p-card-title">Pysäköintiaika</div>
         <div class="time-card-inner">
@@ -172,20 +252,21 @@
           <span class="time-price-val" id="p-price">Ilmainen</span>
         </div>
       </div>
+
+      <!-- Box 3 — single row, no separate dropdown -->
       <div class="p-card">
         <div class="p-card-title">Ajoneuvo</div>
-        <div class="vehicle-display">
+        <div class="vehicle-display" id="vehicle-display" onclick="openVehicleSheet()">
           <div class="plate">
             <div class="plate-eu"><div class="eu-stars">★★★</div><div class="eu-fi">FI</div></div>
             <div class="plate-text" id="plate-text">FHY-857</div>
           </div>
           <div class="vehicle-nickname" id="vehicle-nickname">Äitin auto</div>
+          <div class="vehicle-chevron">⌄</div>
         </div>
-        <select class="vehicle-select" id="vehicle-select">
-          <option value="FHY-857|Äitin auto">Äitin auto — FHY-857</option>
-          <option value="add">+ Lisää uusi ajoneuvo...</option>
-        </select>
       </div>
+
+      <!-- Box 4 -->
       <div class="p-card">
         <div class="p-card-title">Maksutapa</div>
         <select class="payment-select" id="payment-select">
@@ -194,6 +275,7 @@
           <option value="mobilepay">MobilePay</option>
         </select>
       </div>
+
     </div>
     <div id="start-btn-container"><button id="start-btn">Aloita pysäköinti</button></div>
   </div>
@@ -268,204 +350,86 @@
     function formatHours(v){if(!v)return`<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;return`<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;}
     function checkParking(){if(filterMode)return;const zoom=map.getZoom();if(zoom<13){summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Zoomaa karttaa nähdäksesi pysäköintialueet';btn.classList.remove('active');currentParkingProps=null;return;}const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const p=f[0].properties;currentParkingProps=p;const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;summaryType.textContent=getTypeName(p['hel:paikan_asento']);details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;divider.style.display='block';btn.textContent='Pysäköi tähän';btn.classList.add('active');}else{currentParkingProps=null;summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Valitse pysäköintialue';btn.classList.remove('active');}}
 
-    // ===== 3D CANVAS DRUM =====
-    let parkingMinutes = 60;
-    let parkingMaxMinutes = 1440;
-    let isIlmainen = false;
+    // ===== DRUM =====
+    let parkingMinutes=60, parkingMaxMinutes=1440, isIlmainen=false;
+    const PIXELS_PER_MINUTE=2, RADIANS_PER_PX=0.055, N_LINES=12;
+    const CW=52, CH=80, CY=CH/2, R=33;
+    let drumPhase=0;
+    const drumCanvas=document.getElementById('drum-canvas');
+    const dctx=drumCanvas.getContext('2d');
 
-    const PIXELS_PER_MINUTE = 2;
-    const RADIANS_PER_PX = 0.055;
-    const N_LINES = 12;
-    const CW = 52, CH = 80;
-    const CY = CH / 2;
-    const R = 33;
+    function drawDrum(){dctx.clearRect(0,0,CW,CH);for(let x=0;x<CW;x++){const nx=(x-CW/2)/(CW/2);const shade=Math.sqrt(Math.max(0,1-nx*nx));const edge=Math.round(220+shade*20);dctx.fillStyle=`rgb(${edge},${edge},${edge})`;dctx.fillRect(x,0,1,CH);}for(let i=0;i<N_LINES;i++){const alpha=(i/N_LINES)*Math.PI*2+drumPhase;const a=((alpha%(Math.PI*2))+Math.PI*2)%(Math.PI*2);const cosA=Math.cos(a);if(cosA<0)continue;const sinA=Math.sin(a);const y=CY+R*sinA;if(y<1||y>CH-1)continue;const opacity=cosA*0.8;const lineWidth=0.8+cosA*2.2;const colorVal=Math.round(60+(1-cosA)*60);dctx.save();dctx.globalAlpha=opacity;dctx.strokeStyle=`rgb(${colorVal},${colorVal-5},${colorVal+20})`;dctx.lineWidth=lineWidth;dctx.lineCap='round';dctx.beginPath();dctx.moveTo(6,y);dctx.lineTo(CW-6,y);dctx.stroke();dctx.restore();}const tg=dctx.createLinearGradient(0,0,0,24);tg.addColorStop(0,'rgba(232,232,232,0.98)');tg.addColorStop(1,'rgba(232,232,232,0)');dctx.fillStyle=tg;dctx.fillRect(0,0,CW,24);const bg=dctx.createLinearGradient(0,CH-24,0,CH);bg.addColorStop(0,'rgba(232,232,232,0)');bg.addColorStop(1,'rgba(232,232,232,0.98)');dctx.fillStyle=bg;dctx.fillRect(0,CH-24,CW,24);dctx.save();dctx.strokeStyle='rgba(12,2,67,0.18)';dctx.lineWidth=1;dctx.setLineDash([2,2]);dctx.beginPath();dctx.moveTo(4,CY);dctx.lineTo(CW-4,CY);dctx.stroke();dctx.restore();}
 
-    let drumPhase = 0;
+    function formatTimeDisplay(mins){mins=Math.max(1,Math.min(mins,parkingMaxMinutes));if(mins<60)return`${mins}min`;const h=Math.floor(mins/60),m=mins%60;return m>0?`${h}h ${m}min`:`${h}h`;}
 
-    const drumCanvas = document.getElementById('drum-canvas');
-    const dctx = drumCanvas.getContext('2d');
+    let lastDisplayedMinutes=-1;
+    function updateDisplay(){const rounded=Math.max(1,Math.min(Math.round(parkingMinutes),parkingMaxMinutes));parkingMinutes=rounded;if(rounded!==lastDisplayedMinutes){document.getElementById('time-big').textContent=formatTimeDisplay(rounded);document.getElementById('p-price').textContent=isIlmainen?'Ilmainen':`${(rounded/60*1.5).toFixed(2)} €`;if(navigator.vibrate)navigator.vibrate(6);lastDisplayedMinutes=rounded;}drawDrum();}
 
-    function drawDrum() {
-      dctx.clearRect(0, 0, CW, CH);
-      for (let x = 0; x < CW; x++) {
-        const nx = (x - CW/2) / (CW/2);
-        const shade = Math.sqrt(Math.max(0, 1 - nx*nx));
-        const edge = Math.round(220 + shade * 20);
-        dctx.fillStyle = `rgb(${edge},${edge},${edge})`;
-        dctx.fillRect(x, 0, 1, CH);
-      }
-      for (let i = 0; i < N_LINES; i++) {
-        const alpha = (i / N_LINES) * Math.PI * 2 + drumPhase;
-        const a = ((alpha % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-        const cosA = Math.cos(a);
-        if (cosA < 0) continue;
-        const sinA = Math.sin(a);
-        const y = CY + R * sinA;
-        if (y < 1 || y > CH-1) continue;
-        const opacity = cosA * 0.8;
-        const lineWidth = 0.8 + cosA * 2.2;
-        const colorVal = Math.round(60 + (1-cosA)*60);
-        dctx.save();
-        dctx.globalAlpha = opacity;
-        dctx.strokeStyle = `rgb(${colorVal},${colorVal-5},${colorVal+20})`;
-        dctx.lineWidth = lineWidth;
-        dctx.lineCap = 'round';
-        dctx.beginPath();
-        dctx.moveTo(6, y);
-        dctx.lineTo(CW-6, y);
-        dctx.stroke();
-        dctx.restore();
-      }
-      const tg = dctx.createLinearGradient(0,0,0,24);
-      tg.addColorStop(0,'rgba(232,232,232,0.98)');
-      tg.addColorStop(1,'rgba(232,232,232,0)');
-      dctx.fillStyle=tg; dctx.fillRect(0,0,CW,24);
-      const bg = dctx.createLinearGradient(0,CH-24,0,CH);
-      bg.addColorStop(0,'rgba(232,232,232,0)');
-      bg.addColorStop(1,'rgba(232,232,232,0.98)');
-      dctx.fillStyle=bg; dctx.fillRect(0,CH-24,CW,24);
-      dctx.save();
-      dctx.strokeStyle='rgba(12,2,67,0.18)';
-      dctx.lineWidth=1;
-      dctx.setLineDash([2,2]);
-      dctx.beginPath();
-      dctx.moveTo(4,CY);
-      dctx.lineTo(CW-4,CY);
-      dctx.stroke();
-      dctx.restore();
-    }
+    let inertiaRAF=null,inertiaVel=0;
+    const FRICTION=0.88, MIN_VEL=0.025;
+    function stopInertia(){if(inertiaRAF){cancelAnimationFrame(inertiaRAF);inertiaRAF=null;}}
+    function runInertia(){if(Math.abs(inertiaVel)<MIN_VEL){inertiaRAF=null;drawDrum();return;}const dpx=inertiaVel*16;drumPhase+=dpx*RADIANS_PER_PX;parkingMinutes=Math.max(1,Math.min(parkingMinutes+dpx/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();if(parkingMinutes<=1||parkingMinutes>=parkingMaxMinutes){inertiaRAF=null;return;}inertiaVel*=FRICTION;inertiaRAF=requestAnimationFrame(runInertia);}
 
-    function formatTimeDisplay(mins) {
-      mins = Math.max(1, Math.min(mins, parkingMaxMinutes));
-      if (mins < 60) return `${mins}min`;
-      const h = Math.floor(mins/60), m = mins%60;
-      return m > 0 ? `${h}h ${m}min` : `${h}h`;
-    }
-
-    let lastDisplayedMinutes = -1;
-    function updateDisplay() {
-      const rounded = Math.max(1, Math.min(Math.round(parkingMinutes), parkingMaxMinutes));
-      parkingMinutes = rounded;
-      if (rounded !== lastDisplayedMinutes) {
-        document.getElementById('time-big').textContent = formatTimeDisplay(rounded);
-        document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(rounded/60*1.5).toFixed(2)} €`;
-        if (navigator.vibrate) navigator.vibrate(6);
-        lastDisplayedMinutes = rounded;
-      }
-      drawDrum();
-    }
-
-    let inertiaRAF = null;
-    let inertiaVel = 0;
-    const FRICTION = 0.88;
-    const MIN_VEL = 0.025;
-
-    function stopInertia() { if (inertiaRAF) { cancelAnimationFrame(inertiaRAF); inertiaRAF = null; } }
-
-    function runInertia() {
-      if (Math.abs(inertiaVel) < MIN_VEL) { inertiaRAF = null; drawDrum(); return; }
-      const dpx = inertiaVel * 16;
-      // positive dpx = finger was going down = time increases
-      drumPhase += dpx * RADIANS_PER_PX;
-      parkingMinutes = Math.max(1, Math.min(parkingMinutes + dpx / PIXELS_PER_MINUTE, parkingMaxMinutes));
-      updateDisplay();
-      if (parkingMinutes <= 1 || parkingMinutes >= parkingMaxMinutes) { inertiaRAF = null; return; }
-      inertiaVel *= FRICTION;
-      inertiaRAF = requestAnimationFrame(runInertia);
-    }
-
-    const drumZone = document.getElementById('drum-scroll-zone');
-    let tStartY=null, tStartMins, tStartPhase, tLastY, tLastT, tVel;
-
-    drumZone.addEventListener('touchstart', e => {
-      stopInertia();
-      tStartY = e.touches[0].clientY;
-      tStartMins = parkingMinutes;
-      tStartPhase = drumPhase;
-      tLastY = tStartY; tLastT = Date.now(); tVel = 0;
-    }, {passive:true});
-
-    drumZone.addEventListener('touchmove', e => {
-      if (tStartY===null) return;
-      const y = e.touches[0].clientY;
-      const now = Date.now(), dt = now - tLastT;
-      if (dt>0) tVel = (y - tLastY) / dt; // positive = finger going down
-      tLastY = y; tLastT = now;
-      const fingerDelta = y - tStartY; // positive = finger moved down
-      drumPhase = tStartPhase + fingerDelta * RADIANS_PER_PX;
-      // DOWN = time increases ✓
-      parkingMinutes = Math.max(1, Math.min(tStartMins + fingerDelta / PIXELS_PER_MINUTE, parkingMaxMinutes));
-      updateDisplay();
-    }, {passive:true});
-
-    drumZone.addEventListener('touchend', () => {
-      tStartY = null;
-      inertiaVel = tVel;
-      if (Math.abs(inertiaVel) > MIN_VEL) inertiaRAF = requestAnimationFrame(runInertia);
-    }, {passive:true});
-
-    let mStartY=null, mStartMins, mStartPhase, mLastY, mLastT, mVel;
-    drumZone.addEventListener('mousedown', e => {
-      stopInertia();
-      mStartY=e.clientY; mStartMins=parkingMinutes; mStartPhase=drumPhase;
-      mLastY=e.clientY; mLastT=Date.now(); mVel=0;
-    });
-    window.addEventListener('mousemove', e => {
-      if(mStartY===null) return;
-      const dt=Date.now()-mLastT;
-      if(dt>0) mVel=(e.clientY-mLastY)/dt;
-      mLastY=e.clientY; mLastT=Date.now();
-      const fd=e.clientY-mStartY;
-      drumPhase=mStartPhase+fd*RADIANS_PER_PX;
-      // DOWN = time increases ✓
-      parkingMinutes=Math.max(1,Math.min(mStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));
-      updateDisplay();
-    });
-    window.addEventListener('mouseup', () => {
-      if(mStartY===null) return; mStartY=null;
-      inertiaVel=mVel;
-      if(Math.abs(inertiaVel)>MIN_VEL) inertiaRAF=requestAnimationFrame(runInertia);
-    });
-
+    const drumZone=document.getElementById('drum-scroll-zone');
+    let tStartY=null,tStartMins,tStartPhase,tLastY,tLastT,tVel;
+    drumZone.addEventListener('touchstart',e=>{stopInertia();tStartY=e.touches[0].clientY;tStartMins=parkingMinutes;tStartPhase=drumPhase;tLastY=tStartY;tLastT=Date.now();tVel=0;},{passive:true});
+    drumZone.addEventListener('touchmove',e=>{if(tStartY===null)return;const y=e.touches[0].clientY;const now=Date.now(),dt=now-tLastT;if(dt>0)tVel=(y-tLastY)/dt;tLastY=y;tLastT=now;const fd=y-tStartY;drumPhase=tStartPhase+fd*RADIANS_PER_PX;parkingMinutes=Math.max(1,Math.min(tStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();},{passive:true});
+    drumZone.addEventListener('touchend',()=>{tStartY=null;inertiaVel=tVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);},{passive:true});
+    let mStartY=null,mStartMins,mStartPhase,mLastY,mLastT,mVel;
+    drumZone.addEventListener('mousedown',e=>{stopInertia();mStartY=e.clientY;mStartMins=parkingMinutes;mStartPhase=drumPhase;mLastY=e.clientY;mLastT=Date.now();mVel=0;});
+    window.addEventListener('mousemove',e=>{if(mStartY===null)return;const dt=Date.now()-mLastT;if(dt>0)mVel=(e.clientY-mLastY)/dt;mLastY=e.clientY;mLastT=Date.now();const fd=e.clientY-mStartY;drumPhase=mStartPhase+fd*RADIANS_PER_PX;parkingMinutes=Math.max(1,Math.min(mStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();});
+    window.addEventListener('mouseup',()=>{if(mStartY===null)return;mStartY=null;inertiaVel=mVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);});
     drawDrum();
 
-    const overlay = document.getElementById('parking-overlay');
-    function openParkingOverlay(p) {
-      const areaCode=p['hel:id']||'—', kesto=p['hel:kesto']||null;
-      const tyyppi=getTypeName(p['hel:paikan_asento']), voimassaolo=p['hel:voimassaolo']||'Kaikki ajat';
-      const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton', luokka=p['hel:luokka_nimi']||'';
-      isIlmainen=luokka.toLowerCase().includes('ilmainen');
-      parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;
-      parkingMinutes=Math.min(60,parkingMaxMinutes);
-      lastDisplayedMinutes=-1; drumPhase=0;
-      document.getElementById('p-code').textContent=areaCode;
-      document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);
-      document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText} · ${voimassaolo}`;
-      updateDisplay();
-      overlay.classList.add('open');
+    // ===== VEHICLE PICKER =====
+    let vehicles = [{ reg:'FHY-857', name:'Äitin auto' }];
+    let selectedVehicleIdx = 0;
+
+    function renderVehicleDisplay() {
+      const v = vehicles[selectedVehicleIdx];
+      document.getElementById('plate-text').textContent = v.reg;
+      document.getElementById('vehicle-nickname').textContent = v.name;
     }
+
+    function renderVehicleOptions() {
+      const container = document.getElementById('vehicle-options');
+      container.innerHTML = '';
+      vehicles.forEach((v, i) => {
+        const row = document.createElement('div');
+        row.className = 'vehicle-option';
+        row.innerHTML = `
+          <div class="vehicle-option-check ${i===selectedVehicleIdx?'selected':''}"></div>
+          <div>
+            <div class="vehicle-option-name">${v.name}</div>
+            <div class="vehicle-option-reg">${v.reg}</div>
+          </div>`;
+        row.addEventListener('click', () => { selectedVehicleIdx=i; renderVehicleDisplay(); closeVehicleSheet(); });
+        container.appendChild(row);
+      });
+    }
+
+    function openVehicleSheet() { renderVehicleOptions(); document.getElementById('vehicle-sheet').classList.add('open'); }
+    function closeVehicleSheet() { document.getElementById('vehicle-sheet').classList.remove('open'); }
+
+    function addVehicle() {
+      const reg = prompt('Rekisterinumero (esim. ABC-123):');
+      if (!reg) return;
+      const name = prompt('Lempinimi (esim. Oma auto):');
+      if (!name) return;
+      vehicles.push({ reg: reg.trim().toUpperCase(), name: name.trim() });
+      selectedVehicleIdx = vehicles.length - 1;
+      renderVehicleDisplay();
+      closeVehicleSheet();
+    }
+
+    // ===== OVERLAY =====
+    const overlay=document.getElementById('parking-overlay');
+    function openParkingOverlay(p){const areaCode=p['hel:id']||'—',kesto=p['hel:kesto']||null;const tyyppi=getTypeName(p['hel:paikan_asento']),voimassaolo=p['hel:voimassaolo']||'Kaikki ajat';const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';isIlmainen=luokka.toLowerCase().includes('ilmainen');parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;parkingMinutes=Math.min(60,parkingMaxMinutes);lastDisplayedMinutes=-1;drumPhase=0;document.getElementById('p-code').textContent=areaCode;document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText} · ${voimassaolo}`;renderVehicleDisplay();updateDisplay();overlay.classList.add('open');}
 
     document.getElementById('back-btn').addEventListener('click',()=>{stopInertia();overlay.classList.remove('open');});
     btn.addEventListener('click',()=>{if(currentParkingProps)openParkingOverlay(currentParkingProps);});
 
-    document.getElementById('vehicle-select').addEventListener('change', function() {
-      if(this.value==='add'){
-        const reg=prompt('Rekisterinumero (esim. ABC-123):');
-        const nick=reg?prompt('Lempinimi (esim. Oma auto):'):null;
-        if(reg&&nick){const opt=document.createElement('option');const val=`${reg.trim().toUpperCase()}|${nick.trim()}`;opt.value=val;opt.textContent=`${nick.trim()} — ${reg.trim().toUpperCase()}`;this.insertBefore(opt,this.querySelector('option[value="add"]'));this.value=val;}
-        else{this.value=this.options[0].value;}
-      }
-      const parts=this.value.split('|');
-      document.getElementById('plate-text').textContent=parts[0]||'—';
-      document.getElementById('vehicle-nickname').textContent=parts[1]||'';
-    });
-
-    document.getElementById('start-btn').addEventListener('click',()=>{
-      const v=document.getElementById('vehicle-select').value;
-      if(!v||v==='add'){alert('Valitse ensin ajoneuvo');return;}
-      const parts=v.split('|');
-      alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${parts[1]} (${parts[0]})\nAika: ${formatTimeDisplay(parkingMinutes)}\nAlue: ${document.getElementById('p-code').textContent}`);
-    });
+    document.getElementById('start-btn').addEventListener('click',()=>{const v=vehicles[selectedVehicleIdx];alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${v.name} (${v.reg})\nAika: ${formatTimeDisplay(parkingMinutes)}\nAlue: ${document.getElementById('p-code').textContent}`);});
 
     map.on('error',e=>{console.warn('MapLibre virhe:',e.error?.message||e);});
 
