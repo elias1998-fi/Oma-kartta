@@ -21,39 +21,43 @@
       background: white; border: none; border-radius: 50%; 
       box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; 
       display: flex; align-items: center; justify-content: center;
-      transition: opacity 0.3s ease, transform 0.3s ease;
     }
     .map-btn svg { width: 18px; height: 18px; }
     
-    #left-menu-container {
+    #left-menu-pill {
       position: fixed;
       top: max(16px,env(safe-area-inset-top));
       left: max(16px,env(safe-area-inset-left));
       z-index: 25;
+      background: white;
+      border-radius: 25px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      width: 48px;
+      height: 48px;
+      overflow: hidden;
+      transition: height 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    
+    #left-menu-pill.expanded {
+      height: 200px;
+    }
+    
+    .pill-btn {
+      width: 48px;
+      height: 48px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
       display: flex;
-      flex-direction: column;
-      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
     
-    #menu-btn { position: relative; }
+    .pill-btn svg { width: 18px; height: 18px; }
+    .pill-btn#profile-btn svg { width: 20px; height: 20px; }
     
-    .menu-secondary-btn {
-      opacity: 0;
-      transform: scale(0.8);
-      pointer-events: none;
-    }
-    
-    #left-menu-container.expanded .menu-secondary-btn {
-      opacity: 1;
-      transform: scale(1);
-      pointer-events: all;
-    }
-    
-    #profile-btn svg { width: 20px; height: 20px; }
-    #filter-btn svg { width: 18px; height: 18px; }
-    #search-btn svg { width: 18px; height: 18px; }
-    
-    #filter-btn.active { background: #0C0243; }
+    #filter-btn.active { background: #0C0243; border-radius: 50%; }
     #filter-btn.active svg line { stroke: white; }
     #filter-btn.active svg circle { fill: white; stroke: none; }
     
@@ -335,20 +339,20 @@
     <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
   </svg>
 
-  <div id="left-menu-container">
-    <button class="map-btn" id="menu-btn">
+  <div id="left-menu-pill">
+    <button class="pill-btn" id="menu-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
     
-    <button class="map-btn menu-secondary-btn" id="profile-btn">
+    <button class="pill-btn" id="profile-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="8" r="5"/><path d="M3 21c0-4 4-7 9-7s9 3 9 7"/>
       </svg>
     </button>
     
-    <button class="map-btn menu-secondary-btn" id="filter-btn">
+    <button class="pill-btn" id="filter-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
         <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="#333" stroke="none"/>
         <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="#333" stroke="none"/>
@@ -356,7 +360,7 @@
       </svg>
     </button>
     
-    <button class="map-btn menu-secondary-btn" id="search-btn">
+    <button class="pill-btn" id="search-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
       </svg>
@@ -567,7 +571,7 @@
     document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
     let menuExpanded = false;
-    const menuContainer = document.getElementById('left-menu-container');
+    const menuPill = document.getElementById('left-menu-pill');
     const menuBtn = document.getElementById('menu-btn');
     const profileBtn = document.getElementById('profile-btn');
     const filterBtn = document.getElementById('filter-btn');
@@ -576,22 +580,22 @@
     menuBtn.addEventListener('click', () => {
       menuExpanded = !menuExpanded;
       if (menuExpanded) {
-        menuContainer.classList.add('expanded');
+        menuPill.classList.add('expanded');
       } else {
-        menuContainer.classList.remove('expanded');
+        menuPill.classList.remove('expanded');
       }
     });
     
     profileBtn.addEventListener('click', () => {
       document.getElementById('profile-overlay').classList.add('open');
       menuExpanded = false;
-      menuContainer.classList.remove('expanded');
+      menuPill.classList.remove('expanded');
     });
     
     searchBtn.addEventListener('click', () => {
       document.getElementById('search-overlay').classList.add('open');
       menuExpanded = false;
-      menuContainer.classList.remove('expanded');
+      menuPill.classList.remove('expanded');
     });
     
     function closeProfileOverlay() {
@@ -631,7 +635,7 @@
       sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;
       currentY=window.innerHeight*0.5;
       menuExpanded = false;
-      menuContainer.classList.remove('expanded');
+      menuPill.classList.remove('expanded');
     }
     function closeFilter(){
       filterMode=false;
