@@ -148,6 +148,13 @@
     
     #search-results {
       flex: 1;
+    }
+    
+    #search-results.no-scroll {
+      overflow: hidden;
+    }
+    
+    #search-results.allow-scroll {
       overflow-y: auto;
     }
     
@@ -172,6 +179,23 @@
     
     .search-result-item:active {
       background: #f8f8f8;
+    }
+    
+    .search-result-icon {
+      width: 40px;
+      height: 40px;
+      background: #f0f0f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    
+    .search-result-icon svg {
+      width: 20px;
+      height: 20px;
     }
     
     .search-result-text {
@@ -682,12 +706,12 @@
   <div id="search-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeSearchOverlay()">←</button>
-      <div class="overlay-title">Hae osoite</div>
+      <div class="overlay-title">Hakutoiminto</div>
     </div>
     <div id="search-input-container">
       <input type="text" id="search-input" placeholder="Hae osoitetta, paikkaa tai aluekoodia..." autocomplete="off">
     </div>
-    <div id="search-results"></div>
+    <div id="search-results" class="no-scroll"></div>
   </div>
 
   <div id="plus-overlay">
@@ -853,7 +877,7 @@
     const map = new maplibregl.Map({ container:'map', style:'omakartta_style.json', center:[24.9354,60.1699], zoom:12, minZoom:5, maxZoom:20, transformRequest, maxTileCacheSize:50, fadeDuration:100, dragRotate:false, touchPitch:false, pitchWithRotate:false, keyboard:false, attributionControl:false });
     map.touchZoomRotate.disableRotation();
 
-    // Punainen pin-merkki markkerina - pienempi versio
+    // Punainen pin-merkki markkerina
     let currentMarker = null;
     
     function createPinElement() {
@@ -883,6 +907,26 @@
       return el;
     }
 
+    // SVG Pinni-ikoni funktio
+    function getPinIconSVG() {
+      return `
+        <svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="pinIconGradient" cx="50%" cy="30%">
+              <stop offset="0%" style="stop-color:#ff5555;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#cc0000;stop-opacity:1" />
+            </radialGradient>
+          </defs>
+          <ellipse cx="12" cy="12" rx="9" ry="9" fill="url(#pinIconGradient)" stroke="#990000" stroke-width="0.8"/>
+          <ellipse cx="10" cy="10" rx="3" ry="3.5" fill="#ff9999" opacity="0.6"/>
+          <rect x="10.5" y="21" width="3" height="12" fill="#888" stroke="#666" stroke-width="0.4"/>
+        </svg>
+      `;
+    }
+
+    // Käyttäjän nykyinen sijainti
+    let userLocation = null;
+
     // Etäisyyden laskeminen Haversine-kaavalla
     function calculateDistance(lat1, lon1, lat2, lon2) {
       const R = 6371; // Maapallon säde kilometreinä
@@ -892,7 +936,15 @@
                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
                 Math.sin(dLon/2) * Math.sin(dLon/2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return Math.round(R * c); // Pyöristetään kokonaisluvuksi
+      return R * c; // Kilometreinä
+    }
+
+    function formatDistance(distanceKm) {
+      if (distanceKm < 1) {
+        const meters = Math.round(distanceKm * 1000);
+        return `${meters} m päässä`;
+      }
+      return `${Math.round(distanceKm)} km päässä`;
     }
 
     function kestoToMinutes(kesto) {
@@ -917,6 +969,14 @@
 
     const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
     map.addControl(geolocate);
+    
+    // Kuuntele käyttäjän sijainnin päivityksiä
+    geolocate.on('geolocate', (e) => {
+      userLocation = {
+        lat: e.coords.latitude,
+        lon: e.coords.longitude
+      };
+    });
     
     const locationBtn = document.getElementById('location-btn');
     const sheet = document.getElementById('bottom-sheet');
@@ -1025,9 +1085,9 @@
       alert('Tietoja - tulossa pian');
     }
 
-    // Hakuhistoria LocalStoragessa
+    // Hakuhistoria LocalStoragessa - muutettu 8:aan
     const SEARCH_HISTORY_KEY = 'parking_search_history';
-    const MAX_HISTORY = 10;
+    const MAX_HISTORY = 8;
     
     function getSearchHistory() {
       try {
@@ -1044,7 +1104,7 @@
       history = history.filter(h => !(h.lat === item.lat && h.lon === item.lon));
       // Lisää alkuun
       history.unshift(item);
-      // Rajoita 10:een
+      // Rajoita 8:aan
       if (history.length > MAX_HISTORY) {
         history = history.slice(0, MAX_HISTORY);
       }
@@ -1062,26 +1122,38 @@
       const history = getSearchHistory();
       const searchResults = document.getElementById('search-results');
       
+      // Estä vieritys kun näytetään historiaa
+      searchResults.classList.remove('allow-scroll');
+      searchResults.classList.add('no-scroll');
+      
       if (history.length === 0) {
         searchResults.innerHTML = '<div class="search-empty">Ei aikaisempia hakuja</div>';
         return;
       }
       
-      // Hae nykyinen sijainti kartan keskipisteestä
-      const center = map.getCenter();
-      const currentLat = center.lat;
-      const currentLon = center.lng;
+      // Käytä käyttäjän GPS-sijaintia jos saatavilla, muuten kartan keskipiste
+      let currentLat, currentLon;
+      if (userLocation) {
+        currentLat = userLocation.lat;
+        currentLon = userLocation.lon;
+      } else {
+        const center = map.getCenter();
+        currentLat = center.lat;
+        currentLon = center.lng;
+      }
       
       searchResults.innerHTML = '<div class="search-history-header">Viimeisimmät haut</div>' + 
         history.map((item, index) => {
-          const distance = calculateDistance(currentLat, currentLon, item.lat, item.lon);
+          const distanceKm = calculateDistance(currentLat, currentLon, item.lat, item.lon);
+          const distanceText = formatDistance(distanceKm);
           return `
             <div class="search-result-item">
+              <div class="search-result-icon">${getPinIconSVG()}</div>
               <div class="search-result-text" onclick="selectHistoryPlace(${item.lat}, ${item.lon}, '${item.name.replace(/'/g, "\\'")}', ${index})">
                 <div class="search-result-name">${item.name}</div>
                 <div class="search-result-address">${item.locality || ''}</div>
               </div>
-              <div class="search-result-distance">${distance} km</div>
+              <div class="search-result-distance">${distanceText}</div>
               <button class="search-history-delete" onclick="event.stopPropagation(); removeFromSearchHistory(${index})">✕</button>
             </div>
           `;
@@ -1089,7 +1161,7 @@
     }
     
     function selectHistoryPlace(lat, lon, name, index) {
-      selectPlace(lat, lon, name, false); // false = älä lisää historiaan uudestaan
+      selectPlace(lat, lon, name, false);
     }
 
     // Digitransit Geocoding API haku - koko Suomi
@@ -1115,25 +1187,37 @@
         const data = await response.json();
         
         if (data.features && data.features.length > 0) {
-          // Hae nykyinen sijainti kartan keskipisteestä
-          const center = map.getCenter();
-          const currentLat = center.lat;
-          const currentLon = center.lng;
+          // Salli vieritys kun näytetään hakutuloksia
+          searchResults.classList.remove('no-scroll');
+          searchResults.classList.add('allow-scroll');
+          
+          // Käytä käyttäjän GPS-sijaintia jos saatavilla, muuten kartan keskipiste
+          let currentLat, currentLon;
+          if (userLocation) {
+            currentLat = userLocation.lat;
+            currentLon = userLocation.lon;
+          } else {
+            const center = map.getCenter();
+            currentLat = center.lat;
+            currentLon = center.lng;
+          }
           
           searchResults.innerHTML = data.features.map(feature => {
             const props = feature.properties;
             const coords = feature.geometry.coordinates;
             const name = props.name || props.label || 'Tuntematon';
             const locality = props.locality || props.localadmin || props.region || '';
-            const distance = calculateDistance(currentLat, currentLon, coords[1], coords[0]);
+            const distanceKm = calculateDistance(currentLat, currentLon, coords[1], coords[0]);
+            const distanceText = formatDistance(distanceKm);
             
             return `
               <div class="search-result-item" onclick="selectPlace(${coords[1]}, ${coords[0]}, '${name.replace(/'/g, "\\'")}', true, '${props.layer}', '${locality.replace(/'/g, "\\'")}')">
+                <div class="search-result-icon">${getPinIconSVG()}</div>
                 <div class="search-result-text">
                   <div class="search-result-name">${name}</div>
                   <div class="search-result-address">${locality}</div>
                 </div>
-                <div class="search-result-distance">${distance} km</div>
+                <div class="search-result-distance">${distanceText}</div>
               </div>
             `;
           }).join('');
