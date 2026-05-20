@@ -57,6 +57,10 @@
     .pill-btn svg { width: 18px; height: 18px; }
     .pill-btn#profile-btn svg { width: 20px; height: 20px; }
     
+    #menu-btn svg { width: 15px; height: 15px; }
+    #menu-btn.active { background: #0C0243; border-radius: 50%; }
+    #menu-btn.active svg line { stroke: white; }
+    
     #filter-btn.active { background: #0C0243; border-radius: 50%; }
     #filter-btn.active svg line { stroke: white; }
     #filter-btn.active svg circle { fill: white; stroke: none; }
@@ -341,7 +345,7 @@
 
   <div id="left-menu-pill">
     <button class="pill-btn" id="menu-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
@@ -577,25 +581,30 @@
     const filterBtn = document.getElementById('filter-btn');
     const searchBtn = document.getElementById('search-btn');
     
+    function closeMenu() {
+      menuExpanded = false;
+      menuPill.classList.remove('expanded');
+      menuBtn.classList.remove('active');
+    }
+    
     menuBtn.addEventListener('click', () => {
       menuExpanded = !menuExpanded;
       if (menuExpanded) {
         menuPill.classList.add('expanded');
+        menuBtn.classList.add('active');
       } else {
-        menuPill.classList.remove('expanded');
+        closeMenu();
       }
     });
     
     profileBtn.addEventListener('click', () => {
+      closeMenu();
       document.getElementById('profile-overlay').classList.add('open');
-      menuExpanded = false;
-      menuPill.classList.remove('expanded');
     });
     
     searchBtn.addEventListener('click', () => {
+      closeMenu();
       document.getElementById('search-overlay').classList.add('open');
-      menuExpanded = false;
-      menuPill.classList.remove('expanded');
     });
     
     function closeProfileOverlay() {
@@ -634,8 +643,7 @@
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
       sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;
       currentY=window.innerHeight*0.5;
-      menuExpanded = false;
-      menuPill.classList.remove('expanded');
+      closeMenu();
     }
     function closeFilter(){
       filterMode=false;
@@ -651,7 +659,14 @@
       updateSliderUI();
       applyRangeFilter();
     }
-    filterBtn.addEventListener('click',()=>filterMode?closeFilter():openFilter());
+    filterBtn.addEventListener('click',()=>{
+      if (filterMode) {
+        closeFilter();
+      } else {
+        closeMenu();
+        openFilter();
+      }
+    });
     filterCloseBtn.addEventListener('click',closeFilter);
 
     let moveTimer=null;
