@@ -67,7 +67,6 @@
     /* PARKING OVERLAY */
     #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
     #parking-overlay.open { transform: translateX(0); }
-
     #parking-header { display: flex; align-items: center; padding: max(14px, env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
     #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
@@ -76,13 +75,11 @@
     .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
     .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
 
-    /* Box 1 */
     .area-row { display: flex; align-items: center; gap: 10px; }
     .area-code-badge { background: #0C0243; color: white; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; font-family: Arial, sans-serif; }
     .area-name { font-size: 14px; font-weight: bold; color: #222; }
     .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
 
-    /* Box 2 */
     .time-card-inner { display: flex; align-items: center; gap: 12px; }
     .time-big-display { flex: 1; }
     .time-big-number { font-size: 42px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; }
@@ -91,7 +88,7 @@
     .time-price-label { font-size: 13px; color: #888; }
     .time-price-val { font-size: 16px; font-weight: bold; color: #0C0243; }
 
-    /* Drum roller visual */
+    /* Drum roller */
     .drum-scroll-zone {
       width: 52px; height: 80px;
       border: 1.5px solid #e0e0e0;
@@ -105,40 +102,26 @@
     }
     .drum-scroll-zone:active { cursor: grabbing; }
 
-    /* Horizontal ridges simulating a physical roller */
     .drum-ridges {
       position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 6px 0;
+      left: 0; right: 0;
+      top: 0;
     }
     .drum-ridge {
-      width: 100%;
-      height: 2px;
+      width: 100%; height: 2px;
       background: #d0d0d0;
       border-radius: 1px;
-      transition: transform 0.05s linear;
+      position: absolute;
+      left: 0; right: 0;
     }
-    /* Center ridge is darker — the "active" position */
-    .drum-ridge.center {
-      background: #a0a0a0;
+    .drum-ridge.center-line {
+      background: #999;
       height: 2.5px;
     }
-    /* Fade edges to give cylindrical illusion */
-    .drum-fade-top {
-      position: absolute; top: 0; left: 0; right: 0; height: 22px;
-      background: linear-gradient(to bottom, #f8f8f8, transparent);
-      pointer-events: none; z-index: 2;
-    }
-    .drum-fade-bottom {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 22px;
-      background: linear-gradient(to top, #f8f8f8, transparent);
-      pointer-events: none; z-index: 2;
-    }
+    .drum-fade-top { position: absolute; top: 0; left: 0; right: 0; height: 26px; background: linear-gradient(to bottom, #f8f8f8 40%, transparent); pointer-events: none; z-index: 2; }
+    .drum-fade-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 26px; background: linear-gradient(to top, #f8f8f8 40%, transparent); pointer-events: none; z-index: 2; }
+    .drum-center-highlight { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); height: 18px; border-top: 1px solid #c0c0c0; border-bottom: 1px solid #c0c0c0; pointer-events: none; z-index: 1; }
 
-    /* Box 3 */
     .vehicle-display { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .plate { display: flex; align-items: center; border: 2px solid #333; border-radius: 5px; overflow: hidden; height: 30px; flex-shrink: 0; }
     .plate-eu { background: #0C0243; color: white; font-size: 8px; font-weight: bold; padding: 0 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
@@ -147,8 +130,6 @@
     .plate-text { padding: 0 8px; font-size: 14px; font-weight: bold; color: #222; letter-spacing: 1px; }
     .vehicle-nickname { font-size: 14px; color: #444; }
     .vehicle-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 13px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
-
-    /* Box 4 */
     .payment-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 14px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
 
     #start-btn-container { padding: 10px 14px; padding-bottom: max(20px, env(safe-area-inset-bottom)); flex-shrink: 0; }
@@ -157,7 +138,6 @@
 </head>
 <body>
   <div id="map"></div>
-
   <svg id="center-pointer" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
     <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
@@ -217,28 +197,19 @@
     <button id="action-btn">Valitse pysäköintialue</button>
   </div>
 
-  <!-- PARKING OVERLAY -->
   <div id="parking-overlay">
     <div id="parking-header">
       <button id="back-btn">←</button>
       <div id="parking-header-title">Pysäköinti</div>
     </div>
-
     <div class="p-cards-container">
-
-      <!-- Box 1 -->
       <div class="p-card">
         <div class="p-card-title">Valittu alue</div>
         <div class="area-row">
           <div class="area-code-badge" id="p-code">—</div>
-          <div>
-            <div class="area-name" id="p-owner">—</div>
-            <div class="area-meta" id="p-meta">—</div>
-          </div>
+          <div><div class="area-name" id="p-owner">—</div><div class="area-meta" id="p-meta">—</div></div>
         </div>
       </div>
-
-      <!-- Box 2 -->
       <div class="p-card">
         <div class="p-card-title">Pysäköintiaika</div>
         <div class="time-card-inner">
@@ -246,16 +217,10 @@
             <div class="time-big-number" id="time-big">1h</div>
             <div class="time-big-unit">Pyöritä rullaa →</div>
           </div>
-          <!-- Drum roller -->
           <div class="drum-scroll-zone" id="drum-scroll-zone">
+            <div class="drum-center-highlight"></div>
+            <div class="drum-ridges" id="drum-ridges"></div>
             <div class="drum-fade-top"></div>
-            <div class="drum-ridges" id="drum-ridges">
-              <div class="drum-ridge"></div>
-              <div class="drum-ridge"></div>
-              <div class="drum-ridge center"></div>
-              <div class="drum-ridge"></div>
-              <div class="drum-ridge"></div>
-            </div>
             <div class="drum-fade-bottom"></div>
           </div>
         </div>
@@ -264,8 +229,6 @@
           <span class="time-price-val" id="p-price">Ilmainen</span>
         </div>
       </div>
-
-      <!-- Box 3 -->
       <div class="p-card">
         <div class="p-card-title">Ajoneuvo</div>
         <div class="vehicle-display">
@@ -280,8 +243,6 @@
           <option value="add">+ Lisää uusi ajoneuvo...</option>
         </select>
       </div>
-
-      <!-- Box 4 -->
       <div class="p-card">
         <div class="p-card-title">Maksutapa</div>
         <select class="payment-select" id="payment-select">
@@ -290,9 +251,7 @@
           <option value="mobilepay">MobilePay</option>
         </select>
       </div>
-
     </div>
-
     <div id="start-btn-container">
       <button id="start-btn">Aloita pysäköinti</button>
     </div>
@@ -397,15 +356,42 @@
       } else { currentParkingProps = null; summaryHeader.textContent = ''; summaryType.textContent = ''; details.innerHTML = ''; divider.style.display = 'none'; btn.textContent = 'Valitse pysäköintialue'; btn.classList.remove('active'); }
     }
 
-    // ===== TIME DRUM =====
+    // ===== DRUM ROLLER =====
     let parkingMinutes = 60;
     let parkingMaxMinutes = 1440;
     let isIlmainen = false;
     const PIXELS_PER_MINUTE = 2;
+    const RIDGE_COUNT = 9;
+    const RIDGE_SPACING = 80 / (RIDGE_COUNT - 1); // even spacing across 80px height
 
-    // Animate ridges rolling when dragging
-    let ridgeOffset = 0;
-    const RIDGE_SPACING = 14; // px between ridges visually
+    // Build ridge elements once
+    const drumRidgesEl = document.getElementById('drum-ridges');
+    for (let i = 0; i < RIDGE_COUNT; i++) {
+      const r = document.createElement('div');
+      r.className = 'drum-ridge' + (i === Math.floor(RIDGE_COUNT / 2) ? ' center-line' : '');
+      r.style.top = (i * RIDGE_SPACING) + 'px';
+      drumRidgesEl.appendChild(r);
+    }
+
+    // ridgePhase: 0..RIDGE_SPACING, how far ridges have scrolled
+    let ridgePhase = 0;
+
+    function setRidgePhase(phase) {
+      ridgePhase = ((phase % RIDGE_SPACING) + RIDGE_SPACING) % RIDGE_SPACING;
+      const ridges = drumRidgesEl.children;
+      for (let i = 0; i < ridges.length; i++) {
+        const base = i * RIDGE_SPACING;
+        let pos = base + ridgePhase;
+        // wrap around within drum height
+        pos = ((pos % 80) + 80) % 80;
+        ridges[i].style.top = pos + 'px';
+        // darken ridge near center for depth illusion
+        const distFromCenter = Math.abs(pos - 40);
+        const alpha = Math.max(0.15, 1 - distFromCenter / 40);
+        ridges[i].style.opacity = alpha;
+        ridges[i].style.height = (distFromCenter < 8 ? 2.5 : 1.5) + 'px';
+      }
+    }
 
     function formatTimeDisplay(mins) {
       mins = Math.max(1, Math.min(mins, parkingMaxMinutes));
@@ -414,57 +400,111 @@
       return m > 0 ? `${h}h ${m}min` : `${h}h`;
     }
 
+    let lastDisplayedMinutes = -1;
     function updateTimeDisplay() {
-      parkingMinutes = Math.max(1, Math.min(parkingMinutes, parkingMaxMinutes));
-      document.getElementById('time-big').textContent = formatTimeDisplay(parkingMinutes);
-      document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(parkingMinutes / 60 * 1.5).toFixed(2)} €`;
+      parkingMinutes = Math.max(1, Math.min(Math.round(parkingMinutes), parkingMaxMinutes));
+      if (parkingMinutes !== lastDisplayedMinutes) {
+        document.getElementById('time-big').textContent = formatTimeDisplay(parkingMinutes);
+        document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(parkingMinutes / 60 * 1.5).toFixed(2)} €`;
+        // Haptic tick on each minute change (Android only)
+        if (navigator.vibrate) navigator.vibrate(8);
+        lastDisplayedMinutes = parkingMinutes;
+      }
     }
 
-    function animateRidges(totalDragPx) {
-      // Shift ridges to simulate rolling cylinder
-      const offset = (totalDragPx % RIDGE_SPACING + RIDGE_SPACING) % RIDGE_SPACING;
-      const ridges = document.querySelectorAll('.drum-ridge');
-      ridges.forEach((r, i) => {
-        r.style.transform = `translateY(${offset - (i === 2 ? 0 : 0)}px)`;
-      });
+    // Inertia state
+    let inertiaRAF = null;
+    let inertiaVelocity = 0; // px/ms
+    const FRICTION = 0.92; // deceleration factor per frame
+    const MIN_VELOCITY = 0.05;
+
+    function stopInertia() {
+      if (inertiaRAF) { cancelAnimationFrame(inertiaRAF); inertiaRAF = null; }
     }
 
+    function runInertia() {
+      if (Math.abs(inertiaVelocity) < MIN_VELOCITY) { inertiaRAF = null; return; }
+      // velocity in px/ms, assume ~16ms per frame
+      const deltaPx = inertiaVelocity * 16;
+      const minsDelta = deltaPx / PIXELS_PER_MINUTE;
+      const prevMins = parkingMinutes;
+      parkingMinutes = Math.max(1, Math.min(parkingMinutes - minsDelta, parkingMaxMinutes));
+      setRidgePhase(ridgePhase + deltaPx);
+      updateTimeDisplay();
+      // stop at limits
+      if (parkingMinutes === 1 || parkingMinutes === parkingMaxMinutes) { inertiaRAF = null; return; }
+      inertiaVelocity *= FRICTION;
+      inertiaRAF = requestAnimationFrame(runInertia);
+    }
+
+    // Touch tracking for velocity
     const drumZone = document.getElementById('drum-scroll-zone');
-    let drumDragStartY = null, drumDragStartMinutes = null, totalDragPx = 0;
+    let dragStartY = null, dragStartMins = null;
+    let lastTouchY = null, lastTouchTime = null, touchVelocity = 0;
 
     drumZone.addEventListener('touchstart', e => {
-      drumDragStartY = e.touches[0].clientY;
-      drumDragStartMinutes = parkingMinutes;
-      totalDragPx = 0;
+      stopInertia();
+      dragStartY = e.touches[0].clientY;
+      dragStartMins = parkingMinutes;
+      lastTouchY = dragStartY;
+      lastTouchTime = Date.now();
+      touchVelocity = 0;
     }, { passive: true });
 
     drumZone.addEventListener('touchmove', e => {
-      if (drumDragStartY === null) return;
-      const delta = drumDragStartY - e.touches[0].clientY;
-      totalDragPx = delta;
-      const minsDelta = Math.round(delta / PIXELS_PER_MINUTE);
-      parkingMinutes = Math.max(1, Math.min(drumDragStartMinutes + minsDelta, parkingMaxMinutes));
-      animateRidges(delta);
+      if (dragStartY === null) return;
+      const y = e.touches[0].clientY;
+      const now = Date.now();
+      const dt = now - lastTouchTime;
+      if (dt > 0) touchVelocity = (lastTouchY - y) / dt; // px/ms, positive = scrolling up = more time
+      lastTouchY = y; lastTouchTime = now;
+
+      const totalDeltaPx = dragStartY - y;
+      const minsDelta = totalDeltaPx / PIXELS_PER_MINUTE;
+      parkingMinutes = Math.max(1, Math.min(dragStartMins + minsDelta, parkingMaxMinutes));
+      setRidgePhase(ridgePhase - (y - lastTouchY));
+      setRidgePhase(totalDeltaPx % (RIDGE_SPACING * RIDGE_COUNT));
       updateTimeDisplay();
     }, { passive: true });
 
-    drumZone.addEventListener('touchend', () => { drumDragStartY = null; }, { passive: true });
+    drumZone.addEventListener('touchend', () => {
+      dragStartY = null;
+      // Launch inertia with current velocity
+      inertiaVelocity = touchVelocity;
+      if (Math.abs(inertiaVelocity) > MIN_VELOCITY) {
+        inertiaRAF = requestAnimationFrame(runInertia);
+      }
+    }, { passive: true });
 
-    // Mouse for desktop
-    let mouseDragStartY = null, mouseDragStartMin = null;
-    drumZone.addEventListener('mousedown', e => { mouseDragStartY = e.clientY; mouseDragStartMin = parkingMinutes; });
+    // Mouse support for desktop testing
+    let mouseDragStartY = null, mouseDragStartMins = null, lastMouseY = null, lastMouseTime = null, mouseVelocity = 0;
+    drumZone.addEventListener('mousedown', e => {
+      stopInertia();
+      mouseDragStartY = e.clientY; mouseDragStartMins = parkingMinutes;
+      lastMouseY = e.clientY; lastMouseTime = Date.now(); mouseVelocity = 0;
+    });
     window.addEventListener('mousemove', e => {
       if (mouseDragStartY === null) return;
-      const delta = mouseDragStartY - e.clientY;
-      parkingMinutes = Math.max(1, Math.min(mouseDragStartMin + Math.round(delta / PIXELS_PER_MINUTE), parkingMaxMinutes));
-      animateRidges(delta);
+      const now = Date.now(), dt = now - lastMouseTime;
+      if (dt > 0) mouseVelocity = (lastMouseY - e.clientY) / dt;
+      lastMouseY = e.clientY; lastMouseTime = now;
+      const totalDeltaPx = mouseDragStartY - e.clientY;
+      parkingMinutes = Math.max(1, Math.min(mouseDragStartMins + totalDeltaPx / PIXELS_PER_MINUTE, parkingMaxMinutes));
+      setRidgePhase(totalDeltaPx % (RIDGE_SPACING * RIDGE_COUNT));
       updateTimeDisplay();
     });
-    window.addEventListener('mouseup', () => { mouseDragStartY = null; });
+    window.addEventListener('mouseup', () => {
+      if (mouseDragStartY === null) return;
+      mouseDragStartY = null;
+      inertiaVelocity = mouseVelocity;
+      if (Math.abs(inertiaVelocity) > MIN_VELOCITY) inertiaRAF = requestAnimationFrame(runInertia);
+    });
+
+    // Init ridges
+    setRidgePhase(0);
 
     // ===== OVERLAY =====
     const overlay = document.getElementById('parking-overlay');
-
     function openParkingOverlay(p) {
       const areaCode = p['hel:id'] || '—';
       const owner = getOwnerName(p['hel:datanomistaja']);
@@ -476,15 +516,16 @@
       isIlmainen = luokka.toLowerCase().includes('ilmainen');
       parkingMaxMinutes = kesto ? kestoToMinutes(kesto) : 1440;
       parkingMinutes = Math.min(60, parkingMaxMinutes);
-
+      lastDisplayedMinutes = -1;
       document.getElementById('p-code').textContent = areaCode;
       document.getElementById('p-owner').textContent = owner;
       document.getElementById('p-meta').textContent = `${tyyppi} · ${kestoText} · ${voimassaolo}`;
+      setRidgePhase(0);
       updateTimeDisplay();
       overlay.classList.add('open');
     }
 
-    document.getElementById('back-btn').addEventListener('click', () => overlay.classList.remove('open'));
+    document.getElementById('back-btn').addEventListener('click', () => { stopInertia(); overlay.classList.remove('open'); });
     btn.addEventListener('click', () => { if (currentParkingProps) openParkingOverlay(currentParkingProps); });
 
     document.getElementById('vehicle-select').addEventListener('change', function() {
