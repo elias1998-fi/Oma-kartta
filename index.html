@@ -73,12 +73,16 @@
     #search-btn.active svg { stroke: white; }
     
     #plus-btn { 
+      position: absolute;
+      bottom: 28px;
       left: max(16px,env(safe-area-inset-left));
-      bottom: 0;
+      z-index: 25;
     }
     #location-btn { 
+      position: absolute;
+      bottom: 28px;
       right: max(16px,env(safe-area-inset-right));
-      bottom: 0;
+      z-index: 25;
     }
     
     #profile-overlay, #search-overlay {
@@ -120,18 +124,7 @@
       font-size: 14px;
     }
     
-    #bottom-sheet { 
-      position: absolute; left: 0; right: 0; bottom: 0; 
-      height: 80vh; background: white; 
-      border-radius: 20px 20px 0 0; 
-      box-shadow: 0 -2px 16px rgba(0,0,0,0.15); 
-      z-index: 20; 
-      transform: translateY(calc(100% - 60px)); 
-      touch-action: none; 
-      display: flex; 
-      flex-direction: column;
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
-    }
+    #bottom-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 80vh; background: white; border-radius: 20px 20px 0 0; box-shadow: 0 -2px 16px rgba(0,0,0,0.15); z-index: 20; transform: translateY(calc(100% - 180px)); touch-action: none; display: flex; flex-direction: column; }
     #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
@@ -386,17 +379,6 @@
     </button>
   </div>
 
-  <button class="map-btn" id="plus-btn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>
-  </button>
-  <button class="map-btn" id="location-btn">
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#333" stroke="none"/>
-    </svg>
-  </button>
-
   <div id="profile-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeProfileOverlay()">←</button>
@@ -414,6 +396,19 @@
   </div>
 
   <div id="bottom-sheet">
+    <button class="map-btn" id="plus-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+    <button class="map-btn" id="location-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+        <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+      </svg>
+    </button>
+    
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
     <div id="sheet-normal">
       <div id="sheet-summary"><div id="summary-header"></div><div id="summary-type"></div></div>
@@ -584,12 +579,8 @@
 
     const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
     map.addControl(geolocate);
-    
-    const plusBtn = document.getElementById('plus-btn');
-    const locationBtn = document.getElementById('location-btn');
-    
-    plusBtn.addEventListener('click', () => map.zoomIn());
-    locationBtn.addEventListener('click', () => geolocate.trigger());
+    document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
+    document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
     let menuExpanded = false;
     const menuPill = document.getElementById('left-menu-pill');
@@ -659,22 +650,7 @@
     let filterMode=false;
     const sheet=document.getElementById('bottom-sheet');
     const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
-    
-    function getCollapsedY(){
-      if(currentParkingProps){
-        return sheet.clientHeight - 140;
-      }
-      return sheet.clientHeight - 60;
-    }
-    
-    function updateMapButtonPositions() {
-      const sheetRect = sheet.getBoundingClientRect();
-      const sheetTop = sheetRect.top;
-      const buttonBottom = sheetTop - 16;
-      plusBtn.style.bottom = `${window.innerHeight - buttonBottom}px`;
-      locationBtn.style.bottom = `${window.innerHeight - buttonBottom}px`;
-    }
-    
+    function getCollapsedY(){return sheet.clientHeight-180;}
     function openFilter(){
       filterMode=true;
       filterBtn.classList.add('active');
@@ -686,7 +662,6 @@
       currentY=window.innerHeight*0.5;
       btnContainer.classList.add('hidden');
       closeMenu();
-      setTimeout(updateMapButtonPositions, 350);
     }
     function closeFilter(){
       filterMode=false;
@@ -702,7 +677,6 @@
       updateSliderUI();
       applyRangeFilter();
       btnContainer.classList.remove('hidden');
-      setTimeout(updateMapButtonPositions, 350);
     }
     filterBtn.addEventListener('click',()=>{
       if (filterMode) {
@@ -729,59 +703,7 @@
     function getTypeName(r){if(!r)return'-';const l=r.toLowerCase();if(l.includes('kadunvarsi'))return'Kadunvarsipysäköinti';if(l.includes('halli'))return'Pysäköintihalli';if(l.includes('tori')||l.includes('kenttä'))return'Pysäköintikenttä';return r;}
     function getPriceText(l){if(!l)return'-';const s=l.toLowerCase();if(s.includes('ilmainen'))return'Ilmainen pysäköintikiekolla';if(s.includes('maksullinen'))return'Maksullinen';if(s.includes('asukas'))return'Asukaspysäköinti';return l;}
     function formatHours(v){if(!v)return`<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;return`<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;}
-    
-    function checkParking(){
-      if(filterMode)return;
-      const zoom=map.getZoom();
-      if(zoom<13){
-        summaryHeader.textContent='';
-        summaryType.textContent='';
-        details.innerHTML='';
-        divider.style.display='none';
-        btn.textContent='Lähennä karttaa';
-        btn.classList.remove('active');
-        const wasParking = currentParkingProps !== null;
-        currentParkingProps=null;
-        if(wasParking){
-          sheet.style.transform=`translateY(${getCollapsedY()}px)`;
-          currentY=getCollapsedY();
-          updateMapButtonPositions();
-        }
-        return;
-      }
-      const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});
-      if(f.length>0){
-        const p=f[0].properties;
-        const wasEmpty = currentParkingProps === null;
-        currentParkingProps=p;
-        const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';
-        summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;
-        summaryType.textContent=getTypeName(p['hel:paikan_asento']);
-        details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;
-        divider.style.display='block';
-        btn.textContent='Pysäköi tähän';
-        btn.classList.add('active');
-        if(wasEmpty){
-          sheet.style.transform=`translateY(${getCollapsedY()}px)`;
-          currentY=getCollapsedY();
-          updateMapButtonPositions();
-        }
-      }else{
-        const wasParking = currentParkingProps !== null;
-        currentParkingProps=null;
-        summaryHeader.textContent='';
-        summaryType.textContent='';
-        details.innerHTML='';
-        divider.style.display='none';
-        btn.textContent='Valitse pysäköintialue';
-        btn.classList.remove('active');
-        if(wasParking){
-          sheet.style.transform=`translateY(${getCollapsedY()}px)`;
-          currentY=getCollapsedY();
-          updateMapButtonPositions();
-        }
-      }
-    }
+    function checkParking(){if(filterMode)return;const zoom=map.getZoom();if(zoom<13){summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Lähennä karttaa';btn.classList.remove('active');currentParkingProps=null;return;}const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const p=f[0].properties;currentParkingProps=p;const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;summaryType.textContent=getTypeName(p['hel:paikan_asento']);details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;divider.style.display='block';btn.textContent='Pysäköi tähän';btn.classList.add('active');}else{currentParkingProps=null;summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Valitse pysäköintialue';btn.classList.remove('active');}}
 
     const PARKING_RATE = 3;
     const SERVICE_FEE_PERCENT = 0.10;
@@ -1020,18 +942,10 @@
     map.on('error',e=>{console.warn('MapLibre virhe:',e.error?.message||e);});
 
     let startY=0,startTranslate=0,lastY=0,lastTime=0,velocity=0,isDragging=false;
-    function snapTo(t){
-      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
-      sheet.style.transform=`translateY(${t}px)`;
-      currentY=t;
-      setTimeout(updateMapButtonPositions, 350);
-    }
+    function snapTo(t){sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${t}px)`;currentY=t;}
     sheet.addEventListener('touchstart',(e)=>{if(sliderTouching||e.target===sliderMin||e.target===sliderMax)return;startY=e.touches[0].clientY;lastY=startY;lastTime=Date.now();velocity=0;const matrix=new DOMMatrix(getComputedStyle(sheet).transform);startTranslate=matrix.m42;currentY=startTranslate;isDragging=true;sheet.style.transition='none';},{passive:true});
-    sheet.addEventListener('touchmove',(e)=>{if(!isDragging)return;const touch=e.touches[0].clientY;const now=Date.now();const dt=now-lastTime;if(dt>0)velocity=(touch-lastY)/dt;lastY=touch;lastTime=now;currentY=Math.max(0,Math.min(getCollapsedY(),startTranslate+(touch-startY)));sheet.style.transform=`translateY(${currentY}px)`;updateMapButtonPositions();},{passive:true});
+    sheet.addEventListener('touchmove',(e)=>{if(!isDragging)return;const touch=e.touches[0].clientY;const now=Date.now();const dt=now-lastTime;if(dt>0)velocity=(touch-lastY)/dt;lastY=touch;lastTime=now;currentY=Math.max(0,Math.min(getCollapsedY(),startTranslate+(touch-startY)));sheet.style.transform=`translateY(${currentY}px)`;},{passive:true});
     sheet.addEventListener('touchend',()=>{if(!isDragging)return;isDragging=false;const c=getCollapsedY();if(velocity>0.5)snapTo(c);else if(velocity<-0.5)snapTo(0);else snapTo(currentY<c/2?0:c);});
-    
-    updateMapButtonPositions();
-    window.addEventListener('resize', updateMapButtonPositions);
   </script>
 </body>
 </html>
