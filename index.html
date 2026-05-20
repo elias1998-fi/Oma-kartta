@@ -17,18 +17,9 @@
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
 
-    #center-pointer {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -100%);
-      width: 48px; height: 48px; pointer-events: none; z-index: 10;
-    }
+    #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
 
-    .map-btn {
-      position: fixed; z-index: 25; width: 39px; height: 39px;
-      background: white; border: none; border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
+    .map-btn { position: fixed; z-index: 25; width: 39px; height: 39px; background: white; border: none; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .map-btn svg { width: 18px; height: 18px; }
     #menu-btn { top: max(16px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left)); }
     #filter-btn { top: max(64px, calc(env(safe-area-inset-top) + 48px)); left: max(16px, env(safe-area-inset-left)); }
@@ -38,13 +29,7 @@
     #plus-btn { top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); }
     #location-btn { top: max(64px, calc(env(safe-area-inset-top) + 48px)); right: max(16px, env(safe-area-inset-right)); }
 
-    #bottom-sheet {
-      position: absolute; left: 0; right: 0; bottom: 0; height: 80vh;
-      background: white; border-radius: 20px 20px 0 0;
-      box-shadow: 0 -2px 16px rgba(0,0,0,0.15); z-index: 20;
-      transform: translateY(calc(100% - 130px)); touch-action: none;
-      display: flex; flex-direction: column;
-    }
+    #bottom-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 80vh; background: white; border-radius: 20px 20px 0 0; box-shadow: 0 -2px 16px rgba(0,0,0,0.15); z-index: 20; transform: translateY(calc(100% - 130px)); touch-action: none; display: flex; flex-direction: column; }
     #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
@@ -79,25 +64,15 @@
     #action-btn { width: 100%; height: 58px; border: none; border-radius: 16px; font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; opacity: 0.7; cursor: pointer; transition: opacity 0.2s ease; text-align: center; }
     #action-btn.active { opacity: 1; }
 
-    /* ===== PARKING OVERLAY ===== */
-    #parking-overlay {
-      position: fixed; inset: 0; background: #f2f3f5; z-index: 100;
-      display: flex; flex-direction: column;
-      transform: translateX(100%);
-      transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
+    /* PARKING OVERLAY */
+    #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
     #parking-overlay.open { transform: translateX(0); }
 
-    #parking-header {
-      display: flex; align-items: center;
-      padding: max(14px, env(safe-area-inset-top)) 16px 12px 16px;
-      background: white; border-bottom: 1px solid #eee; flex-shrink: 0;
-    }
+    #parking-header { display: flex; align-items: center; padding: max(14px, env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
     #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
 
     .p-cards-container { flex: 1; display: flex; flex-direction: column; padding: 10px 14px 0 14px; gap: 8px; overflow: hidden; }
-
     .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
     .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
 
@@ -107,49 +82,63 @@
     .area-name { font-size: 14px; font-weight: bold; color: #222; }
     .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
 
-    /* Box 2 - Time */
-    .time-card-inner {
-      display: flex; align-items: center; gap: 0;
-    }
-
-    .time-big-display {
-      flex: 1;
-    }
-    .time-big-number {
-      font-size: 42px; font-weight: bold; color: #0C0243;
-      line-height: 1; font-family: Arial, sans-serif;
-    }
-    .time-big-unit {
-      font-size: 14px; color: #888; margin-top: 2px; font-family: Arial, sans-serif;
-    }
-
-    /* Drum roller — invisible scroll wheel */
-    .drum-scroll-zone {
-      width: 60px; height: 80px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      cursor: grab; user-select: none; flex-shrink: 0;
-      position: relative;
-    }
-    .drum-scroll-zone::before {
-      content: '';
-      position: absolute; inset: 0;
-      border: 2px solid #eee; border-radius: 12px;
-      background: #f8f8f8;
-    }
-    .drum-arrows {
-      display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; z-index: 1;
-    }
-    .drum-arrow { font-size: 14px; color: #bbb; line-height: 1; }
-    .drum-arrow.mid { font-size: 10px; color: #ddd; }
-
-    .time-price-row {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;
-    }
+    /* Box 2 */
+    .time-card-inner { display: flex; align-items: center; gap: 12px; }
+    .time-big-display { flex: 1; }
+    .time-big-number { font-size: 42px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; }
+    .time-big-unit { font-size: 13px; color: #aaa; margin-top: 3px; font-family: Arial, sans-serif; }
+    .time-price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
     .time-price-label { font-size: 13px; color: #888; }
     .time-price-val { font-size: 16px; font-weight: bold; color: #0C0243; }
 
-    /* Box 3 - Vehicle */
+    /* Drum roller visual */
+    .drum-scroll-zone {
+      width: 52px; height: 80px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 12px;
+      background: #f8f8f8;
+      cursor: grab;
+      user-select: none;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .drum-scroll-zone:active { cursor: grabbing; }
+
+    /* Horizontal ridges simulating a physical roller */
+    .drum-ridges {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+    .drum-ridge {
+      width: 100%;
+      height: 2px;
+      background: #d0d0d0;
+      border-radius: 1px;
+      transition: transform 0.05s linear;
+    }
+    /* Center ridge is darker — the "active" position */
+    .drum-ridge.center {
+      background: #a0a0a0;
+      height: 2.5px;
+    }
+    /* Fade edges to give cylindrical illusion */
+    .drum-fade-top {
+      position: absolute; top: 0; left: 0; right: 0; height: 22px;
+      background: linear-gradient(to bottom, #f8f8f8, transparent);
+      pointer-events: none; z-index: 2;
+    }
+    .drum-fade-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 22px;
+      background: linear-gradient(to top, #f8f8f8, transparent);
+      pointer-events: none; z-index: 2;
+    }
+
+    /* Box 3 */
     .vehicle-display { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .plate { display: flex; align-items: center; border: 2px solid #333; border-radius: 5px; overflow: hidden; height: 30px; flex-shrink: 0; }
     .plate-eu { background: #0C0243; color: white; font-size: 8px; font-weight: bold; padding: 0 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
@@ -159,7 +148,7 @@
     .vehicle-nickname { font-size: 14px; color: #444; }
     .vehicle-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 13px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
 
-    /* Box 4 - Payment */
+    /* Box 4 */
     .payment-select { width: 100%; padding: 8px 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 14px; font-family: Arial, sans-serif; color: #333; background: white; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
 
     #start-btn-container { padding: 10px 14px; padding-bottom: max(20px, env(safe-area-inset-bottom)); flex-shrink: 0; }
@@ -254,15 +243,20 @@
         <div class="p-card-title">Pysäköintiaika</div>
         <div class="time-card-inner">
           <div class="time-big-display">
-            <div class="time-big-number" id="time-big">1h 00min</div>
-            <div class="time-big-unit">Pyöritä rullaa muuttaaksesi aikaa</div>
+            <div class="time-big-number" id="time-big">1h</div>
+            <div class="time-big-unit">Pyöritä rullaa →</div>
           </div>
+          <!-- Drum roller -->
           <div class="drum-scroll-zone" id="drum-scroll-zone">
-            <div class="drum-arrows">
-              <div class="drum-arrow">▲</div>
-              <div class="drum-arrow mid">—</div>
-              <div class="drum-arrow">▼</div>
+            <div class="drum-fade-top"></div>
+            <div class="drum-ridges" id="drum-ridges">
+              <div class="drum-ridge"></div>
+              <div class="drum-ridge"></div>
+              <div class="drum-ridge center"></div>
+              <div class="drum-ridge"></div>
+              <div class="drum-ridge"></div>
             </div>
+            <div class="drum-fade-bottom"></div>
           </div>
         </div>
         <div class="time-price-row">
@@ -336,7 +330,6 @@
     document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
     document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
 
-    // Filter slider
     const sliderMin = document.getElementById('slider-min'), sliderMax = document.getElementById('slider-max');
     const rangeFill = document.getElementById('range-fill'), sliderValueEl = document.getElementById('slider-value'), filterResult = document.getElementById('filter-result');
     function idxToMinutes(idx) { if (idx === 0) return 0; if (idx === 1) return 30; if (idx >= 26) return 9999; return (idx - 1) * 60; }
@@ -406,10 +399,13 @@
 
     // ===== TIME DRUM =====
     let parkingMinutes = 60;
-    let parkingMaxMinutes = 9999;
+    let parkingMaxMinutes = 1440;
     let isIlmainen = false;
-    let drumDragStartY = null, drumDragStartMinutes = null;
-    const PIXELS_PER_MINUTE = 2; // sensitivity: 2px = 1 min
+    const PIXELS_PER_MINUTE = 2;
+
+    // Animate ridges rolling when dragging
+    let ridgeOffset = 0;
+    const RIDGE_SPACING = 14; // px between ridges visually
 
     function formatTimeDisplay(mins) {
       mins = Math.max(1, Math.min(mins, parkingMaxMinutes));
@@ -424,29 +420,47 @@
       document.getElementById('p-price').textContent = isIlmainen ? 'Ilmainen' : `${(parkingMinutes / 60 * 1.5).toFixed(2)} €`;
     }
 
+    function animateRidges(totalDragPx) {
+      // Shift ridges to simulate rolling cylinder
+      const offset = (totalDragPx % RIDGE_SPACING + RIDGE_SPACING) % RIDGE_SPACING;
+      const ridges = document.querySelectorAll('.drum-ridge');
+      ridges.forEach((r, i) => {
+        r.style.transform = `translateY(${offset - (i === 2 ? 0 : 0)}px)`;
+      });
+    }
+
     const drumZone = document.getElementById('drum-scroll-zone');
+    let drumDragStartY = null, drumDragStartMinutes = null, totalDragPx = 0;
 
     drumZone.addEventListener('touchstart', e => {
       drumDragStartY = e.touches[0].clientY;
       drumDragStartMinutes = parkingMinutes;
+      totalDragPx = 0;
     }, { passive: true });
 
     drumZone.addEventListener('touchmove', e => {
       if (drumDragStartY === null) return;
-      // swipe up = more time, swipe down = less
       const delta = drumDragStartY - e.touches[0].clientY;
+      totalDragPx = delta;
       const minsDelta = Math.round(delta / PIXELS_PER_MINUTE);
       parkingMinutes = Math.max(1, Math.min(drumDragStartMinutes + minsDelta, parkingMaxMinutes));
+      animateRidges(delta);
       updateTimeDisplay();
     }, { passive: true });
 
     drumZone.addEventListener('touchend', () => { drumDragStartY = null; }, { passive: true });
 
-    // Mouse for desktop testing
+    // Mouse for desktop
     let mouseDragStartY = null, mouseDragStartMin = null;
-    drumZone.addEventListener('mousedown', e => { mouseDragStartY = e.clientY; mouseDragStartMin = parkingMinutes; drumZone.style.cursor = 'grabbing'; });
-    window.addEventListener('mousemove', e => { if (mouseDragStartY === null) return; const delta = mouseDragStartY - e.clientY; parkingMinutes = Math.max(1, Math.min(mouseDragStartMin + Math.round(delta / PIXELS_PER_MINUTE), parkingMaxMinutes)); updateTimeDisplay(); });
-    window.addEventListener('mouseup', () => { if (mouseDragStartY !== null) { mouseDragStartY = null; drumZone.style.cursor = 'grab'; } });
+    drumZone.addEventListener('mousedown', e => { mouseDragStartY = e.clientY; mouseDragStartMin = parkingMinutes; });
+    window.addEventListener('mousemove', e => {
+      if (mouseDragStartY === null) return;
+      const delta = mouseDragStartY - e.clientY;
+      parkingMinutes = Math.max(1, Math.min(mouseDragStartMin + Math.round(delta / PIXELS_PER_MINUTE), parkingMaxMinutes));
+      animateRidges(delta);
+      updateTimeDisplay();
+    });
+    window.addEventListener('mouseup', () => { mouseDragStartY = null; });
 
     // ===== OVERLAY =====
     const overlay = document.getElementById('parking-overlay');
@@ -499,7 +513,6 @@
 
     map.on('error', e => { console.warn('MapLibre virhe:', e.error?.message || e); });
 
-    // Sheet drag
     let startY = 0, startTranslate = 0, lastY = 0, lastTime = 0, velocity = 0, isDragging = false;
     function snapTo(targetY) { sheet.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; sheet.style.transform = `translateY(${targetY}px)`; currentY = targetY; }
     sheet.addEventListener('touchstart', (e) => { if (sliderTouching || e.target === sliderMin || e.target === sliderMax) return; startY = e.touches[0].clientY; lastY = startY; lastTime = Date.now(); velocity = 0; const matrix = new DOMMatrix(getComputedStyle(sheet).transform); startTranslate = matrix.m42; currentY = startTranslate; isDragging = true; sheet.style.transition = 'none'; }, { passive: true });
