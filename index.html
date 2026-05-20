@@ -924,7 +924,7 @@
       `;
     }
 
-    // Käyttäjän nykyinen sijainti
+    // Käyttäjän nykyinen GPS-sijainti
     let userLocation = null;
 
     // Etäisyyden laskeminen Haversine-kaavalla
@@ -978,6 +978,13 @@
       };
     });
     
+    // Hae sijainti automaattisesti kun kartta latautuu
+    map.on('load', () => {
+      setTimeout(() => {
+        geolocate.trigger();
+      }, 1000);
+    });
+    
     const locationBtn = document.getElementById('location-btn');
     const sheet = document.getElementById('bottom-sheet');
     
@@ -997,6 +1004,13 @@
       menuPill.classList.remove('expanded');
       menuBtn.classList.remove('active');
     }
+    
+    // Sulje burger-valikko kun karttaa liikutetaan
+    map.on('movestart', () => {
+      if (menuExpanded) {
+        closeMenu();
+      }
+    });
     
     menuBtn.addEventListener('click', () => {
       menuExpanded = !menuExpanded;
@@ -1085,7 +1099,7 @@
       alert('Tietoja - tulossa pian');
     }
 
-    // Hakuhistoria LocalStoragessa - muutettu 8:aan
+    // Hakuhistoria LocalStoragessa
     const SEARCH_HISTORY_KEY = 'parking_search_history';
     const MAX_HISTORY = 8;
     
@@ -1100,11 +1114,8 @@
     
     function addToSearchHistory(item) {
       let history = getSearchHistory();
-      // Poista duplikaatit
       history = history.filter(h => !(h.lat === item.lat && h.lon === item.lon));
-      // Lisää alkuun
       history.unshift(item);
-      // Rajoita 8:aan
       if (history.length > MAX_HISTORY) {
         history = history.slice(0, MAX_HISTORY);
       }
@@ -1122,7 +1133,6 @@
       const history = getSearchHistory();
       const searchResults = document.getElementById('search-results');
       
-      // Estä vieritys kun näytetään historiaa
       searchResults.classList.remove('allow-scroll');
       searchResults.classList.add('no-scroll');
       
@@ -1131,7 +1141,7 @@
         return;
       }
       
-      // Käytä käyttäjän GPS-sijaintia jos saatavilla, muuten kartan keskipiste
+      // AINA käytä userLocation jos saatavilla
       let currentLat, currentLon;
       if (userLocation) {
         currentLat = userLocation.lat;
@@ -1164,7 +1174,6 @@
       selectPlace(lat, lon, name, false);
     }
 
-    // Digitransit Geocoding API haku - koko Suomi
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
     let searchTimeout = null;
@@ -1187,11 +1196,10 @@
         const data = await response.json();
         
         if (data.features && data.features.length > 0) {
-          // Salli vieritys kun näytetään hakutuloksia
           searchResults.classList.remove('no-scroll');
           searchResults.classList.add('allow-scroll');
           
-          // Käytä käyttäjän GPS-sijaintia jos saatavilla, muuten kartan keskipiste
+          // AINA käytä userLocation jos saatavilla
           let currentLat, currentLon;
           if (userLocation) {
             currentLat = userLocation.lat;
@@ -1251,20 +1259,17 @@
       
       closeSearchOverlay();
       
-      // Poista vanha marker jos on
       if (currentMarker) {
         currentMarker.remove();
         currentMarker = null;
       }
       
-      // Lennä paikkaan
       map.flyTo({
         center: [lon, lat],
         zoom: 15,
         duration: 1500
       });
       
-      // Lisää marker vasta kun flyTo on valmis
       const onMoveEnd = () => {
         map.off('moveend', onMoveEnd);
         const markerElement = createPinElement();
