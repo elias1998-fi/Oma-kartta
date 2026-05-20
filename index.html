@@ -112,12 +112,12 @@
     .payment-name { font-size: 14px; color: #333; flex: 1; font-family: Arial, sans-serif; }
     .payment-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
 
-    #vehicle-sheet, #payment-sheet {
+    #vehicle-sheet, #payment-sheet, #price-detail-sheet {
       position: fixed; inset: 0;
       z-index: 200;
       display: none;
     }
-    #vehicle-sheet.open, #payment-sheet.open { display: block; }
+    #vehicle-sheet.open, #payment-sheet.open, #price-detail-sheet.open { display: block; }
     .sheet-backdrop {
       position: absolute; inset: 0;
       background: rgba(0,0,0,0.3);
@@ -176,8 +176,45 @@
       padding: 14px 16px;
       font-family: Arial, sans-serif;
     }
-    .total-price-label { font-size: 15px; color: #555; }
+    .total-price-label { 
+      font-size: 15px; color: #555; 
+      display: flex; align-items: center; gap: 6px;
+    }
+    .info-icon {
+      width: 18px; height: 18px;
+      border: 1.5px solid #aaa;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: bold; color: #aaa;
+      cursor: pointer;
+      font-family: Georgia, serif;
+    }
+    .info-icon:active { background: #f0f0f0; }
     .total-price-val { font-size: 22px; font-weight: bold; color: #0C0243; }
+
+    .price-detail-content {
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .detail-title {
+      font-size: 16px; font-weight: bold; color: #222;
+      margin-bottom: 16px;
+    }
+    .detail-row {
+      display: flex; justify-content: space-between;
+      padding: 10px 0;
+      font-size: 14px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row.total {
+      font-weight: bold; font-size: 16px;
+      border-top: 2px solid #ddd;
+      padding-top: 12px;
+      margin-top: 8px;
+    }
+    .detail-label { color: #555; }
+    .detail-value { color: #222; }
 
     #start-btn-container { padding: 10px 14px; padding-bottom: max(20px,env(safe-area-inset-bottom)); flex-shrink: 0; }
     #start-btn { width: 100%; height: 54px; border: none; border-radius: 16px; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; cursor: pointer; transition: opacity 0.2s ease; }
@@ -254,6 +291,37 @@
     <div class="sheet-panel">
       <div class="sheet-title">Valitse maksutapa</div>
       <div id="payment-options"></div>
+      <div class="sheet-divider"></div>
+      <div class="add-option" onclick="addPaymentMethod()">＋ Lisää uusi maksutapa...</div>
+    </div>
+  </div>
+
+  <div id="price-detail-sheet">
+    <div class="sheet-backdrop" onclick="closePriceDetail()"></div>
+    <div class="sheet-panel">
+      <div class="price-detail-content">
+        <div class="detail-title">Maksuerittely</div>
+        <div class="detail-row">
+          <span class="detail-label">Pysäköintimaksu</span>
+          <span class="detail-value" id="detail-parking">0,00 €</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Palvelumaksu (10%)</span>
+          <span class="detail-value" id="detail-service">0,00 €</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Välisumma (ilman ALV)</span>
+          <span class="detail-value" id="detail-subtotal">0,00 €</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">ALV 25,5%</span>
+          <span class="detail-value" id="detail-vat">0,00 €</span>
+        </div>
+        <div class="detail-row total">
+          <span class="detail-label">Yhteensä</span>
+          <span class="detail-value" id="detail-total">0,00 €</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -311,8 +379,11 @@
     <!-- Total price above button -->
     <div id="total-price-container">
       <div class="total-price-row">
-        <span class="total-price-label">Yhteensä</span>
-        <span class="total-price-val" id="p-price">Ilmainen</span>
+        <span class="total-price-label">
+          Yhteensä
+          <span class="info-icon" onclick="openPriceDetail()">i</span>
+        </span>
+        <span class="total-price-val" id="p-price">0,00 €</span>
       </div>
     </div>
 
@@ -389,6 +460,27 @@
     function formatHours(v){if(!v)return`<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;return`<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;}
     function checkParking(){if(filterMode)return;const zoom=map.getZoom();if(zoom<13){summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Zoomaa karttaa nähdäksesi pysäköintialueet';btn.classList.remove('active');currentParkingProps=null;return;}const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const p=f[0].properties;currentParkingProps=p;const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;summaryType.textContent=getTypeName(p['hel:paikan_asento']);details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;divider.style.display='block';btn.textContent='Pysäköi tähän';btn.classList.add('active');}else{currentParkingProps=null;summaryHeader.textContent='';summaryType.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Valitse pysäköintialue';btn.classList.remove('active');}}
 
+    const PARKING_RATE = 3; // €/h
+    const SERVICE_FEE_PERCENT = 0.10; // 10%
+    const VAT_PERCENT = 0.255; // 25.5%
+
+    function calculatePrice(minutes) {
+      if (minutes === 0) return { parking: 0, service: 0, subtotal: 0, vat: 0, total: 0 };
+      
+      const hours = minutes / 60;
+      const parking = hours * PARKING_RATE;
+      const service = parking * SERVICE_FEE_PERCENT;
+      const subtotal = parking + service;
+      const vat = subtotal * VAT_PERCENT;
+      const total = subtotal + vat;
+      
+      return { parking, service, subtotal, vat, total };
+    }
+
+    function formatPrice(amount) {
+      return amount.toFixed(2).replace('.', ',') + ' €';
+    }
+
     let parkingMinutes=0, parkingMaxMinutes=1440, isIlmainen=false;
     let parkingStartTime = null;
     const PIXELS_PER_MINUTE=2, RADIANS_PER_PX=0.055, N_LINES=12;
@@ -429,7 +521,9 @@
       if(rounded!==lastDisplayedMinutes){
         document.getElementById('time-big').textContent=formatTimeDisplay(rounded);
         document.getElementById('time-end-text').textContent=formatEndTime(rounded);
-        document.getElementById('p-price').textContent=isIlmainen?'Ilmainen':`${(rounded/60*1.5).toFixed(2)} €`;
+        
+        const price = calculatePrice(rounded);
+        document.getElementById('p-price').textContent = formatPrice(price.total);
         
         const startBtn = document.getElementById('start-btn');
         if (rounded === 0) {
@@ -442,6 +536,20 @@
         lastDisplayedMinutes=rounded;
       }
       drawDrum();
+    }
+
+    function openPriceDetail() {
+      const price = calculatePrice(parkingMinutes);
+      document.getElementById('detail-parking').textContent = formatPrice(price.parking);
+      document.getElementById('detail-service').textContent = formatPrice(price.service);
+      document.getElementById('detail-subtotal').textContent = formatPrice(price.subtotal);
+      document.getElementById('detail-vat').textContent = formatPrice(price.vat);
+      document.getElementById('detail-total').textContent = formatPrice(price.total);
+      document.getElementById('price-detail-sheet').classList.add('open');
+    }
+
+    function closePriceDetail() {
+      document.getElementById('price-detail-sheet').classList.remove('open');
     }
 
     let inertiaRAF=null,inertiaVel=0;
@@ -544,6 +652,11 @@
     function openPaymentSheet() { renderPaymentOptions(); document.getElementById('payment-sheet').classList.add('open'); }
     function closePaymentSheet() { document.getElementById('payment-sheet').classList.remove('open'); }
 
+    function addPaymentMethod() {
+      alert('Tämä toiminto lisäisi uuden maksutavan. Tässä demossa käytetään olemassa olevia maksutapoja.');
+      closePaymentSheet();
+    }
+
     const overlay=document.getElementById('parking-overlay');
     function openParkingOverlay(p){
       const areaCode=p['hel:id']||'—',kesto=p['hel:kesto']||null;
@@ -571,7 +684,8 @@
       if(parkingMinutes===0){return;}
       const v=vehicles[selectedVehicleIdx];
       const p=paymentMethods[selectedPaymentIdx];
-      alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${v.name} (${v.reg})\nAika: ${formatTimeDisplay(parkingMinutes)}\nMaksutapa: ${p.name}\nAlue: ${document.getElementById('p-code').textContent}`);
+      const price = calculatePrice(parkingMinutes);
+      alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${v.name} (${v.reg})\nAika: ${formatTimeDisplay(parkingMinutes)}\nMaksutapa: ${p.name}\nAlue: ${document.getElementById('p-code').textContent}\nHinta: ${formatPrice(price.total)}`);
     });
 
     map.on('error',e=>{console.warn('MapLibre virhe:',e.error?.message||e);});
