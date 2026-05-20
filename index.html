@@ -17,12 +17,30 @@
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
     
     .map-btn { 
-      position: fixed; z-index: 25; width: 48px; height: 48px; 
-      background: white; border: none; border-radius: 50%; 
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; 
-      display: flex; align-items: center; justify-content: center;
+      position: fixed; 
+      z-index: 25; 
+      width: 48px; 
+      height: 48px; 
+      background: white; 
+      border: none; 
+      border-radius: 50%; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      transition: bottom 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
     }
-    .map-btn svg { width: 20px; height: 20px; }
+    
+    #plus-btn { 
+      left: max(16px,env(safe-area-inset-left));
+      bottom: 120px;
+    }
+    
+    #location-btn { 
+      right: max(16px,env(safe-area-inset-right));
+      bottom: 120px;
+    }
     
     #left-menu-pill {
       position: fixed;
@@ -72,19 +90,6 @@
     #search-btn.active { background: #0C0243; border-radius: 50%; }
     #search-btn.active svg { stroke: white; }
     
-    #plus-btn { 
-      position: absolute;
-      bottom: 28px;
-      left: max(16px,env(safe-area-inset-left));
-      z-index: 25;
-    }
-    #location-btn { 
-      position: absolute;
-      bottom: 28px;
-      right: max(16px,env(safe-area-inset-right));
-      z-index: 25;
-    }
-    
     #profile-overlay, #search-overlay {
       position: fixed; inset: 0;
       background: #f2f3f5;
@@ -124,7 +129,18 @@
       font-size: 14px;
     }
     
-    #bottom-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 80vh; background: white; border-radius: 20px 20px 0 0; box-shadow: 0 -2px 16px rgba(0,0,0,0.15); z-index: 20; transform: translateY(calc(100% - 180px)); touch-action: none; display: flex; flex-direction: column; }
+    #bottom-sheet { 
+      position: absolute; left: 0; right: 0; bottom: 0; 
+      height: 80vh; background: white; 
+      border-radius: 20px 20px 0 0; 
+      box-shadow: 0 -2px 16px rgba(0,0,0,0.15); 
+      z-index: 20; 
+      transform: translateY(calc(100% - 90px)); 
+      touch-action: pan-y; 
+      display: flex; 
+      flex-direction: column;
+      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
     #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
@@ -379,6 +395,18 @@
     </button>
   </div>
 
+  <button class="map-btn" id="plus-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+  
+  <button class="map-btn" id="location-btn">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#333"/>
+    </svg>
+  </button>
+
   <div id="profile-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeProfileOverlay()">←</button>
@@ -396,19 +424,6 @@
   </div>
 
   <div id="bottom-sheet">
-    <button class="map-btn" id="plus-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-    </button>
-    <button class="map-btn" id="location-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
-        <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
-      </svg>
-    </button>
-    
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
     <div id="sheet-normal">
       <div id="sheet-summary"><div id="summary-header"></div><div id="summary-type"></div></div>
@@ -579,8 +594,12 @@
 
     const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
     map.addControl(geolocate);
-    document.getElementById('plus-btn').addEventListener('click', () => map.zoomIn());
-    document.getElementById('location-btn').addEventListener('click', () => geolocate.trigger());
+    
+    const plusBtn = document.getElementById('plus-btn');
+    const locationBtn = document.getElementById('location-btn');
+    
+    plusBtn.addEventListener('click', () => map.zoomIn());
+    locationBtn.addEventListener('click', () => geolocate.trigger());
 
     let menuExpanded = false;
     const menuPill = document.getElementById('left-menu-pill');
@@ -650,34 +669,8 @@
     let filterMode=false;
     const sheet=document.getElementById('bottom-sheet');
     const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
-    function getCollapsedY(){return sheet.clientHeight-180;}
-    function openFilter(){
-      filterMode=true;
-      filterBtn.classList.add('active');
-      filterCloseBtn.classList.add('visible');
-      sheetNormal.style.display='none';
-      sheetFilter.classList.add('visible');
-      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
-      sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;
-      currentY=window.innerHeight*0.5;
-      btnContainer.classList.add('hidden');
-      closeMenu();
-    }
-    function closeFilter(){
-      filterMode=false;
-      filterBtn.classList.remove('active');
-      filterCloseBtn.classList.remove('visible');
-      sheetNormal.style.display='flex';
-      sheetFilter.classList.remove('visible');
-      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
-      sheet.style.transform=`translateY(${getCollapsedY()}px)`;
-      currentY=getCollapsedY();
-      sliderMin.value=0;
-      sliderMax.value=26;
-      updateSliderUI();
-      applyRangeFilter();
-      btnContainer.classList.remove('hidden');
-    }
+    function openFilter(){filterMode=true;filterBtn.classList.add('active');filterCloseBtn.classList.add('visible');sheetNormal.style.display='none';sheetFilter.classList.add('visible');sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;currentY=window.innerHeight*0.5;btnContainer.classList.add('hidden');closeMenu();}
+    function closeFilter(){filterMode=false;filterBtn.classList.remove('active');filterCloseBtn.classList.remove('visible');sheetNormal.style.display='flex';sheetFilter.classList.remove('visible');sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform='translateY(calc(100% - 90px))';currentY=sheet.clientHeight-90;sliderMin.value=0;sliderMax.value=26;updateSliderUI();applyRangeFilter();btnContainer.classList.remove('hidden');}
     filterBtn.addEventListener('click',()=>{
       if (filterMode) {
         closeFilter();
@@ -696,7 +689,7 @@
     map.on('zoomend',checkParking);
 
     const btn=document.getElementById('action-btn'),summaryHeader=document.getElementById('summary-header'),summaryType=document.getElementById('summary-type'),details=document.getElementById('sheet-details'),divider=document.getElementById('sheet-divider');
-    let currentHighlightId=null,currentY=getCollapsedY(),currentParkingProps=null;
+    let currentHighlightId=null,currentY=0,currentParkingProps=null;
 
     function highlightParking(){if(!map.getLayer('helsinki-parkit-highlight'))return;const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const id=f[0].properties['hel:id'];if(id!==currentHighlightId){currentHighlightId=id;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],id]);}}else{if(currentHighlightId!==null){currentHighlightId=null;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],-1]);}}}
     function getOwnerName(r){if(!r)return'Tuntematon';if(r.includes('KYMP')||r.includes('HEL')||r.includes('Helsinki'))return'Helsingin kaupunki';return r;}
@@ -944,8 +937,8 @@
     let startY=0,startTranslate=0,lastY=0,lastTime=0,velocity=0,isDragging=false;
     function snapTo(t){sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${t}px)`;currentY=t;}
     sheet.addEventListener('touchstart',(e)=>{if(sliderTouching||e.target===sliderMin||e.target===sliderMax)return;startY=e.touches[0].clientY;lastY=startY;lastTime=Date.now();velocity=0;const matrix=new DOMMatrix(getComputedStyle(sheet).transform);startTranslate=matrix.m42;currentY=startTranslate;isDragging=true;sheet.style.transition='none';},{passive:true});
-    sheet.addEventListener('touchmove',(e)=>{if(!isDragging)return;const touch=e.touches[0].clientY;const now=Date.now();const dt=now-lastTime;if(dt>0)velocity=(touch-lastY)/dt;lastY=touch;lastTime=now;currentY=Math.max(0,Math.min(getCollapsedY(),startTranslate+(touch-startY)));sheet.style.transform=`translateY(${currentY}px)`;},{passive:true});
-    sheet.addEventListener('touchend',()=>{if(!isDragging)return;isDragging=false;const c=getCollapsedY();if(velocity>0.5)snapTo(c);else if(velocity<-0.5)snapTo(0);else snapTo(currentY<c/2?0:c);});
+    sheet.addEventListener('touchmove',(e)=>{if(!isDragging)return;const touch=e.touches[0].clientY;const now=Date.now();const dt=now-lastTime;if(dt>0)velocity=(touch-lastY)/dt;lastY=touch;lastTime=now;const maxY=sheet.clientHeight-90;currentY=Math.max(0,Math.min(maxY,startTranslate+(touch-startY)));sheet.style.transform=`translateY(${currentY}px)`;},{passive:true});
+    sheet.addEventListener('touchend',()=>{if(!isDragging)return;isDragging=false;const maxY=sheet.clientHeight-90;if(velocity>0.5)snapTo(maxY);else if(velocity<-0.5)snapTo(0);else snapTo(currentY<maxY/2?0:maxY);});
   </script>
 </body>
 </html>
