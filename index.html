@@ -170,7 +170,12 @@
     .area-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
     .time-card-inner { display: flex; align-items: center; gap: 12px; }
     .time-big-display { flex: 1; }
-    .time-big-number { font-size: 28px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; }
+    .time-big-number { font-size: 28px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color 0.2s ease, transform 0.15s ease; }
+    .time-big-number.at-max { color: #d32f2f; }
+    @keyframes timeBounce { 0%{transform:scale(1)} 30%{transform:scale(1.18)} 60%{transform:scale(0.95)} 80%{transform:scale(1.07)} 100%{transform:scale(1)} }
+    .time-big-number.bounce { animation: timeBounce 0.35s ease; }
+    #max-label { font-size: 13px; color: #d32f2f; font-family: Arial, sans-serif; margin-top: 3px; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+    #max-label.visible { opacity: 1; }
     .time-big-unit { font-size: 16px; color: #666; margin-top: 4px; font-family: Arial, sans-serif; }
     .drum-scroll-zone { width: 52px; height: 80px; border: 1.5px solid #d8d8d8; border-radius: 12px; cursor: grab; user-select: none; flex-shrink: 0; overflow: hidden; position: relative; }
     .drum-scroll-zone:active { cursor: grabbing; }
@@ -383,60 +388,13 @@
     <div id="search-results" class="no-scroll"></div>
   </div>
 
-  <!-- PLUS-OVERLAY (muokattu) -->
   <div id="plus-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closePlusOverlay()">←</button>
-      <div class="overlay-title">Ilmoita alueesta</div>
+      <div class="overlay-title">Uusi</div>
     </div>
-    <div class="overlay-content" style="padding: 24px 16px; gap: 0;">
-      <div style="font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; color: #0C0243; text-align: center; line-height: 1.35; margin-bottom: 28px;">
-        Tue yhteisöä ja ilmoita havaitsemastasi ilmaisesta parkkialueesta!
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
-        <button onclick="openAddParkingArea()" style="width:100%;min-height:120px;background:#0C0243;border:none;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(12,2,67,0.25);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
-          onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'"
-          onmouseup="this.style.opacity='1';this.style.transform='scale(1)'"
-          ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'"
-          ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-          </svg>
-          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:white;text-align:center;line-height:1.3;">Lisää uusi ilmainen pysäköintialue</span>
-        </button>
-        <button onclick="openCommentAreas()" style="width:100%;min-height:120px;background:white;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(0,0,0,0.08);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
-          onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'"
-          onmouseup="this.style.opacity='1';this.style.transform='scale(1)'"
-          ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'"
-          ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Kommentoi nykyisiä alueita</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Sub-overlay: Lisää uusi ilmainen pysäköintialue -->
-  <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
-    <div class="overlay-header">
-      <button class="overlay-back-btn" onclick="closeAddParkingArea()">←</button>
-      <div class="overlay-title">Lisää pysäköintialue</div>
-    </div>
-    <div class="overlay-content" style="align-items:center;justify-content:center;color:#888;font-size:14px;font-family:Arial,sans-serif;">
-      Lomake tulossa – tähän voi lisätä uuden ilmaisen pysäköintialueen.
-    </div>
-  </div>
-
-  <!-- Sub-overlay: Kommentoi nykyisiä alueita -->
-  <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
-    <div class="overlay-header">
-      <button class="overlay-back-btn" onclick="closeCommentAreas()">←</button>
-      <div class="overlay-title">Kommentoi alueita</div>
-    </div>
-    <div class="overlay-content" style="align-items:center;justify-content:center;color:#888;font-size:14px;font-family:Arial,sans-serif;">
-      Kommenttilomake tulossa – tähän voi jättää palautetta nykyisistä alueista.
+    <div class="overlay-content" style="align-items: center; justify-content: center; color: #888; font-size: 14px;">
+      Tyhjä sivu - sisältö tulossa
     </div>
   </div>
 
@@ -474,10 +432,7 @@
   <div id="vehicle-sheet">
     <div class="sheet-backdrop" onclick="closeVehicleSheet()"></div>
     <div class="sheet-panel">
-      <div class="sheet-header">
-        <div class="sheet-title">Valitse ajoneuvo</div>
-        <button class="sheet-close-btn" onclick="closeVehicleSheet()">✕</button>
-      </div>
+      <div class="sheet-header"><div class="sheet-title">Valitse ajoneuvo</div><button class="sheet-close-btn" onclick="closeVehicleSheet()">✕</button></div>
       <div id="vehicle-options"></div>
       <div class="sheet-divider"></div>
       <div class="add-option" onclick="addVehicle()">＋ Lisää uusi ajoneuvo...</div>
@@ -487,10 +442,7 @@
   <div id="payment-sheet">
     <div class="sheet-backdrop" onclick="closePaymentSheet()"></div>
     <div class="sheet-panel">
-      <div class="sheet-header">
-        <div class="sheet-title">Valitse maksutapa</div>
-        <button class="sheet-close-btn" onclick="closePaymentSheet()">✕</button>
-      </div>
+      <div class="sheet-header"><div class="sheet-title">Valitse maksutapa</div><button class="sheet-close-btn" onclick="closePaymentSheet()">✕</button></div>
       <div id="payment-options"></div>
       <div class="sheet-divider"></div>
       <div class="add-option" onclick="addPaymentMethod()">＋ Lisää uusi maksutapa...</div>
@@ -500,10 +452,7 @@
   <div id="price-detail-sheet">
     <div class="sheet-backdrop" onclick="closePriceDetail()"></div>
     <div class="sheet-panel">
-      <div class="sheet-header">
-        <div class="sheet-title">Maksuerittely</div>
-        <button class="sheet-close-btn" onclick="closePriceDetail()">✕</button>
-      </div>
+      <div class="sheet-header"><div class="sheet-title">Maksuerittely</div><button class="sheet-close-btn" onclick="closePriceDetail()">✕</button></div>
       <div class="price-detail-content">
         <div class="detail-row"><span class="detail-label">Pysäköintimaksu</span><span class="detail-value" id="detail-parking">0,00 €</span></div>
         <div class="detail-row"><span class="detail-label">Palvelumaksu (10%)</span><span class="detail-value" id="detail-service">0,00 €</span></div>
@@ -528,10 +477,7 @@
       <div class="p-card">
         <div class="p-card-title">Ajoneuvo</div>
         <div class="vehicle-display" onclick="openVehicleSheet()">
-          <div class="plate">
-            <div class="plate-eu"><div class="eu-stars">★★★</div><div class="eu-fi">FI</div></div>
-            <div class="plate-text" id="plate-text">FHY-857</div>
-          </div>
+          <div class="plate"><div class="plate-eu"><div class="eu-stars">★★★</div><div class="eu-fi">FI</div></div><div class="plate-text" id="plate-text">FHY-857</div></div>
           <div class="vehicle-nickname" id="vehicle-nickname">Äitin auto</div>
           <div class="vehicle-chevron">⌄</div>
         </div>
@@ -549,11 +495,10 @@
         <div class="time-card-inner">
           <div class="time-big-display">
             <div class="time-big-number" id="time-big">0 min</div>
+            <div id="max-label"></div>
             <div class="time-big-unit" id="time-end-text">Pyöritä rullaa →</div>
           </div>
-          <div class="drum-scroll-zone" id="drum-scroll-zone">
-            <canvas id="drum-canvas" width="52" height="80"></canvas>
-          </div>
+          <div class="drum-scroll-zone" id="drum-scroll-zone"><canvas id="drum-canvas" width="52" height="80"></canvas></div>
         </div>
       </div>
     </div>
@@ -600,12 +545,7 @@
       const a = Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
       return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
     }
-
-    function formatDistance(distanceKm) {
-      if (distanceKm < 1) return `${Math.round(distanceKm*1000)} m päässä`;
-      return `${Math.round(distanceKm)} km päässä`;
-    }
-
+    function formatDistance(d) { return d < 1 ? `${Math.round(d*1000)} m päässä` : `${Math.round(d)} km päässä`; }
     function kestoToMinutes(kesto) {
       if (!kesto) return 9999;
       const l = kesto.toLowerCase().trim();
@@ -654,35 +594,13 @@
       menuExpanded = !menuExpanded;
       if (menuExpanded) { menuPill.classList.add('expanded'); menuBtn.classList.add('active'); } else { closeMenu(); }
     });
-
-    profileBtn.addEventListener('click', () => {
-      profileBtn.classList.add('active');
-      setTimeout(() => { profileBtn.classList.remove('active'); closeMenu(); document.getElementById('profile-overlay').classList.add('open'); }, 200);
-    });
-
-    searchBtn.addEventListener('click', () => {
-      searchBtn.classList.add('active');
-      setTimeout(() => { searchBtn.classList.remove('active'); closeMenu(); document.getElementById('search-overlay').classList.add('open'); setTimeout(() => { document.getElementById('search-input').focus(); showSearchHistory(); }, 100); }, 200);
-    });
-
-    plusMenuBtn.addEventListener('click', () => {
-      plusMenuBtn.classList.add('active');
-      setTimeout(() => { plusMenuBtn.classList.remove('active'); closeMenu(); document.getElementById('plus-overlay').classList.add('open'); }, 200);
-    });
+    profileBtn.addEventListener('click', () => { profileBtn.classList.add('active'); setTimeout(() => { profileBtn.classList.remove('active'); closeMenu(); document.getElementById('profile-overlay').classList.add('open'); }, 200); });
+    searchBtn.addEventListener('click', () => { searchBtn.classList.add('active'); setTimeout(() => { searchBtn.classList.remove('active'); closeMenu(); document.getElementById('search-overlay').classList.add('open'); setTimeout(() => { document.getElementById('search-input').focus(); showSearchHistory(); }, 100); }, 200); });
+    plusMenuBtn.addEventListener('click', () => { plusMenuBtn.classList.add('active'); setTimeout(() => { plusMenuBtn.classList.remove('active'); closeMenu(); document.getElementById('plus-overlay').classList.add('open'); }, 200); });
 
     function closeProfileOverlay() { document.getElementById('profile-overlay').classList.remove('open'); }
     function closeSearchOverlay() { document.getElementById('search-overlay').classList.remove('open'); document.getElementById('search-input').value = ''; document.getElementById('search-results').innerHTML = ''; }
-
-    function closePlusOverlay() {
-      document.getElementById('plus-overlay').classList.remove('open');
-      closeAddParkingArea();
-      closeCommentAreas();
-    }
-    function openAddParkingArea() { document.getElementById('add-parking-overlay').style.transform = 'translateX(0)'; }
-    function closeAddParkingArea() { document.getElementById('add-parking-overlay').style.transform = 'translateX(100%)'; }
-    function openCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(0)'; }
-    function closeCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(100%)'; }
-
+    function closePlusOverlay() { document.getElementById('plus-overlay').classList.remove('open'); }
     function openGpsInfo() { document.getElementById('gps-info-overlay').classList.add('open'); }
     function closeGpsInfo() { document.getElementById('gps-info-overlay').classList.remove('open'); }
     function openAccountSettings() { document.getElementById('account-detail').classList.add('open'); }
@@ -702,14 +620,14 @@
 
     function showSearchHistory() {
       const history = getSearchHistory();
-      const searchResults = document.getElementById('search-results');
-      searchResults.classList.remove('allow-scroll'); searchResults.classList.add('no-scroll');
-      if (history.length === 0) { searchResults.innerHTML = '<div class="search-empty">Ei aikaisempia hakuja</div>'; return; }
-      let currentLat, currentLon;
-      if (userLocation) { currentLat = userLocation.lat; currentLon = userLocation.lon; } else { const c = map.getCenter(); currentLat = c.lat; currentLon = c.lng; }
-      searchResults.innerHTML = '<div class="search-history-header">Viimeisimmät haut</div>' +
+      const sr = document.getElementById('search-results');
+      sr.classList.remove('allow-scroll'); sr.classList.add('no-scroll');
+      if (history.length === 0) { sr.innerHTML = '<div class="search-empty">Ei aikaisempia hakuja</div>'; return; }
+      let lat, lon;
+      if (userLocation) { lat = userLocation.lat; lon = userLocation.lon; } else { const c = map.getCenter(); lat = c.lat; lon = c.lng; }
+      sr.innerHTML = '<div class="search-history-header">Viimeisimmät haut</div>' +
         history.map((item, index) => {
-          const d = calculateDistance(currentLat, currentLon, item.lat, item.lon);
+          const d = calculateDistance(lat, lon, item.lat, item.lon);
           return `<div class="search-result-item"><div class="search-result-icon">${getHistoryIconSVG()}</div><div class="search-result-text" onclick="selectHistoryPlace(${item.lat},${item.lon},'${item.name.replace(/'/g,"\\'")}',${index})"><div class="search-result-name">${item.name}</div><div class="search-result-address">${item.locality||''}</div><div class="search-result-distance">${formatDistance(d)}</div></div><button class="search-history-delete" onclick="event.stopPropagation();removeFromSearchHistory(${index})">✕</button></div>`;
         }).join('');
     }
@@ -728,19 +646,19 @@
         const data = await response.json();
         if (data.features && data.features.length > 0) {
           searchResults.classList.remove('no-scroll'); searchResults.classList.add('allow-scroll');
-          let currentLat, currentLon;
-          if (userLocation) { currentLat = userLocation.lat; currentLon = userLocation.lon; } else { const c = map.getCenter(); currentLat = c.lat; currentLon = c.lng; }
+          let lat, lon;
+          if (userLocation) { lat = userLocation.lat; lon = userLocation.lon; } else { const c = map.getCenter(); lat = c.lat; lon = c.lng; }
           searchResults.innerHTML = data.features.map(feature => {
             const props = feature.properties, coords = feature.geometry.coordinates;
             const name = props.name || props.label || 'Tuntematon';
             const parts = [];
-            const mainLocality = props.localadmin || props.locality || props.region || '';
-            const neighbourhood = props.neighbourhood || '';
-            if (mainLocality) parts.push(mainLocality);
-            if (neighbourhood && neighbourhood !== mainLocality) parts.push(neighbourhood);
-            const fullLocality = parts.join(', ');
-            const d = calculateDistance(currentLat, currentLon, coords[1], coords[0]);
-            return `<div class="search-result-item" onclick="selectPlace(${coords[1]},${coords[0]},'${name.replace(/'/g,"\\'")}',true,'${props.layer}','${fullLocality.replace(/'/g,"\\'")}')"><div class="search-result-icon">${getPinIconSVG()}</div><div class="search-result-text"><div class="search-result-name">${name}</div><div class="search-result-address">${fullLocality}</div><div class="search-result-distance">${formatDistance(d)}</div></div></div>`;
+            const ml = props.localadmin || props.locality || props.region || '';
+            const nb = props.neighbourhood || '';
+            if (ml) parts.push(ml);
+            if (nb && nb !== ml) parts.push(nb);
+            const fl = parts.join(', ');
+            const d = calculateDistance(lat, lon, coords[1], coords[0]);
+            return `<div class="search-result-item" onclick="selectPlace(${coords[1]},${coords[0]},'${name.replace(/'/g,"\\'")}',true,'${props.layer}','${fl.replace(/'/g,"\\'")}')"><div class="search-result-icon">${getPinIconSVG()}</div><div class="search-result-text"><div class="search-result-name">${name}</div><div class="search-result-address">${fl}</div><div class="search-result-distance">${formatDistance(d)}</div></div></div>`;
           }).join('');
         } else { searchResults.innerHTML = '<div class="search-empty">Ei hakutuloksia</div>'; }
       } catch(error) { searchResults.innerHTML = '<div class="search-empty">Haku epäonnistui</div>'; }
@@ -760,8 +678,8 @@
       map.flyTo({ center:[lon,lat], zoom:15, duration:1500 });
       const onMoveEnd = () => {
         map.off('moveend', onMoveEnd);
-        const markerElement = createPinElement();
-        currentMarker = new maplibregl.Marker({ element:markerElement, anchor:'bottom' }).setLngLat([lon,lat]).addTo(map);
+        const el = createPinElement();
+        currentMarker = new maplibregl.Marker({ element:el, anchor:'bottom' }).setLngLat([lon,lat]).addTo(map);
       };
       map.once('moveend', onMoveEnd);
     }
@@ -812,11 +730,11 @@
     }
 
     const PARKING_RATE=3, SERVICE_FEE_PERCENT=0.10, VAT_PERCENT=0.255;
-    function calculatePrice(minutes){ if(minutes===0)return{parking:0,service:0,subtotal:0,vat:0,total:0}; const hours=minutes/60, parking=hours*PARKING_RATE, service=parking*SERVICE_FEE_PERCENT, subtotal=parking+service, vat=subtotal*VAT_PERCENT, total=subtotal+vat; return{parking,service,subtotal,vat,total}; }
+    function calculatePrice(minutes){ if(minutes===0)return{parking:0,service:0,subtotal:0,vat:0,total:0}; const hours=minutes/60,parking=hours*PARKING_RATE,service=parking*SERVICE_FEE_PERCENT,subtotal=parking+service,vat=subtotal*VAT_PERCENT,total=subtotal+vat; return{parking,service,subtotal,vat,total}; }
     function formatPrice(amount){ return amount.toFixed(2).replace('.',',')+' €'; }
 
-    let parkingMinutes=0,parkingMaxMinutes=1440,isIlmainen=false,parkingStartTime=null;
-    const PIXELS_PER_MINUTE=8,RADIANS_PER_PX=0.055,N_LINES=12,CW=52,CH=80,CY=CH/2,R=33;
+    let parkingMinutes=0, parkingMaxMinutes=1440, isIlmainen=false, parkingStartTime=null;
+    const PIXELS_PER_MINUTE=8, RADIANS_PER_PX=0.055, N_LINES=12, CW=52, CH=80, CY=CH/2, R=33;
     let drumPhase=0;
     const drumCanvas=document.getElementById('drum-canvas'), dctx=drumCanvas.getContext('2d');
 
@@ -826,30 +744,53 @@
 
     function formatEndTime(mins){if(mins===0)return'Pyöritä rullaa →';const now=parkingStartTime||new Date(),end=new Date(now.getTime()+mins*60000),h=end.getHours(),m=end.getMinutes(),time=`${h}:${m.toString().padStart(2,'0')}`;const today=new Date(now);today.setHours(0,0,0,0);const endDay=new Date(end);endDay.setHours(0,0,0,0);const diffDays=Math.floor((endDay-today)/86400000);if(diffDays===0)return`Pysäköinti päättyy tänään ${time}`;if(diffDays===1)return`Pysäköinti päättyy huomenna ${time}`;const d=end.getDate(),mon=end.getMonth()+1;return`Pysäköinti päättyy ${d}.${mon}. ${time}`;}
 
-    let lastDisplayedMinutes=-1,lastVibrateMinute=-1;
+    let lastDisplayedMinutes=-1, lastVibrateMinute=-1, maxLabelTimer=null, wasAtMax=false;
+
+    function showMaxLabel(){
+      const lbl=document.getElementById('max-label');
+      lbl.textContent=`(Max. ${formatTimeDisplay(parkingMaxMinutes)})`;
+      lbl.classList.add('visible');
+      clearTimeout(maxLabelTimer);
+      maxLabelTimer=setTimeout(()=>{ lbl.classList.remove('visible'); },2000);
+    }
+
+    function triggerMaxBounce(){
+      const el=document.getElementById('time-big');
+      el.classList.remove('bounce');
+      void el.offsetWidth;
+      el.classList.add('bounce');
+      el.addEventListener('animationend',()=>el.classList.remove('bounce'),{once:true});
+      if(navigator.vibrate) navigator.vibrate([30,30,30]);
+    }
 
     function updateDisplay(){
       const rounded=Math.max(0,Math.min(Math.round(parkingMinutes),parkingMaxMinutes));
       parkingMinutes=rounded;
+      const atMax=(rounded===parkingMaxMinutes && parkingMaxMinutes>0);
+      const el=document.getElementById('time-big');
+      if(atMax && !wasAtMax){ el.classList.add('at-max'); showMaxLabel(); triggerMaxBounce(); }
+      else if(atMax && wasAtMax && rounded!==lastDisplayedMinutes){ triggerMaxBounce(); }
+      if(!atMax){ el.classList.remove('at-max'); }
+      wasAtMax=atMax;
       if(rounded!==lastDisplayedMinutes){
-        document.getElementById('time-big').textContent=formatTimeDisplay(rounded);
+        el.textContent=formatTimeDisplay(rounded);
         document.getElementById('time-end-text').textContent=formatEndTime(rounded);
         const price=calculatePrice(rounded);
         document.getElementById('p-price').textContent=formatPrice(price.total);
         const startBtn=document.getElementById('start-btn');
         if(rounded===0){startBtn.classList.add('disabled');startBtn.textContent='Lisää pysäköintiaika';}
         else{startBtn.classList.remove('disabled');startBtn.textContent='Aloita pysäköinti';}
-        if(rounded>0&&rounded!==lastVibrateMinute&&navigator.vibrate){navigator.vibrate(10);lastVibrateMinute=rounded;}
+        if(rounded>0&&rounded!==lastVibrateMinute&&navigator.vibrate&&!atMax){navigator.vibrate(10);lastVibrateMinute=rounded;}
         lastDisplayedMinutes=rounded;
       }
       drawDrum();
     }
 
-    function openPriceDetail(){const price=calculatePrice(parkingMinutes);document.getElementById('detail-parking').textContent=formatPrice(price.parking);document.getElementById('detail-service').textContent=formatPrice(price.service);document.getElementById('detail-subtotal').textContent=formatPrice(price.subtotal);document.getElementById('detail-vat').textContent=formatPrice(price.vat);document.getElementById('detail-total').textContent=formatPrice(price.total);document.getElementById('price-detail-sheet').classList.add('open');}
+    function openPriceDetail(){const p=calculatePrice(parkingMinutes);document.getElementById('detail-parking').textContent=formatPrice(p.parking);document.getElementById('detail-service').textContent=formatPrice(p.service);document.getElementById('detail-subtotal').textContent=formatPrice(p.subtotal);document.getElementById('detail-vat').textContent=formatPrice(p.vat);document.getElementById('detail-total').textContent=formatPrice(p.total);document.getElementById('price-detail-sheet').classList.add('open');}
     function closePriceDetail(){document.getElementById('price-detail-sheet').classList.remove('open');}
 
     let inertiaRAF=null,inertiaVel=0;
-    const FRICTION=0.88,MIN_VEL=0.025;
+    const FRICTION=0.88, MIN_VEL=0.025;
     function stopInertia(){if(inertiaRAF){cancelAnimationFrame(inertiaRAF);inertiaRAF=null;}}
     function runInertia(){if(Math.abs(inertiaVel)<MIN_VEL){inertiaRAF=null;drawDrum();return;}const dpx=inertiaVel*16;drumPhase+=dpx*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(parkingMinutes+dpx/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();if(parkingMinutes<=0||parkingMinutes>=parkingMaxMinutes){inertiaRAF=null;return;}inertiaVel*=FRICTION;inertiaRAF=requestAnimationFrame(runInertia);}
 
@@ -865,25 +806,22 @@
     drawDrum();
 
     let vehicles=[{reg:'FHY-857',name:'Äitin auto'}], selectedVehicleIdx=0;
-
     function renderVehicleDisplay(){const v=vehicles[selectedVehicleIdx];document.getElementById('plate-text').textContent=v.reg;document.getElementById('vehicle-nickname').textContent=v.name;}
-    function renderVehicleOptions(){const container=document.getElementById('vehicle-options');container.innerHTML='';vehicles.forEach((v,i)=>{const row=document.createElement('div');row.className='option-row';row.innerHTML=`<div class="option-check ${i===selectedVehicleIdx?'selected':''}"></div><div><div class="option-name">${v.name}</div><div class="option-reg">${v.reg}</div></div>`;row.addEventListener('click',()=>{selectedVehicleIdx=i;renderVehicleDisplay();closeVehicleSheet();});container.appendChild(row);});}
+    function renderVehicleOptions(){const c=document.getElementById('vehicle-options');c.innerHTML='';vehicles.forEach((v,i)=>{const row=document.createElement('div');row.className='option-row';row.innerHTML=`<div class="option-check ${i===selectedVehicleIdx?'selected':''}"></div><div><div class="option-name">${v.name}</div><div class="option-reg">${v.reg}</div></div>`;row.addEventListener('click',()=>{selectedVehicleIdx=i;renderVehicleDisplay();closeVehicleSheet();});c.appendChild(row);});}
     function openVehicleSheet(){renderVehicleOptions();document.getElementById('vehicle-sheet').classList.add('open');}
     function closeVehicleSheet(){document.getElementById('vehicle-sheet').classList.remove('open');}
     function addVehicle(){const reg=prompt('Rekisterinumero (esim. ABC-123):');if(!reg)return;const name=prompt('Lempinimi (esim. Oma auto):');if(!name)return;vehicles.push({reg:reg.trim().toUpperCase(),name:name.trim()});selectedVehicleIdx=vehicles.length-1;renderVehicleDisplay();closeVehicleSheet();}
 
     const paymentMethods=[{id:'applepay',name:'Apple Pay',icon:'applepay'},{id:'card',name:'Maksukortti',icon:'card'},{id:'mobilepay',name:'MobilePay',icon:'mobilepay'}];
     let selectedPaymentIdx=0;
-
     function getPaymentIcon(icon){
       if(icon==='applepay')return`<svg viewBox="0 0 48 20" xmlns="http://www.w3.org/2000/svg"><path d="M8.4 3.8c.5-.6.8-1.5.7-2.4-.7 0-1.6.5-2.1 1.1-.5.5-.9 1.4-.8 2.2.8.1 1.7-.4 2.2-1zm.8 1.3c-1.2-.1-2.2.7-2.8.7-.6 0-1.5-.7-2.5-.6-1.3.1-2.5.7-3.1 1.9-1.3 2.3-.3 5.7 1 7.6.6.9 1.4 2 2.4 1.9.9 0 1.3-.6 2.4-.6s1.4.6 2.4.6c1 0 1.7-.9 2.3-1.8.7-1 1-2 1-2.1 0 0-2-.8-2-3.1-.1-1.9 1.5-2.8 1.6-2.9-.9-1.3-2.3-1.5-2.7-1.6zm9.5-2.4v13.6h2.1v-4.7h2.9c2.7 0 4.5-1.8 4.5-4.5s-1.8-4.4-4.4-4.4h-5.1zm2.1 1.9h2.4c1.8 0 2.9 1 2.9 2.6s-1 2.6-2.9 2.6h-2.4v-5.2zm11.3 11.8c1.3 0 2.5-.7 3.1-1.7h0v1.6h2v-7.2c0-2.1-1.7-3.4-4.2-3.4-2.4 0-4.1 1.4-4.2 3.3h1.9c.2-.9 1-1.5 2.2-1.5 1.4 0 2.2.7 2.2 1.9v.8l-2.9.2c-2.7.2-4.1 1.2-4.1 3.1 0 1.9 1.5 3.2 3.6 3.2zm.6-1.7c-1.2 0-2-.6-2-1.5s.8-1.5 2.2-1.6l2.6-.2v1c0 1.3-1.1 2.3-2.8 2.3zm8.4 4.7c2.1 0 3.1-.8 4-3.2l3.8-10.7h-2.2l-2.6 8.3h0l-2.6-8.3h-2.2l3.7 10.3-.2.6c-.3 1-.8 1.4-1.7 1.4-.2 0-.5 0-.6-.1v1.7c.1.1.4.1.7.1z" fill="#000"/></svg>`;
       if(icon==='card')return`<svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/><rect x="1" y="5" width="30" height="3" fill="#555"/><rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/><rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/></svg>`;
       if(icon==='mobilepay')return`<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="#5A78FF" stroke-width="1.8"/><circle cx="12" cy="18" r="1.2" fill="#5A78FF"/><path d="M9 7h6M9 10h6M9 13h4" stroke="#5A78FF" stroke-width="1.5" stroke-linecap="round"/></svg>`;
       return '';
     }
-
     function renderPaymentDisplay(){const p=paymentMethods[selectedPaymentIdx];document.getElementById('payment-icon').innerHTML=getPaymentIcon(p.icon);document.getElementById('payment-name').textContent=p.name;}
-    function renderPaymentOptions(){const container=document.getElementById('payment-options');container.innerHTML='';paymentMethods.forEach((p,i)=>{const row=document.createElement('div');row.className='option-row';row.innerHTML=`<div class="option-check ${i===selectedPaymentIdx?'selected':''}"></div><div class="payment-icon-box">${getPaymentIcon(p.icon)}</div><div class="option-name">${p.name}</div>`;row.addEventListener('click',()=>{selectedPaymentIdx=i;renderPaymentDisplay();closePaymentSheet();});container.appendChild(row);});}
+    function renderPaymentOptions(){const c=document.getElementById('payment-options');c.innerHTML='';paymentMethods.forEach((p,i)=>{const row=document.createElement('div');row.className='option-row';row.innerHTML=`<div class="option-check ${i===selectedPaymentIdx?'selected':''}"></div><div class="payment-icon-box">${getPaymentIcon(p.icon)}</div><div class="option-name">${p.name}</div>`;row.addEventListener('click',()=>{selectedPaymentIdx=i;renderPaymentDisplay();closePaymentSheet();});c.appendChild(row);});}
     function openPaymentSheet(){renderPaymentOptions();document.getElementById('payment-sheet').classList.add('open');}
     function closePaymentSheet(){document.getElementById('payment-sheet').classList.remove('open');}
     function addPaymentMethod(){alert('Tämä toiminto lisäisi uuden maksutavan. Tässä demossa käytetään olemassa olevia maksutapoja.');closePaymentSheet();}
@@ -891,18 +829,30 @@
     const overlay=document.getElementById('parking-overlay');
     function openParkingOverlay(p){
       const areaCode=p['hel:id']||'—',kesto=p['hel:kesto']||null;
-      const tyyppi=getTypeName(p['hel:paikan_asento']),voimassaolo=p['hel:voimassaolo']||'Kaikki ajat';
+      const tyyppi=getTypeName(p['hel:paikan_asento']);
       const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';
       isIlmainen=luokka.toLowerCase().includes('ilmainen');
       parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;
-      parkingMinutes=0; parkingStartTime=new Date(); lastDisplayedMinutes=-1; lastVibrateMinute=-1; drumPhase=0;
+      parkingMinutes=0; parkingStartTime=new Date(); lastDisplayedMinutes=-1; lastVibrateMinute=-1;
+      wasAtMax=false; clearTimeout(maxLabelTimer); document.getElementById('max-label').classList.remove('visible');
+      drumPhase=0;
       document.getElementById('p-code').textContent=areaCode;
       document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);
-      document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText} · ${voimassaolo}`;
+      document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText}`;
       renderVehicleDisplay(); renderPaymentDisplay(); updateDisplay(); overlay.classList.add('open');
     }
 
-    function goBackToMap(){stopInertia();overlay.classList.remove('open');}
+    function goBackToMap(){
+      stopInertia();
+      overlay.classList.remove('open');
+      setTimeout(()=>{
+        const mid=window.innerHeight*0.5;
+        sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+        sheet.style.transform=`translateY(${mid}px)`;
+        currentY=mid;
+      },50);
+    }
+
     document.getElementById('back-btn').addEventListener('click',goBackToMap);
     btn.addEventListener('click',()=>{if(currentParkingProps)openParkingOverlay(currentParkingProps);});
 
