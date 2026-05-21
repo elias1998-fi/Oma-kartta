@@ -15,24 +15,15 @@
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
-    
-    #splash-screen {
-      position: fixed; inset: 0; background: white; z-index: 9999;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 1; transition: opacity 0.3s ease;
-    }
+
+    #splash-screen { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 1; transition: opacity 0.3s ease; }
     #splash-screen.fade-out { opacity: 0; pointer-events: none; }
     .splash-content { display: flex; align-items: center; gap: 16px; animation: slideIn 0.3s ease-out; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .splash-car { width: 48px; height: 48px; fill: #0C0243; }
     .splash-p { width: 40px; height: 40px; background: #0C0243; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; color: white; }
-    
-    #left-menu-pill {
-      position: fixed; top: max(16px,env(safe-area-inset-top)); left: max(16px,env(safe-area-inset-left));
-      z-index: 25; background: white; border-radius: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      width: 48px; height: 48px; overflow: hidden;
-      transition: height 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
-    }
+
+    #left-menu-pill { position: fixed; top: max(16px,env(safe-area-inset-top)); left: max(16px,env(safe-area-inset-left)); z-index: 25; background: white; border-radius: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); width: 48px; height: 48px; overflow: hidden; transition: height 0.3s cubic-bezier(0.25,0.46,0.45,0.94); }
     #left-menu-pill.expanded { height: 248px; }
     .pill-btn { width: 48px; height: 48px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s ease, border-radius 0.2s ease; }
     .pill-btn svg { width: 18px; height: 18px; transition: stroke 0.2s ease; }
@@ -49,28 +40,18 @@
     #search-btn.active svg { stroke: white; }
     #plus-menu-btn.active { background: #0C0243; border-radius: 50%; }
     #plus-menu-btn.active svg line { stroke: white; }
-    
-    #location-btn {
-      position: fixed; z-index: 25; width: 48px; height: 48px; background: white; border: none;
-      border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      right: max(16px,env(safe-area-inset-right)); top: max(16px,env(safe-area-inset-top));
-    }
+
+    #location-btn { position: fixed; z-index: 25; width: 48px; height: 48px; background: white; border: none; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; right: max(16px,env(safe-area-inset-right)); top: max(16px,env(safe-area-inset-top)); }
     #location-btn svg { width: 20px; height: 20px; }
-    
-    #profile-overlay, #search-overlay, #plus-overlay {
-      position: fixed; inset: 0; background: #f2f3f5; z-index: 100;
-      display: flex; flex-direction: column;
-      transform: translateX(-100%);
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
-    }
+
+    #profile-overlay, #search-overlay, #plus-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
     #profile-overlay.open, #search-overlay.open, #plus-overlay.open { transform: translateX(0); }
-    
+
     .overlay-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
     .overlay-back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     .overlay-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
     .overlay-content { flex: 1; display: flex; flex-direction: column; font-family: Arial, sans-serif; overflow-y: auto; }
-    
+
     #search-input-container { padding: 16px; background: white; border-bottom: 1px solid #eee; position: relative; }
     .search-icon { position: absolute; left: 28px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; pointer-events: none; }
     #search-input { width: 100%; height: 44px; padding: 0 16px 0 44px; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; font-family: Arial, sans-serif; outline: none; transition: border-color 0.2s ease; }
@@ -90,7 +71,7 @@
     .search-history-delete { width: 32px; height: 32px; border: none; background: transparent; color: #999; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; flex-shrink: 0; margin-top: 2px; }
     .search-history-delete:active { background: #f0f0f0; border-radius: 50%; }
     .search-empty { padding: 40px 20px; text-align: center; color: #888; font-size: 14px; }
-    
+
     .settings-section { background: white; margin: 10px 0; }
     .settings-section:first-child { margin-top: 0; }
     .settings-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 15px; color: #222; }
@@ -101,10 +82,10 @@
     .settings-item-label { font-size: 15px; color: #222; }
     .settings-item-value { font-size: 13px; color: #888; margin-top: 2px; }
     .settings-item-chevron { color: #bbb; font-size: 18px; margin-left: 8px; }
-    
+
     .settings-detail-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 101; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
     .settings-detail-overlay.open { transform: translateX(0); }
-    
+
     #bottom-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 80vh; background: white; border-radius: 20px 20px 0 0; box-shadow: 0 -2px 16px rgba(0,0,0,0.15); z-index: 20; transform: translateY(calc(100% - 60px)); touch-action: pan-y; display: flex; flex-direction: column; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
     #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
@@ -139,12 +120,12 @@
     .range-input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #0C0243; cursor: pointer; pointer-events: all; box-shadow: 0 2px 6px rgba(0,0,0,0.25); border: 3px solid white; }
     .slider-ticks { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-top: 4px; }
     #filter-result { margin-top: 16px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
-    
+
     #btn-container { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: white; padding: 12px 16px; padding-bottom: max(24px,env(safe-area-inset-bottom)); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: auto; }
     #btn-container.hidden { opacity: 0; transform: translateY(100%); pointer-events: none; }
     #action-btn { width: 100%; height: 58px; border: none; border-radius: 16px; font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; opacity: 0.7; cursor: pointer; transition: opacity 0.2s ease; text-align: center; }
     #action-btn.active { opacity: 1; }
-    
+
     #gps-info-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
     #gps-info-overlay.open { transform: translateX(0); }
     .gps-info-content { flex: 1; overflow-y: auto; padding: 20px; font-family: Arial, sans-serif; }
@@ -152,7 +133,7 @@
     .gps-info-section h3 { font-size: 16px; font-weight: bold; color: #222; margin-bottom: 8px; }
     .gps-info-section p { font-size: 14px; color: #555; line-height: 1.5; margin-bottom: 8px; }
     .gps-info-section p:last-child { margin-bottom: 0; }
-    
+
     #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
     #parking-overlay.open { transform: translateX(0); }
     #parking-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
@@ -161,7 +142,6 @@
     .p-cards-container { flex: 1; display: flex; flex-direction: column; padding: 10px 14px 0 14px; gap: 8px; overflow-y: auto; }
     .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
     .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-    .area-row { display: flex; align-items: center; gap: 10px; }
     .area-code-badge { background: #0C0243; color: white; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; font-family: Arial, sans-serif; }
     .area-name { font-size: 14px; font-weight: bold; color: #222; }
     .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
@@ -170,7 +150,7 @@
     .area-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
     .time-card-inner { display: flex; align-items: center; gap: 12px; }
     .time-big-display { flex: 1; }
-    .time-big-number { font-size: 28px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color 0.2s ease, transform 0.15s ease; }
+    .time-big-number { font-size: 28px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color 0.2s ease; }
     .time-big-number.at-max { color: #d32f2f; }
     @keyframes timeBounce { 0%{transform:scale(1)} 30%{transform:scale(1.18)} 60%{transform:scale(0.95)} 80%{transform:scale(1.07)} 100%{transform:scale(1)} }
     .time-big-number.bounce { animation: timeBounce 0.35s ease; }
@@ -391,10 +371,50 @@
   <div id="plus-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closePlusOverlay()">←</button>
-      <div class="overlay-title">Uusi</div>
+      <div class="overlay-title">Ilmoita alueesta</div>
     </div>
-    <div class="overlay-content" style="align-items: center; justify-content: center; color: #888; font-size: 14px;">
-      Tyhjä sivu - sisältö tulossa
+    <div class="overlay-content" style="padding: 24px 16px; gap: 0;">
+      <div style="font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; color: #0C0243; text-align: center; line-height: 1.35; margin-bottom: 28px;">
+        Tue yhteisöä ja ilmoita havaitsemastasi ilmaisesta parkkialueesta!
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
+        <button onclick="openAddParkingArea()" style="width:100%;min-height:120px;background:#0C0243;border:none;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(12,2,67,0.25);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
+          onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'"
+          ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:white;text-align:center;line-height:1.3;">Lisää uusi ilmainen pysäköintialue</span>
+        </button>
+        <button onclick="openCommentAreas()" style="width:100%;min-height:120px;background:white;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(0,0,0,0.08);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
+          onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'"
+          ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Kommentoi nykyisiä alueita</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeAddParkingArea()">←</button>
+      <div class="overlay-title">Lisää pysäköintialue</div>
+    </div>
+    <div class="overlay-content" style="align-items:center;justify-content:center;color:#888;font-size:14px;font-family:Arial,sans-serif;">
+      Lomake tulossa – tähän voi lisätä uuden ilmaisen pysäköintialueen.
+    </div>
+  </div>
+
+  <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeCommentAreas()">←</button>
+      <div class="overlay-title">Kommentoi alueita</div>
+    </div>
+    <div class="overlay-content" style="align-items:center;justify-content:center;color:#888;font-size:14px;font-family:Arial,sans-serif;">
+      Kommenttilomake tulossa – tähän voi jättää palautetta nykyisistä alueista.
     </div>
   </div>
 
@@ -540,152 +560,142 @@
 
     let userLocation = null;
 
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
-      const a = Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-      return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-    }
-    function formatDistance(d) { return d < 1 ? `${Math.round(d*1000)} m päässä` : `${Math.round(d)} km päässä`; }
-    function kestoToMinutes(kesto) {
-      if (!kesto) return 9999;
-      const l = kesto.toLowerCase().trim();
-      if (l.includes('h')) { const h = parseFloat(l); return isNaN(h) ? 9999 : h*60; }
-      if (l.includes('min')) { const m = parseFloat(l); return isNaN(m) ? 9999 : m; }
-      return 9999;
-    }
+    function calculateDistance(lat1,lon1,lat2,lon2){const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+    function formatDistance(d){return d<1?`${Math.round(d*1000)} m päässä`:`${Math.round(d)} km päässä`;}
+    function kestoToMinutes(kesto){if(!kesto)return 9999;const l=kesto.toLowerCase().trim();if(l.includes('h')){const h=parseFloat(l);return isNaN(h)?9999:h*60;}if(l.includes('min')){const m=parseFloat(l);return isNaN(m)?9999:m;}return 9999;}
 
-    map.on('load', () => {
-      map.touchZoomRotate.disableRotation(); map.dragRotate.disable();
-      fetch('helsinki_parkit.geojson').then(r=>r.json()).then(data => {
-        data.features = data.features.map(f => { f.properties.kesto_min = kestoToMinutes(f.properties['hel:kesto']); return f; });
-        map.addSource('helsinki-parkit', { type:'geojson', data });
-        map.addLayer({ id:'helsinki-parkit-fill', type:'fill', source:'helsinki-parkit', minzoom:13, paint:{'fill-color':'#4A90D9','fill-opacity':0.25} });
-        map.addLayer({ id:'helsinki-parkit-outline', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#2B6CB0','line-width':1.5,'line-opacity':0.9} });
-        map.addLayer({ id:'helsinki-parkit-highlight', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#0C0243','line-width':4,'line-opacity':1}, filter:['==',['get','hel:id'],-1] });
-        setTimeout(() => { checkParking(); }, 100);
+    map.on('load',()=>{
+      map.touchZoomRotate.disableRotation();map.dragRotate.disable();
+      fetch('helsinki_parkit.geojson').then(r=>r.json()).then(data=>{
+        data.features=data.features.map(f=>{f.properties.kesto_min=kestoToMinutes(f.properties['hel:kesto']);return f;});
+        map.addSource('helsinki-parkit',{type:'geojson',data});
+        map.addLayer({id:'helsinki-parkit-fill',type:'fill',source:'helsinki-parkit',minzoom:13,paint:{'fill-color':'#4A90D9','fill-opacity':0.25}});
+        map.addLayer({id:'helsinki-parkit-outline',type:'line',source:'helsinki-parkit',minzoom:13,paint:{'line-color':'#2B6CB0','line-width':1.5,'line-opacity':0.9}});
+        map.addLayer({id:'helsinki-parkit-highlight',type:'line',source:'helsinki-parkit',minzoom:13,paint:{'line-color':'#0C0243','line-width':4,'line-opacity':1},filter:['==',['get','hel:id'],-1]});
+        setTimeout(()=>{checkParking();},100);
       });
     });
 
-    const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
+    const geolocate=new maplibregl.GeolocateControl({positionOptions:{enableHighAccuracy:true},trackUserLocation:true,showUserHeading:true});
     map.addControl(geolocate);
-    geolocate.on('geolocate', (e) => {
-      userLocation = { lat: e.coords.latitude, lon: e.coords.longitude };
-      if (!map.hasFlownToLocation) { map.flyTo({ center:[e.coords.longitude,e.coords.latitude], zoom:15, duration:2000 }); map.hasFlownToLocation = true; }
+    geolocate.on('geolocate',(e)=>{
+      userLocation={lat:e.coords.latitude,lon:e.coords.longitude};
+      if(!map.hasFlownToLocation){map.flyTo({center:[e.coords.longitude,e.coords.latitude],zoom:15,duration:2000});map.hasFlownToLocation=true;}
     });
-    map.on('load', () => { setTimeout(() => { geolocate.trigger(); }, 800); });
+    map.on('load',()=>{setTimeout(()=>{geolocate.trigger();},800);});
 
-    const locationBtn = document.getElementById('location-btn');
-    const sheet = document.getElementById('bottom-sheet');
-    locationBtn.addEventListener('click', () => geolocate.trigger());
+    const locationBtn=document.getElementById('location-btn');
+    const sheet=document.getElementById('bottom-sheet');
+    locationBtn.addEventListener('click',()=>geolocate.trigger());
 
-    let menuExpanded = false;
-    const menuPill = document.getElementById('left-menu-pill');
-    const menuBtn = document.getElementById('menu-btn');
-    const profileBtn = document.getElementById('profile-btn');
-    const filterBtn = document.getElementById('filter-btn');
-    const searchBtn = document.getElementById('search-btn');
-    const plusMenuBtn = document.getElementById('plus-menu-btn');
-    const btnContainer = document.getElementById('btn-container');
+    let menuExpanded=false;
+    const menuPill=document.getElementById('left-menu-pill');
+    const menuBtn=document.getElementById('menu-btn');
+    const profileBtn=document.getElementById('profile-btn');
+    const filterBtn=document.getElementById('filter-btn');
+    const searchBtn=document.getElementById('search-btn');
+    const plusMenuBtn=document.getElementById('plus-menu-btn');
+    const btnContainer=document.getElementById('btn-container');
 
-    function closeMenu() { menuExpanded = false; menuPill.classList.remove('expanded'); menuBtn.classList.remove('active'); }
-    map.on('movestart', () => { if (menuExpanded) closeMenu(); });
+    function closeMenu(){menuExpanded=false;menuPill.classList.remove('expanded');menuBtn.classList.remove('active');}
+    map.on('movestart',()=>{if(menuExpanded)closeMenu();});
 
-    menuBtn.addEventListener('click', () => {
-      menuExpanded = !menuExpanded;
-      if (menuExpanded) { menuPill.classList.add('expanded'); menuBtn.classList.add('active'); } else { closeMenu(); }
-    });
-    profileBtn.addEventListener('click', () => { profileBtn.classList.add('active'); setTimeout(() => { profileBtn.classList.remove('active'); closeMenu(); document.getElementById('profile-overlay').classList.add('open'); }, 200); });
-    searchBtn.addEventListener('click', () => { searchBtn.classList.add('active'); setTimeout(() => { searchBtn.classList.remove('active'); closeMenu(); document.getElementById('search-overlay').classList.add('open'); setTimeout(() => { document.getElementById('search-input').focus(); showSearchHistory(); }, 100); }, 200); });
-    plusMenuBtn.addEventListener('click', () => { plusMenuBtn.classList.add('active'); setTimeout(() => { plusMenuBtn.classList.remove('active'); closeMenu(); document.getElementById('plus-overlay').classList.add('open'); }, 200); });
+    menuBtn.addEventListener('click',()=>{menuExpanded=!menuExpanded;if(menuExpanded){menuPill.classList.add('expanded');menuBtn.classList.add('active');}else{closeMenu();}});
+    profileBtn.addEventListener('click',()=>{profileBtn.classList.add('active');setTimeout(()=>{profileBtn.classList.remove('active');closeMenu();document.getElementById('profile-overlay').classList.add('open');},200);});
+    searchBtn.addEventListener('click',()=>{searchBtn.classList.add('active');setTimeout(()=>{searchBtn.classList.remove('active');closeMenu();document.getElementById('search-overlay').classList.add('open');setTimeout(()=>{document.getElementById('search-input').focus();showSearchHistory();},100);},200);});
+    plusMenuBtn.addEventListener('click',()=>{plusMenuBtn.classList.add('active');setTimeout(()=>{plusMenuBtn.classList.remove('active');closeMenu();document.getElementById('plus-overlay').classList.add('open');},200);});
 
-    function closeProfileOverlay() { document.getElementById('profile-overlay').classList.remove('open'); }
-    function closeSearchOverlay() { document.getElementById('search-overlay').classList.remove('open'); document.getElementById('search-input').value = ''; document.getElementById('search-results').innerHTML = ''; }
-    function closePlusOverlay() { document.getElementById('plus-overlay').classList.remove('open'); }
-    function openGpsInfo() { document.getElementById('gps-info-overlay').classList.add('open'); }
-    function closeGpsInfo() { document.getElementById('gps-info-overlay').classList.remove('open'); }
-    function openAccountSettings() { document.getElementById('account-detail').classList.add('open'); }
-    function closeAccountSettings() { document.getElementById('account-detail').classList.remove('open'); }
-    function openNotificationSettings() { alert('Ilmoitusasetukset - tulossa pian'); }
-    function openPaymentSettings() { alert('Maksutapa-asetukset - tulossa pian'); }
-    function openPrivacySettings() { alert('Yksityisyysasetukset - tulossa pian'); }
-    function openLanguageSettings() { alert('Kieliasetukset - tulossa pian'); }
-    function openHelpSettings() { alert('Ohje ja tuki - tulossa pian'); }
-    function openAboutSettings() { alert('Tietoja - tulossa pian'); }
+    function closeProfileOverlay(){document.getElementById('profile-overlay').classList.remove('open');}
+    function closeSearchOverlay(){document.getElementById('search-overlay').classList.remove('open');document.getElementById('search-input').value='';document.getElementById('search-results').innerHTML='';}
+    function closePlusOverlay(){document.getElementById('plus-overlay').classList.remove('open');closeAddParkingArea();closeCommentAreas();}
+    function openAddParkingArea(){document.getElementById('add-parking-overlay').style.transform='translateX(0)';}
+    function closeAddParkingArea(){document.getElementById('add-parking-overlay').style.transform='translateX(100%)';}
+    function openCommentAreas(){document.getElementById('comment-areas-overlay').style.transform='translateX(0)';}
+    function closeCommentAreas(){document.getElementById('comment-areas-overlay').style.transform='translateX(100%)';}
+    function openGpsInfo(){document.getElementById('gps-info-overlay').classList.add('open');}
+    function closeGpsInfo(){document.getElementById('gps-info-overlay').classList.remove('open');}
+    function openAccountSettings(){document.getElementById('account-detail').classList.add('open');}
+    function closeAccountSettings(){document.getElementById('account-detail').classList.remove('open');}
+    function openNotificationSettings(){alert('Ilmoitusasetukset - tulossa pian');}
+    function openPaymentSettings(){alert('Maksutapa-asetukset - tulossa pian');}
+    function openPrivacySettings(){alert('Yksityisyysasetukset - tulossa pian');}
+    function openLanguageSettings(){alert('Kieliasetukset - tulossa pian');}
+    function openHelpSettings(){alert('Ohje ja tuki - tulossa pian');}
+    function openAboutSettings(){alert('Tietoja - tulossa pian');}
 
-    const SEARCH_HISTORY_KEY = 'parking_search_history';
-    const MAX_HISTORY = 8;
-    function getSearchHistory() { try { const h = localStorage.getItem(SEARCH_HISTORY_KEY); return h ? JSON.parse(h) : []; } catch(e) { return []; } }
-    function addToSearchHistory(item) { let h = getSearchHistory(); h = h.filter(x => !(x.lat===item.lat&&x.lon===item.lon)); h.unshift(item); if(h.length>MAX_HISTORY) h=h.slice(0,MAX_HISTORY); localStorage.setItem(SEARCH_HISTORY_KEY,JSON.stringify(h)); }
-    function removeFromSearchHistory(index) { let h = getSearchHistory(); h.splice(index,1); localStorage.setItem(SEARCH_HISTORY_KEY,JSON.stringify(h)); showSearchHistory(); }
+    const SEARCH_HISTORY_KEY='parking_search_history';
+    const MAX_HISTORY=8;
+    function getSearchHistory(){try{const h=localStorage.getItem(SEARCH_HISTORY_KEY);return h?JSON.parse(h):[];}catch(e){return[];}}
+    function addToSearchHistory(item){let h=getSearchHistory();h=h.filter(x=>!(x.lat===item.lat&&x.lon===item.lon));h.unshift(item);if(h.length>MAX_HISTORY)h=h.slice(0,MAX_HISTORY);localStorage.setItem(SEARCH_HISTORY_KEY,JSON.stringify(h));}
+    function removeFromSearchHistory(index){let h=getSearchHistory();h.splice(index,1);localStorage.setItem(SEARCH_HISTORY_KEY,JSON.stringify(h));showSearchHistory();}
 
-    function showSearchHistory() {
-      const history = getSearchHistory();
-      const sr = document.getElementById('search-results');
-      sr.classList.remove('allow-scroll'); sr.classList.add('no-scroll');
-      if (history.length === 0) { sr.innerHTML = '<div class="search-empty">Ei aikaisempia hakuja</div>'; return; }
-      let lat, lon;
-      if (userLocation) { lat = userLocation.lat; lon = userLocation.lon; } else { const c = map.getCenter(); lat = c.lat; lon = c.lng; }
-      sr.innerHTML = '<div class="search-history-header">Viimeisimmät haut</div>' +
-        history.map((item, index) => {
-          const d = calculateDistance(lat, lon, item.lat, item.lon);
+    function showSearchHistory(){
+      const history=getSearchHistory();
+      const sr=document.getElementById('search-results');
+      sr.classList.remove('allow-scroll');sr.classList.add('no-scroll');
+      if(history.length===0){sr.innerHTML='<div class="search-empty">Ei aikaisempia hakuja</div>';return;}
+      let lat,lon;
+      if(userLocation){lat=userLocation.lat;lon=userLocation.lon;}else{const c=map.getCenter();lat=c.lat;lon=c.lng;}
+      sr.innerHTML='<div class="search-history-header">Viimeisimmät haut</div>'+
+        history.map((item,index)=>{
+          const d=calculateDistance(lat,lon,item.lat,item.lon);
           return `<div class="search-result-item"><div class="search-result-icon">${getHistoryIconSVG()}</div><div class="search-result-text" onclick="selectHistoryPlace(${item.lat},${item.lon},'${item.name.replace(/'/g,"\\'")}',${index})"><div class="search-result-name">${item.name}</div><div class="search-result-address">${item.locality||''}</div><div class="search-result-distance">${formatDistance(d)}</div></div><button class="search-history-delete" onclick="event.stopPropagation();removeFromSearchHistory(${index})">✕</button></div>`;
         }).join('');
     }
 
-    function selectHistoryPlace(lat, lon, name, index) { selectPlace(lat, lon, name, false); }
+    function selectHistoryPlace(lat,lon,name,index){selectPlace(lat,lon,name,false);}
 
-    const searchInput = document.getElementById('search-input');
-    const searchResults = document.getElementById('search-results');
-    let searchTimeout = null;
+    const searchInput=document.getElementById('search-input');
+    const searchResults=document.getElementById('search-results');
+    let searchTimeout=null;
 
-    async function searchPlaces(query) {
-      if (!query || query.length < 2) { showSearchHistory(); return; }
-      try {
-        const url = `https://api.digitransit.fi/geocoding/v1/search?text=${encodeURIComponent(query)}&size=10&boundary.country=FIN`;
-        const response = await fetch(url, { headers: { 'digitransit-subscription-key': API_KEY } });
-        const data = await response.json();
-        if (data.features && data.features.length > 0) {
-          searchResults.classList.remove('no-scroll'); searchResults.classList.add('allow-scroll');
-          let lat, lon;
-          if (userLocation) { lat = userLocation.lat; lon = userLocation.lon; } else { const c = map.getCenter(); lat = c.lat; lon = c.lng; }
-          searchResults.innerHTML = data.features.map(feature => {
-            const props = feature.properties, coords = feature.geometry.coordinates;
-            const name = props.name || props.label || 'Tuntematon';
-            const parts = [];
-            const ml = props.localadmin || props.locality || props.region || '';
-            const nb = props.neighbourhood || '';
-            if (ml) parts.push(ml);
-            if (nb && nb !== ml) parts.push(nb);
-            const fl = parts.join(', ');
-            const d = calculateDistance(lat, lon, coords[1], coords[0]);
+    async function searchPlaces(query){
+      if(!query||query.length<2){showSearchHistory();return;}
+      try{
+        const url=`https://api.digitransit.fi/geocoding/v1/search?text=${encodeURIComponent(query)}&size=10&boundary.country=FIN`;
+        const response=await fetch(url,{headers:{'digitransit-subscription-key':API_KEY}});
+        const data=await response.json();
+        if(data.features&&data.features.length>0){
+          searchResults.classList.remove('no-scroll');searchResults.classList.add('allow-scroll');
+          let lat,lon;
+          if(userLocation){lat=userLocation.lat;lon=userLocation.lon;}else{const c=map.getCenter();lat=c.lat;lon=c.lng;}
+          searchResults.innerHTML=data.features.map(feature=>{
+            const props=feature.properties,coords=feature.geometry.coordinates;
+            const name=props.name||props.label||'Tuntematon';
+            const parts=[];
+            const ml=props.localadmin||props.locality||props.region||'';
+            const nb=props.neighbourhood||'';
+            if(ml)parts.push(ml);if(nb&&nb!==ml)parts.push(nb);
+            const fl=parts.join(', ');
+            const d=calculateDistance(lat,lon,coords[1],coords[0]);
             return `<div class="search-result-item" onclick="selectPlace(${coords[1]},${coords[0]},'${name.replace(/'/g,"\\'")}',true,'${props.layer}','${fl.replace(/'/g,"\\'")}')"><div class="search-result-icon">${getPinIconSVG()}</div><div class="search-result-text"><div class="search-result-name">${name}</div><div class="search-result-address">${fl}</div><div class="search-result-distance">${formatDistance(d)}</div></div></div>`;
           }).join('');
-        } else { searchResults.innerHTML = '<div class="search-empty">Ei hakutuloksia</div>'; }
-      } catch(error) { searchResults.innerHTML = '<div class="search-empty">Haku epäonnistui</div>'; }
+        }else{searchResults.innerHTML='<div class="search-empty">Ei hakutuloksia</div>';}
+      }catch(error){searchResults.innerHTML='<div class="search-empty">Haku epäonnistui</div>';}
     }
 
-    searchInput.addEventListener('input', (e) => {
+    searchInput.addEventListener('input',(e)=>{
       clearTimeout(searchTimeout);
-      const query = e.target.value.trim();
-      if (query.length < 2) { showSearchHistory(); return; }
-      searchTimeout = setTimeout(() => { searchPlaces(query); }, 300);
+      const query=e.target.value.trim();
+      if(query.length<2){showSearchHistory();return;}
+      searchTimeout=setTimeout(()=>{searchPlaces(query);},300);
     });
 
-    function selectPlace(lat, lon, name, addToHistory=true, layer='address', locality='') {
-      if (addToHistory) addToSearchHistory({ lat, lon, name, layer, locality });
+    function selectPlace(lat,lon,name,addToHistory=true,layer='address',locality=''){
+      if(addToHistory)addToSearchHistory({lat,lon,name,layer,locality});
       closeSearchOverlay();
-      if (currentMarker) { currentMarker.remove(); currentMarker = null; }
-      map.flyTo({ center:[lon,lat], zoom:15, duration:1500 });
-      const onMoveEnd = () => {
-        map.off('moveend', onMoveEnd);
-        const el = createPinElement();
-        currentMarker = new maplibregl.Marker({ element:el, anchor:'bottom' }).setLngLat([lon,lat]).addTo(map);
+      if(currentMarker){currentMarker.remove();currentMarker=null;}
+      map.flyTo({center:[lon,lat],zoom:15,duration:1500});
+      const onMoveEnd=()=>{
+        map.off('moveend',onMoveEnd);
+        const el=createPinElement();
+        currentMarker=new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([lon,lat]).addTo(map);
       };
-      map.once('moveend', onMoveEnd);
+      map.once('moveend',onMoveEnd);
     }
 
-    const sliderMin=document.getElementById('slider-min'), sliderMax=document.getElementById('slider-max');
-    const rangeFill=document.getElementById('range-fill'), sliderValueEl=document.getElementById('slider-value'), filterResult=document.getElementById('filter-result');
+    const sliderMin=document.getElementById('slider-min'),sliderMax=document.getElementById('slider-max');
+    const rangeFill=document.getElementById('range-fill'),sliderValueEl=document.getElementById('slider-value'),filterResult=document.getElementById('filter-result');
     function idxToMinutes(i){if(i===0)return 0;if(i===1)return 30;if(i>=26)return 9999;return(i-1)*60;}
     function formatHourLabel(i){if(i===0)return'0h';if(i===1)return'30min';if(i>=26)return'24h+';return`${i-1}h`;}
     function updateSliderUI(){const a=parseInt(sliderMin.value),b=parseInt(sliderMax.value);rangeFill.style.left=(a/26*100)+'%';rangeFill.style.width=((b-a)/26*100)+'%';if(a===0&&b===26){sliderValueEl.textContent='Kaikki';filterResult.textContent='';}else{sliderValueEl.textContent=`${formatHourLabel(a)} – ${formatHourLabel(b)}`;filterResult.textContent=`Näytetään ${formatHourLabel(a)} – ${formatHourLabel(b)} pysäköintialueet`;}}
@@ -701,9 +711,9 @@
 
     let filterMode=false;
     const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
-    function openFilter(){ filterMode=true; filterBtn.classList.add('active'); filterCloseBtn.classList.add('visible'); sheetNormal.style.display='none'; sheetFilter.classList.add('visible'); sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)'; sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`; currentY=window.innerHeight*0.5; btnContainer.classList.add('hidden'); }
-    function closeFilter(){ filterMode=false; filterBtn.classList.remove('active'); filterCloseBtn.classList.remove('visible'); sheetNormal.style.display='flex'; sheetFilter.classList.remove('visible'); sliderMin.value=0; sliderMax.value=26; updateSliderUI(); applyRangeFilter(); btnContainer.classList.remove('hidden'); checkParking(); }
-    filterBtn.addEventListener('click',()=>{ if(filterMode){closeFilter();}else{filterBtn.classList.add('active');setTimeout(()=>{closeMenu();openFilter();},200);} });
+    function openFilter(){filterMode=true;filterBtn.classList.add('active');filterCloseBtn.classList.add('visible');sheetNormal.style.display='none';sheetFilter.classList.add('visible');sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;currentY=window.innerHeight*0.5;btnContainer.classList.add('hidden');}
+    function closeFilter(){filterMode=false;filterBtn.classList.remove('active');filterCloseBtn.classList.remove('visible');sheetNormal.style.display='flex';sheetFilter.classList.remove('visible');sliderMin.value=0;sliderMax.value=26;updateSliderUI();applyRangeFilter();btnContainer.classList.remove('hidden');checkParking();}
+    filterBtn.addEventListener('click',()=>{if(filterMode){closeFilter();}else{filterBtn.classList.add('active');setTimeout(()=>{closeMenu();openFilter();},200);}});
     filterCloseBtn.addEventListener('click',closeFilter);
 
     let moveTimer=null;
@@ -723,54 +733,39 @@
     function checkParking(){
       if(filterMode)return;
       const zoom=map.getZoom();
-      if(zoom<13){ summaryHeader.textContent=''; summaryType.textContent=''; summaryOperator.textContent=''; details.innerHTML=''; divider.style.display='none'; btn.textContent='Lähennä karttaa'; btn.classList.remove('active'); currentParkingProps=null; gpsWarning.classList.remove('visible'); sheet.style.transform='translateY(calc(100% - 60px))'; currentY=sheet.offsetHeight-60; return; }
+      if(zoom<13){summaryHeader.textContent='';summaryType.textContent='';summaryOperator.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Lähennä karttaa';btn.classList.remove('active');currentParkingProps=null;gpsWarning.classList.remove('visible');sheet.style.transform='translateY(calc(100% - 60px))';currentY=sheet.offsetHeight-60;return;}
       const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});
-      if(f.length>0){ const p=f[0].properties; currentParkingProps=p; const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton'; summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`; summaryType.textContent=getTypeName(p['hel:paikan_asento']); summaryOperator.textContent='Helsingin kaupungin pysäköinti'; details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`; divider.style.display='block'; btn.textContent='Pysäköi tähän'; btn.classList.add('active'); gpsWarning.classList.remove('visible'); sheet.style.transform='translateY(calc(100% - 150px))'; currentY=sheet.offsetHeight-150; }
-      else { currentParkingProps=null; summaryHeader.textContent=''; summaryType.textContent=''; summaryOperator.textContent=''; details.innerHTML=''; divider.style.display='none'; btn.textContent='Valitse pysäköintialue'; btn.classList.remove('active'); gpsWarning.classList.add('visible'); sheet.style.transform='translateY(calc(100% - 90px))'; currentY=sheet.offsetHeight-90; }
+      if(f.length>0){const p=f[0].properties;currentParkingProps=p;const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;summaryType.textContent=getTypeName(p['hel:paikan_asento']);summaryOperator.textContent='Helsingin kaupungin pysäköinti';details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;divider.style.display='block';btn.textContent='Pysäköi tähän';btn.classList.add('active');gpsWarning.classList.remove('visible');sheet.style.transform='translateY(calc(100% - 150px))';currentY=sheet.offsetHeight-150;}
+      else{currentParkingProps=null;summaryHeader.textContent='';summaryType.textContent='';summaryOperator.textContent='';details.innerHTML='';divider.style.display='none';btn.textContent='Valitse pysäköintialue';btn.classList.remove('active');gpsWarning.classList.add('visible');sheet.style.transform='translateY(calc(100% - 90px))';currentY=sheet.offsetHeight-90;}
     }
 
-    const PARKING_RATE=3, SERVICE_FEE_PERCENT=0.10, VAT_PERCENT=0.255;
-    function calculatePrice(minutes){ if(minutes===0)return{parking:0,service:0,subtotal:0,vat:0,total:0}; const hours=minutes/60,parking=hours*PARKING_RATE,service=parking*SERVICE_FEE_PERCENT,subtotal=parking+service,vat=subtotal*VAT_PERCENT,total=subtotal+vat; return{parking,service,subtotal,vat,total}; }
-    function formatPrice(amount){ return amount.toFixed(2).replace('.',',')+' €'; }
+    const PARKING_RATE=3,SERVICE_FEE_PERCENT=0.10,VAT_PERCENT=0.255;
+    function calculatePrice(minutes){if(minutes===0)return{parking:0,service:0,subtotal:0,vat:0,total:0};const hours=minutes/60,parking=hours*PARKING_RATE,service=parking*SERVICE_FEE_PERCENT,subtotal=parking+service,vat=subtotal*VAT_PERCENT,total=subtotal+vat;return{parking,service,subtotal,vat,total};}
+    function formatPrice(amount){return amount.toFixed(2).replace('.',',')+' €';}
 
-    let parkingMinutes=0, parkingMaxMinutes=1440, isIlmainen=false, parkingStartTime=null;
-    const PIXELS_PER_MINUTE=8, RADIANS_PER_PX=0.055, N_LINES=12, CW=52, CH=80, CY=CH/2, R=33;
+    let parkingMinutes=0,parkingMaxMinutes=1440,isIlmainen=false,parkingStartTime=null;
+    const PIXELS_PER_MINUTE=8,RADIANS_PER_PX=0.055,N_LINES=12,CW=52,CH=80,CY=CH/2,R=33;
     let drumPhase=0;
-    const drumCanvas=document.getElementById('drum-canvas'), dctx=drumCanvas.getContext('2d');
+    const drumCanvas=document.getElementById('drum-canvas'),dctx=drumCanvas.getContext('2d');
 
     function drawDrum(){dctx.clearRect(0,0,CW,CH);for(let x=0;x<CW;x++){const nx=(x-CW/2)/(CW/2),shade=Math.sqrt(Math.max(0,1-nx*nx)),edge=Math.round(220+shade*20);dctx.fillStyle=`rgb(${edge},${edge},${edge})`;dctx.fillRect(x,0,1,CH);}for(let i=0;i<N_LINES;i++){const alpha=(i/N_LINES)*Math.PI*2+drumPhase,a=((alpha%(Math.PI*2))+Math.PI*2)%(Math.PI*2),cosA=Math.cos(a);if(cosA<0)continue;const sinA=Math.sin(a),y=CY+R*sinA;if(y<1||y>CH-1)continue;const opacity=cosA*0.8,lineWidth=0.8+cosA*2.2,colorVal=Math.round(60+(1-cosA)*60);dctx.save();dctx.globalAlpha=opacity;dctx.strokeStyle=`rgb(${colorVal},${colorVal-5},${colorVal+20})`;dctx.lineWidth=lineWidth;dctx.lineCap='round';dctx.beginPath();dctx.moveTo(6,y);dctx.lineTo(CW-6,y);dctx.stroke();dctx.restore();}const tg=dctx.createLinearGradient(0,0,0,24);tg.addColorStop(0,'rgba(232,232,232,0.98)');tg.addColorStop(1,'rgba(232,232,232,0)');dctx.fillStyle=tg;dctx.fillRect(0,0,CW,24);const bg=dctx.createLinearGradient(0,CH-24,0,CH);bg.addColorStop(0,'rgba(232,232,232,0)');bg.addColorStop(1,'rgba(232,232,232,0.98)');dctx.fillStyle=bg;dctx.fillRect(0,CH-24,CW,24);dctx.save();dctx.strokeStyle='rgba(12,2,67,0.18)';dctx.lineWidth=1;dctx.setLineDash([2,2]);dctx.beginPath();dctx.moveTo(4,CY);dctx.lineTo(CW-4,CY);dctx.stroke();dctx.restore();}
 
     function formatTimeDisplay(mins){if(mins===0)return'0 min';mins=Math.max(1,Math.min(mins,parkingMaxMinutes));if(mins<60)return`${mins} min`;const h=Math.floor(mins/60),m=mins%60;return m>0?`${h} h ${m} min`:`${h} h`;}
-
     function formatEndTime(mins){if(mins===0)return'Pyöritä rullaa →';const now=parkingStartTime||new Date(),end=new Date(now.getTime()+mins*60000),h=end.getHours(),m=end.getMinutes(),time=`${h}:${m.toString().padStart(2,'0')}`;const today=new Date(now);today.setHours(0,0,0,0);const endDay=new Date(end);endDay.setHours(0,0,0,0);const diffDays=Math.floor((endDay-today)/86400000);if(diffDays===0)return`Pysäköinti päättyy tänään ${time}`;if(diffDays===1)return`Pysäköinti päättyy huomenna ${time}`;const d=end.getDate(),mon=end.getMonth()+1;return`Pysäköinti päättyy ${d}.${mon}. ${time}`;}
 
-    let lastDisplayedMinutes=-1, lastVibrateMinute=-1, maxLabelTimer=null, wasAtMax=false;
+    let lastDisplayedMinutes=-1,lastVibrateMinute=-1,maxLabelTimer=null,wasAtMax=false;
 
-    function showMaxLabel(){
-      const lbl=document.getElementById('max-label');
-      lbl.textContent=`(Max. ${formatTimeDisplay(parkingMaxMinutes)})`;
-      lbl.classList.add('visible');
-      clearTimeout(maxLabelTimer);
-      maxLabelTimer=setTimeout(()=>{ lbl.classList.remove('visible'); },2000);
-    }
-
-    function triggerMaxBounce(){
-      const el=document.getElementById('time-big');
-      el.classList.remove('bounce');
-      void el.offsetWidth;
-      el.classList.add('bounce');
-      el.addEventListener('animationend',()=>el.classList.remove('bounce'),{once:true});
-      if(navigator.vibrate) navigator.vibrate([30,30,30]);
-    }
+    function showMaxLabel(){const lbl=document.getElementById('max-label');lbl.textContent=`(Max. ${formatTimeDisplay(parkingMaxMinutes)})`;lbl.classList.add('visible');clearTimeout(maxLabelTimer);maxLabelTimer=setTimeout(()=>{lbl.classList.remove('visible');},2000);}
+    function triggerMaxBounce(){const el=document.getElementById('time-big');el.classList.remove('bounce');void el.offsetWidth;el.classList.add('bounce');el.addEventListener('animationend',()=>el.classList.remove('bounce'),{once:true});if(navigator.vibrate)navigator.vibrate([30,30,30]);}
 
     function updateDisplay(){
       const rounded=Math.max(0,Math.min(Math.round(parkingMinutes),parkingMaxMinutes));
       parkingMinutes=rounded;
-      const atMax=(rounded===parkingMaxMinutes && parkingMaxMinutes>0);
+      const atMax=(rounded===parkingMaxMinutes&&parkingMaxMinutes>0);
       const el=document.getElementById('time-big');
-      if(atMax && !wasAtMax){ el.classList.add('at-max'); showMaxLabel(); triggerMaxBounce(); }
-      else if(atMax && wasAtMax && rounded!==lastDisplayedMinutes){ triggerMaxBounce(); }
-      if(!atMax){ el.classList.remove('at-max'); }
+      if(atMax&&!wasAtMax){el.classList.add('at-max');showMaxLabel();triggerMaxBounce();}
+      else if(atMax&&wasAtMax&&rounded!==lastDisplayedMinutes){triggerMaxBounce();}
+      if(!atMax){el.classList.remove('at-max');}
       wasAtMax=atMax;
       if(rounded!==lastDisplayedMinutes){
         el.textContent=formatTimeDisplay(rounded);
@@ -790,7 +785,7 @@
     function closePriceDetail(){document.getElementById('price-detail-sheet').classList.remove('open');}
 
     let inertiaRAF=null,inertiaVel=0;
-    const FRICTION=0.88, MIN_VEL=0.025;
+    const FRICTION=0.88,MIN_VEL=0.025;
     function stopInertia(){if(inertiaRAF){cancelAnimationFrame(inertiaRAF);inertiaRAF=null;}}
     function runInertia(){if(Math.abs(inertiaVel)<MIN_VEL){inertiaRAF=null;drawDrum();return;}const dpx=inertiaVel*16;drumPhase+=dpx*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(parkingMinutes+dpx/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();if(parkingMinutes<=0||parkingMinutes>=parkingMaxMinutes){inertiaRAF=null;return;}inertiaVel*=FRICTION;inertiaRAF=requestAnimationFrame(runInertia);}
 
@@ -805,7 +800,7 @@
     window.addEventListener('mouseup',()=>{if(mStartY===null)return;mStartY=null;inertiaVel=mVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);});
     drawDrum();
 
-    let vehicles=[{reg:'FHY-857',name:'Äitin auto'}], selectedVehicleIdx=0;
+    let vehicles=[{reg:'FHY-857',name:'Äitin auto'}],selectedVehicleIdx=0;
     function renderVehicleDisplay(){const v=vehicles[selectedVehicleIdx];document.getElementById('plate-text').textContent=v.reg;document.getElementById('vehicle-nickname').textContent=v.name;}
     function renderVehicleOptions(){const c=document.getElementById('vehicle-options');c.innerHTML='';vehicles.forEach((v,i)=>{const row=document.createElement('div');row.className='option-row';row.innerHTML=`<div class="option-check ${i===selectedVehicleIdx?'selected':''}"></div><div><div class="option-name">${v.name}</div><div class="option-reg">${v.reg}</div></div>`;row.addEventListener('click',()=>{selectedVehicleIdx=i;renderVehicleDisplay();closeVehicleSheet();});c.appendChild(row);});}
     function openVehicleSheet(){renderVehicleOptions();document.getElementById('vehicle-sheet').classList.add('open');}
@@ -833,13 +828,13 @@
       const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';
       isIlmainen=luokka.toLowerCase().includes('ilmainen');
       parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;
-      parkingMinutes=0; parkingStartTime=new Date(); lastDisplayedMinutes=-1; lastVibrateMinute=-1;
-      wasAtMax=false; clearTimeout(maxLabelTimer); document.getElementById('max-label').classList.remove('visible');
+      parkingMinutes=0;parkingStartTime=new Date();lastDisplayedMinutes=-1;lastVibrateMinute=-1;
+      wasAtMax=false;clearTimeout(maxLabelTimer);document.getElementById('max-label').classList.remove('visible');
       drumPhase=0;
       document.getElementById('p-code').textContent=areaCode;
       document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);
       document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText}`;
-      renderVehicleDisplay(); renderPaymentDisplay(); updateDisplay(); overlay.classList.add('open');
+      renderVehicleDisplay();renderPaymentDisplay();updateDisplay();overlay.classList.add('open');
     }
 
     function goBackToMap(){
