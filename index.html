@@ -1034,30 +1034,33 @@
       <!-- Kiekkopysäköinti aikarivit -->
       <div id="kiekko-times" style="display:none;background:white;border-radius:14px;padding:16px;font-family:Arial,sans-serif;">
         <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Voimassaoloaika</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <!-- Ma–Pe -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
           <div style="width:48px;font-size:14px;color:#333;font-weight:600;flex-shrink:0;">Ma–Pe</div>
-          <input type="time" id="mape-from" style="flex:1;height:40px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;padding:0 8px;font-family:Arial,sans-serif;outline:none;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'">
-          <div style="color:#aaa;font-size:13px;flex-shrink:0;">–</div>
-          <input type="time" id="mape-to" style="flex:1;height:40px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;padding:0 8px;font-family:Arial,sans-serif;outline:none;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'">
+          <div id="drum-mape-from" style="flex:1;border:1.5px solid #e0e0e0;border-radius:10px;overflow:hidden;background:#f9f9f9;"></div>
+          <div style="color:#aaa;font-size:15px;flex-shrink:0;font-weight:300;">–</div>
+          <div id="drum-mape-to" style="flex:1;border:1.5px solid #e0e0e0;border-radius:10px;overflow:hidden;background:#f9f9f9;"></div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <!-- (La) -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
           <div style="width:48px;font-size:14px;color:#333;font-weight:600;flex-shrink:0;">(La)</div>
-          <input type="time" id="la-from" style="flex:1;height:40px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;padding:0 8px;font-family:Arial,sans-serif;outline:none;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'">
-          <div style="color:#aaa;font-size:13px;flex-shrink:0;">–</div>
-          <input type="time" id="la-to" style="flex:1;height:40px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;padding:0 8px;font-family:Arial,sans-serif;outline:none;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'">
+          <div id="drum-la-from" style="flex:1;border:1.5px solid #e0e0e0;border-radius:10px;overflow:hidden;background:#f9f9f9;"></div>
+          <div style="color:#aaa;font-size:15px;flex-shrink:0;font-weight:300;">–</div>
+          <div id="drum-la-to" style="flex:1;border:1.5px solid #e0e0e0;border-radius:10px;overflow:hidden;background:#f9f9f9;"></div>
         </div>
+        <!-- (Su) -->
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="width:48px;font-size:14px;color:#e53935;font-weight:600;flex-shrink:0;">(Su)</div>
-          <input type="time" id="su-from" style="flex:1;height:40px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;padding:0 8px;font-family:Arial,sans-serif;outline:none;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'">
-          <div style="color:#aaa;font-size:13px;flex-shrink:0;">–</div>
-          <input type="time" id="su-to" style="flex:1;height:40px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;padding:0 8px;font-family:Arial,sans-serif;outline:none;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'">
+          <div id="drum-su-from" style="flex:1;border:1.5px solid #e0e0e0;border-radius:10px;overflow:hidden;background:#f9f9f9;"></div>
+          <div style="color:#aaa;font-size:15px;flex-shrink:0;font-weight:300;">–</div>
+          <div id="drum-su-to" style="flex:1;border:1.5px solid #e0e0e0;border-radius:10px;overflow:hidden;background:#f9f9f9;"></div>
         </div>
       </div>
 
       <!-- Lisätiedot -->
       <div id="area-extra-section" style="display:none;background:white;border-radius:14px;padding:16px;font-family:Arial,sans-serif;">
-        <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Lisätiedot</div>
-        <textarea id="area-extra-info" placeholder="Kirjoita lisätietoja pysäköintialueesta..." style="width:100%;min-height:90px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:12px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color 0.2s;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'"></textarea>
+        <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Lisätiedot (valinnainen)</div>
+        <textarea id="area-extra-info" placeholder="Kirjoita mahdolliset tärkeät lisätiedot pysäköintialueesta..." style="width:100%;min-height:90px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:12px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color 0.2s;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'"></textarea>
       </div>
     </div>
     <div style="background:white;padding:12px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid #eee;flex-shrink:0;">
@@ -1758,6 +1761,146 @@
     // =====================================
 
     // ---- Area details form ----
+    // ══════════════════════════════════════════════
+    // TIME DRUM PICKERS
+    // ══════════════════════════════════════════════
+    const TD_ITEM_H  = 44;   // px per row in the drum
+    const TD_VISIBLE = 3;    // rows visible (above + selected + below)
+    const TD_H       = TD_ITEM_H * TD_VISIBLE;  // total picker height
+
+    const TD_HOURS = Array.from({length:24}, (_,i) => String(i).padStart(2,'0'));
+    const TD_MINS  = Array.from({length:12}, (_,i) => String(i*5).padStart(2,'0'));
+
+    let timeDrumPickers = {};  // id → {getHH, getMM}
+
+    // Build one drum column (hours OR minutes)
+    function buildTimeDrumCol(values, initIdx, bgColor) {
+      const PADDING = 1;  // one blank row above and below
+      const col = document.createElement('div');
+      col.style.cssText = `flex:1;height:${TD_H}px;overflow:hidden;position:relative;cursor:grab;touch-action:none;user-select:none;background:${bgColor};`;
+
+      const inner = document.createElement('div');
+      inner.style.cssText = `position:absolute;left:0;right:0;top:0;will-change:transform;`;
+      col.appendChild(inner);
+
+      // Add padding + values
+      for(let i=0;i<PADDING;i++) addTDItem(inner,'');
+      values.forEach(v => addTDItem(inner, v));
+      for(let i=0;i<PADDING;i++) addTDItem(inner,'');
+
+      // Highlight bar
+      const bar = document.createElement('div');
+      bar.style.cssText = `position:absolute;left:0;right:0;top:${PADDING*TD_ITEM_H}px;height:${TD_ITEM_H}px;border-top:1px solid rgba(0,0,0,0.09);border-bottom:1px solid rgba(0,0,0,0.09);pointer-events:none;z-index:3;`;
+      col.appendChild(bar);
+
+      // Fade top
+      const fadeT = document.createElement('div');
+      fadeT.style.cssText = `position:absolute;top:0;left:0;right:0;height:${PADDING*TD_ITEM_H}px;background:linear-gradient(to bottom,${bgColor} 40%,transparent);pointer-events:none;z-index:4;`;
+      col.appendChild(fadeT);
+      // Fade bottom
+      const fadeB = document.createElement('div');
+      fadeB.style.cssText = `position:absolute;bottom:0;left:0;right:0;height:${PADDING*TD_ITEM_H}px;background:linear-gradient(to top,${bgColor} 40%,transparent);pointer-events:none;z-index:4;`;
+      col.appendChild(fadeB);
+
+      let curIdx = Math.max(0, Math.min(values.length-1, initIdx));
+
+      function getTranslateY() { return -(curIdx * TD_ITEM_H); }
+      function snap(animate) {
+        inner.style.transition = animate ? 'transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+        inner.style.transform = `translateY(${getTranslateY()}px)`;
+      }
+      snap(false);
+
+      // ── Touch ────────────────────────────────────────────────────────────
+      let tStartY=null, tStartIdx, tLastY, tLastT, tVel;
+      col.addEventListener('touchstart', e=>{
+        tStartY=e.touches[0].clientY; tStartIdx=curIdx;
+        tLastY=tStartY; tLastT=Date.now(); tVel=0;
+        inner.style.transition='none';
+      },{passive:true});
+      col.addEventListener('touchmove', e=>{
+        if(tStartY===null)return;
+        const y=e.touches[0].clientY, now=Date.now(), dt=now-tLastT;
+        if(dt>0) tVel=(tLastY-y)/dt;
+        tLastY=y; tLastT=now;
+        const dy=tStartY-y;
+        curIdx=Math.max(0,Math.min(values.length-1,Math.round(tStartIdx+dy/TD_ITEM_H)));
+        inner.style.transform=`translateY(${getTranslateY()}px)`;
+      },{passive:true});
+      col.addEventListener('touchend',()=>{
+        if(tStartY===null)return; tStartY=null;
+        const inertia=Math.round(tVel*160);
+        curIdx=Math.max(0,Math.min(values.length-1,curIdx+inertia));
+        snap(true);
+      });
+
+      // ── Mouse ────────────────────────────────────────────────────────────
+      let mStartY=null, mStartIdx, mLastY, mLastT, mVel;
+      col.addEventListener('mousedown', e=>{
+        mStartY=e.clientY; mStartIdx=curIdx;
+        mLastY=e.clientY; mLastT=Date.now(); mVel=0;
+        inner.style.transition='none';
+        col.style.cursor='grabbing';
+      });
+      const onMM=e=>{
+        if(mStartY===null)return;
+        const now=Date.now(), dt=now-mLastT;
+        if(dt>0) mVel=(mLastY-e.clientY)/dt;
+        mLastY=e.clientY; mLastT=now;
+        const dy=mStartY-e.clientY;
+        curIdx=Math.max(0,Math.min(values.length-1,Math.round(mStartIdx+dy/TD_ITEM_H)));
+        inner.style.transform=`translateY(${getTranslateY()}px)`;
+      };
+      const onMU=()=>{
+        if(mStartY===null)return; mStartY=null;
+        col.style.cursor='grab';
+        const inertia=Math.round(mVel*160);
+        curIdx=Math.max(0,Math.min(values.length-1,curIdx+inertia));
+        snap(true);
+      };
+      window.addEventListener('mousemove', onMM);
+      window.addEventListener('mouseup',   onMU);
+
+      return { el: col, getVal: ()=>values[curIdx] };
+    }
+
+    function addTDItem(parent, text) {
+      const div = document.createElement('div');
+      div.style.cssText = `height:${TD_ITEM_H}px;display:flex;align-items:center;justify-content:center;font-size:18px;font-family:Arial,sans-serif;color:#1a1a1a;font-weight:500;letter-spacing:0.5px;`;
+      div.textContent = text;
+      parent.appendChild(div);
+    }
+
+    function initTimeDrumPicker(containerId, initHour=8, initMin=0) {
+      const container = document.getElementById(containerId);
+      if (!container || container._drumInit) return;
+      container._drumInit = true;
+      container.style.cssText = container.style.cssText +
+        `;display:flex;align-items:center;height:${TD_H}px;position:relative;overflow:hidden;`;
+      const bg = '#f9f9f9';
+      const hCol = buildTimeDrumCol(TD_HOURS, initHour, bg);
+      const sep  = document.createElement('div');
+      sep.style.cssText = `flex-shrink:0;font-size:19px;font-weight:600;color:#333;padding:0 3px;z-index:5;background:${bg};`;
+      sep.textContent = ':';
+      const mCol = buildTimeDrumCol(TD_MINS, Math.floor(initMin/5), bg);
+      container.appendChild(hCol.el);
+      container.appendChild(sep);
+      container.appendChild(mCol.el);
+      timeDrumPickers[containerId] = {
+        getVal: () => hCol.getVal() + ':' + mCol.getVal()
+      };
+    }
+
+    function initAllTimeDrums() {
+      initTimeDrumPicker('drum-mape-from', 8,  0);
+      initTimeDrumPicker('drum-mape-to',   18, 0);
+      initTimeDrumPicker('drum-la-from',   8,  0);
+      initTimeDrumPicker('drum-la-to',     14, 0);
+      initTimeDrumPicker('drum-su-from',   0,  0);
+      initTimeDrumPicker('drum-su-to',     0,  0);
+    }
+    // ══════════════════════════════════════════════
+
     let selectedAreaType = '';
 
     function openAreaTypeSheet() {
@@ -1779,7 +1922,7 @@
       closeAreaTypeSheet();
       // Show/hide kiekko time rows
       const kiekkoDiv = document.getElementById('kiekko-times');
-      if (kiekkoDiv) kiekkoDiv.style.display = value==='kiekko' ? 'block' : 'none';
+      if (kiekkoDiv) { kiekkoDiv.style.display = value==='kiekko' ? 'block' : 'none'; if(value==='kiekko') setTimeout(initAllTimeDrums, 0); }
       // Show Lisätiedot
       const extraDiv = document.getElementById('area-extra-section');
       if (extraDiv) extraDiv.style.display = 'block';
