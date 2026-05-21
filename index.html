@@ -208,6 +208,17 @@
     #start-btn-container { padding: 10px 14px; padding-bottom: max(20px,env(safe-area-inset-bottom)); flex-shrink: 0; }
     #start-btn { width: 100%; height: 58px; border: none; border-radius: 16px; font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; cursor: pointer; transition: opacity 0.2s ease; }
     #start-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Satellite badge */
+    #satellite-badge {
+      position: absolute; bottom: 72px; left: 16px; z-index: 10;
+      background: rgba(0,0,0,0.6); color: white;
+      font-family: Arial, sans-serif; font-size: 12px; font-weight: bold;
+      padding: 4px 10px; border-radius: 8px;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    #satellite-badge.visible { opacity: 1; }
   </style>
 </head>
 <body>
@@ -337,7 +348,7 @@
         <p>GPS-sijainti voi olla epätarkka useasta syystä:</p>
         <p>• <strong>Rakennukset ja esteet:</strong> Korkeat rakennukset, tunnelit tai muut esteet voivat heikentää GPS-signaalia.</p>
         <p>• <strong>Sääolosuhteet:</strong> Sade, lumisade tai pilvipeite voi vaikuttaa signaaliin.</p>
-        <p>• <strong>Laitteen asetus:</strong> Varmista, että laitteesi sijaintipalvelut ovat päällä ja että sovelluksella on lupa käyttää sijaintia.</p>
+        <p>• <strong>Laitteen asetus:</strong> Varmista, että laitteesi sijaintipalvelut ovat päällä.</p>
       </div>
       <div class="gps-info-section">
         <h3>Kuinka voin parantaa GPS-tarkkuutta?</h3>
@@ -349,7 +360,7 @@
       <div class="gps-info-section">
         <h3>Vaikuttaako epätarkka GPS pysäköintiin?</h3>
         <p>Epätarkka GPS-sijainti ei estä pysäköintiä. Voit silti valita pysäköintialueen kartalta ja aloittaa pysäköinnin normaalisti.</p>
-        <p>Suosittelemme kuitenkin tarkistamaan sijaintisi ennen pysäköinnin aloittamista, jotta valitset oikean pysäköintialueen.</p>
+        <p>Suosittelemme kuitenkin tarkistamaan sijaintisi ennen pysäköinnin aloittamista.</p>
       </div>
     </div>
   </div>
@@ -406,7 +417,7 @@
     </div>
     <div style="position:relative;flex:1;display:flex;flex-direction:column;">
       <div id="area-map" style="flex:1;"></div>
-      <!-- Floating controls -->
+      <div id="satellite-badge">🛰 Satelliitti</div>
       <div style="position:absolute;top:16px;right:16px;z-index:10;display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
         <div style="display:flex;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.22);">
           <button id="corner-minus-btn" onclick="removeCorner()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;">−</button>
@@ -421,7 +432,6 @@
     </div>
   </div>
 
-  <!-- Tietojen syöttö -->
   <div id="area-details-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:120;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAreaDetails()">←</button>
@@ -556,6 +566,10 @@
   </div>
 
   <script>
+    // ===== MAPBOX TOKEN =====
+    const MAPBOX_TOKEN = 'pk.eyJ1IjoiZWxpYXMxOTk4IiwiYSI6ImNtaHV3NmNlZDA0cHgyanIzMmx0MnBsczQifQ.gUpCyVNlQq8XjUD5lPMGhA';
+    const SATELLITE_ZOOM_THRESHOLD = 15;
+
     const splashScreen = document.getElementById('splash-screen');
     setTimeout(() => { splashScreen.classList.add('fade-out'); setTimeout(() => { splashScreen.style.display = 'none'; }, 300); }, 500);
 
@@ -583,7 +597,6 @@
     }
 
     let userLocation = null;
-
     function calculateDistance(lat1,lon1,lat2,lon2){const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
     function formatDistance(d){return d<1?`${Math.round(d*1000)} m päässä`:`${Math.round(d)} km päässä`;}
     function kestoToMinutes(kesto){if(!kesto)return 9999;const l=kesto.toLowerCase().trim();if(l.includes('h')){const h=parseFloat(l);return isNaN(h)?9999:h*60;}if(l.includes('min')){const m=parseFloat(l);return isNaN(m)?9999:m;}return 9999;}
@@ -637,24 +650,38 @@
       document.getElementById('add-parking-overlay').style.transform='translateX(0)';
       setTimeout(()=>{ initAreaMap(); },400);
     }
-    function closeAddParkingArea(){
-      document.getElementById('add-parking-overlay').style.transform='translateX(100%)';
-    }
-    function openAreaDetails(){
-      document.getElementById('area-details-overlay').style.transform='translateX(0)';
-    }
-    function closeAreaDetails(){
-      document.getElementById('area-details-overlay').style.transform='translateX(100%)';
-    }
+    function closeAddParkingArea(){document.getElementById('add-parking-overlay').style.transform='translateX(100%)';}
+    function openAreaDetails(){document.getElementById('area-details-overlay').style.transform='translateX(0)';}
+    function closeAreaDetails(){document.getElementById('area-details-overlay').style.transform='translateX(100%)';}
 
     // ======== AREA SELECTION MAP ========
     let areaMap=null, areaMarkers=[], areaCoords=[];
     let areaLocked=true, lockedPixelPos=[];
+    let areaMapMode='map', areaSwitchingStyle=false;
 
+    function getSatelliteStyle(){
+      return {
+        version: 8,
+        sources: {
+          'mapbox-satellite': {
+            type: 'raster',
+            tiles: [`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`],
+            tileSize: 256,
+            attribution: '© Mapbox © Maxar'
+          }
+        },
+        layers: [{ id:'satellite-layer', type:'raster', source:'mapbox-satellite' }]
+      };
+    }
+
+    // Corner element: large invisible hit area + small visible dot
     function createCornerEl(){
-      const el=document.createElement('div');
-      el.style.cssText='width:22px;height:22px;background:#0C0243;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.45);cursor:grab;touch-action:none;';
-      return el;
+      const wrapper=document.createElement('div');
+      wrapper.style.cssText='width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
+      const dot=document.createElement('div');
+      dot.style.cssText='width:22px;height:22px;background:#0C0243;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.45);flex-shrink:0;pointer-events:none;';
+      wrapper.appendChild(dot);
+      return wrapper;
     }
 
     function getAreaGeoJSON(){
@@ -668,23 +695,54 @@
       }
     }
 
+    function addAreaPolygon(){
+      if(!areaMap)return;
+      // Polygon line color: white on satellite for contrast, dark blue on map
+      const lineColor = areaMapMode==='satellite' ? '#ffffff' : '#0C0243';
+      if(!areaMap.getSource('area-poly')){
+        areaMap.addSource('area-poly',{type:'geojson',data:getAreaGeoJSON()});
+      }
+      if(!areaMap.getLayer('area-poly-fill')){
+        areaMap.addLayer({id:'area-poly-fill',type:'fill',source:'area-poly',paint:{'fill-color':'#0C0243','fill-opacity':0.15}});
+      }
+      if(!areaMap.getLayer('area-poly-line')){
+        areaMap.addLayer({id:'area-poly-line',type:'line',source:'area-poly',paint:{'line-color':lineColor,'line-width':2.5,'line-opacity':0.95}});
+      }
+    }
+
+    function switchAreaMapStyle(mode){
+      if(areaSwitchingStyle||areaMapMode===mode)return;
+      areaSwitchingStyle=true;
+      areaMapMode=mode;
+      const badge=document.getElementById('satellite-badge');
+      if(badge)badge.classList.toggle('visible',mode==='satellite');
+      areaMap.setStyle(mode==='satellite'?getSatelliteStyle():'omakartta_style.json');
+      areaMap.once('style.load',()=>{
+        addAreaPolygon();
+        updateAreaLayer();
+        areaSwitchingStyle=false;
+        // Check if zoom changed while switching
+        const z=areaMap.getZoom();
+        const shouldSat=z>=SATELLITE_ZOOM_THRESHOLD;
+        if(shouldSat&&areaMapMode!=='satellite') switchAreaMapStyle('satellite');
+        else if(!shouldSat&&areaMapMode!=='map') switchAreaMapStyle('map');
+      });
+    }
+
     function clampPixelPos(px){
       if(!areaMap)return px;
-      const canvas=areaMap.getCanvas();
-      const w=canvas.clientWidth,h=canvas.clientHeight,pad=32;
+      const c=areaMap.getCanvas(),w=c.clientWidth,h=c.clientHeight,pad=32;
       return{x:Math.max(pad,Math.min(w-pad,px.x)),y:Math.max(pad,Math.min(h-pad,px.y))};
     }
 
     function updateLockBtn(){
-      const btn=document.getElementById('area-lock-btn');
-      if(!btn)return;
+      const btn=document.getElementById('area-lock-btn');if(!btn)return;
       if(areaLocked){btn.textContent='Seuraa karttaa';btn.style.background='white';btn.style.color='#0C0243';}
       else{btn.textContent='Lukitse paikkaan';btn.style.background='#0C0243';btn.style.color='white';}
     }
 
     function updateMinusBtn(){
-      const btn=document.getElementById('corner-minus-btn');
-      if(!btn)return;
+      const btn=document.getElementById('corner-minus-btn');if(!btn)return;
       btn.style.visibility=areaCoords.length<=3?'hidden':'visible';
     }
 
@@ -714,7 +772,7 @@
       const last=areaCoords[areaCoords.length-1],first=areaCoords[0];
       const mid=[(last[0]+first[0])/2,(last[1]+first[1])/2];
       areaCoords.push(mid);
-      const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true}).setLngLat(mid).addTo(areaMap);
+      const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true,anchor:'center'}).setLngLat(mid).addTo(areaMap);
       setupMarkerEvents(marker);areaMarkers.push(marker);
       if(!areaLocked)lockedPixelPos.push(clampPixelPos(areaMap.project([mid[0],mid[1]])));
       updateAreaLayer();updateMinusBtn();
@@ -722,17 +780,14 @@
 
     function removeCorner(){
       if(areaCoords.length<=3)return;
-      const last=areaMarkers.pop();last.remove();
-      areaCoords.pop();
+      const last=areaMarkers.pop();last.remove();areaCoords.pop();
       if(!areaLocked)lockedPixelPos.pop();
       updateAreaLayer();updateMinusBtn();
     }
 
     function toggleAreaLock(){
       areaLocked=!areaLocked;
-      if(!areaLocked){
-        lockedPixelPos=areaMarkers.map(m=>clampPixelPos(areaMap.project([m.getLngLat().lng,m.getLngLat().lat])));
-      }
+      if(!areaLocked){lockedPixelPos=areaMarkers.map(m=>clampPixelPos(areaMap.project([m.getLngLat().lng,m.getLngLat().lat])));}
       updateLockBtn();
     }
 
@@ -743,7 +798,7 @@
       const c=areaMap.getCenter(),off=0.00045;
       areaCoords=[[c.lng-off,c.lat+off],[c.lng+off,c.lat+off],[c.lng+off,c.lat-off],[c.lng-off,c.lat-off]];
       areaCoords.forEach(coord=>{
-        const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true}).setLngLat(coord).addTo(areaMap);
+        const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true,anchor:'center'}).setLngLat(coord).addTo(areaMap);
         setupMarkerEvents(marker);areaMarkers.push(marker);
       });
       updateAreaLayer();updateMinusBtn();
@@ -751,7 +806,11 @@
 
     function initAreaMap(){
       const center=map.getCenter(),zoom=Math.max(map.getZoom(),15);
-      if(areaMap){areaMap.resize();areaMap.setCenter([center.lng,center.lat]);areaMap.setZoom(zoom);resetAreaCorners();return;}
+      if(areaMap){
+        areaMap.resize();areaMap.setCenter([center.lng,center.lat]);areaMap.setZoom(zoom);
+        resetAreaCorners();return;
+      }
+      areaMapMode='map';areaSwitchingStyle=false;
       areaMap=new maplibregl.Map({
         container:'area-map',style:'omakartta_style.json',
         center:[center.lng,center.lat],zoom,minZoom:5,maxZoom:20,transformRequest,
@@ -759,10 +818,14 @@
       });
       areaMap.on('load',()=>{
         areaMap.touchZoomRotate.disableRotation();areaMap.dragRotate.disable();
-        areaMap.addSource('area-poly',{type:'geojson',data:getAreaGeoJSON()});
-        areaMap.addLayer({id:'area-poly-fill',type:'fill',source:'area-poly',paint:{'fill-color':'#0C0243','fill-opacity':0.12}});
-        areaMap.addLayer({id:'area-poly-line',type:'line',source:'area-poly',paint:{'line-color':'#0C0243','line-width':2.5,'line-opacity':0.85}});
-        resetAreaCorners();
+        addAreaPolygon();resetAreaCorners();
+        // Check if we opened at satellite zoom
+        if(areaMap.getZoom()>=SATELLITE_ZOOM_THRESHOLD)switchAreaMapStyle('satellite');
+      });
+      areaMap.on('zoomend',()=>{
+        const z=areaMap.getZoom();
+        if(z>=SATELLITE_ZOOM_THRESHOLD&&areaMapMode!=='satellite')switchAreaMapStyle('satellite');
+        else if(z<SATELLITE_ZOOM_THRESHOLD&&areaMapMode!=='map')switchAreaMapStyle('map');
       });
       areaMap.on('move',()=>{
         if(!areaLocked&&lockedPixelPos.length===areaMarkers.length){
@@ -838,8 +901,7 @@
     }
 
     searchInput.addEventListener('input',(e)=>{
-      clearTimeout(searchTimeout);
-      const query=e.target.value.trim();
+      clearTimeout(searchTimeout);const query=e.target.value.trim();
       if(query.length<2){showSearchHistory();return;}
       searchTimeout=setTimeout(()=>{searchPlaces(query);},300);
     });
@@ -1001,13 +1063,11 @@
     }
 
     function goBackToMap(){
-      stopInertia();
-      overlay.classList.remove('open');
+      stopInertia();overlay.classList.remove('open');
       setTimeout(()=>{
         const mid=window.innerHeight*0.5;
         sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
-        sheet.style.transform=`translateY(${mid}px)`;
-        currentY=mid;
+        sheet.style.transform=`translateY(${mid}px)`;currentY=mid;
       },50);
     }
 
