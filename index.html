@@ -1031,6 +1031,27 @@
         </div>
       </div>
 
+      <!-- Sijainti -->
+      <div style="background:white;border-radius:14px;padding:16px;font-family:Arial,sans-serif;">
+        <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Sijainti</div>
+        <div onclick="openLocationSheet()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #eee;border-radius:10px;cursor:pointer;background:white;">
+          <div id="area-location-display" style="flex:1;font-size:15px;color:#aaa;font-family:Arial,sans-serif;">Valitse sijainti...</div>
+          <div style="font-size:18px;color:#888;line-height:1;">⌄</div>
+        </div>
+      </div>
+
+      <!-- Max. pysäköintiaika (shown after type selected) -->
+      <div id="max-parking-section" style="display:none;background:white;border-radius:14px;padding:16px;font-family:Arial,sans-serif;">
+        <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Max. pysäköintiaika</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="number" id="max-parking-hours" min="0" max="24" placeholder="0" style="width:64px;height:44px;border:1.5px solid #ddd;border-radius:10px;font-size:16px;font-family:Arial,sans-serif;text-align:center;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'">
+          <div style="font-size:14px;color:#555;font-family:Arial,sans-serif;">h</div>
+          <input type="number" id="max-parking-mins" min="0" max="59" step="5" placeholder="0" style="width:64px;height:44px;border:1.5px solid #ddd;border-radius:10px;font-size:16px;font-family:Arial,sans-serif;text-align:center;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'">
+          <div style="font-size:14px;color:#555;font-family:Arial,sans-serif;">min</div>
+          <div style="flex:1;font-size:13px;color:#aaa;font-family:Arial,sans-serif;">(valinnainen)</div>
+        </div>
+      </div>
+
       <!-- Kiekkopysäköinti aikarivit -->
       <div id="kiekko-times" style="display:none;background:white;border-radius:14px;padding:16px;font-family:Arial,sans-serif;">
         <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Voimassaoloaika</div>
@@ -1094,6 +1115,25 @@
       <div class="option-row" onclick="selectAreaType('ilmainen','Kiekoton ilmaisparkki')">
         <div id="opt-check-ilmainen" class="option-check"></div>
         <div class="option-name">Kiekoton ilmaisparkki</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Location bottom sheet -->
+  <div id="area-location-sheet" style="position:fixed;inset:0;z-index:210;display:none;">
+    <div class="sheet-backdrop" onclick="closeLocationSheet()"></div>
+    <div class="sheet-panel">
+      <div class="sheet-header">
+        <div class="sheet-title">Sijainti</div>
+        <button class="sheet-close-btn" onclick="closeLocationSheet()">✕</button>
+      </div>
+      <div class="option-row" onclick="selectLocation('maanpaallinen','Maanpäällinen')">
+        <div id="opt-check-maanpaallinen" class="option-check"></div>
+        <div class="option-name">Maanpäällinen</div>
+      </div>
+      <div class="option-row" onclick="selectLocation('maanalainen','Maanalainen')">
+        <div id="opt-check-maanalainen" class="option-check"></div>
+        <div class="option-name">Maanalainen</div>
       </div>
     </div>
   </div>
@@ -1902,6 +1942,24 @@
     // ══════════════════════════════════════════════
 
     let selectedAreaType = '';
+    let selectedLocation = '';
+
+    function openLocationSheet() {
+      document.getElementById('area-location-sheet').style.display='block';
+    }
+    function closeLocationSheet() {
+      document.getElementById('area-location-sheet').style.display='none';
+    }
+    function selectLocation(value, label) {
+      selectedLocation = value;
+      const disp = document.getElementById('area-location-display');
+      if (disp) { disp.textContent = label; disp.style.color = '#222'; }
+      ['maanpaallinen','maanalainen'].forEach(v=>{
+        const el = document.getElementById('opt-check-'+v);
+        if(el) el.className = v===value ? 'option-check selected' : 'option-check';
+      });
+      closeLocationSheet();
+    }
 
     function openAreaTypeSheet() {
       document.getElementById('area-type-sheet').style.display='block';
@@ -1923,7 +1981,9 @@
       // Show/hide kiekko time rows
       const kiekkoDiv = document.getElementById('kiekko-times');
       if (kiekkoDiv) { kiekkoDiv.style.display = value==='kiekko' ? 'block' : 'none'; if(value==='kiekko') setTimeout(initAllTimeDrums, 0); }
-      // Show Lisätiedot
+      // Show max parking + Lisätiedot
+      const maxDiv = document.getElementById('max-parking-section');
+      if (maxDiv) maxDiv.style.display = 'block';
       const extraDiv = document.getElementById('area-extra-section');
       if (extraDiv) extraDiv.style.display = 'block';
       // Enable submit button
@@ -1943,7 +2003,14 @@
       const disp=document.getElementById('area-type-display');
       if(disp){disp.textContent='Valitse tyyppi...';disp.style.color='#aaa';}
       ['kiekko','maksullinen','ilmainen'].forEach(v=>{const el=document.getElementById('opt-check-'+v);if(el)el.className='option-check';});
+      ['maanpaallinen','maanalainen'].forEach(v=>{const el=document.getElementById('opt-check-'+v);if(el)el.className='option-check';});
       const kiekkoDiv=document.getElementById('kiekko-times');if(kiekkoDiv)kiekkoDiv.style.display='none';
+      const maxDiv=document.getElementById('max-parking-section');if(maxDiv)maxDiv.style.display='none';
+      const maxH=document.getElementById('max-parking-hours');if(maxH)maxH.value='';
+      const maxM=document.getElementById('max-parking-mins');if(maxM)maxM.value='';
+      const locDisp=document.getElementById('area-location-display');if(locDisp){locDisp.textContent='Valitse sijainti...';locDisp.style.color='#aaa';}
+      ['maanpaallinen','maanalainen'].forEach(v=>{const el=document.getElementById('opt-check-'+v);if(el)el.className='option-check';});
+      selectedLocation='';
       const extraDiv=document.getElementById('area-extra-section');if(extraDiv)extraDiv.style.display='none';
       const extraTA=document.getElementById('area-extra-info');if(extraTA)extraTA.value='';
       const submitBtn=document.getElementById('submit-parking-btn');if(submitBtn){submitBtn.style.opacity='0.4';submitBtn.style.cursor='not-allowed';}
