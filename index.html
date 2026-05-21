@@ -863,6 +863,14 @@
       </div>
       
       <div class="settings-section">
+        <div class="settings-item" onclick="openAdminOverlay()">
+          <div class="settings-item-icon">🛡️</div>
+          <div class="settings-item-text">
+            <div class="settings-item-label">Hallinto</div>
+            <div class="settings-item-value">Pysäköintipaikkojen hallinta</div>
+          </div>
+          <div class="settings-item-chevron">›</div>
+        </div>
         <div class="settings-item" onclick="openHelpSettings()">
           <div class="settings-item-icon">❓</div>
           <div class="settings-item-text">
@@ -1417,6 +1425,8 @@
         setTimeout(() => {
           checkParking();
         }, 100);
+        // Load community-approved parking areas
+        loadApprovedSubmissions();
       });
     });
 
@@ -2080,6 +2090,219 @@
       setTimeout(()=>{ t.style.display='none'; t.style.opacity=''; t.style.transform='translate(-50%,-50%) scale(0.92)'; },350);
     }
 
+
+
+    // ══════════════════════════════════════════════════════════════════
+    // ADMIN / HALLINTO
+    // ══════════════════════════════════════════════════════════════════
+    let adminRefreshInterval = null;
+    let adminPreviewMap      = null;
+    let currentSubmission    = null;   // full row object being previewed
+
+    const TYPE_LABEL = {
+      kiekko:     'Kiekkopysäköinti',
+      maksullinen:'Maksullinen pysäköinti',
+      ilmainen:   'Kiekoton ilmaisparkki'
+    };
+    const LOC_LABEL = { maanpaallinen:'Maanpäällinen', maanalainen:'Maanalainen' };
+
+    function openAdminOverlay() {
+      document.getElementById('profile-overlay').classList.remove('open');
+      document.getElementById('admin-overlay').classList.add('open');
+      loadPendingSubmissions();
+      adminRefreshInterval = setInterval(loadPendingSubmissions, 30000);
+    }
+
+    function closeAdminOverlay() {
+      document.getElementById('admin-overlay').classList.remove('open');
+      clearInterval(adminRefreshInterval);
+    }
+
+    async function loadPendingSubmissions() {
+      const box = document.getElementById('admin-list-content');
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/parking_submissions?status=eq.pending&order=created_at.desc`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        if (!res.ok) throw new Error(await res.text());
+        const rows = await res.json();
+
+        if (!rows.length) {
+          box.innerHTML = '<div style="padding:48px 20px;text-align:center;color:#bbb;font-size:15px;">Ei odottavia ilmoituksia 🎉</div>';
+          return;
+        }
+
+        box.innerHTML = rows.map(r => {
+          const shortId  = r.id.split('-')[0];
+          const typeText = TYPE_LABEL[r.area_type] || r.area_type || '–';
+          const locText  = LOC_LABEL[r.location_type] || '';
+          const dt       = new Date(r.created_at);
+          const dateStr  = `${dt.getDate()}.${dt.getMonth()+1}.${dt.getFullYear()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+          return `
+            <div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #f0f0f0;background:white;gap:12px;">
+              <div style="flex:1;min-width:0;">
+                <span onclick="openSubmissionDetail('${r.id}')"
+                  style="text-decoration:underline;color:#0C0243;font-weight:700;font-size:15px;font-family:monospace;cursor:pointer;">${shortId}</span>
+                <span style="margin-left:10px;font-size:13px;color:#555;font-family:Arial,sans-serif;">${typeText}${locText?' · '+locText:''}</span>
+              </div>
+              <div style="font-size:12px;color:#aaa;font-family:Arial,sans-serif;flex-shrink:0;">${dateStr}</div>
+            </div>`;
+        }).join('');
+      } catch(e) {
+        box.innerHTML = `<div style="padding:40px 20px;text-align:center;color:#e53935;font-size:14px;">Virhe: ${e.message}</div>`;
+      }
+    }
+
+    async function openSubmissionDetail(id) {
+      // Fetch full row
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/parking_submissions?id=eq.${id}&select=*`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        const rows = await res.json();
+        if (!rows.length) return;
+        currentSubmission = rows[0];
+      } catch(e) { console.error(e); return; }
+
+      const r = currentSubmission;
+      const shortId = r.id.split('-')[0];
+      document.getElementById('admin-detail-title').textContent = `#${shortId}`;
+
+      // Info strip
+      const parts = [];
+      if (r.area_type)     parts.push(TYPE_LABEL[r.area_type] || r.area_type);
+      if (r.location_type) parts.push(LOC_LABEL[r.location_type] || r.location_type);
+      if (r.max_hours || r.max_minutes) parts.push(`Max. ${r.max_hours||0}h ${r.max_minutes||0}min`);
+      if (r.extra_info)    parts.push(`"${r.extra_info}"`);
+      document.getElementById('admin-detail-info').innerHTML =
+        parts.map(p=>`<span>${p}</span>`).join('<span style="color:#ddd;">|</span>');
+
+      // Open overlay
+      document.getElementById('admin-detail-overlay').classList.add('open');
+      setTimeout(() => initAdminPreviewMap(r), 300);
+    }
+
+    function closeAdminDetail() {
+      document.getElementById('admin-detail-overlay').classList.remove('open');
+      currentSubmission = null;
+    }
+
+    function initAdminPreviewMap(submission) {
+      const coords = submission.polygon_coords?.coordinates?.[0];
+
+      // Compute centroid
+      let cx = 24.9354, cy = 60.1699, zoom = 15;
+      if (coords && coords.length >= 3) {
+        cx = coords.reduce((s,c)=>s+c[0],0)/coords.length;
+        cy = coords.reduce((s,c)=>s+c[1],0)/coords.length;
+      }
+
+      if (!adminPreviewMap) {
+        adminPreviewMap = new maplibregl.Map({
+          container: 'admin-preview-map',
+          style: 'omakartta_style.json',
+          center: [cx, cy], zoom,
+          dragRotate: false, touchPitch: false, pitchWithRotate: false,
+          keyboard: false, attributionControl: false, transformRequest
+        });
+        adminPreviewMap.on('load', () => {
+          adminPreviewMap.touchZoomRotate.disableRotation();
+          adminPreviewMap.dragRotate.disable();
+          addAdminPreviewLayers(submission);
+        });
+      } else {
+        adminPreviewMap.resize();
+        adminPreviewMap.flyTo({ center:[cx,cy], zoom, duration:400 });
+        // Remove old submission layer & re-add
+        ['admin-sub-fill','admin-sub-line'].forEach(id => {
+          if (adminPreviewMap.getLayer(id)) adminPreviewMap.removeLayer(id);
+        });
+        if (adminPreviewMap.getSource('admin-sub')) adminPreviewMap.removeSource('admin-sub');
+        addAdminPreviewLayers(submission);
+      }
+    }
+
+    function addAdminPreviewLayers(submission) {
+      const coords = submission.polygon_coords?.coordinates?.[0];
+      if (!coords || coords.length < 3) return;
+      const geojson = { type:'Feature', geometry: submission.polygon_coords };
+      adminPreviewMap.addSource('admin-sub', { type:'geojson', data: geojson });
+      adminPreviewMap.addLayer({ id:'admin-sub-fill', type:'fill', source:'admin-sub',
+        paint:{'fill-color':'#f39c12','fill-opacity':0.35} });
+      adminPreviewMap.addLayer({ id:'admin-sub-line', type:'line', source:'admin-sub',
+        paint:{'line-color':'#e67e22','line-width':3,'line-opacity':1} });
+    }
+
+    async function approveCurrentSubmission() {
+      if (!currentSubmission) return;
+      try {
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/parking_submissions?id=eq.${currentSubmission.id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type':  'application/json',
+              'apikey':        SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Prefer':        'return=minimal'
+            },
+            body: JSON.stringify({ status: 'approved' })
+          }
+        );
+      } catch(e) { console.error(e); }
+      closeAdminDetail();
+      loadPendingSubmissions();
+      loadApprovedSubmissions();   // refresh main map
+    }
+
+    async function rejectCurrentSubmission() {
+      if (!currentSubmission) return;
+      try {
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/parking_submissions?id=eq.${currentSubmission.id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type':  'application/json',
+              'apikey':        SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Prefer':        'return=minimal'
+            },
+            body: JSON.stringify({ status: 'rejected' })
+          }
+        );
+      } catch(e) { console.error(e); }
+      closeAdminDetail();
+      loadPendingSubmissions();
+    }
+
+    // Load all approved community submissions onto the main map (green layer)
+    async function loadApprovedSubmissions() {
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/parking_submissions?status=eq.approved&select=id,polygon_coords,area_type`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        const rows = await res.json();
+        const features = rows
+          .filter(r => r.polygon_coords?.coordinates?.[0]?.length >= 3)
+          .map(r => ({ type:'Feature', properties:{ id:r.id, area_type:r.area_type }, geometry: r.polygon_coords }));
+        const geojson = { type:'FeatureCollection', features };
+
+        if (map.getSource('user-submissions')) {
+          map.getSource('user-submissions').setData(geojson);
+        } else {
+          map.addSource('user-submissions', { type:'geojson', data: geojson });
+          map.addLayer({ id:'user-submissions-fill', type:'fill', source:'user-submissions',
+            minzoom:13, paint:{'fill-color':'#27ae60','fill-opacity':0.28} });
+          map.addLayer({ id:'user-submissions-outline', type:'line', source:'user-submissions',
+            minzoom:13, paint:{'line-color':'#1e8449','line-width':2,'line-opacity':0.95} });
+        }
+      } catch(e) { console.error('Approved load error:', e); }
+    }
+    // ══════════════════════════════════════════════════════════════════
 
     function openCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(0)'; }
     function closeCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(100%)'; }
@@ -2769,5 +2992,37 @@
       else snapTo(currentY<maxY/2?0:maxY);
     });
   </script>
+
+  <!-- ══ ADMIN: Pending list ══ -->
+  <div id="admin-overlay" class="settings-detail-overlay" style="z-index:102;">
+    <div class="overlay-header" style="justify-content:space-between;">
+      <div style="display:flex;align-items:center;">
+        <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
+        <div class="overlay-title">Hallinto</div>
+      </div>
+      <button onclick="loadPendingSubmissions()" style="width:34px;height:34px;background:#f0f0f0;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;margin-right:4px;" title="Päivitä">↻</button>
+    </div>
+    <div id="admin-list-content" style="flex:1;overflow-y:auto;font-family:Arial,sans-serif;">
+      <div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">Ladataan...</div>
+    </div>
+  </div>
+
+  <!-- ══ ADMIN: Detail / map preview ══ -->
+  <div id="admin-detail-overlay" class="settings-detail-overlay" style="z-index:103;">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeAdminDetail()">←</button>
+      <div class="overlay-title" id="admin-detail-title">Ilmoitus</div>
+    </div>
+    <!-- Info strip -->
+    <div id="admin-detail-info" style="background:white;padding:10px 16px;border-bottom:1px solid #eee;font-family:Arial,sans-serif;font-size:13px;color:#555;flex-shrink:0;display:flex;gap:16px;flex-wrap:wrap;"></div>
+    <!-- Map -->
+    <div id="admin-preview-map" style="flex:1;min-height:200px;"></div>
+    <!-- Action buttons -->
+    <div style="display:flex;gap:12px;padding:14px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));background:white;border-top:1px solid #eee;flex-shrink:0;">
+      <button onclick="rejectCurrentSubmission()" style="flex:1;height:58px;background:#f5f5f5;border:2px solid #ddd;border-radius:16px;font-size:28px;cursor:pointer;transition:background 0.15s;" onmousedown="this.style.background='#ffe0e0'" onmouseup="this.style.background='#f5f5f5'">✕</button>
+      <button onclick="approveCurrentSubmission()" style="flex:1;height:58px;background:#0C0243;border:none;border-radius:16px;color:white;font-size:28px;cursor:pointer;transition:opacity 0.15s;" onmousedown="this.style.opacity='0.8'" onmouseup="this.style.opacity='1'">✓</button>
+    </div>
+  </div>
+
 </body>
 </html>
