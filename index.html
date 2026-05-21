@@ -1310,6 +1310,10 @@
     }, 500);
 
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
+
+    // Supabase
+    const SUPABASE_URL = 'https://glphxelazjodpiekmoew.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_MEZLuJOl-QsZxgLZI3nnTA_e-xL5VQW';
     function transformRequest(url) { if (url.includes('digitransit.fi')) return { url, headers: { 'digitransit-subscription-key': API_KEY } }; return { url }; }
 
     const map = new maplibregl.Map({ container:'map', style:'omakartta_style.json', center:[24.9354,60.1699], zoom:12, minZoom:5, maxZoom:20, transformRequest, maxTileCacheSize:50, fadeDuration:100, dragRotate:false, touchPitch:false, pitchWithRotate:false, keyboard:false, attributionControl:false });
@@ -1992,12 +1996,54 @@
     }
 
     let toastTimer = null;
-    function submitParking() {
+
+    async function submitParking() {
       if (!selectedAreaType) return;
+
+      // Collect form data
+      const payload = {
+        area_type:      selectedAreaType,
+        location_type:  selectedLocation || null,
+        polygon_coords: areaCoords.length >= 3
+                          ? { type:'Polygon', coordinates:[[...areaCoords, areaCoords[0]]] }
+                          : null,
+        max_hours:      parseInt(document.getElementById('max-parking-hours')?.value) || null,
+        max_minutes:    parseInt(document.getElementById('max-parking-mins')?.value)  || null,
+        valid_mape_from: timeDrumPickers['drum-mape-from']?.getVal() || null,
+        valid_mape_to:   timeDrumPickers['drum-mape-to']?.getVal()   || null,
+        valid_la_from:   timeDrumPickers['drum-la-from']?.getVal()   || null,
+        valid_la_to:     timeDrumPickers['drum-la-to']?.getVal()     || null,
+        valid_su_from:   timeDrumPickers['drum-su-from']?.getVal()   || null,
+        valid_su_to:     timeDrumPickers['drum-su-to']?.getVal()     || null,
+        extra_info:     document.getElementById('area-extra-info')?.value.trim() || null,
+        status:         'pending'
+      };
+
+      // Send to Supabase
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/parking_submissions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'apikey':        SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer':        'return=minimal'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const err = await res.text();
+          console.error('Supabase error:', res.status, err);
+        }
+      } catch (e) {
+        console.error('Network error:', e);
+      }
+
       // Close overlays
       document.getElementById('area-details-overlay').style.transform='translateX(100%)';
       document.getElementById('add-parking-overlay').style.transform='translateX(100%)';
       document.getElementById('plus-overlay').classList.remove('open');
+
       // Reset form
       selectedAreaType='';
       const disp=document.getElementById('area-type-display');
@@ -2009,11 +2055,11 @@
       const maxH=document.getElementById('max-parking-hours');if(maxH)maxH.value='';
       const maxM=document.getElementById('max-parking-mins');if(maxM)maxM.value='';
       const locDisp=document.getElementById('area-location-display');if(locDisp){locDisp.textContent='Valitse sijainti...';locDisp.style.color='#aaa';}
-      ['maanpaallinen','maanalainen'].forEach(v=>{const el=document.getElementById('opt-check-'+v);if(el)el.className='option-check';});
       selectedLocation='';
       const extraDiv=document.getElementById('area-extra-section');if(extraDiv)extraDiv.style.display='none';
       const extraTA=document.getElementById('area-extra-info');if(extraTA)extraTA.value='';
       const submitBtn=document.getElementById('submit-parking-btn');if(submitBtn){submitBtn.style.opacity='0.4';submitBtn.style.cursor='not-allowed';}
+
       // Fly main map to current location
       if(userLocation) map.flyTo({center:[userLocation.lon,userLocation.lat],zoom:15,duration:1500});
       showToast();
