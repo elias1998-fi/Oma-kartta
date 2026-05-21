@@ -1069,9 +1069,9 @@
   </div>
 
   <!-- Toast notification -->
-  <div id="submit-toast" style="position:fixed;bottom:90px;left:16px;right:16px;z-index:9998;background:#0C0243;color:white;border-radius:16px;padding:18px 44px 18px 20px;box-shadow:0 6px 24px rgba(0,0,0,0.35);font-family:Arial,sans-serif;display:none;transform:translateY(20px);opacity:0;transition:opacity 0.3s ease,transform 0.3s ease;">
-    <button onclick="closeToast()" style="position:absolute;top:10px;right:14px;background:transparent;border:none;color:rgba(255,255,255,0.65);font-size:20px;cursor:pointer;line-height:1;padding:0;">✕</button>
-    <div style="font-size:14px;line-height:1.55;">Kiitos ilmoituksestasi. Tiimimme varmentaa paikan tiedot sekä lisää uuden alueen kartalle.</div>
+  <div id="submit-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:36px 36px 32px 36px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1);">
+    <button onclick="closeToast()" style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:rgba(255,255,255,0.6);font-size:22px;cursor:pointer;line-height:1;padding:0;">✕</button>
+    <div style="font-size:18px;line-height:1.6;font-weight:500;">Kiitos ilmoituksestasi. Tiimimme varmentaa paikan tiedot sekä lisää uuden alueen kartalle.</div>
   </div>
 
   <!-- Sub-overlay: Kommentoi nykyisiä alueita -->
@@ -1955,16 +1955,16 @@
     function showToast() {
       const t=document.getElementById('submit-toast');
       t.style.display='block';
-      setTimeout(()=>{ t.style.opacity='1'; t.style.transform='translateY(0)'; },10);
+      setTimeout(()=>{ t.style.opacity='1'; t.style.transform='translate(-50%,-50%) scale(1)'; },10);
       clearTimeout(toastTimer);
-      toastTimer=setTimeout(()=>closeToast(),5000);
+      toastTimer=setTimeout(()=>closeToast(),6000);
     }
 
     function closeToast() {
       const t=document.getElementById('submit-toast');
-      t.style.opacity='0'; t.style.transform='translateY(20px)';
+      t.style.opacity='0'; t.style.transform='translate(-50%,-50%) scale(0.92)';
       clearTimeout(toastTimer);
-      setTimeout(()=>{ t.style.display='none'; t.style.opacity=''; t.style.transform=''; },300);
+      setTimeout(()=>{ t.style.display='none'; t.style.opacity=''; t.style.transform='translate(-50%,-50%) scale(0.92)'; },350);
     }
 
 
