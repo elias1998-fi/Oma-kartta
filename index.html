@@ -406,7 +406,6 @@
     #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
     #gps-warning {
-      text-align: center;
       font-family: Arial, sans-serif;
       font-size: 12px;
       color: #888;
@@ -415,10 +414,31 @@
       max-height: 0;
       overflow: hidden;
       transition: opacity 0.3s ease, max-height 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     #gps-warning.visible {
       opacity: 1;
       max-height: 50px;
+    }
+    .gps-info-icon {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid #888;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      color: #888;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: Georgia, serif;
+    }
+    .gps-info-icon:active {
+      background: #f0f0f0;
     }
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
     #filter-close-btn.visible { display: flex; }
@@ -451,6 +471,49 @@
     #btn-container.hidden { opacity: 0; transform: translateY(100%); pointer-events: none; }
     #action-btn { width: 100%; height: 58px; border: none; border-radius: 16px; font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; opacity: 0.7; cursor: pointer; transition: opacity 0.2s ease; text-align: center; }
     #action-btn.active { opacity: 1; }
+    
+    /* GPS Info Overlay */
+    #gps-info-overlay {
+      position: fixed;
+      inset: 0;
+      background: #f2f3f5;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    #gps-info-overlay.open {
+      transform: translateX(0);
+    }
+    .gps-info-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .gps-info-section {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .gps-info-section h3 {
+      font-size: 16px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 8px;
+    }
+    .gps-info-section p {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+    .gps-info-section p:last-child {
+      margin-bottom: 0;
+    }
+    
     #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
     #parking-overlay.open { transform: translateX(0); }
     #parking-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
@@ -798,6 +861,37 @@
     </div>
   </div>
 
+  <!-- GPS Info Overlay -->
+  <div id="gps-info-overlay">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeGpsInfo()">←</button>
+      <div class="overlay-title">GPS-tarkkuus</div>
+    </div>
+    <div class="gps-info-content">
+      <div class="gps-info-section">
+        <h3>Miksi GPS-sijaintini saattaa olla epätarkka?</h3>
+        <p>GPS-sijainti voi olla epätarkka useasta syystä:</p>
+        <p>• <strong>Rakennukset ja esteet:</strong> Korkeat rakennukset, tunnelit tai muut esteet voivat heikentää GPS-signaalia.</p>
+        <p>• <strong>Sääolosuhteet:</strong> Sade, lumisade tai pilvipeite voi vaikuttaa signaaliin.</p>
+        <p>• <strong>Laitteen asetus:</strong> Varmista, että laitteesi sijaintipalvelut ovat päällä ja että sovelluksella on lupa käyttää sijaintia.</p>
+      </div>
+      
+      <div class="gps-info-section">
+        <h3>Kuinka voin parantaa GPS-tarkkuutta?</h3>
+        <p>• Siirry avoimelle alueelle, jossa on esteetön näkyvyys taivaalle</p>
+        <p>• Tarkista, että laitteesi sijaintipalvelut ovat käytössä</p>
+        <p>• Anna sovellukselle lupa käyttää tarkkaa sijaintia</p>
+        <p>• Odota hetki, että GPS-signaali vahvistuu</p>
+      </div>
+      
+      <div class="gps-info-section">
+        <h3>Vaikuttaako epätarkka GPS pysäköintiin?</h3>
+        <p>Epätarkka GPS-sijainti ei estä pysäköintiä. Voit silti valita pysäköintialueen kartalta ja aloittaa pysäköinnin normaalisti.</p>
+        <p>Suosittelemme kuitenkin tarkistamaan sijaintisi ennen pysäköinnin aloittamista, jotta valitset oikean pysäköintialueen.</p>
+      </div>
+    </div>
+  </div>
+
   <div id="search-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeSearchOverlay()">←</button>
@@ -824,7 +918,10 @@
 
   <div id="bottom-sheet">
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
-    <div id="gps-warning">GPS-sijaintisi saattaa olla epätarkka</div>
+    <div id="gps-warning">
+      <span>GPS-sijaintisi saattaa olla epätarkka</span>
+      <span class="gps-info-icon" onclick="openGpsInfo()">i</span>
+    </div>
     <div id="sheet-normal">
       <div id="sheet-summary">
         <div id="summary-header"></div>
@@ -1000,7 +1097,7 @@
               <stop offset="0%" style="stop-color:#888;stop-opacity:1" />
               <stop offset="50%" style="stop-color:#aaa;stop-opacity:1" />
               <stop offset="100%" style="stop-color:#888;stop-opacity:1" />
-            </radialGradient>
+            </linearGradient>
           </defs>
           <ellipse cx="12" cy="12" rx="9" ry="9" fill="url(#pinGradient)" stroke="#990000" stroke-width="0.8"/>
           <ellipse cx="10" cy="10" rx="3" ry="3.5" fill="#ff9999" opacity="0.6"/>
@@ -1014,13 +1111,14 @@
       return el;
     }
 
-    // Kello-ikoni historialle - vastapäivään menevällä nuolella
+    // Kello-ikoni historialle - vastapäivään menevällä nuolella kellotaulun ulkopuolella
     function getHistoryIconSVG() {
       return `
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-          <path d="M4 12 L6 10 L4 8" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="13" cy="13" r="8"/>
+          <polyline points="13 9 13 13 16 15"/>
+          <path d="M4.5 10.5 L3 9 L4.5 7.5" stroke="#333" stroke-width="2.5"/>
+          <path d="M4 9 C4 9, 6 6, 8 5" stroke="#333" stroke-width="2.5" fill="none"/>
         </svg>
       `;
     }
@@ -1191,6 +1289,14 @@
       document.getElementById('plus-overlay').classList.remove('open');
     }
     
+    function openGpsInfo() {
+      document.getElementById('gps-info-overlay').classList.add('open');
+    }
+    
+    function closeGpsInfo() {
+      document.getElementById('gps-info-overlay').classList.remove('open');
+    }
+    
     function openAccountSettings() {
       document.getElementById('account-detail').classList.add('open');
     }
@@ -1336,7 +1442,6 @@
             const coords = feature.geometry.coordinates;
             const name = props.name || props.label || 'Tuntematon';
             
-            // Rakenna sijainti hierarkisesti: ensin localadmin/locality, sitten neighbourhood
             const parts = [];
             const mainLocality = props.localadmin || props.locality || props.region || '';
             const neighbourhood = props.neighbourhood || '';
@@ -1345,7 +1450,6 @@
               parts.push(mainLocality);
             }
             
-            // Lisää neighbourhood vain jos se on eri kuin mainLocality
             if (neighbourhood && neighbourhood !== mainLocality) {
               parts.push(neighbourhood);
             }
