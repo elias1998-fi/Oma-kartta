@@ -398,13 +398,38 @@
     </div>
   </div>
 
-  <!-- Rajaa pysäköintialue: kartta + 4 siirrettävää kulmapistettä -->
+  <!-- Rajaa pysäköintialue -->
   <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAddParkingArea()">←</button>
       <div class="overlay-title">Rajaa pysäköintialue</div>
     </div>
-    <div id="area-map" style="flex:1;position:relative;"></div>
+    <div style="position:relative;flex:1;display:flex;flex-direction:column;">
+      <div id="area-map" style="flex:1;"></div>
+      <!-- Floating controls -->
+      <div style="position:absolute;top:16px;right:16px;z-index:10;display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+        <div style="display:flex;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.22);">
+          <button id="corner-minus-btn" onclick="removeCorner()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;">−</button>
+          <div style="width:1px;background:#eee;margin:8px 0;"></div>
+          <button onclick="addCorner()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;">+</button>
+        </div>
+        <button id="area-lock-btn" onclick="toggleAreaLock()" style="height:36px;padding:0 14px;border:none;border-radius:10px;background:white;color:#0C0243;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.22);white-space:nowrap;">Seuraa karttaa</button>
+      </div>
+    </div>
+    <div style="background:white;padding:12px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid #eee;flex-shrink:0;">
+      <button onclick="openAreaDetails()" style="width:100%;height:54px;background:#0C0243;border:none;border-radius:14px;color:white;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;">Vahvista kuvio</button>
+    </div>
+  </div>
+
+  <!-- Tietojen syöttö -->
+  <div id="area-details-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:120;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeAreaDetails()">←</button>
+      <div class="overlay-title">Lisää tiedot</div>
+    </div>
+    <div class="overlay-content" style="align-items:center;justify-content:center;color:#888;font-size:14px;font-family:Arial,sans-serif;">
+      Lomake tulossa – tähän syötetään pysäköintialueen tiedot.
+    </div>
   </div>
 
   <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
@@ -615,9 +640,16 @@
     function closeAddParkingArea(){
       document.getElementById('add-parking-overlay').style.transform='translateX(100%)';
     }
+    function openAreaDetails(){
+      document.getElementById('area-details-overlay').style.transform='translateX(0)';
+    }
+    function closeAreaDetails(){
+      document.getElementById('area-details-overlay').style.transform='translateX(100%)';
+    }
 
     // ======== AREA SELECTION MAP ========
     let areaMap=null, areaMarkers=[], areaCoords=[];
+    let areaLocked=true, lockedPixelPos=[];
 
     function createCornerEl(){
       const el=document.createElement('div');
@@ -626,7 +658,7 @@
     }
 
     function getAreaGeoJSON(){
-      if(areaCoords.length<4)return{type:'Feature',geometry:{type:'Polygon',coordinates:[[]]}};
+      if(areaCoords.length<3)return{type:'Feature',geometry:{type:'Polygon',coordinates:[[]]}};
       return{type:'Feature',geometry:{type:'Polygon',coordinates:[[...areaCoords,areaCoords[0]]]}};
     }
 
@@ -636,60 +668,110 @@
       }
     }
 
+    function clampPixelPos(px){
+      if(!areaMap)return px;
+      const canvas=areaMap.getCanvas();
+      const w=canvas.clientWidth,h=canvas.clientHeight,pad=32;
+      return{x:Math.max(pad,Math.min(w-pad,px.x)),y:Math.max(pad,Math.min(h-pad,px.y))};
+    }
+
+    function updateLockBtn(){
+      const btn=document.getElementById('area-lock-btn');
+      if(!btn)return;
+      if(areaLocked){btn.textContent='Seuraa karttaa';btn.style.background='white';btn.style.color='#0C0243';}
+      else{btn.textContent='Lukitse paikkaan';btn.style.background='#0C0243';btn.style.color='white';}
+    }
+
+    function updateMinusBtn(){
+      const btn=document.getElementById('corner-minus-btn');
+      if(!btn)return;
+      btn.style.visibility=areaCoords.length<=3?'hidden':'visible';
+    }
+
+    function setupMarkerEvents(marker){
+      marker.on('drag',()=>{
+        const idx=areaMarkers.indexOf(marker);if(idx===-1)return;
+        const ll=marker.getLngLat();
+        areaCoords[idx]=[ll.lng,ll.lat];
+        if(!areaLocked)lockedPixelPos[idx]=areaMap.project([ll.lng,ll.lat]);
+        updateAreaLayer();
+      });
+      marker.on('dragend',()=>{
+        const idx=areaMarkers.indexOf(marker);if(idx===-1)return;
+        const px=areaMap.project(marker.getLngLat());
+        const clamped=clampPixelPos(px);
+        if(Math.abs(clamped.x-px.x)>0.5||Math.abs(clamped.y-px.y)>0.5){
+          const ll=areaMap.unproject([clamped.x,clamped.y]);
+          marker.setLngLat(ll);areaCoords[idx]=[ll.lng,ll.lat];
+        }
+        if(!areaLocked)lockedPixelPos[idx]=clampPixelPos(areaMap.project(marker.getLngLat()));
+        updateAreaLayer();
+      });
+    }
+
+    function addCorner(){
+      if(areaCoords.length<3)return;
+      const last=areaCoords[areaCoords.length-1],first=areaCoords[0];
+      const mid=[(last[0]+first[0])/2,(last[1]+first[1])/2];
+      areaCoords.push(mid);
+      const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true}).setLngLat(mid).addTo(areaMap);
+      setupMarkerEvents(marker);areaMarkers.push(marker);
+      if(!areaLocked)lockedPixelPos.push(clampPixelPos(areaMap.project([mid[0],mid[1]])));
+      updateAreaLayer();updateMinusBtn();
+    }
+
+    function removeCorner(){
+      if(areaCoords.length<=3)return;
+      const last=areaMarkers.pop();last.remove();
+      areaCoords.pop();
+      if(!areaLocked)lockedPixelPos.pop();
+      updateAreaLayer();updateMinusBtn();
+    }
+
+    function toggleAreaLock(){
+      areaLocked=!areaLocked;
+      if(!areaLocked){
+        lockedPixelPos=areaMarkers.map(m=>clampPixelPos(areaMap.project([m.getLngLat().lng,m.getLngLat().lat])));
+      }
+      updateLockBtn();
+    }
+
     function resetAreaCorners(){
       areaMarkers.forEach(m=>m.remove());
-      areaMarkers=[];
-      const c=areaMap.getCenter();
-      const off=0.00045;
-      areaCoords=[
-        [c.lng-off, c.lat+off],
-        [c.lng+off, c.lat+off],
-        [c.lng+off, c.lat-off],
-        [c.lng-off, c.lat-off],
-      ];
-      areaCoords.forEach((coord,i)=>{
-        const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true})
-          .setLngLat(coord)
-          .addTo(areaMap);
-        marker.on('drag',()=>{
-          areaCoords[i]=[marker.getLngLat().lng,marker.getLngLat().lat];
-          updateAreaLayer();
-        });
-        areaMarkers.push(marker);
+      areaMarkers=[];areaCoords=[];lockedPixelPos=[];
+      areaLocked=true;updateLockBtn();
+      const c=areaMap.getCenter(),off=0.00045;
+      areaCoords=[[c.lng-off,c.lat+off],[c.lng+off,c.lat+off],[c.lng+off,c.lat-off],[c.lng-off,c.lat-off]];
+      areaCoords.forEach(coord=>{
+        const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true}).setLngLat(coord).addTo(areaMap);
+        setupMarkerEvents(marker);areaMarkers.push(marker);
       });
-      updateAreaLayer();
+      updateAreaLayer();updateMinusBtn();
     }
 
     function initAreaMap(){
-      const center=map.getCenter();
-      const zoom=Math.max(map.getZoom(),15);
-      if(areaMap){
-        areaMap.resize();
-        areaMap.setCenter([center.lng,center.lat]);
-        areaMap.setZoom(zoom);
-        resetAreaCorners();
-        return;
-      }
+      const center=map.getCenter(),zoom=Math.max(map.getZoom(),15);
+      if(areaMap){areaMap.resize();areaMap.setCenter([center.lng,center.lat]);areaMap.setZoom(zoom);resetAreaCorners();return;}
       areaMap=new maplibregl.Map({
-        container:'area-map',
-        style:'omakartta_style.json',
-        center:[center.lng,center.lat],
-        zoom:zoom,
-        minZoom:5,maxZoom:20,
-        transformRequest,
-        dragRotate:false,
-        touchPitch:false,
-        pitchWithRotate:false,
-        keyboard:false,
-        attributionControl:false
+        container:'area-map',style:'omakartta_style.json',
+        center:[center.lng,center.lat],zoom,minZoom:5,maxZoom:20,transformRequest,
+        dragRotate:false,touchPitch:false,pitchWithRotate:false,keyboard:false,attributionControl:false
       });
       areaMap.on('load',()=>{
-        areaMap.touchZoomRotate.disableRotation();
-        areaMap.dragRotate.disable();
+        areaMap.touchZoomRotate.disableRotation();areaMap.dragRotate.disable();
         areaMap.addSource('area-poly',{type:'geojson',data:getAreaGeoJSON()});
         areaMap.addLayer({id:'area-poly-fill',type:'fill',source:'area-poly',paint:{'fill-color':'#0C0243','fill-opacity':0.12}});
         areaMap.addLayer({id:'area-poly-line',type:'line',source:'area-poly',paint:{'line-color':'#0C0243','line-width':2.5,'line-opacity':0.85}});
         resetAreaCorners();
+      });
+      areaMap.on('move',()=>{
+        if(!areaLocked&&lockedPixelPos.length===areaMarkers.length){
+          areaMarkers.forEach((m,i)=>{
+            const ll=areaMap.unproject(lockedPixelPos[i]);
+            m.setLngLat(ll);areaCoords[i]=[ll.lng,ll.lat];
+          });
+          updateAreaLayer();
+        }
       });
     }
     // =====================================
@@ -746,12 +828,9 @@
           searchResults.innerHTML=data.features.map(feature=>{
             const props=feature.properties,coords=feature.geometry.coordinates;
             const name=props.name||props.label||'Tuntematon';
-            const parts=[];
-            const ml=props.localadmin||props.locality||props.region||'';
-            const nb=props.neighbourhood||'';
+            const parts=[];const ml=props.localadmin||props.locality||props.region||'';const nb=props.neighbourhood||'';
             if(ml)parts.push(ml);if(nb&&nb!==ml)parts.push(nb);
-            const fl=parts.join(', ');
-            const d=calculateDistance(lat,lon,coords[1],coords[0]);
+            const fl=parts.join(', ');const d=calculateDistance(lat,lon,coords[1],coords[0]);
             return `<div class="search-result-item" onclick="selectPlace(${coords[1]},${coords[0]},'${name.replace(/'/g,"\\'")}',true,'${props.layer}','${fl.replace(/'/g,"\\'")}')"><div class="search-result-icon">${getPinIconSVG()}</div><div class="search-result-text"><div class="search-result-name">${name}</div><div class="search-result-address">${fl}</div><div class="search-result-distance">${formatDistance(d)}</div></div></div>`;
           }).join('');
         }else{searchResults.innerHTML='<div class="search-empty">Ei hakutuloksia</div>';}
