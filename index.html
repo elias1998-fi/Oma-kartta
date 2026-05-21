@@ -349,7 +349,7 @@
       <div class="gps-info-section">
         <h3>Vaikuttaako epätarkka GPS pysäköintiin?</h3>
         <p>Epätarkka GPS-sijainti ei estä pysäköintiä. Voit silti valita pysäköintialueen kartalta ja aloittaa pysäköinnin normaalisti.</p>
-        <p>Suosittelemme kuitenkin tarkistamaan sijaintisi ennen pysäköinnin aloittamista.</p>
+        <p>Suosittelemme tarkistamaan sijaintisi ennen pysäköinnin aloittamista.</p>
       </div>
     </div>
   </div>
@@ -406,18 +406,14 @@
     </div>
     <div style="position:relative;flex:1;display:flex;flex-direction:column;">
       <div id="area-map" style="flex:1;"></div>
-      <!-- Floating controls -->
       <div style="position:absolute;top:16px;right:16px;z-index:10;display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-        <!-- Corner +/- -->
         <div style="display:flex;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.22);">
           <button id="corner-minus-btn" onclick="removeCorner()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;">−</button>
           <div style="width:1px;background:#eee;margin:8px 0;"></div>
           <button onclick="addCorner()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;">+</button>
         </div>
-        <!-- Seuraa karttaa -->
         <button id="area-lock-btn" onclick="toggleAreaLock()" style="height:36px;padding:0 14px;border:none;border-radius:10px;background:white;color:#0C0243;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.22);white-space:nowrap;">Seuraa karttaa</button>
-        <!-- Satelliitti toggle -->
-        <button id="sat-toggle-btn" onclick="toggleSatellite()" style="height:36px;padding:0 14px;border-radius:10px;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;white-space:nowrap;transition:all 0.2s ease;background:white;color:#aaa;border:2px solid #ddd;box-shadow:0 2px 8px rgba(0,0,0,0.22);">🛰 Satelliitti</button>
+        <button id="sat-toggle-btn" onclick="toggleSatellite()" style="height:36px;padding:0 14px;border-radius:10px;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:not-allowed;white-space:nowrap;transition:all 0.2s ease;background:white;color:#bbb;border:2px solid #e0e0e0;box-shadow:0 2px 8px rgba(0,0,0,0.12);opacity:0.6;">🛰 Satelliitti</button>
       </div>
     </div>
     <div style="background:white;padding:12px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid #eee;flex-shrink:0;">
@@ -559,9 +555,6 @@
   </div>
 
   <script>
-    const MAPBOX_TOKEN = 'pk.eyJ1IjoiZWxpYXMxOTk4IiwiYSI6ImNtaHV3NmNlZDA0cHgyanIzMmx0MnBsczQifQ.gUpCyVNlQq8XjUD5lPMGhA';
-    const SATELLITE_ZOOM_THRESHOLD = 15;
-
     const splashScreen = document.getElementById('splash-screen');
     setTimeout(() => { splashScreen.classList.add('fade-out'); setTimeout(() => { splashScreen.style.display = 'none'; }, 300); }, 500);
 
@@ -646,216 +639,233 @@
     function openAreaDetails(){document.getElementById('area-details-overlay').style.transform='translateX(0)';}
     function closeAreaDetails(){document.getElementById('area-details-overlay').style.transform='translateX(100%)';}
 
-    // ======== AREA SELECTION MAP ========
-    let areaMap=null, areaMarkers=[], areaCoords=[];
-    let areaLocked=true, lockedPixelPos=[];
-    let areaMapMode='map', areaSwitchingStyle=false;
-    // userWantsSatellite: käyttäjän manuaalinen valinta (oletus ON)
-    let userWantsSatellite=true;
+    // ===== MAPBOX SATELLITE =====
+    const MAPBOX_TOKEN = 'pk.eyJ1IjoiZWxpYXMxOTk4IiwiYSI6ImNtaHV3NmNlZDA0cHgyanIzMmx0MnBsczQifQ.gUpCyVNlQq8XjUD5lPMGhA';
+    const SAT_ZOOM = 15;
 
-    function getSatelliteStyle(){
+    // ======== AREA SELECTION MAP ========
+    let areaMap = null, areaMarkers = [], areaCoords = [];
+    let areaLocked = true, lockedPixelPos = [];
+    let areaCurrentMode = 'map';
+    let areaIsLoading   = false;
+    let userWantsSat    = true;
+
+    function getSatelliteStyle() {
       return {
-        version:8,
-        sources:{'mapbox-satellite':{type:'raster',tiles:[`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`],tileSize:256,attribution:'© Mapbox © Maxar'}},
-        layers:[{id:'satellite-layer',type:'raster',source:'mapbox-satellite'}]
+        version: 8,
+        sources: { 'mapbox-sat': { type:'raster', tileSize:256, attribution:'© Mapbox © Maxar',
+          tiles: [`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`] } },
+        layers: [{ id:'sat-layer', type:'raster', source:'mapbox-sat' }]
       };
     }
 
-    function createCornerEl(){
-      const wrapper=document.createElement('div');
-      wrapper.style.cssText='width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
-      const dot=document.createElement('div');
-      dot.style.cssText='width:22px;height:22px;background:#0C0243;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.45);flex-shrink:0;pointer-events:none;';
+    function applyAreaStyle(targetMode) {
+      if (!areaMap) return;
+      if (areaIsLoading) return;
+      if (areaCurrentMode === targetMode) { updateSatBtn(); return; }
+      areaIsLoading   = true;
+      areaCurrentMode = targetMode;
+      updateSatBtn();
+      areaMap.setStyle(targetMode === 'satellite' ? getSatelliteStyle() : 'omakartta_style.json');
+      const safety = setTimeout(() => { areaIsLoading = false; updateSatBtn(); }, 8000);
+      areaMap.once('style.load', () => {
+        clearTimeout(safety);
+        ensureAreaPolygon();
+        updateAreaLayer();
+        areaIsLoading = false;
+        updateSatBtn();
+      });
+    }
+
+    function ensureAreaPolygon() {
+      if (!areaMap) return;
+      const lineColor = areaCurrentMode === 'satellite' ? '#ffffff' : '#0C0243';
+      if (!areaMap.getSource('area-poly'))
+        areaMap.addSource('area-poly', { type:'geojson', data:getAreaGeoJSON() });
+      if (!areaMap.getLayer('area-poly-fill'))
+        areaMap.addLayer({ id:'area-poly-fill', type:'fill', source:'area-poly', paint:{'fill-color':'#0C0243','fill-opacity':0.15} });
+      if (!areaMap.getLayer('area-poly-line'))
+        areaMap.addLayer({ id:'area-poly-line', type:'line', source:'area-poly', paint:{'line-color':lineColor,'line-width':2.5,'line-opacity':0.95} });
+    }
+
+    function updateSatBtn() {
+      const btn = document.getElementById('sat-toggle-btn');
+      if (!btn || !areaMap) return;
+      const atZoom = areaMap.getZoom() >= SAT_ZOOM;
+      const isSat  = areaCurrentMode === 'satellite';
+      if (!atZoom) {
+        btn.style.background='white'; btn.style.color='#bbb';
+        btn.style.border='2px solid #e0e0e0'; btn.style.opacity='0.6'; btn.style.cursor='not-allowed';
+      } else if (isSat) {
+        btn.style.background='#0C0243'; btn.style.color='white';
+        btn.style.border='2px solid #0C0243'; btn.style.opacity='1'; btn.style.cursor='pointer';
+      } else {
+        btn.style.background='white'; btn.style.color='#0C0243';
+        btn.style.border='2px solid #0C0243'; btn.style.opacity='1'; btn.style.cursor='pointer';
+      }
+    }
+
+    function toggleSatellite() {
+      if (!areaMap || areaMap.getZoom() < SAT_ZOOM || areaIsLoading) return;
+      userWantsSat = !userWantsSat;
+      applyAreaStyle(userWantsSat ? 'satellite' : 'map');
+    }
+
+    function handleZoomChange() {
+      if (!areaMap || areaIsLoading) return;
+      const z = areaMap.getZoom();
+      if (z >= SAT_ZOOM) {
+        if (userWantsSat && areaCurrentMode !== 'satellite') applyAreaStyle('satellite');
+      } else {
+        if (areaCurrentMode !== 'map') applyAreaStyle('map');  // pakko paluu karttaan
+      }
+      updateSatBtn();
+    }
+
+    function createCornerEl() {
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
+      const dot = document.createElement('div');
+      dot.style.cssText = 'width:22px;height:22px;background:#0C0243;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.45);flex-shrink:0;pointer-events:none;';
       wrapper.appendChild(dot);
       return wrapper;
     }
 
-    function getAreaGeoJSON(){
-      if(areaCoords.length<3)return{type:'Feature',geometry:{type:'Polygon',coordinates:[[]]}};
-      return{type:'Feature',geometry:{type:'Polygon',coordinates:[[...areaCoords,areaCoords[0]]]}};
+    function getAreaGeoJSON() {
+      if (areaCoords.length < 3) return { type:'Feature', geometry:{ type:'Polygon', coordinates:[[]] } };
+      return { type:'Feature', geometry:{ type:'Polygon', coordinates:[[...areaCoords, areaCoords[0]]] } };
     }
 
-    function updateAreaLayer(){
-      if(areaMap&&areaMap.getSource('area-poly')){
+    function updateAreaLayer() {
+      if (areaMap && areaMap.getSource('area-poly'))
         areaMap.getSource('area-poly').setData(getAreaGeoJSON());
-      }
     }
 
-    function addAreaPolygon(){
-      if(!areaMap)return;
-      const lineColor=areaMapMode==='satellite'?'#ffffff':'#0C0243';
-      if(!areaMap.getSource('area-poly'))areaMap.addSource('area-poly',{type:'geojson',data:getAreaGeoJSON()});
-      if(!areaMap.getLayer('area-poly-fill'))areaMap.addLayer({id:'area-poly-fill',type:'fill',source:'area-poly',paint:{'fill-color':'#0C0243','fill-opacity':0.15}});
-      if(!areaMap.getLayer('area-poly-line'))areaMap.addLayer({id:'area-poly-line',type:'line',source:'area-poly',paint:{'line-color':lineColor,'line-width':2.5,'line-opacity':0.95}});
+    function clampPixelPos(px) {
+      if (!areaMap) return px;
+      const c = areaMap.getCanvas(), w = c.clientWidth, h = c.clientHeight, pad = 32;
+      return { x: Math.max(pad, Math.min(w-pad, px.x)), y: Math.max(pad, Math.min(h-pad, px.y)) };
     }
 
-    function switchAreaMapStyle(mode){
-      if(areaSwitchingStyle||areaMapMode===mode)return;
-      areaSwitchingStyle=true;
-      areaMapMode=mode;
-      updateSatBtn();
-      areaMap.setStyle(mode==='satellite'?getSatelliteStyle():'omakartta_style.json');
-      areaMap.once('style.load',()=>{
-        addAreaPolygon();
-        updateAreaLayer();
-        areaSwitchingStyle=false;
-      });
+    function updateLockBtn() {
+      const btn = document.getElementById('area-lock-btn'); if (!btn) return;
+      if (areaLocked) { btn.textContent='Seuraa karttaa'; btn.style.background='white'; btn.style.color='#0C0243'; }
+      else            { btn.textContent='Lukitse paikkaan'; btn.style.background='#0C0243'; btn.style.color='white'; }
     }
 
-    function updateSatBtn(){
-      const btn=document.getElementById('sat-toggle-btn');
-      if(!btn||!areaMap)return;
-      const atZoom=areaMap.getZoom()>=SATELLITE_ZOOM_THRESHOLD;
-      const active=areaMapMode==='satellite';
-      if(!atZoom){
-        // Disabled — grayed out
-        btn.style.background='white';
-        btn.style.color='#bbb';
-        btn.style.border='2px solid #e0e0e0';
-        btn.style.boxShadow='0 2px 8px rgba(0,0,0,0.12)';
-        btn.style.opacity='0.6';
-      } else if(active){
-        // Satellite active — blue fill with border
-        btn.style.background='#0C0243';
-        btn.style.color='white';
-        btn.style.border='2px solid #0C0243';
-        btn.style.boxShadow='0 2px 8px rgba(12,2,67,0.35)';
-        btn.style.opacity='1';
-      } else {
-        // At zoom, satellite off — white with dark border
-        btn.style.background='white';
-        btn.style.color='#0C0243';
-        btn.style.border='2px solid #0C0243';
-        btn.style.boxShadow='0 2px 8px rgba(0,0,0,0.22)';
-        btn.style.opacity='1';
-      }
+    function updateMinusBtn() {
+      const btn = document.getElementById('corner-minus-btn'); if (!btn) return;
+      btn.style.visibility = areaCoords.length <= 3 ? 'hidden' : 'visible';
     }
 
-    function toggleSatellite(){
-      if(!areaMap||areaMap.getZoom()<SATELLITE_ZOOM_THRESHOLD)return;
-      userWantsSatellite=!userWantsSatellite;
-      if(userWantsSatellite){switchAreaMapStyle('satellite');}
-      else{switchAreaMapStyle('map');}
-    }
-
-    function clampPixelPos(px){
-      if(!areaMap)return px;
-      const c=areaMap.getCanvas(),w=c.clientWidth,h=c.clientHeight,pad=32;
-      return{x:Math.max(pad,Math.min(w-pad,px.x)),y:Math.max(pad,Math.min(h-pad,px.y))};
-    }
-
-    function updateLockBtn(){
-      const btn=document.getElementById('area-lock-btn');if(!btn)return;
-      if(areaLocked){btn.textContent='Seuraa karttaa';btn.style.background='white';btn.style.color='#0C0243';}
-      else{btn.textContent='Lukitse paikkaan';btn.style.background='#0C0243';btn.style.color='white';}
-    }
-
-    function updateMinusBtn(){
-      const btn=document.getElementById('corner-minus-btn');if(!btn)return;
-      btn.style.visibility=areaCoords.length<=3?'hidden':'visible';
-    }
-
-    function setupMarkerEvents(marker){
-      marker.on('drag',()=>{
-        const idx=areaMarkers.indexOf(marker);if(idx===-1)return;
-        const ll=marker.getLngLat();
-        areaCoords[idx]=[ll.lng,ll.lat];
-        if(!areaLocked)lockedPixelPos[idx]=areaMap.project([ll.lng,ll.lat]);
+    function setupMarkerEvents(marker) {
+      marker.on('drag', () => {
+        const idx = areaMarkers.indexOf(marker); if (idx===-1) return;
+        const ll = marker.getLngLat();
+        areaCoords[idx] = [ll.lng, ll.lat];
+        if (!areaLocked) lockedPixelPos[idx] = areaMap.project([ll.lng, ll.lat]);
         updateAreaLayer();
       });
-      marker.on('dragend',()=>{
-        const idx=areaMarkers.indexOf(marker);if(idx===-1)return;
-        const px=areaMap.project(marker.getLngLat());
-        const clamped=clampPixelPos(px);
-        if(Math.abs(clamped.x-px.x)>0.5||Math.abs(clamped.y-px.y)>0.5){
-          const ll=areaMap.unproject([clamped.x,clamped.y]);
-          marker.setLngLat(ll);areaCoords[idx]=[ll.lng,ll.lat];
+      marker.on('dragend', () => {
+        const idx = areaMarkers.indexOf(marker); if (idx===-1) return;
+        const px = areaMap.project(marker.getLngLat());
+        const cl = clampPixelPos(px);
+        if (Math.abs(cl.x-px.x)>0.5||Math.abs(cl.y-px.y)>0.5) {
+          const ll = areaMap.unproject([cl.x, cl.y]);
+          marker.setLngLat(ll); areaCoords[idx] = [ll.lng, ll.lat];
         }
-        if(!areaLocked)lockedPixelPos[idx]=clampPixelPos(areaMap.project(marker.getLngLat()));
+        if (!areaLocked) lockedPixelPos[idx] = clampPixelPos(areaMap.project(marker.getLngLat()));
         updateAreaLayer();
       });
     }
 
-    function addCorner(){
-      if(areaCoords.length<3)return;
-      const last=areaCoords[areaCoords.length-1],first=areaCoords[0];
-      const mid=[(last[0]+first[0])/2,(last[1]+first[1])/2];
+    function addCorner() {
+      if (areaCoords.length < 3) return;
+      const last=areaCoords[areaCoords.length-1], first=areaCoords[0];
+      const mid = [(last[0]+first[0])/2, (last[1]+first[1])/2];
       areaCoords.push(mid);
-      const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true,anchor:'center'}).setLngLat(mid).addTo(areaMap);
-      setupMarkerEvents(marker);areaMarkers.push(marker);
-      if(!areaLocked)lockedPixelPos.push(clampPixelPos(areaMap.project([mid[0],mid[1]])));
-      updateAreaLayer();updateMinusBtn();
+      const marker = new maplibregl.Marker({element:createCornerEl(),draggable:true,anchor:'center'}).setLngLat(mid).addTo(areaMap);
+      setupMarkerEvents(marker); areaMarkers.push(marker);
+      if (!areaLocked) lockedPixelPos.push(clampPixelPos(areaMap.project([mid[0],mid[1]])));
+      updateAreaLayer(); updateMinusBtn();
     }
 
-    function removeCorner(){
-      if(areaCoords.length<=3)return;
-      const last=areaMarkers.pop();last.remove();areaCoords.pop();
-      if(!areaLocked)lockedPixelPos.pop();
-      updateAreaLayer();updateMinusBtn();
+    function removeCorner() {
+      if (areaCoords.length <= 3) return;
+      areaMarkers.pop().remove(); areaCoords.pop();
+      if (!areaLocked) lockedPixelPos.pop();
+      updateAreaLayer(); updateMinusBtn();
     }
 
-    function toggleAreaLock(){
-      areaLocked=!areaLocked;
-      if(!areaLocked){lockedPixelPos=areaMarkers.map(m=>clampPixelPos(areaMap.project([m.getLngLat().lng,m.getLngLat().lat])));}
+    function toggleAreaLock() {
+      areaLocked = !areaLocked;
+      if (!areaLocked) lockedPixelPos = areaMarkers.map(m => clampPixelPos(areaMap.project([m.getLngLat().lng, m.getLngLat().lat])));
       updateLockBtn();
     }
 
-    function resetAreaCorners(){
-      areaMarkers.forEach(m=>m.remove());
-      areaMarkers=[];areaCoords=[];lockedPixelPos=[];
-      areaLocked=true;updateLockBtn();
-      const c=areaMap.getCenter(),off=0.00045;
+    function resetAreaCorners() {
+      areaMarkers.forEach(m => m.remove());
+      areaMarkers=[]; areaCoords=[]; lockedPixelPos=[];
+      areaLocked=true; updateLockBtn();
+      const c=areaMap.getCenter(), off=0.00045;
       areaCoords=[[c.lng-off,c.lat+off],[c.lng+off,c.lat+off],[c.lng+off,c.lat-off],[c.lng-off,c.lat-off]];
       areaCoords.forEach(coord=>{
         const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true,anchor:'center'}).setLngLat(coord).addTo(areaMap);
-        setupMarkerEvents(marker);areaMarkers.push(marker);
+        setupMarkerEvents(marker); areaMarkers.push(marker);
       });
-      updateAreaLayer();updateMinusBtn();
+      updateAreaLayer(); updateMinusBtn();
     }
 
-    function handleZoomChange(){
-      if(!areaMap)return;
-      const z=areaMap.getZoom();
-      if(z>=SATELLITE_ZOOM_THRESHOLD){
-        // Saavutettiin satelliittitaso — aktivoi automaattisesti jos käyttäjä haluaa
-        if(userWantsSatellite&&areaMapMode!=='satellite'){
-          switchAreaMapStyle('satellite');
-        }
-      } else {
-        // Liian kaukana — paluu karttaan automaattisesti
-        if(areaMapMode!=='map'){
-          switchAreaMapStyle('map');
-        }
-      }
-      updateSatBtn();
-    }
+    function initAreaMap() {
+      const center = map.getCenter();
+      const zoom   = map.getZoom();  // käytetään oikeaa zoomia, EI pakoteta 15:een
 
-    function initAreaMap(){
-      const center=map.getCenter(),zoom=Math.max(map.getZoom(),15);
-      userWantsSatellite=true;
-      if(areaMap){
-        areaMap.resize();areaMap.setCenter([center.lng,center.lat]);areaMap.setZoom(zoom);
-        resetAreaCorners();
-        handleZoomChange();
+      userWantsSat    = true;
+      areaCurrentMode = 'map';
+      areaIsLoading   = false;
+
+      if (areaMap) {
+        areaMap.resize();
+        areaMap.setCenter([center.lng, center.lat]);
+        areaMap.setZoom(zoom);
+        // Nollataan satelliitti aina alussa
+        areaMap.setStyle('omakartta_style.json');
+        areaIsLoading = true;
+        const safety = setTimeout(()=>{areaIsLoading=false;},8000);
+        areaMap.once('style.load', () => {
+          clearTimeout(safety);
+          ensureAreaPolygon();
+          resetAreaCorners();
+          areaIsLoading = false;
+          updateSatBtn();
+        });
         return;
       }
-      areaMapMode='map';areaSwitchingStyle=false;
-      areaMap=new maplibregl.Map({
-        container:'area-map',style:'omakartta_style.json',
-        center:[center.lng,center.lat],zoom,minZoom:5,maxZoom:20,transformRequest,
-        dragRotate:false,touchPitch:false,pitchWithRotate:false,keyboard:false,attributionControl:false
+
+      areaMap = new maplibregl.Map({
+        container: 'area-map', style: 'omakartta_style.json',
+        center: [center.lng, center.lat], zoom,
+        minZoom:5, maxZoom:20, transformRequest,
+        dragRotate:false, touchPitch:false, pitchWithRotate:false,
+        keyboard:false, attributionControl:false
       });
-      areaMap.on('load',()=>{
-        areaMap.touchZoomRotate.disableRotation();areaMap.dragRotate.disable();
-        addAreaPolygon();resetAreaCorners();
-        handleZoomChange();
+
+      areaMap.on('load', () => {
+        areaMap.touchZoomRotate.disableRotation();
+        areaMap.dragRotate.disable();
+        ensureAreaPolygon();
+        resetAreaCorners();
+        updateSatBtn();
+        // EI auto-satelliittia tässä — zoomend hoitaa sen
       });
-      areaMap.on('zoomend',handleZoomChange);
-      areaMap.on('move',()=>{
-        if(!areaLocked&&lockedPixelPos.length===areaMarkers.length){
+
+      areaMap.on('zoomend', handleZoomChange);
+      areaMap.on('zoom',    updateSatBtn);
+      areaMap.on('move', () => {
+        if (!areaLocked && lockedPixelPos.length===areaMarkers.length) {
           areaMarkers.forEach((m,i)=>{
             const ll=areaMap.unproject(lockedPixelPos[i]);
-            m.setLngLat(ll);areaCoords[i]=[ll.lng,ll.lat];
+            m.setLngLat(ll); areaCoords[i]=[ll.lng,ll.lat];
           });
           updateAreaLayer();
         }
@@ -876,30 +886,26 @@
     function openHelpSettings(){alert('Ohje ja tuki - tulossa pian');}
     function openAboutSettings(){alert('Tietoja - tulossa pian');}
 
-    const SEARCH_HISTORY_KEY='parking_search_history';
-    const MAX_HISTORY=8;
+    const SEARCH_HISTORY_KEY='parking_search_history', MAX_HISTORY=8;
     function getSearchHistory(){try{const h=localStorage.getItem(SEARCH_HISTORY_KEY);return h?JSON.parse(h):[];}catch(e){return[];}}
     function addToSearchHistory(item){let h=getSearchHistory();h=h.filter(x=>!(x.lat===item.lat&&x.lon===item.lon));h.unshift(item);if(h.length>MAX_HISTORY)h=h.slice(0,MAX_HISTORY);localStorage.setItem(SEARCH_HISTORY_KEY,JSON.stringify(h));}
     function removeFromSearchHistory(index){let h=getSearchHistory();h.splice(index,1);localStorage.setItem(SEARCH_HISTORY_KEY,JSON.stringify(h));showSearchHistory();}
 
     function showSearchHistory(){
-      const history=getSearchHistory();
-      const sr=document.getElementById('search-results');
+      const history=getSearchHistory(), sr=document.getElementById('search-results');
       sr.classList.remove('allow-scroll');sr.classList.add('no-scroll');
       if(history.length===0){sr.innerHTML='<div class="search-empty">Ei aikaisempia hakuja</div>';return;}
       let lat,lon;
       if(userLocation){lat=userLocation.lat;lon=userLocation.lon;}else{const c=map.getCenter();lat=c.lat;lon=c.lng;}
       sr.innerHTML='<div class="search-history-header">Viimeisimmät haut</div>'+
-        history.map((item,index)=>{
-          const d=calculateDistance(lat,lon,item.lat,item.lon);
+        history.map((item,index)=>{const d=calculateDistance(lat,lon,item.lat,item.lon);
           return `<div class="search-result-item"><div class="search-result-icon">${getHistoryIconSVG()}</div><div class="search-result-text" onclick="selectHistoryPlace(${item.lat},${item.lon},'${item.name.replace(/'/g,"\\'")}',${index})"><div class="search-result-name">${item.name}</div><div class="search-result-address">${item.locality||''}</div><div class="search-result-distance">${formatDistance(d)}</div></div><button class="search-history-delete" onclick="event.stopPropagation();removeFromSearchHistory(${index})">✕</button></div>`;
         }).join('');
     }
 
     function selectHistoryPlace(lat,lon,name,index){selectPlace(lat,lon,name,false);}
 
-    const searchInput=document.getElementById('search-input');
-    const searchResults=document.getElementById('search-results');
+    const searchInput=document.getElementById('search-input'), searchResults=document.getElementById('search-results');
     let searchTimeout=null;
 
     async function searchPlaces(query){
@@ -1068,7 +1074,7 @@
     function renderPaymentOptions(){const c=document.getElementById('payment-options');c.innerHTML='';paymentMethods.forEach((p,i)=>{const row=document.createElement('div');row.className='option-row';row.innerHTML=`<div class="option-check ${i===selectedPaymentIdx?'selected':''}"></div><div class="payment-icon-box">${getPaymentIcon(p.icon)}</div><div class="option-name">${p.name}</div>`;row.addEventListener('click',()=>{selectedPaymentIdx=i;renderPaymentDisplay();closePaymentSheet();});c.appendChild(row);});}
     function openPaymentSheet(){renderPaymentOptions();document.getElementById('payment-sheet').classList.add('open');}
     function closePaymentSheet(){document.getElementById('payment-sheet').classList.remove('open');}
-    function addPaymentMethod(){alert('Tämä toiminto lisäisi uuden maksutavan. Tässä demossa käytetään olemassa olevia maksutapoja.');closePaymentSheet();}
+    function addPaymentMethod(){alert('Tämä toiminto lisäisi uuden maksutavan.');closePaymentSheet();}
 
     const overlay=document.getElementById('parking-overlay');
     function openParkingOverlay(p){
