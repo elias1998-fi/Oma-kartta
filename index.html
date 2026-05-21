@@ -398,14 +398,13 @@
     </div>
   </div>
 
+  <!-- Rajaa pysäköintialue: kartta + 4 siirrettävää kulmapistettä -->
   <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAddParkingArea()">←</button>
-      <div class="overlay-title">Lisää pysäköintialue</div>
+      <div class="overlay-title">Rajaa pysäköintialue</div>
     </div>
-    <div class="overlay-content" style="align-items:center;justify-content:center;color:#888;font-size:14px;font-family:Arial,sans-serif;">
-      Lomake tulossa – tähän voi lisätä uuden ilmaisen pysäköintialueen.
-    </div>
+    <div id="area-map" style="flex:1;position:relative;"></div>
   </div>
 
   <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
@@ -608,8 +607,93 @@
     function closeProfileOverlay(){document.getElementById('profile-overlay').classList.remove('open');}
     function closeSearchOverlay(){document.getElementById('search-overlay').classList.remove('open');document.getElementById('search-input').value='';document.getElementById('search-results').innerHTML='';}
     function closePlusOverlay(){document.getElementById('plus-overlay').classList.remove('open');closeAddParkingArea();closeCommentAreas();}
-    function openAddParkingArea(){document.getElementById('add-parking-overlay').style.transform='translateX(0)';}
-    function closeAddParkingArea(){document.getElementById('add-parking-overlay').style.transform='translateX(100%)';}
+
+    function openAddParkingArea(){
+      document.getElementById('add-parking-overlay').style.transform='translateX(0)';
+      setTimeout(()=>{ initAreaMap(); },400);
+    }
+    function closeAddParkingArea(){
+      document.getElementById('add-parking-overlay').style.transform='translateX(100%)';
+    }
+
+    // ======== AREA SELECTION MAP ========
+    let areaMap=null, areaMarkers=[], areaCoords=[];
+
+    function createCornerEl(){
+      const el=document.createElement('div');
+      el.style.cssText='width:22px;height:22px;background:#0C0243;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.45);cursor:grab;touch-action:none;';
+      return el;
+    }
+
+    function getAreaGeoJSON(){
+      if(areaCoords.length<4)return{type:'Feature',geometry:{type:'Polygon',coordinates:[[]]}};
+      return{type:'Feature',geometry:{type:'Polygon',coordinates:[[...areaCoords,areaCoords[0]]]}};
+    }
+
+    function updateAreaLayer(){
+      if(areaMap&&areaMap.getSource('area-poly')){
+        areaMap.getSource('area-poly').setData(getAreaGeoJSON());
+      }
+    }
+
+    function resetAreaCorners(){
+      areaMarkers.forEach(m=>m.remove());
+      areaMarkers=[];
+      const c=areaMap.getCenter();
+      const off=0.00045;
+      areaCoords=[
+        [c.lng-off, c.lat+off],
+        [c.lng+off, c.lat+off],
+        [c.lng+off, c.lat-off],
+        [c.lng-off, c.lat-off],
+      ];
+      areaCoords.forEach((coord,i)=>{
+        const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true})
+          .setLngLat(coord)
+          .addTo(areaMap);
+        marker.on('drag',()=>{
+          areaCoords[i]=[marker.getLngLat().lng,marker.getLngLat().lat];
+          updateAreaLayer();
+        });
+        areaMarkers.push(marker);
+      });
+      updateAreaLayer();
+    }
+
+    function initAreaMap(){
+      const center=map.getCenter();
+      const zoom=Math.max(map.getZoom(),15);
+      if(areaMap){
+        areaMap.resize();
+        areaMap.setCenter([center.lng,center.lat]);
+        areaMap.setZoom(zoom);
+        resetAreaCorners();
+        return;
+      }
+      areaMap=new maplibregl.Map({
+        container:'area-map',
+        style:'omakartta_style.json',
+        center:[center.lng,center.lat],
+        zoom:zoom,
+        minZoom:5,maxZoom:20,
+        transformRequest,
+        dragRotate:false,
+        touchPitch:false,
+        pitchWithRotate:false,
+        keyboard:false,
+        attributionControl:false
+      });
+      areaMap.on('load',()=>{
+        areaMap.touchZoomRotate.disableRotation();
+        areaMap.dragRotate.disable();
+        areaMap.addSource('area-poly',{type:'geojson',data:getAreaGeoJSON()});
+        areaMap.addLayer({id:'area-poly-fill',type:'fill',source:'area-poly',paint:{'fill-color':'#0C0243','fill-opacity':0.12}});
+        areaMap.addLayer({id:'area-poly-line',type:'line',source:'area-poly',paint:{'line-color':'#0C0243','line-width':2.5,'line-opacity':0.85}});
+        resetAreaCorners();
+      });
+    }
+    // =====================================
+
     function openCommentAreas(){document.getElementById('comment-areas-overlay').style.transform='translateX(0)';}
     function closeCommentAreas(){document.getElementById('comment-areas-overlay').style.transform='translateX(100%)';}
     function openGpsInfo(){document.getElementById('gps-info-overlay').classList.add('open');}
