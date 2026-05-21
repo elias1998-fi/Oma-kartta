@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<!-- saved from url=(0049)file:///C:/Users/elias/Downloads/Claude_html.html -->
-<html lang="fi"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<html lang="fi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>HSL Kartta</title>
-  <link rel="stylesheet" href="./HSL Kartta_files/maplibre-gl.css">
-  <script src="./HSL Kartta_files/maplibre-gl.js.lataus"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
@@ -16,430 +16,102 @@
     .maplibregl-ctrl { display: none !important; }
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
     
-    /* Splash Screen */
     #splash-screen {
-      position: fixed;
-      inset: 0;
-      background: white;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 1;
-      transition: opacity 0.3s ease;
+      position: fixed; inset: 0; background: white; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 1; transition: opacity 0.3s ease;
     }
-    
-    #splash-screen.fade-out {
-      opacity: 0;
-      pointer-events: none;
-    }
-    
-    .splash-content {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      animation: slideIn 0.3s ease-out;
-    }
-    
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .splash-car {
-      width: 48px;
-      height: 48px;
-      fill: #0C0243;
-    }
-    
-    .splash-p {
-      width: 40px;
-      height: 40px;
-      background: #0C0243;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: Arial, sans-serif;
-      font-size: 24px;
-      font-weight: bold;
-      color: white;
-    }
+    #splash-screen.fade-out { opacity: 0; pointer-events: none; }
+    .splash-content { display: flex; align-items: center; gap: 16px; animation: slideIn 0.3s ease-out; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .splash-car { width: 48px; height: 48px; fill: #0C0243; }
+    .splash-p { width: 40px; height: 40px; background: #0C0243; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; color: white; }
     
     #left-menu-pill {
-      position: fixed;
-      top: max(16px,env(safe-area-inset-top));
-      left: max(16px,env(safe-area-inset-left));
-      z-index: 25;
-      background: white;
-      border-radius: 25px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      width: 48px;
-      height: 48px;
-      overflow: hidden;
+      position: fixed; top: max(16px,env(safe-area-inset-top)); left: max(16px,env(safe-area-inset-left));
+      z-index: 25; background: white; border-radius: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      width: 48px; height: 48px; overflow: hidden;
       transition: height 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
     }
-    
-    #left-menu-pill.expanded {
-      height: 248px;
-    }
-    
-    .pill-btn {
-      width: 48px;
-      height: 48px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: background 0.2s ease, border-radius 0.2s ease;
-    }
-    
+    #left-menu-pill.expanded { height: 248px; }
+    .pill-btn { width: 48px; height: 48px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s ease, border-radius 0.2s ease; }
     .pill-btn svg { width: 18px; height: 18px; transition: stroke 0.2s ease; }
     .pill-btn#profile-btn svg { width: 20px; height: 20px; }
-    
     #menu-btn svg { width: 16px; height: 16px; }
     #menu-btn.active { background: #0C0243; border-radius: 50%; }
     #menu-btn.active svg line { stroke: white; }
-    
     #profile-btn.active { background: #0C0243; border-radius: 50%; }
     #profile-btn.active svg { stroke: white; }
-    
     #filter-btn.active { background: #0C0243; border-radius: 50%; }
     #filter-btn.active svg line { stroke: white; }
     #filter-btn.active svg circle { fill: white; stroke: none; }
-    
     #search-btn.active { background: #0C0243; border-radius: 50%; }
     #search-btn.active svg { stroke: white; }
-    
     #plus-menu-btn.active { background: #0C0243; border-radius: 50%; }
     #plus-menu-btn.active svg line { stroke: white; }
     
     #location-btn {
-      position: fixed;
-      z-index: 25;
-      width: 48px;
-      height: 48px;
-      background: white;
-      border: none;
-      border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      right: max(16px,env(safe-area-inset-right));
-      top: max(16px,env(safe-area-inset-top));
+      position: fixed; z-index: 25; width: 48px; height: 48px; background: white; border: none;
+      border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      right: max(16px,env(safe-area-inset-right)); top: max(16px,env(safe-area-inset-top));
     }
-    
     #location-btn svg { width: 20px; height: 20px; }
     
     #profile-overlay, #search-overlay, #plus-overlay {
-      position: fixed; inset: 0;
-      background: #f2f3f5;
-      z-index: 100;
+      position: fixed; inset: 0; background: #f2f3f5; z-index: 100;
       display: flex; flex-direction: column;
       transform: translateX(-100%);
       transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
     }
     #profile-overlay.open, #search-overlay.open, #plus-overlay.open { transform: translateX(0); }
     
-    .overlay-header {
-      display: flex; align-items: center;
-      padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px;
-      background: white;
-      border-bottom: 1px solid #eee;
-      flex-shrink: 0;
-    }
-    .overlay-back-btn {
-      width: 34px; height: 34px;
-      background: #f0f0f0;
-      border: none; border-radius: 50%;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; color: #333;
-      margin-right: 10px;
-    }
-    .overlay-title {
-      font-family: Arial, sans-serif;
-      font-size: 16px; font-weight: bold;
-      color: #222;
-    }
-    .overlay-content {
-      flex: 1;
-      display: flex; flex-direction: column;
-      font-family: Arial, sans-serif;
-      overflow-y: auto;
-    }
+    .overlay-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
+    .overlay-back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
+    .overlay-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
+    .overlay-content { flex: 1; display: flex; flex-direction: column; font-family: Arial, sans-serif; overflow-y: auto; }
     
-    #search-input-container {
-      padding: 16px;
-      background: white;
-      border-bottom: 1px solid #eee;
-      position: relative;
-    }
+    #search-input-container { padding: 16px; background: white; border-bottom: 1px solid #eee; position: relative; }
+    .search-icon { position: absolute; left: 28px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; pointer-events: none; }
+    #search-input { width: 100%; height: 44px; padding: 0 16px 0 44px; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; font-family: Arial, sans-serif; outline: none; transition: border-color 0.2s ease; }
+    #search-input:focus { border-color: #0C0243; }
+    #search-results { flex: 1; }
+    #search-results.no-scroll { overflow: hidden; }
+    #search-results.allow-scroll { overflow-y: auto; }
+    .search-history-header { padding: 16px 16px 8px 16px; font-size: 13px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .search-result-item { display: flex; align-items: flex-start; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; background: white; transition: background 0.2s ease; }
+    .search-result-item:active { background: #f8f8f8; }
+    .search-result-icon { width: 40px; height: 40px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; margin-top: 2px; }
+    .search-result-icon svg { width: 20px; height: 20px; }
+    .search-result-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .search-result-name { font-size: 15px; font-weight: 500; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .search-result-address { font-size: 13px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .search-result-distance { font-size: 13px; color: #0C0243; font-weight: 500; white-space: nowrap; }
+    .search-history-delete { width: 32px; height: 32px; border: none; background: transparent; color: #999; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; flex-shrink: 0; margin-top: 2px; }
+    .search-history-delete:active { background: #f0f0f0; border-radius: 50%; }
+    .search-empty { padding: 40px 20px; text-align: center; color: #888; font-size: 14px; }
     
-    .search-icon {
-      position: absolute;
-      left: 28px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 18px;
-      height: 18px;
-      pointer-events: none;
-    }
+    .settings-section { background: white; margin: 10px 0; }
+    .settings-section:first-child { margin-top: 0; }
+    .settings-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 15px; color: #222; }
+    .settings-item:last-child { border-bottom: none; }
+    .settings-item:active { background: #f8f8f8; }
+    .settings-item-icon { width: 24px; height: 24px; margin-right: 12px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 18px; }
+    .settings-item-text { flex: 1; }
+    .settings-item-label { font-size: 15px; color: #222; }
+    .settings-item-value { font-size: 13px; color: #888; margin-top: 2px; }
+    .settings-item-chevron { color: #bbb; font-size: 18px; margin-left: 8px; }
     
-    #search-input {
-      width: 100%;
-      height: 44px;
-      padding: 0 16px 0 44px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      font-size: 16px;
-      font-family: Arial, sans-serif;
-      outline: none;
-      transition: border-color 0.2s ease;
-    }
+    .settings-detail-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 101; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
+    .settings-detail-overlay.open { transform: translateX(0); }
     
-    #search-input:focus {
-      border-color: #0C0243;
-    }
-    
-    #search-results {
-      flex: 1;
-    }
-    
-    #search-results.no-scroll {
-      overflow: hidden;
-    }
-    
-    #search-results.allow-scroll {
-      overflow-y: auto;
-    }
-    
-    .search-history-header {
-      padding: 16px 16px 8px 16px;
-      font-size: 13px;
-      font-weight: bold;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .search-result-item {
-      display: flex;
-      align-items: flex-start;
-      padding: 14px 16px;
-      border-bottom: 1px solid #f0f0f0;
-      cursor: pointer;
-      background: white;
-      transition: background 0.2s ease;
-    }
-    
-    .search-result-item:active {
-      background: #f8f8f8;
-    }
-    
-    .search-result-icon {
-      width: 40px;
-      height: 40px;
-      background: #f0f0f0;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 12px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-    
-    .search-result-icon svg {
-      width: 20px;
-      height: 20px;
-    }
-    
-    .search-result-text {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    
-    .search-result-name {
-      font-size: 15px;
-      font-weight: 500;
-      color: #222;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .search-result-address {
-      font-size: 13px;
-      color: #888;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .search-result-distance {
-      font-size: 13px;
-      color: #0C0243;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    
-    .search-history-delete {
-      width: 32px;
-      height: 32px;
-      border: none;
-      background: transparent;
-      color: #999;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: 8px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-    
-    .search-history-delete:active {
-      background: #f0f0f0;
-      border-radius: 50%;
-    }
-    
-    .search-empty {
-      padding: 40px 20px;
-      text-align: center;
-      color: #888;
-      font-size: 14px;
-    }
-    
-    .settings-section {
-      background: white;
-      margin: 10px 0;
-    }
-    .settings-section:first-child {
-      margin-top: 0;
-    }
-    
-    .settings-item {
-      display: flex;
-      align-items: center;
-      padding: 14px 16px;
-      border-bottom: 1px solid #f0f0f0;
-      cursor: pointer;
-      font-size: 15px;
-      color: #222;
-    }
-    .settings-item:last-child {
-      border-bottom: none;
-    }
-    .settings-item:active {
-      background: #f8f8f8;
-    }
-    .settings-item-icon {
-      width: 24px;
-      height: 24px;
-      margin-right: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #666;
-      font-size: 18px;
-    }
-    .settings-item-text {
-      flex: 1;
-    }
-    .settings-item-label {
-      font-size: 15px;
-      color: #222;
-    }
-    .settings-item-value {
-      font-size: 13px;
-      color: #888;
-      margin-top: 2px;
-    }
-    .settings-item-chevron {
-      color: #bbb;
-      font-size: 18px;
-      margin-left: 8px;
-    }
-    
-    .settings-detail-overlay {
-      position: fixed;
-      inset: 0;
-      background: #f2f3f5;
-      z-index: 101;
-      display: flex;
-      flex-direction: column;
-      transform: translateX(100%);
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
-    }
-    .settings-detail-overlay.open {
-      transform: translateX(0);
-    }
-    
-    #bottom-sheet { 
-      position: absolute; left: 0; right: 0; bottom: 0; 
-      height: 80vh; background: white; 
-      border-radius: 20px 20px 0 0; 
-      box-shadow: 0 -2px 16px rgba(0,0,0,0.15); 
-      z-index: 20; 
-      transform: translateY(calc(100% - 60px)); 
-      touch-action: pan-y; 
-      display: flex; 
-      flex-direction: column;
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
-    }
+    #bottom-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 80vh; background: white; border-radius: 20px 20px 0 0; box-shadow: 0 -2px 16px rgba(0,0,0,0.15); z-index: 20; transform: translateY(calc(100% - 60px)); touch-action: pan-y; display: flex; flex-direction: column; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
     #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
-    #gps-warning {
-      font-family: Arial, sans-serif;
-      font-size: 12px;
-      color: #888;
-      padding: 0 20px 12px 20px;
-      opacity: 0;
-      max-height: 0;
-      overflow: hidden;
-      transition: opacity 0.3s ease, max-height 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    #gps-warning.visible {
-      opacity: 1;
-      max-height: 50px;
-    }
-    .gps-info-icon {
-      width: 16px;
-      height: 16px;
-      border: 1.5px solid #888;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-      color: #888;
-      cursor: pointer;
-      flex-shrink: 0;
-      font-family: Georgia, serif;
-    }
-    .gps-info-icon:active {
-      background: #f0f0f0;
-    }
+    #gps-warning { font-family: Arial, sans-serif; font-size: 12px; color: #888; padding: 0 20px 12px 20px; opacity: 0; max-height: 0; overflow: hidden; transition: opacity 0.3s ease, max-height 0.3s ease; display: flex; align-items: center; gap: 6px; }
+    #gps-warning.visible { opacity: 1; max-height: 50px; }
+    .gps-info-icon { width: 16px; height: 16px; border: 1.5px solid #888; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #888; cursor: pointer; flex-shrink: 0; font-family: Georgia, serif; }
+    .gps-info-icon:active { background: #f0f0f0; }
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
     #filter-close-btn.visible { display: flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
@@ -468,82 +140,18 @@
     .slider-ticks { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-top: 4px; }
     #filter-result { margin-top: 16px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
     
-    #btn-container { 
-      position: fixed; 
-      bottom: 0; 
-      left: 0; 
-      right: 0; 
-      z-index: 30; 
-      background: white; 
-      padding: 12px 16px; 
-      padding-bottom: max(24px,env(safe-area-inset-bottom)); 
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      pointer-events: auto;
-    }
-    #btn-container.hidden { 
-      opacity: 0; 
-      transform: translateY(100%); 
-      pointer-events: none; 
-    }
-    
-    #action-btn { 
-      width: 100%; 
-      height: 58px; 
-      border: none; 
-      border-radius: 16px; 
-      font-size: 17px; 
-      font-weight: bold; 
-      font-family: Arial, sans-serif; 
-      color: white; 
-      background: #0C0243; 
-      opacity: 0.7; 
-      cursor: pointer; 
-      transition: opacity 0.2s ease; 
-      text-align: center; 
-    }
+    #btn-container { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: white; padding: 12px 16px; padding-bottom: max(24px,env(safe-area-inset-bottom)); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: auto; }
+    #btn-container.hidden { opacity: 0; transform: translateY(100%); pointer-events: none; }
+    #action-btn { width: 100%; height: 58px; border: none; border-radius: 16px; font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; opacity: 0.7; cursor: pointer; transition: opacity 0.2s ease; text-align: center; }
     #action-btn.active { opacity: 1; }
     
-    /* GPS Info Overlay */
-    #gps-info-overlay {
-      position: fixed;
-      inset: 0;
-      background: #f2f3f5;
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      transform: translateX(-100%);
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
-    }
-    #gps-info-overlay.open {
-      transform: translateX(0);
-    }
-    .gps-info-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      font-family: Arial, sans-serif;
-    }
-    .gps-info-section {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-    .gps-info-section h3 {
-      font-size: 16px;
-      font-weight: bold;
-      color: #222;
-      margin-bottom: 8px;
-    }
-    .gps-info-section p {
-      font-size: 14px;
-      color: #555;
-      line-height: 1.5;
-      margin-bottom: 8px;
-    }
-    .gps-info-section p:last-child {
-      margin-bottom: 0;
-    }
+    #gps-info-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
+    #gps-info-overlay.open { transform: translateX(0); }
+    .gps-info-content { flex: 1; overflow-y: auto; padding: 20px; font-family: Arial, sans-serif; }
+    .gps-info-section { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .gps-info-section h3 { font-size: 16px; font-weight: bold; color: #222; margin-bottom: 8px; }
+    .gps-info-section p { font-size: 14px; color: #555; line-height: 1.5; margin-bottom: 8px; }
+    .gps-info-section p:last-child { margin-bottom: 0; }
     
     #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
     #parking-overlay.open { transform: translateX(0); }
@@ -557,13 +165,7 @@
     .area-code-badge { background: #0C0243; color: white; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; font-family: Arial, sans-serif; }
     .area-name { font-size: 14px; font-weight: bold; color: #222; }
     .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
-    .area-select-row { 
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px;
-      border: 1.5px solid #eee; border-radius: 10px;
-      cursor: pointer;
-      background: white;
-    }
+    .area-select-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1.5px solid #eee; border-radius: 10px; cursor: pointer; background: white; }
     .area-select-row:active { background: #f8f8f8; }
     .area-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
     .time-card-inner { display: flex; align-items: center; gap: 12px; }
@@ -573,14 +175,7 @@
     .drum-scroll-zone { width: 52px; height: 80px; border: 1.5px solid #d8d8d8; border-radius: 12px; cursor: grab; user-select: none; flex-shrink: 0; overflow: hidden; position: relative; }
     .drum-scroll-zone:active { cursor: grabbing; }
     #drum-canvas { display: block; width: 52px; height: 80px; }
-
-    .vehicle-display {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px;
-      border: 1.5px solid #eee; border-radius: 10px;
-      cursor: pointer;
-      background: white;
-    }
+    .vehicle-display { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1.5px solid #eee; border-radius: 10px; cursor: pointer; background: white; }
     .vehicle-display:active { background: #f8f8f8; }
     .plate { display: flex; align-items: center; border: 1.5px solid #333; border-radius: 3px; overflow: hidden; height: 24px; flex-shrink: 0; }
     .plate-eu { background: #0C0243; color: white; font-size: 6px; font-weight: bold; padding: 0 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
@@ -589,281 +184,96 @@
     .plate-text { padding: 0 6px; font-size: 11px; font-weight: bold; color: #222; letter-spacing: 0.3px; }
     .vehicle-nickname { font-size: 14px; color: #444; flex: 1; }
     .vehicle-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
-
-    .payment-display {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 12px;
-      border: 1.5px solid #eee; border-radius: 10px;
-      cursor: pointer;
-      background: white;
-    }
+    .payment-display { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1.5px solid #eee; border-radius: 10px; cursor: pointer; background: white; }
     .payment-display:active { background: #f8f8f8; }
-    .payment-icon-box {
-      width: 44px; height: 28px;
-      display: flex; align-items: center; justify-content: center;
-      background: white;
-      border: 1.5px solid #ddd;
-      border-radius: 6px;
-      flex-shrink: 0;
-    }
+    .payment-icon-box { width: 44px; height: 28px; display: flex; align-items: center; justify-content: center; background: white; border: 1.5px solid #ddd; border-radius: 6px; flex-shrink: 0; }
     .payment-icon-box svg { width: 32px; height: auto; }
     .payment-name { font-size: 14px; color: #333; flex: 1; font-family: Arial, sans-serif; }
     .payment-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
-
-    #vehicle-sheet, #payment-sheet, #price-detail-sheet {
-      position: fixed; inset: 0;
-      z-index: 200;
-      display: none;
-    }
+    #vehicle-sheet, #payment-sheet, #price-detail-sheet { position: fixed; inset: 0; z-index: 200; display: none; }
     #vehicle-sheet.open, #payment-sheet.open, #price-detail-sheet.open { display: block; }
-    .sheet-backdrop {
-      position: absolute; inset: 0;
-      background: rgba(0,0,0,0.3);
-    }
-    .sheet-panel {
-      position: absolute; left: 0; right: 0; bottom: 0;
-      background: white;
-      border-radius: 20px 20px 0 0;
-      padding: 16px 0;
-      padding-bottom: max(24px, env(safe-area-inset-bottom));
-    }
-    .sheet-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 20px 12px 20px;
-    }
-    .sheet-title {
-      font-family: Arial, sans-serif; font-size: 13px; font-weight: bold;
-      color: #888; text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .sheet-close-btn {
-      width: 28px; height: 28px;
-      background: #f0f0f0;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      color: #555;
-      line-height: 1;
-    }
+    .sheet-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.3); }
+    .sheet-panel { position: absolute; left: 0; right: 0; bottom: 0; background: white; border-radius: 20px 20px 0 0; padding: 16px 0; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+    .sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 0 20px 12px 20px; }
+    .sheet-title { font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .sheet-close-btn { width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #555; line-height: 1; }
     .sheet-close-btn:active { background: #e0e0e0; }
-    .option-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 20px;
-      cursor: pointer;
-      font-family: Arial, sans-serif;
-    }
+    .option-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; cursor: pointer; font-family: Arial, sans-serif; }
     .option-row:active { background: #f5f5f5; }
-    .option-check {
-      width: 20px; height: 20px; border-radius: 50%;
-      border: 2px solid #ddd;
-      flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .option-check.selected {
-      background: #0C0243; border-color: #0C0243;
-    }
-    .option-check.selected::after {
-      content: '✓'; color: white; font-size: 12px; font-weight: bold;
-    }
+    .option-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ddd; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .option-check.selected { background: #0C0243; border-color: #0C0243; }
+    .option-check.selected::after { content: '✓'; color: white; font-size: 12px; font-weight: bold; }
     .option-name { font-size: 15px; color: #222; }
     .option-reg { font-size: 13px; color: #888; }
-    .add-option {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 20px;
-      cursor: pointer;
-      font-family: Arial, sans-serif;
-      color: #0C0243;
-      font-size: 15px;
-    }
+    .add-option { display: flex; align-items: center; gap: 12px; padding: 12px 20px; cursor: pointer; font-family: Arial, sans-serif; color: #0C0243; font-size: 15px; }
     .add-option:active { background: #f5f5f5; }
     .sheet-divider { border: none; border-top: 1px solid #eee; margin: 4px 0; }
-
-    #total-price-container {
-      padding: 12px 14px 0 14px;
-      flex-shrink: 0;
-    }
-    .total-price-row {
-      display: flex; justify-content: space-between; align-items: center;
-      background: white; border-radius: 14px;
-      padding: 14px 16px;
-      font-family: Arial, sans-serif;
-    }
-    .total-price-label { 
-      font-size: 15px; color: #555; 
-      display: flex; align-items: center; gap: 6px;
-    }
-    .info-icon {
-      width: 18px; height: 18px;
-      border: 1.5px solid #aaa;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: bold; color: #aaa;
-      cursor: pointer;
-      font-family: Georgia, serif;
-    }
+    #total-price-container { padding: 12px 14px 0 14px; flex-shrink: 0; }
+    .total-price-row { display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 14px; padding: 14px 16px; font-family: Arial, sans-serif; }
+    .total-price-label { font-size: 15px; color: #555; display: flex; align-items: center; gap: 6px; }
+    .info-icon { width: 18px; height: 18px; border: 1.5px solid #aaa; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #aaa; cursor: pointer; font-family: Georgia, serif; }
     .info-icon:active { background: #f0f0f0; }
     .total-price-val { font-size: 22px; font-weight: bold; color: #0C0243; }
-
-    .price-detail-content {
-      padding: 20px;
-      font-family: Arial, sans-serif;
-    }
-    .detail-row {
-      display: flex; justify-content: space-between;
-      padding: 10px 0;
-      font-size: 14px;
-      border-bottom: 1px solid #f0f0f0;
-    }
+    .price-detail-content { padding: 20px; font-family: Arial, sans-serif; }
+    .detail-row { display: flex; justify-content: space-between; padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
     .detail-row:last-child { border-bottom: none; }
-    .detail-row.total {
-      font-weight: bold; font-size: 16px;
-      border-top: 2px solid #ddd;
-      padding-top: 12px;
-      margin-top: 8px;
-    }
+    .detail-row.total { font-weight: bold; font-size: 16px; border-top: 2px solid #ddd; padding-top: 12px; margin-top: 8px; }
     .detail-label { color: #555; }
     .detail-value { color: #222; }
-
-    #start-btn-container { 
-      padding: 10px 14px; 
-      padding-bottom: max(20px,env(safe-area-inset-bottom)); 
-      flex-shrink: 0; 
-    }
-    #start-btn { 
-      width: 100%; 
-      height: 58px; 
-      border: none; 
-      border-radius: 16px; 
-      font-size: 17px; 
-      font-weight: bold; 
-      font-family: Arial, sans-serif; 
-      color: white; 
-      background: #0C0243; 
-      cursor: pointer; 
-      transition: opacity 0.2s ease; 
-    }
+    #start-btn-container { padding: 10px 14px; padding-bottom: max(20px,env(safe-area-inset-bottom)); flex-shrink: 0; }
+    #start-btn { width: 100%; height: 58px; border: none; border-radius: 16px; font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; cursor: pointer; transition: opacity 0.2s ease; }
     #start-btn.disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* ========== ZOOM HINT MODAL ========== */
-    #zoom-hint-modal {
-      position: fixed; inset: 0; z-index: 300;
-      display: flex; align-items: flex-end; justify-content: center;
-      pointer-events: none; opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    #zoom-hint-modal.open { pointer-events: auto; opacity: 1; }
-    #zh-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
-    #zh-panel {
-      position: relative; width: 100%; max-width: 500px; height: 88vh;
-      background: white; border-radius: 22px 22px 0 0;
-      display: flex; flex-direction: column;
-      transform: translateY(100%);
-      transition: transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
-      overflow: hidden;
-    }
-    #zoom-hint-modal.open #zh-panel { transform: translateY(0); }
-    #zh-handle-area { padding: 12px 0 4px; display: flex; justify-content: center; flex-shrink: 0; }
-    #zh-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; }
-    #zh-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 16px 8px; flex-shrink: 0; }
-    #zh-title { font-family: Arial, sans-serif; font-size: 17px; font-weight: bold; color: #0C0243; }
-    #zh-close { width: 30px; height: 30px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; font-size: 16px; color: #555; display: flex; align-items: center; justify-content: center; }
-    #zh-close:active { background: #e0e0e0; }
-    #zh-anim { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 20px; }
-    #zh-anim svg { width: 100%; max-width: 270px; height: auto; }
-    #zh-desc { padding: 8px 24px 6px; font-family: Arial, sans-serif; font-size: 14px; color: #555; text-align: center; line-height: 1.5; flex-shrink: 0; }
-    #zh-ok { margin: 8px 16px; margin-bottom: max(18px, env(safe-area-inset-bottom)); height: 52px; background: #0C0243; border: none; border-radius: 14px; color: white; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif; cursor: pointer; flex-shrink: 0; transition: opacity 0.15s; }
-    #zh-ok:active { opacity: 0.85; }
-
-    .zh-map { transform-box: fill-box; transform-origin: center; animation: zhMap 3.4s ease-in-out infinite; }
-    .zh-f1  { animation: zhF1 3.4s ease-in-out infinite; }
-    .zh-f2  { animation: zhF2 3.4s ease-in-out infinite; }
-    .zh-ring  { transform-box: fill-box; transform-origin: center; animation: zhRing 3.4s ease-in-out infinite; }
-    .zh-ring2 { transform-box: fill-box; transform-origin: center; animation: zhRing 3.4s ease-in-out infinite; animation-delay: 0.45s; }
-
-    @keyframes zhMap {
-      0%,12%   { transform: scale(1); }
-      50%,65%  { transform: scale(1.55); }
-      80%,100% { transform: scale(1); }
-    }
-    @keyframes zhF1 {
-      0%,12%   { transform: translate(0,0); opacity: 1; }
-      50%,64%  { transform: translate(-24px,-28px); opacity: 1; }
-      76%      { transform: translate(-24px,-28px); opacity: 0; }
-      77%      { transform: translate(0,0); opacity: 0; }
-      90%,100% { transform: translate(0,0); opacity: 1; }
-    }
-    @keyframes zhF2 {
-      0%,12%   { transform: translate(0,0); opacity: 1; }
-      50%,64%  { transform: translate(24px,28px); opacity: 1; }
-      76%      { transform: translate(24px,28px); opacity: 0; }
-      77%      { transform: translate(0,0); opacity: 0; }
-      90%,100% { transform: translate(0,0); opacity: 1; }
-    }
-    @keyframes zhRing {
-      0%,8%   { opacity: 0; transform: scale(0.5); }
-      13%,17% { opacity: 0.55; transform: scale(1); }
-      33%     { opacity: 0; transform: scale(2.2); }
-      100%    { opacity: 0; }
-    }
   </style>
 </head>
 <body>
-  <!-- Splash Screen -->
-  <div id="splash-screen" class="fade-out" style="display: none;">
+  <div id="splash-screen">
     <div class="splash-content">
       <svg class="splash-car" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"></path>
+        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
       </svg>
       <div class="splash-p">P</div>
     </div>
   </div>
 
-  <div id="map" class="maplibregl-map"><div class="maplibregl-canvas-container maplibregl-interactive maplibregl-touch-drag-pan maplibregl-touch-zoom-rotate"><canvas class="maplibregl-canvas" tabindex="0" aria-label="Map" role="region" width="1912" height="914" style="width: 1912px; height: 914px;"></canvas></div><div class="maplibregl-control-container"><div class="maplibregl-ctrl-top-left "></div><div class="maplibregl-ctrl-top-right "><div class="maplibregl-ctrl maplibregl-ctrl-group"><button class="maplibregl-ctrl-geolocate" type="button" title="Find my location" aria-label="Find my location" aria-pressed="false"><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button></div></div><div class="maplibregl-ctrl-bottom-left "></div><div class="maplibregl-ctrl-bottom-right "></div></div></div>
+  <div id="map"></div>
   <svg id="center-pointer" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"></path>
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
     <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
   </svg>
 
   <div id="left-menu-pill">
     <button class="pill-btn" id="menu-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="3.5" stroke-linecap="round">
-        <line x1="2" y1="6" x2="22" y2="6"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="18" x2="22" y2="18"></line>
+        <line x1="2" y1="6" x2="22" y2="6"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="18" x2="22" y2="18"/>
       </svg>
     </button>
-    
     <button class="pill-btn" id="profile-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="8" r="5"></circle><path d="M3 21c0-4 4-7 9-7s9 3 9 7"></path>
+        <circle cx="12" cy="8" r="5"/><path d="M3 21c0-4 4-7 9-7s9 3 9 7"/>
       </svg>
     </button>
-    
     <button class="pill-btn" id="filter-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-        <line x1="4" y1="6" x2="20" y2="6"></line><circle cx="8" cy="6" r="2" fill="#333" stroke="none"></circle>
-        <line x1="4" y1="12" x2="20" y2="12"></line><circle cx="16" cy="12" r="2" fill="#333" stroke="none"></circle>
-        <line x1="4" y1="18" x2="20" y2="18"></line><circle cx="10" cy="18" r="2" fill="#333" stroke="none"></circle>
+        <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="#333" stroke="none"/>
+        <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="#333" stroke="none"/>
+        <line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2" fill="#333" stroke="none"/>
       </svg>
     </button>
-    
     <button class="pill-btn" id="plus-menu-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-        <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
     </button>
-    
     <button class="pill-btn" id="search-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path>
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
       </svg>
     </button>
   </div>
-  
+
   <button id="location-btn">
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#333" transform="rotate(45 12 12)"></path>
+      <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#333" transform="rotate(45 12 12)"/>
     </svg>
   </button>
 
@@ -876,71 +286,47 @@
       <div class="settings-section">
         <div class="settings-item" onclick="openAccountSettings()">
           <div class="settings-item-icon">👤</div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Tili</div>
-            <div class="settings-item-value">Käyttäjätiedot ja turvallisuus</div>
-          </div>
+          <div class="settings-item-text"><div class="settings-item-label">Tili</div><div class="settings-item-value">Käyttäjätiedot ja turvallisuus</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openNotificationSettings()">
           <div class="settings-item-icon">🔔</div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Ilmoitukset</div>
-            <div class="settings-item-value">Push-ilmoitukset ja sähköposti</div>
-          </div>
+          <div class="settings-item-text"><div class="settings-item-label">Ilmoitukset</div><div class="settings-item-value">Push-ilmoitukset ja sähköposti</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openPaymentSettings()">
           <div class="settings-item-icon">💳</div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Maksutavat</div>
-            <div class="settings-item-value">Hallitse maksukortteja</div>
-          </div>
+          <div class="settings-item-text"><div class="settings-item-label">Maksutavat</div><div class="settings-item-value">Hallitse maksukortteja</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
       </div>
-      
       <div class="settings-section">
         <div class="settings-item" onclick="openPrivacySettings()">
           <div class="settings-item-icon">🔒</div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Yksityisyys</div>
-            <div class="settings-item-value">Tietosuoja ja turvallisuus</div>
-          </div>
+          <div class="settings-item-text"><div class="settings-item-label">Yksityisyys</div><div class="settings-item-value">Tietosuoja ja turvallisuus</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openLanguageSettings()">
           <div class="settings-item-icon">🌐</div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Kieli</div>
-            <div class="settings-item-value">Suomi</div>
-          </div>
+          <div class="settings-item-text"><div class="settings-item-label">Kieli</div><div class="settings-item-value">Suomi</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
       </div>
-      
       <div class="settings-section">
         <div class="settings-item" onclick="openHelpSettings()">
           <div class="settings-item-icon">❓</div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Ohje ja tuki</div>
-            <div class="settings-item-value">UKK ja yhteystiedot</div>
-          </div>
+          <div class="settings-item-text"><div class="settings-item-label">Ohje ja tuki</div><div class="settings-item-value">UKK ja yhteystiedot</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openAboutSettings()">
           <div class="settings-item-icon">ℹ️</div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Tietoja</div>
-            <div class="settings-item-value">Versio 1.0.0</div>
-          </div>
+          <div class="settings-item-text"><div class="settings-item-label">Tietoja</div><div class="settings-item-value">Versio 1.0.0</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Tason 2 asetussivut -->
   <div id="account-detail" class="settings-detail-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAccountSettings()">←</button>
@@ -948,29 +334,13 @@
     </div>
     <div class="overlay-content">
       <div class="settings-section">
-        <div class="settings-item">
-          <div class="settings-item-text">
-            <div class="settings-item-label">Nimi</div>
-            <div class="settings-item-value">Käyttäjä</div>
-          </div>
-        </div>
-        <div class="settings-item">
-          <div class="settings-item-text">
-            <div class="settings-item-label">Sähköposti</div>
-            <div class="settings-item-value">kayttaja@example.com</div>
-          </div>
-        </div>
-        <div class="settings-item">
-          <div class="settings-item-text">
-            <div class="settings-item-label">Puhelinnumero</div>
-            <div class="settings-item-value">+358 40 123 4567</div>
-          </div>
-        </div>
+        <div class="settings-item"><div class="settings-item-text"><div class="settings-item-label">Nimi</div><div class="settings-item-value">Käyttäjä</div></div></div>
+        <div class="settings-item"><div class="settings-item-text"><div class="settings-item-label">Sähköposti</div><div class="settings-item-value">kayttaja@example.com</div></div></div>
+        <div class="settings-item"><div class="settings-item-text"><div class="settings-item-label">Puhelinnumero</div><div class="settings-item-value">+358 40 123 4567</div></div></div>
       </div>
     </div>
   </div>
 
-  <!-- GPS Info Overlay -->
   <div id="gps-info-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeGpsInfo()">←</button>
@@ -984,7 +354,6 @@
         <p>• <strong>Sääolosuhteet:</strong> Sade, lumisade tai pilvipeite voi vaikuttaa signaaliin.</p>
         <p>• <strong>Laitteen asetus:</strong> Varmista, että laitteesi sijaintipalvelut ovat päällä ja että sovelluksella on lupa käyttää sijaintia.</p>
       </div>
-      
       <div class="gps-info-section">
         <h3>Kuinka voin parantaa GPS-tarkkuutta?</h3>
         <p>• Siirry avoimelle alueelle, jossa on esteetön näkyvyys taivaalle</p>
@@ -992,7 +361,6 @@
         <p>• Anna sovellukselle lupa käyttää tarkkaa sijaintia</p>
         <p>• Odota hetki, että GPS-signaali vahvistuu</p>
       </div>
-      
       <div class="gps-info-section">
         <h3>Vaikuttaako epätarkka GPS pysäköintiin?</h3>
         <p>Epätarkka GPS-sijainti ei estä pysäköintiä. Voit silti valita pysäköintialueen kartalta ja aloittaa pysäköinnin normaalisti.</p>
@@ -1008,13 +376,14 @@
     </div>
     <div id="search-input-container">
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path>
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
       </svg>
       <input type="text" id="search-input" placeholder="Hae osoitetta, paikkaa tai aluekoodia..." autocomplete="off">
     </div>
     <div id="search-results" class="no-scroll"></div>
   </div>
 
+  <!-- PLUS-OVERLAY (muokattu) -->
   <div id="plus-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closePlusOverlay()">←</button>
@@ -1025,55 +394,25 @@
         Tue yhteisöä ja ilmoita havaitsemastasi ilmaisesta parkkialueesta!
       </div>
       <div style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
-        <button onclick="openAddParkingArea()" style="
-          width: 100%;
-          min-height: 120px;
-          background: #0C0243;
-          border: none;
-          border-radius: 20px;
-          cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          padding: 24px 20px;
-          box-shadow: 0 4px 16px rgba(12,2,67,0.25);
-          transition: opacity 0.15s ease, transform 0.15s ease;
-          -webkit-tap-highlight-color: transparent;
-        " onmousedown="this.style.opacity=&#39;0.85&#39;;this.style.transform=&#39;scale(0.98)&#39;" onmouseup="this.style.opacity=&#39;1&#39;;this.style.transform=&#39;scale(1)&#39;" ontouchstart="this.style.opacity=&#39;0.85&#39;;this.style.transform=&#39;scale(0.98)&#39;" ontouchend="this.style.opacity=&#39;1&#39;;this.style.transform=&#39;scale(1)&#39;">
+        <button onclick="openAddParkingArea()" style="width:100%;min-height:120px;background:#0C0243;border:none;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(12,2,67,0.25);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
+          onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'"
+          onmouseup="this.style.opacity='1';this.style.transform='scale(1)'"
+          ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'"
+          ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="16"></line>
-            <line x1="8" y1="12" x2="16" y2="12"></line>
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
           </svg>
-          <span style="font-family: Arial, sans-serif; font-size: 17px; font-weight: bold; color: white; text-align: center; line-height: 1.3;">
-            Lisää uusi ilmainen pysäköintialue
-          </span>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:white;text-align:center;line-height:1.3;">Lisää uusi ilmainen pysäköintialue</span>
         </button>
-        <button onclick="openCommentAreas()" style="
-          width: 100%;
-          min-height: 120px;
-          background: white;
-          border: 2px solid #0C0243;
-          border-radius: 20px;
-          cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          padding: 24px 20px;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-          transition: opacity 0.15s ease, transform 0.15s ease;
-          -webkit-tap-highlight-color: transparent;
-        " onmousedown="this.style.opacity=&#39;0.85&#39;;this.style.transform=&#39;scale(0.98)&#39;" onmouseup="this.style.opacity=&#39;1&#39;;this.style.transform=&#39;scale(1)&#39;" ontouchstart="this.style.opacity=&#39;0.85&#39;;this.style.transform=&#39;scale(0.98)&#39;" ontouchend="this.style.opacity=&#39;1&#39;;this.style.transform=&#39;scale(1)&#39;">
+        <button onclick="openCommentAreas()" style="width:100%;min-height:120px;background:white;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(0,0,0,0.08);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
+          onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'"
+          onmouseup="this.style.opacity='1';this.style.transform='scale(1)'"
+          ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'"
+          ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
-          <span style="font-family: Arial, sans-serif; font-size: 17px; font-weight: bold; color: #0C0243; text-align: center; line-height: 1.3;">
-            Kommentoi nykyisiä alueita
-          </span>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Kommentoi nykyisiä alueita</span>
         </button>
       </div>
     </div>
@@ -1101,7 +440,7 @@
     </div>
   </div>
 
-  <div id="bottom-sheet" style="transform: translateY(calc(100% - 60px));">
+  <div id="bottom-sheet">
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
     <div id="gps-warning">
       <span>GPS-sijaintisi saattaa olla epätarkka</span>
@@ -1113,7 +452,7 @@
         <div id="summary-type"></div>
         <div id="summary-operator"></div>
       </div>
-      <hr id="sheet-divider" style="display: none;">
+      <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
     </div>
     <div id="sheet-filter">
@@ -1121,113 +460,16 @@
       <div id="filter-subtitle">Näytä vain alueet joilla sallittu pysäköintiaika on valitulla välillä:</div>
       <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
       <div class="range-container">
-        <div class="range-track"></div><div class="range-fill" id="range-fill" style="left: 0%; width: 100%;"></div>
-        <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0">
-        <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26">
+        <div class="range-track"></div><div class="range-fill" id="range-fill"></div>
+        <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0"/>
+        <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26"/>
       </div>
       <div class="slider-ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span></div>
       <div id="filter-result"></div>
     </div>
   </div>
 
-  <!-- ========== ZOOM HINT MODAL ========== -->
-  <div id="zoom-hint-modal" class="">
-    <div id="zh-backdrop" onclick="closeZoomHint()"></div>
-    <div id="zh-panel">
-      <div id="zh-handle-area"><div id="zh-handle"></div></div>
-      <div id="zh-header">
-        <div id="zh-title">Miten lähentää karttaa?</div>
-        <button id="zh-close" onclick="closeZoomHint()">✕</button>
-      </div>
-      <div id="zh-anim">
-        <svg viewBox="0 0 260 330" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <clippath id="zhsc">
-              <rect x="93" y="144" width="70" height="131" rx="6"></rect>
-            </clippath>
-          </defs>
-          <!-- HEAD -->
-          <circle cx="130" cy="46" r="25" fill="#f5c4a1"></circle>
-          <ellipse cx="130" cy="33" rx="25" ry="17" fill="#3b2414"></ellipse>
-          <path d="M105,42 Q107,18 130,15 Q153,18 155,42" fill="#3b2414"></path>
-          <ellipse cx="106" cy="46" rx="5" ry="7" fill="#f5c4a1"></ellipse>
-          <ellipse cx="154" cy="46" rx="5" ry="7" fill="#f5c4a1"></ellipse>
-          <ellipse cx="121" cy="44" rx="3" ry="3.5" fill="#1e1000"></ellipse>
-          <ellipse cx="139" cy="44" rx="3" ry="3.5" fill="#1e1000"></ellipse>
-          <circle cx="122.5" cy="42.5" r="1.1" fill="white"></circle>
-          <circle cx="140.5" cy="42.5" r="1.1" fill="white"></circle>
-          <circle cx="130" cy="53" r="1.8" fill="#e09070"></circle>
-          <path d="M123,58 Q130,64 137,58" stroke="#bf6040" stroke-width="1.8" fill="none" stroke-linecap="round"></path>
-          <rect x="123" y="69" width="14" height="18" rx="5" fill="#f5c4a1"></rect>
-          <!-- TORSO -->
-          <path d="M83,87 Q130,79 177,87 L173,196 Q130,201 87,196 Z" fill="#4a7fd4"></path>
-          <path d="M118,87 L130,101 L142,87" fill="none" stroke="#3868c0" stroke-width="2.5"></path>
-          <!-- LEFT ARM -->
-          <path d="M87,98 C70,122 66,162 72,210" stroke="#f5c4a1" stroke-width="18" fill="none" stroke-linecap="round"></path>
-          <path d="M72,210 C76,246 83,266 90,276" stroke="#f5c4a1" stroke-width="16" fill="none" stroke-linecap="round"></path>
-          <ellipse cx="92" cy="279" rx="13" ry="9" fill="#f5c4a1"></ellipse>
-          <!-- RIGHT ARM -->
-          <path d="M173,98 C190,122 194,162 188,210" stroke="#f5c4a1" stroke-width="18" fill="none" stroke-linecap="round"></path>
-          <path d="M188,210 C184,246 177,266 170,276" stroke="#f5c4a1" stroke-width="16" fill="none" stroke-linecap="round"></path>
-          <ellipse cx="168" cy="279" rx="13" ry="9" fill="#f5c4a1"></ellipse>
-          <!-- PHONE -->
-          <rect x="92" y="141" width="80" height="152" rx="13" fill="rgba(0,0,0,0.13)"></rect>
-          <rect x="89" y="138" width="80" height="152" rx="12" fill="#1c1c2e"></rect>
-          <rect x="93" y="144" width="70" height="131" rx="6" fill="#daeef8"></rect>
-          <circle cx="129" cy="142" r="3" fill="#0a0a1a"></circle>
-          <rect x="118" y="141" width="22" height="2.5" rx="1.25" fill="#2a2a40"></rect>
-          <rect x="116" y="283" width="26" height="3" rx="1.5" fill="#444"></rect>
-          <!-- MAP ON SCREEN -->
-          <g clip-path="url(#zhsc)">
-            <g class="zh-map">
-              <rect x="89" y="140" width="82" height="137" fill="#c6dff0"></rect>
-              <rect x="89" y="168" width="82" height="6" fill="#ede9df"></rect>
-              <rect x="89" y="193" width="82" height="5.5" fill="#ede9df"></rect>
-              <rect x="89" y="218" width="82" height="6" fill="#ede9df"></rect>
-              <rect x="89" y="244" width="82" height="5.5" fill="#ede9df"></rect>
-              <rect x="108" y="140" width="6" height="137" fill="#ede9df"></rect>
-              <rect x="130" y="140" width="5.5" height="137" fill="#ede9df"></rect>
-              <rect x="152" y="140" width="6" height="137" fill="#ede9df"></rect>
-              <rect x="90" y="148" width="15" height="17" rx="1" fill="#b0c6d3"></rect>
-              <rect x="115" y="148" width="12" height="17" rx="1" fill="#b0c6d3"></rect>
-              <rect x="137" y="148" width="11" height="17" rx="1" fill="#b0c6d3"></rect>
-              <rect x="159" y="148" width="12" height="17" rx="1" fill="#b0c6d3"></rect>
-              <rect x="90" y="176" width="15" height="14" rx="1" fill="#b0c6d3"></rect>
-              <rect x="115" y="176" width="12" height="14" rx="1" fill="#b0c6d3"></rect>
-              <rect x="159" y="176" width="12" height="14" rx="1" fill="#b0c6d3"></rect>
-              <rect x="90" y="201" width="15" height="14" rx="1" fill="#b0c6d3"></rect>
-              <rect x="137" y="201" width="11" height="14" rx="1" fill="#b0c6d3"></rect>
-              <rect x="159" y="201" width="12" height="14" rx="1" fill="#b0c6d3"></rect>
-              <rect x="90" y="227" width="15" height="14" rx="1" fill="#b0c6d3"></rect>
-              <rect x="115" y="227" width="12" height="14" rx="1" fill="#b0c6d3"></rect>
-              <rect x="137" y="227" width="11" height="14" rx="1" fill="#b0c6d3"></rect>
-              <circle cx="129" cy="209" r="8.5" fill="#0C0243"></circle>
-              <text x="129" y="213.5" text-anchor="middle" font-size="10" font-family="Arial" font-weight="bold" fill="white">P</text>
-            </g>
-          </g>
-          <!-- RIPPLE RINGS -->
-          <circle class="zh-ring" cx="129" cy="209" r="9" fill="none" stroke="rgba(12,2,67,0.6)" stroke-width="2.5" opacity="0"></circle>
-          <circle class="zh-ring2" cx="129" cy="209" r="9" fill="none" stroke="rgba(12,2,67,0.35)" stroke-width="2" opacity="0"></circle>
-          <!-- RIGHT HAND GRIP -->
-          <ellipse cx="169" cy="198" rx="7" ry="12" fill="#f5c4a1" stroke="#dda882" stroke-width="0.8" transform="rotate(12,169,198)"></ellipse>
-          <ellipse cx="171" cy="218" rx="7" ry="12" fill="#f5c4a1" stroke="#dda882" stroke-width="0.8" transform="rotate(8,171,218)"></ellipse>
-          <ellipse cx="170" cy="237" rx="7" ry="11" fill="#f5c4a1" stroke="#dda882" stroke-width="0.8" transform="rotate(5,170,237)"></ellipse>
-          <ellipse cx="90" cy="228" rx="7" ry="17" fill="#f5c4a1" stroke="#dda882" stroke-width="0.8" transform="rotate(-15,90,228)" opacity="0.75"></ellipse>
-          <!-- GESTURE FINGERS (pinch-out) -->
-          <g class="zh-f1">
-            <ellipse cx="114" cy="190" rx="7.5" ry="19" fill="#f5c4a1" stroke="#dda882" stroke-width="1.3" transform="rotate(-40,114,190)"></ellipse>
-          </g>
-          <g class="zh-f2">
-            <ellipse cx="144" cy="228" rx="7.5" ry="19" fill="#f5c4a1" stroke="#dda882" stroke-width="1.3" transform="rotate(-40,144,228)"></ellipse>
-          </g>
-        </svg>
-      </div>
-      <div id="zh-desc">Nipistä ruutua kahdella sormella ja levitä niitä erilleen — kartta lähentää ja löydät pysäköintialueen helpommin!</div>
-      <button id="zh-ok" onclick="closeZoomHint()">Selvä, ymmärsin! 👍</button>
-    </div>
-  </div>
-
-  <div id="btn-container"><button id="action-btn">Lähennä karttaa</button></div>
+  <div id="btn-container"><button id="action-btn">Valitse pysäköintialue</button></div>
 
   <div id="vehicle-sheet">
     <div class="sheet-backdrop" onclick="closeVehicleSheet()"></div>
@@ -1263,43 +505,26 @@
         <button class="sheet-close-btn" onclick="closePriceDetail()">✕</button>
       </div>
       <div class="price-detail-content">
-        <div class="detail-row">
-          <span class="detail-label">Pysäköintimaksu</span>
-          <span class="detail-value" id="detail-parking">0,00 €</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Palvelumaksu (10%)</span>
-          <span class="detail-value" id="detail-service">0,00 €</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Välisumma (ilman ALV)</span>
-          <span class="detail-value" id="detail-subtotal">0,00 €</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">ALV 25,5%</span>
-          <span class="detail-value" id="detail-vat">0,00 €</span>
-        </div>
-        <div class="detail-row total">
-          <span class="detail-label">Yhteensä</span>
-          <span class="detail-value" id="detail-total">0,00 €</span>
-        </div>
+        <div class="detail-row"><span class="detail-label">Pysäköintimaksu</span><span class="detail-value" id="detail-parking">0,00 €</span></div>
+        <div class="detail-row"><span class="detail-label">Palvelumaksu (10%)</span><span class="detail-value" id="detail-service">0,00 €</span></div>
+        <div class="detail-row"><span class="detail-label">Välisumma (ilman ALV)</span><span class="detail-value" id="detail-subtotal">0,00 €</span></div>
+        <div class="detail-row"><span class="detail-label">ALV 25,5%</span><span class="detail-value" id="detail-vat">0,00 €</span></div>
+        <div class="detail-row total"><span class="detail-label">Yhteensä</span><span class="detail-value" id="detail-total">0,00 €</span></div>
       </div>
     </div>
   </div>
 
   <div id="parking-overlay">
     <div id="parking-header"><button id="back-btn">←</button><div id="parking-header-title">Pysäköinti</div></div>
-    
     <div class="p-cards-container">
       <div class="p-card">
         <div class="p-card-title">Valittu alue</div>
         <div class="area-select-row" onclick="goBackToMap()">
           <div class="area-code-badge" id="p-code">—</div>
-          <div style="flex: 1;"><div class="area-name" id="p-owner">—</div><div class="area-meta" id="p-meta">—</div></div>
+          <div style="flex:1;"><div class="area-name" id="p-owner">—</div><div class="area-meta" id="p-meta">—</div></div>
           <div class="area-chevron">⌄</div>
         </div>
       </div>
-
       <div class="p-card">
         <div class="p-card-title">Ajoneuvo</div>
         <div class="vehicle-display" onclick="openVehicleSheet()">
@@ -1311,7 +536,6 @@
           <div class="vehicle-chevron">⌄</div>
         </div>
       </div>
-
       <div class="p-card">
         <div class="p-card-title">Maksutapa</div>
         <div class="payment-display" onclick="openPaymentSheet()">
@@ -1320,7 +544,6 @@
           <div class="payment-chevron">⌄</div>
         </div>
       </div>
-
       <div class="p-card">
         <div class="p-card-title">Pysäköintiaika</div>
         <div class="time-card-inner">
@@ -1334,29 +557,18 @@
         </div>
       </div>
     </div>
-
     <div id="total-price-container">
       <div class="total-price-row">
-        <span class="total-price-label">
-          Yhteensä
-          <span class="info-icon" onclick="openPriceDetail()">i</span>
-        </span>
+        <span class="total-price-label">Yhteensä<span class="info-icon" onclick="openPriceDetail()">i</span></span>
         <span class="total-price-val" id="p-price">0,00 €</span>
       </div>
     </div>
-
     <div id="start-btn-container"><button id="start-btn" class="disabled">Lisää pysäköintiaika</button></div>
   </div>
 
   <script>
     const splashScreen = document.getElementById('splash-screen');
-    
-    setTimeout(() => {
-      splashScreen.classList.add('fade-out');
-      setTimeout(() => {
-        splashScreen.style.display = 'none';
-      }, 300);
-    }, 500);
+    setTimeout(() => { splashScreen.classList.add('fade-out'); setTimeout(() => { splashScreen.style.display = 'none'; }, 300); }, 500);
 
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
     function transformRequest(url) { if (url.includes('digitransit.fi')) return { url, headers: { 'digitransit-subscription-key': API_KEY } }; return { url }; }
@@ -1365,80 +577,32 @@
     map.touchZoomRotate.disableRotation();
 
     let currentMarker = null;
-    
+
     function createPinElement() {
       const el = document.createElement('div');
-      el.innerHTML = `
-        <svg width="24" height="36" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="pinGradient" cx="50%" cy="30%">
-              <stop offset="0%" style="stop-color:#ff5555;stop-opacity:1" />
-              <stop offset="100%" style="stop-color:#cc0000;stop-opacity:1" />
-            </radialGradient>
-            <linearGradient id="poleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style="stop-color:#888;stop-opacity:1" />
-              <stop offset="50%" style="stop-color:#aaa;stop-opacity:1" />
-              <stop offset="100%" style="stop-color:#888;stop-opacity:1" />
-            </linearGradient>
-          </defs>
-          <ellipse cx="12" cy="12" rx="9" ry="9" fill="url(#pinGradient)" stroke="#990000" stroke-width="0.8"/>
-          <ellipse cx="10" cy="10" rx="3" ry="3.5" fill="#ff9999" opacity="0.6"/>
-          <rect x="10.5" y="21" width="3" height="12" fill="url(#poleGradient)" stroke="#666" stroke-width="0.4"/>
-          <ellipse cx="12" cy="33" rx="2" ry="1.5" fill="#333" opacity="0.4"/>
-        </svg>
-      `;
-      el.style.width = '24px';
-      el.style.height = '36px';
-      el.style.cursor = 'pointer';
+      el.innerHTML = `<svg width="24" height="36" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="pinGradient" cx="50%" cy="30%"><stop offset="0%" style="stop-color:#ff5555;stop-opacity:1"/><stop offset="100%" style="stop-color:#cc0000;stop-opacity:1"/></radialGradient><linearGradient id="poleGradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#888;stop-opacity:1"/><stop offset="50%" style="stop-color:#aaa;stop-opacity:1"/><stop offset="100%" style="stop-color:#888;stop-opacity:1"/></linearGradient></defs><ellipse cx="12" cy="12" rx="9" ry="9" fill="url(#pinGradient)" stroke="#990000" stroke-width="0.8"/><ellipse cx="10" cy="10" rx="3" ry="3.5" fill="#ff9999" opacity="0.6"/><rect x="10.5" y="21" width="3" height="12" fill="url(#poleGradient)" stroke="#666" stroke-width="0.4"/><ellipse cx="12" cy="33" rx="2" ry="1.5" fill="#333" opacity="0.4"/></svg>`;
+      el.style.width = '24px'; el.style.height = '36px'; el.style.cursor = 'pointer';
       return el;
     }
 
-    // Kello-ikoni historialle - vastapäivään menevällä nuolella kellotaulun ulkopuolella
     function getHistoryIconSVG() {
-      return `
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="13" cy="13" r="8"/>
-          <polyline points="13 9 13 13 16 15"/>
-          <path d="M4.5 10.5 L3 9 L4.5 7.5" stroke="#333" stroke-width="2.5"/>
-          <path d="M4 9 C4 9, 6 6, 8 5" stroke="#333" stroke-width="2.5" fill="none"/>
-        </svg>
-      `;
+      return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="13" r="8"/><polyline points="13 9 13 13 16 15"/><path d="M4.5 10.5 L3 9 L4.5 7.5" stroke="#333" stroke-width="2.5"/><path d="M4 9 C4 9, 6 6, 8 5" stroke="#333" stroke-width="2.5" fill="none"/></svg>`;
     }
 
     function getPinIconSVG() {
-      return `
-        <svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="pinIconGradient" cx="50%" cy="30%">
-              <stop offset="0%" style="stop-color:#ff5555;stop-opacity:1" />
-              <stop offset="100%" style="stop-color:#cc0000;stop-opacity:1" />
-            </radialGradient>
-          </defs>
-          <ellipse cx="12" cy="12" rx="9" ry="9" fill="url(#pinIconGradient)" stroke="#990000" stroke-width="0.8"/>
-          <ellipse cx="10" cy="10" rx="3" ry="3.5" fill="#ff9999" opacity="0.6"/>
-          <rect x="10.5" y="21" width="3" height="12" fill="#888" stroke="#666" stroke-width="0.4"/>
-        </svg>
-      `;
+      return `<svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="pinIconGradient" cx="50%" cy="30%"><stop offset="0%" style="stop-color:#ff5555;stop-opacity:1"/><stop offset="100%" style="stop-color:#cc0000;stop-opacity:1"/></radialGradient></defs><ellipse cx="12" cy="12" rx="9" ry="9" fill="url(#pinIconGradient)" stroke="#990000" stroke-width="0.8"/><ellipse cx="10" cy="10" rx="3" ry="3.5" fill="#ff9999" opacity="0.6"/><rect x="10.5" y="21" width="3" height="12" fill="#888" stroke="#666" stroke-width="0.4"/></svg>`;
     }
 
     let userLocation = null;
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
+      const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+      const a = Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+      return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
     }
 
     function formatDistance(distanceKm) {
-      if (distanceKm < 1) {
-        const meters = Math.round(distanceKm * 1000);
-        return `${meters} m päässä`;
-      }
+      if (distanceKm < 1) return `${Math.round(distanceKm*1000)} m päässä`;
       return `${Math.round(distanceKm)} km päässä`;
     }
 
@@ -1458,41 +622,20 @@
         map.addLayer({ id:'helsinki-parkit-fill', type:'fill', source:'helsinki-parkit', minzoom:13, paint:{'fill-color':'#4A90D9','fill-opacity':0.25} });
         map.addLayer({ id:'helsinki-parkit-outline', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#2B6CB0','line-width':1.5,'line-opacity':0.9} });
         map.addLayer({ id:'helsinki-parkit-highlight', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#0C0243','line-width':4,'line-opacity':1}, filter:['==',['get','hel:id'],-1] });
-        
-        setTimeout(() => {
-          checkParking();
-        }, 100);
+        setTimeout(() => { checkParking(); }, 100);
       });
     });
 
     const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
     map.addControl(geolocate);
-    
     geolocate.on('geolocate', (e) => {
-      userLocation = {
-        lat: e.coords.latitude,
-        lon: e.coords.longitude
-      };
-      
-      if (!map.hasFlownToLocation) {
-        map.flyTo({
-          center: [e.coords.longitude, e.coords.latitude],
-          zoom: 15,
-          duration: 2000
-        });
-        map.hasFlownToLocation = true;
-      }
+      userLocation = { lat: e.coords.latitude, lon: e.coords.longitude };
+      if (!map.hasFlownToLocation) { map.flyTo({ center:[e.coords.longitude,e.coords.latitude], zoom:15, duration:2000 }); map.hasFlownToLocation = true; }
     });
-    
-    map.on('load', () => {
-      setTimeout(() => {
-        geolocate.trigger();
-      }, 800);
-    });
-    
+    map.on('load', () => { setTimeout(() => { geolocate.trigger(); }, 800); });
+
     const locationBtn = document.getElementById('location-btn');
     const sheet = document.getElementById('bottom-sheet');
-    
     locationBtn.addEventListener('click', () => geolocate.trigger());
 
     let menuExpanded = false;
@@ -1503,325 +646,123 @@
     const searchBtn = document.getElementById('search-btn');
     const plusMenuBtn = document.getElementById('plus-menu-btn');
     const btnContainer = document.getElementById('btn-container');
-    
-    function closeMenu() {
-      menuExpanded = false;
-      menuPill.classList.remove('expanded');
-      menuBtn.classList.remove('active');
-    }
-    
-    map.on('movestart', () => {
-      if (menuExpanded) {
-        closeMenu();
-      }
-    });
-    
+
+    function closeMenu() { menuExpanded = false; menuPill.classList.remove('expanded'); menuBtn.classList.remove('active'); }
+    map.on('movestart', () => { if (menuExpanded) closeMenu(); });
+
     menuBtn.addEventListener('click', () => {
       menuExpanded = !menuExpanded;
-      if (menuExpanded) {
-        menuPill.classList.add('expanded');
-        menuBtn.classList.add('active');
-      } else {
-        closeMenu();
-      }
+      if (menuExpanded) { menuPill.classList.add('expanded'); menuBtn.classList.add('active'); } else { closeMenu(); }
     });
-    
+
     profileBtn.addEventListener('click', () => {
       profileBtn.classList.add('active');
-      setTimeout(() => {
-        profileBtn.classList.remove('active');
-        closeMenu();
-        document.getElementById('profile-overlay').classList.add('open');
-      }, 200);
+      setTimeout(() => { profileBtn.classList.remove('active'); closeMenu(); document.getElementById('profile-overlay').classList.add('open'); }, 200);
     });
-    
+
     searchBtn.addEventListener('click', () => {
       searchBtn.classList.add('active');
-      setTimeout(() => {
-        searchBtn.classList.remove('active');
-        closeMenu();
-        document.getElementById('search-overlay').classList.add('open');
-        setTimeout(() => {
-          document.getElementById('search-input').focus();
-          showSearchHistory();
-        }, 100);
-      }, 200);
+      setTimeout(() => { searchBtn.classList.remove('active'); closeMenu(); document.getElementById('search-overlay').classList.add('open'); setTimeout(() => { document.getElementById('search-input').focus(); showSearchHistory(); }, 100); }, 200);
     });
-    
+
     plusMenuBtn.addEventListener('click', () => {
       plusMenuBtn.classList.add('active');
-      setTimeout(() => {
-        plusMenuBtn.classList.remove('active');
-        closeMenu();
-        document.getElementById('plus-overlay').classList.add('open');
-      }, 200);
+      setTimeout(() => { plusMenuBtn.classList.remove('active'); closeMenu(); document.getElementById('plus-overlay').classList.add('open'); }, 200);
     });
-    
-    function closeProfileOverlay() {
-      document.getElementById('profile-overlay').classList.remove('open');
-    }
-    
-    function closeSearchOverlay() {
-      document.getElementById('search-overlay').classList.remove('open');
-      document.getElementById('search-input').value = '';
-      document.getElementById('search-results').innerHTML = '';
-    }
-    
+
+    function closeProfileOverlay() { document.getElementById('profile-overlay').classList.remove('open'); }
+    function closeSearchOverlay() { document.getElementById('search-overlay').classList.remove('open'); document.getElementById('search-input').value = ''; document.getElementById('search-results').innerHTML = ''; }
+
     function closePlusOverlay() {
       document.getElementById('plus-overlay').classList.remove('open');
       closeAddParkingArea();
       closeCommentAreas();
     }
+    function openAddParkingArea() { document.getElementById('add-parking-overlay').style.transform = 'translateX(0)'; }
+    function closeAddParkingArea() { document.getElementById('add-parking-overlay').style.transform = 'translateX(100%)'; }
+    function openCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(0)'; }
+    function closeCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(100%)'; }
 
-    function openAddParkingArea() {
-      document.getElementById('add-parking-overlay').style.transform = 'translateX(0)';
-    }
-    function closeAddParkingArea() {
-      document.getElementById('add-parking-overlay').style.transform = 'translateX(100%)';
-    }
-    function openCommentAreas() {
-      document.getElementById('comment-areas-overlay').style.transform = 'translateX(0)';
-    }
-    function closeCommentAreas() {
-      document.getElementById('comment-areas-overlay').style.transform = 'translateX(100%)';
-    }
-
-    function openZoomHint() { document.getElementById('zoom-hint-modal').classList.add('open'); }
-    function closeZoomHint() { document.getElementById('zoom-hint-modal').classList.remove('open'); }
-    
-    function openGpsInfo() {
-      document.getElementById('gps-info-overlay').classList.add('open');
-    }
-    
-    function closeGpsInfo() {
-      document.getElementById('gps-info-overlay').classList.remove('open');
-    }
-    
-    function openAccountSettings() {
-      document.getElementById('account-detail').classList.add('open');
-    }
-    
-    function closeAccountSettings() {
-      document.getElementById('account-detail').classList.remove('open');
-    }
-    
-    function openNotificationSettings() {
-      alert('Ilmoitusasetukset - tulossa pian');
-    }
-    
-    function openPaymentSettings() {
-      alert('Maksutapa-asetukset - tulossa pian');
-    }
-    
-    function openPrivacySettings() {
-      alert('Yksityisyysasetukset - tulossa pian');
-    }
-    
-    function openLanguageSettings() {
-      alert('Kieliasetukset - tulossa pian');
-    }
-    
-    function openHelpSettings() {
-      alert('Ohje ja tuki - tulossa pian');
-    }
-    
-    function openAboutSettings() {
-      alert('Tietoja - tulossa pian');
-    }
+    function openGpsInfo() { document.getElementById('gps-info-overlay').classList.add('open'); }
+    function closeGpsInfo() { document.getElementById('gps-info-overlay').classList.remove('open'); }
+    function openAccountSettings() { document.getElementById('account-detail').classList.add('open'); }
+    function closeAccountSettings() { document.getElementById('account-detail').classList.remove('open'); }
+    function openNotificationSettings() { alert('Ilmoitusasetukset - tulossa pian'); }
+    function openPaymentSettings() { alert('Maksutapa-asetukset - tulossa pian'); }
+    function openPrivacySettings() { alert('Yksityisyysasetukset - tulossa pian'); }
+    function openLanguageSettings() { alert('Kieliasetukset - tulossa pian'); }
+    function openHelpSettings() { alert('Ohje ja tuki - tulossa pian'); }
+    function openAboutSettings() { alert('Tietoja - tulossa pian'); }
 
     const SEARCH_HISTORY_KEY = 'parking_search_history';
     const MAX_HISTORY = 8;
-    
-    function getSearchHistory() {
-      try {
-        const history = localStorage.getItem(SEARCH_HISTORY_KEY);
-        return history ? JSON.parse(history) : [];
-      } catch (e) {
-        return [];
-      }
-    }
-    
-    function addToSearchHistory(item) {
-      let history = getSearchHistory();
-      history = history.filter(h => !(h.lat === item.lat && h.lon === item.lon));
-      history.unshift(item);
-      if (history.length > MAX_HISTORY) {
-        history = history.slice(0, MAX_HISTORY);
-      }
-      localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
-    }
-    
-    function removeFromSearchHistory(index) {
-      let history = getSearchHistory();
-      history.splice(index, 1);
-      localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
-      showSearchHistory();
-    }
-    
+    function getSearchHistory() { try { const h = localStorage.getItem(SEARCH_HISTORY_KEY); return h ? JSON.parse(h) : []; } catch(e) { return []; } }
+    function addToSearchHistory(item) { let h = getSearchHistory(); h = h.filter(x => !(x.lat===item.lat&&x.lon===item.lon)); h.unshift(item); if(h.length>MAX_HISTORY) h=h.slice(0,MAX_HISTORY); localStorage.setItem(SEARCH_HISTORY_KEY,JSON.stringify(h)); }
+    function removeFromSearchHistory(index) { let h = getSearchHistory(); h.splice(index,1); localStorage.setItem(SEARCH_HISTORY_KEY,JSON.stringify(h)); showSearchHistory(); }
+
     function showSearchHistory() {
       const history = getSearchHistory();
       const searchResults = document.getElementById('search-results');
-      
-      searchResults.classList.remove('allow-scroll');
-      searchResults.classList.add('no-scroll');
-      
-      if (history.length === 0) {
-        searchResults.innerHTML = '<div class="search-empty">Ei aikaisempia hakuja</div>';
-        return;
-      }
-      
+      searchResults.classList.remove('allow-scroll'); searchResults.classList.add('no-scroll');
+      if (history.length === 0) { searchResults.innerHTML = '<div class="search-empty">Ei aikaisempia hakuja</div>'; return; }
       let currentLat, currentLon;
-      if (userLocation) {
-        currentLat = userLocation.lat;
-        currentLon = userLocation.lon;
-      } else {
-        const center = map.getCenter();
-        currentLat = center.lat;
-        currentLon = center.lng;
-      }
-      
-      searchResults.innerHTML = '<div class="search-history-header">Viimeisimmät haut</div>' + 
+      if (userLocation) { currentLat = userLocation.lat; currentLon = userLocation.lon; } else { const c = map.getCenter(); currentLat = c.lat; currentLon = c.lng; }
+      searchResults.innerHTML = '<div class="search-history-header">Viimeisimmät haut</div>' +
         history.map((item, index) => {
-          const distanceKm = calculateDistance(currentLat, currentLon, item.lat, item.lon);
-          const distanceText = formatDistance(distanceKm);
-          return `
-            <div class="search-result-item">
-              <div class="search-result-icon">${getHistoryIconSVG()}</div>
-              <div class="search-result-text" onclick="selectHistoryPlace(${item.lat}, ${item.lon}, '${item.name.replace(/'/g, "\\'")}', ${index})">
-                <div class="search-result-name">${item.name}</div>
-                <div class="search-result-address">${item.locality || ''}</div>
-                <div class="search-result-distance">${distanceText}</div>
-              </div>
-              <button class="search-history-delete" onclick="event.stopPropagation(); removeFromSearchHistory(${index})">✕</button>
-            </div>
-          `;
+          const d = calculateDistance(currentLat, currentLon, item.lat, item.lon);
+          return `<div class="search-result-item"><div class="search-result-icon">${getHistoryIconSVG()}</div><div class="search-result-text" onclick="selectHistoryPlace(${item.lat},${item.lon},'${item.name.replace(/'/g,"\\'")}',${index})"><div class="search-result-name">${item.name}</div><div class="search-result-address">${item.locality||''}</div><div class="search-result-distance">${formatDistance(d)}</div></div><button class="search-history-delete" onclick="event.stopPropagation();removeFromSearchHistory(${index})">✕</button></div>`;
         }).join('');
     }
-    
-    function selectHistoryPlace(lat, lon, name, index) {
-      selectPlace(lat, lon, name, false);
-    }
+
+    function selectHistoryPlace(lat, lon, name, index) { selectPlace(lat, lon, name, false); }
 
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
     let searchTimeout = null;
-    
+
     async function searchPlaces(query) {
-      if (!query || query.length < 2) {
-        showSearchHistory();
-        return;
-      }
-      
+      if (!query || query.length < 2) { showSearchHistory(); return; }
       try {
         const url = `https://api.digitransit.fi/geocoding/v1/search?text=${encodeURIComponent(query)}&size=10&boundary.country=FIN`;
-        
-        const response = await fetch(url, {
-          headers: {
-            'digitransit-subscription-key': API_KEY
-          }
-        });
-        
+        const response = await fetch(url, { headers: { 'digitransit-subscription-key': API_KEY } });
         const data = await response.json();
-        
         if (data.features && data.features.length > 0) {
-          searchResults.classList.remove('no-scroll');
-          searchResults.classList.add('allow-scroll');
-          
+          searchResults.classList.remove('no-scroll'); searchResults.classList.add('allow-scroll');
           let currentLat, currentLon;
-          if (userLocation) {
-            currentLat = userLocation.lat;
-            currentLon = userLocation.lon;
-          } else {
-            const center = map.getCenter();
-            currentLat = center.lat;
-            currentLon = center.lng;
-          }
-          
+          if (userLocation) { currentLat = userLocation.lat; currentLon = userLocation.lon; } else { const c = map.getCenter(); currentLat = c.lat; currentLon = c.lng; }
           searchResults.innerHTML = data.features.map(feature => {
-            const props = feature.properties;
-            const coords = feature.geometry.coordinates;
+            const props = feature.properties, coords = feature.geometry.coordinates;
             const name = props.name || props.label || 'Tuntematon';
-            
             const parts = [];
             const mainLocality = props.localadmin || props.locality || props.region || '';
             const neighbourhood = props.neighbourhood || '';
-            
-            if (mainLocality) {
-              parts.push(mainLocality);
-            }
-            
-            if (neighbourhood && neighbourhood !== mainLocality) {
-              parts.push(neighbourhood);
-            }
-            
+            if (mainLocality) parts.push(mainLocality);
+            if (neighbourhood && neighbourhood !== mainLocality) parts.push(neighbourhood);
             const fullLocality = parts.join(', ');
-            
-            const distanceKm = calculateDistance(currentLat, currentLon, coords[1], coords[0]);
-            const distanceText = formatDistance(distanceKm);
-            
-            return `
-              <div class="search-result-item" onclick="selectPlace(${coords[1]}, ${coords[0]}, '${name.replace(/'/g, "\\'")}', true, '${props.layer}', '${fullLocality.replace(/'/g, "\\'")}')">
-                <div class="search-result-icon">${getPinIconSVG()}</div>
-                <div class="search-result-text">
-                  <div class="search-result-name">${name}</div>
-                  <div class="search-result-address">${fullLocality}</div>
-                  <div class="search-result-distance">${distanceText}</div>
-                </div>
-              </div>
-            `;
+            const d = calculateDistance(currentLat, currentLon, coords[1], coords[0]);
+            return `<div class="search-result-item" onclick="selectPlace(${coords[1]},${coords[0]},'${name.replace(/'/g,"\\'")}',true,'${props.layer}','${fullLocality.replace(/'/g,"\\'")}')"><div class="search-result-icon">${getPinIconSVG()}</div><div class="search-result-text"><div class="search-result-name">${name}</div><div class="search-result-address">${fullLocality}</div><div class="search-result-distance">${formatDistance(d)}</div></div></div>`;
           }).join('');
-        } else {
-          searchResults.innerHTML = '<div class="search-empty">Ei hakutuloksia</div>';
-        }
-      } catch (error) {
-        console.error('Hakuvirhe:', error);
-        searchResults.innerHTML = '<div class="search-empty">Haku epäonnistui</div>';
-      }
+        } else { searchResults.innerHTML = '<div class="search-empty">Ei hakutuloksia</div>'; }
+      } catch(error) { searchResults.innerHTML = '<div class="search-empty">Haku epäonnistui</div>'; }
     }
-    
+
     searchInput.addEventListener('input', (e) => {
       clearTimeout(searchTimeout);
       const query = e.target.value.trim();
-      
-      if (query.length < 2) {
-        showSearchHistory();
-        return;
-      }
-      
-      searchTimeout = setTimeout(() => {
-        searchPlaces(query);
-      }, 300);
+      if (query.length < 2) { showSearchHistory(); return; }
+      searchTimeout = setTimeout(() => { searchPlaces(query); }, 300);
     });
-    
-    function selectPlace(lat, lon, name, addToHistory = true, layer = 'address', locality = '') {
-      if (addToHistory) {
-        addToSearchHistory({ lat, lon, name, layer, locality });
-      }
-      
+
+    function selectPlace(lat, lon, name, addToHistory=true, layer='address', locality='') {
+      if (addToHistory) addToSearchHistory({ lat, lon, name, layer, locality });
       closeSearchOverlay();
-      
-      if (currentMarker) {
-        currentMarker.remove();
-        currentMarker = null;
-      }
-      
-      map.flyTo({
-        center: [lon, lat],
-        zoom: 15,
-        duration: 1500
-      });
-      
+      if (currentMarker) { currentMarker.remove(); currentMarker = null; }
+      map.flyTo({ center:[lon,lat], zoom:15, duration:1500 });
       const onMoveEnd = () => {
         map.off('moveend', onMoveEnd);
         const markerElement = createPinElement();
-        currentMarker = new maplibregl.Marker({
-          element: markerElement,
-          anchor: 'bottom'
-        })
-          .setLngLat([lon, lat])
-          .addTo(map);
+        currentMarker = new maplibregl.Marker({ element:markerElement, anchor:'bottom' }).setLngLat([lon,lat]).addTo(map);
       };
-      
       map.once('moveend', onMoveEnd);
     }
 
@@ -1842,42 +783,9 @@
 
     let filterMode=false;
     const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
-    function openFilter(){
-      filterMode=true;
-      filterBtn.classList.add('active');
-      filterCloseBtn.classList.add('visible');
-      sheetNormal.style.display='none';
-      sheetFilter.classList.add('visible');
-      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
-      sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`;
-      currentY=window.innerHeight*0.5;
-      btnContainer.classList.add('hidden');
-    }
-    function closeFilter(){
-      filterMode=false;
-      filterBtn.classList.remove('active');
-      filterCloseBtn.classList.remove('visible');
-      sheetNormal.style.display='flex';
-      sheetFilter.classList.remove('visible');
-      sliderMin.value=0;
-      sliderMax.value=26;
-      updateSliderUI();
-      applyRangeFilter();
-      btnContainer.classList.remove('hidden');
-      
-      checkParking();
-    }
-    filterBtn.addEventListener('click',()=>{
-      if (filterMode) {
-        closeFilter();
-      } else {
-        filterBtn.classList.add('active');
-        setTimeout(() => {
-          closeMenu();
-          openFilter();
-        }, 200);
-      }
-    });
+    function openFilter(){ filterMode=true; filterBtn.classList.add('active'); filterCloseBtn.classList.add('visible'); sheetNormal.style.display='none'; sheetFilter.classList.add('visible'); sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)'; sheet.style.transform=`translateY(${window.innerHeight*0.5}px)`; currentY=window.innerHeight*0.5; btnContainer.classList.add('hidden'); }
+    function closeFilter(){ filterMode=false; filterBtn.classList.remove('active'); filterCloseBtn.classList.remove('visible'); sheetNormal.style.display='flex'; sheetFilter.classList.remove('visible'); sliderMin.value=0; sliderMax.value=26; updateSliderUI(); applyRangeFilter(); btnContainer.classList.remove('hidden'); checkParking(); }
+    filterBtn.addEventListener('click',()=>{ if(filterMode){closeFilter();}else{filterBtn.classList.add('active');setTimeout(()=>{closeMenu();openFilter();},200);} });
     filterCloseBtn.addEventListener('click',closeFilter);
 
     let moveTimer=null;
@@ -1885,7 +793,7 @@
     map.on('zoomend',checkParking);
 
     const btn=document.getElementById('action-btn'),summaryHeader=document.getElementById('summary-header'),summaryType=document.getElementById('summary-type'),summaryOperator=document.getElementById('summary-operator'),details=document.getElementById('sheet-details'),divider=document.getElementById('sheet-divider');
-    const gpsWarning = document.getElementById('gps-warning');
+    const gpsWarning=document.getElementById('gps-warning');
     let currentHighlightId=null,currentY=0,currentParkingProps=null;
 
     function highlightParking(){if(!map.getLayer('helsinki-parkit-highlight'))return;const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const id=f[0].properties['hel:id'];if(id!==currentHighlightId){currentHighlightId=id;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],id]);}}else{if(currentHighlightId!==null){currentHighlightId=null;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],-1]);}}}
@@ -1893,162 +801,62 @@
     function getTypeName(r){if(!r)return'-';const l=r.toLowerCase();if(l.includes('kadunvarsi')||l.includes('kadunsuuntainen'))return'Kadunvarsipysäköinti';if(l.includes('halli'))return'Pysäköintihalli';if(l.includes('tori')||l.includes('kenttä'))return'Pysäköintikenttä';return r;}
     function getPriceText(l){if(!l)return'-';const s=l.toLowerCase();if(s.includes('ilmainen'))return'Ilmainen pysäköintikiekolla';if(s.includes('maksullinen'))return'Maksullinen';if(s.includes('asukas'))return'Asukaspysäköinti';return l;}
     function formatHours(v){if(!v)return`<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;return`<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;}
-    
+
     function checkParking(){
       if(filterMode)return;
-      
       const zoom=map.getZoom();
-      
-      if(zoom<13){
-        summaryHeader.textContent='';
-        summaryType.textContent='';
-        summaryOperator.textContent='';
-        details.innerHTML='';
-        divider.style.display='none';
-        btn.textContent='Lähennä karttaa';
-        btn.classList.remove('active');
-        currentParkingProps=null;
-        gpsWarning.classList.remove('visible');
-        
-        sheet.style.transform='translateY(calc(100% - 60px))';
-        currentY=sheet.offsetHeight-60;
-        return;
-      }
-      
+      if(zoom<13){ summaryHeader.textContent=''; summaryType.textContent=''; summaryOperator.textContent=''; details.innerHTML=''; divider.style.display='none'; btn.textContent='Lähennä karttaa'; btn.classList.remove('active'); currentParkingProps=null; gpsWarning.classList.remove('visible'); sheet.style.transform='translateY(calc(100% - 60px))'; currentY=sheet.offsetHeight-60; return; }
       const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});
-      
-      if(f.length>0){
-        const p=f[0].properties;
-        currentParkingProps=p;
-        const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';
-        summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;
-        summaryType.textContent=getTypeName(p['hel:paikan_asento']);
-        summaryOperator.textContent='Helsingin kaupungin pysäköinti';
-        details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;
-        divider.style.display='block';
-        btn.textContent='Pysäköi tähän';
-        btn.classList.add('active');
-        gpsWarning.classList.remove('visible');
-        
-        sheet.style.transform='translateY(calc(100% - 150px))';
-        currentY=sheet.offsetHeight-150;
-      } else {
-        currentParkingProps=null;
-        summaryHeader.textContent='';
-        summaryType.textContent='';
-        summaryOperator.textContent='';
-        details.innerHTML='';
-        divider.style.display='none';
-        btn.textContent='Valitse pysäköintialue';
-        btn.classList.remove('active');
-        gpsWarning.classList.add('visible');
-        
-        sheet.style.transform='translateY(calc(100% - 90px))';
-        currentY=sheet.offsetHeight-90;
-      }
+      if(f.length>0){ const p=f[0].properties; currentParkingProps=p; const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton'; summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`; summaryType.textContent=getTypeName(p['hel:paikan_asento']); summaryOperator.textContent='Helsingin kaupungin pysäköinti'; details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`; divider.style.display='block'; btn.textContent='Pysäköi tähän'; btn.classList.add('active'); gpsWarning.classList.remove('visible'); sheet.style.transform='translateY(calc(100% - 150px))'; currentY=sheet.offsetHeight-150; }
+      else { currentParkingProps=null; summaryHeader.textContent=''; summaryType.textContent=''; summaryOperator.textContent=''; details.innerHTML=''; divider.style.display='none'; btn.textContent='Valitse pysäköintialue'; btn.classList.remove('active'); gpsWarning.classList.add('visible'); sheet.style.transform='translateY(calc(100% - 90px))'; currentY=sheet.offsetHeight-90; }
     }
 
-    const PARKING_RATE = 3;
-    const SERVICE_FEE_PERCENT = 0.10;
-    const VAT_PERCENT = 0.255;
+    const PARKING_RATE=3, SERVICE_FEE_PERCENT=0.10, VAT_PERCENT=0.255;
+    function calculatePrice(minutes){ if(minutes===0)return{parking:0,service:0,subtotal:0,vat:0,total:0}; const hours=minutes/60, parking=hours*PARKING_RATE, service=parking*SERVICE_FEE_PERCENT, subtotal=parking+service, vat=subtotal*VAT_PERCENT, total=subtotal+vat; return{parking,service,subtotal,vat,total}; }
+    function formatPrice(amount){ return amount.toFixed(2).replace('.',',')+' €'; }
 
-    function calculatePrice(minutes) {
-      if (minutes === 0) return { parking: 0, service: 0, subtotal: 0, vat: 0, total: 0 };
-      const hours = minutes / 60;
-      const parking = hours * PARKING_RATE;
-      const service = parking * SERVICE_FEE_PERCENT;
-      const subtotal = parking + service;
-      const vat = subtotal * VAT_PERCENT;
-      const total = subtotal + vat;
-      return { parking, service, subtotal, vat, total };
-    }
-
-    function formatPrice(amount) {
-      return amount.toFixed(2).replace('.', ',') + ' €';
-    }
-
-    let parkingMinutes=0, parkingMaxMinutes=1440, isIlmainen=false;
-    let parkingStartTime = null;
-    const PIXELS_PER_MINUTE=8, RADIANS_PER_PX=0.055, N_LINES=12;
-    const CW=52, CH=80, CY=CH/2, R=33;
+    let parkingMinutes=0,parkingMaxMinutes=1440,isIlmainen=false,parkingStartTime=null;
+    const PIXELS_PER_MINUTE=8,RADIANS_PER_PX=0.055,N_LINES=12,CW=52,CH=80,CY=CH/2,R=33;
     let drumPhase=0;
-    const drumCanvas=document.getElementById('drum-canvas');
-    const dctx=drumCanvas.getContext('2d');
+    const drumCanvas=document.getElementById('drum-canvas'), dctx=drumCanvas.getContext('2d');
 
-    function drawDrum(){dctx.clearRect(0,0,CW,CH);for(let x=0;x<CW;x++){const nx=(x-CW/2)/(CW/2);const shade=Math.sqrt(Math.max(0,1-nx*nx));const edge=Math.round(220+shade*20);dctx.fillStyle=`rgb(${edge},${edge},${edge})`;dctx.fillRect(x,0,1,CH);}for(let i=0;i<N_LINES;i++){const alpha=(i/N_LINES)*Math.PI*2+drumPhase;const a=((alpha%(Math.PI*2))+Math.PI*2)%(Math.PI*2);const cosA=Math.cos(a);if(cosA<0)continue;const sinA=Math.sin(a);const y=CY+R*sinA;if(y<1||y>CH-1)continue;const opacity=cosA*0.8;const lineWidth=0.8+cosA*2.2;const colorVal=Math.round(60+(1-cosA)*60);dctx.save();dctx.globalAlpha=opacity;dctx.strokeStyle=`rgb(${colorVal},${colorVal-5},${colorVal+20})`;dctx.lineWidth=lineWidth;dctx.lineCap='round';dctx.beginPath();dctx.moveTo(6,y);dctx.lineTo(CW-6,y);dctx.stroke();dctx.restore();}const tg=dctx.createLinearGradient(0,0,0,24);tg.addColorStop(0,'rgba(232,232,232,0.98)');tg.addColorStop(1,'rgba(232,232,232,0)');dctx.fillStyle=tg;dctx.fillRect(0,0,CW,24);const bg=dctx.createLinearGradient(0,CH-24,0,CH);bg.addColorStop(0,'rgba(232,232,232,0)');bg.addColorStop(1,'rgba(232,232,232,0.98)');dctx.fillStyle=bg;dctx.fillRect(0,CH-24,CW,24);dctx.save();dctx.strokeStyle='rgba(12,2,67,0.18)';dctx.lineWidth=1;dctx.setLineDash([2,2]);dctx.beginPath();dctx.moveTo(4,CY);dctx.lineTo(CW-4,CY);dctx.stroke();dctx.restore();}
+    function drawDrum(){dctx.clearRect(0,0,CW,CH);for(let x=0;x<CW;x++){const nx=(x-CW/2)/(CW/2),shade=Math.sqrt(Math.max(0,1-nx*nx)),edge=Math.round(220+shade*20);dctx.fillStyle=`rgb(${edge},${edge},${edge})`;dctx.fillRect(x,0,1,CH);}for(let i=0;i<N_LINES;i++){const alpha=(i/N_LINES)*Math.PI*2+drumPhase,a=((alpha%(Math.PI*2))+Math.PI*2)%(Math.PI*2),cosA=Math.cos(a);if(cosA<0)continue;const sinA=Math.sin(a),y=CY+R*sinA;if(y<1||y>CH-1)continue;const opacity=cosA*0.8,lineWidth=0.8+cosA*2.2,colorVal=Math.round(60+(1-cosA)*60);dctx.save();dctx.globalAlpha=opacity;dctx.strokeStyle=`rgb(${colorVal},${colorVal-5},${colorVal+20})`;dctx.lineWidth=lineWidth;dctx.lineCap='round';dctx.beginPath();dctx.moveTo(6,y);dctx.lineTo(CW-6,y);dctx.stroke();dctx.restore();}const tg=dctx.createLinearGradient(0,0,0,24);tg.addColorStop(0,'rgba(232,232,232,0.98)');tg.addColorStop(1,'rgba(232,232,232,0)');dctx.fillStyle=tg;dctx.fillRect(0,0,CW,24);const bg=dctx.createLinearGradient(0,CH-24,0,CH);bg.addColorStop(0,'rgba(232,232,232,0)');bg.addColorStop(1,'rgba(232,232,232,0.98)');dctx.fillStyle=bg;dctx.fillRect(0,CH-24,CW,24);dctx.save();dctx.strokeStyle='rgba(12,2,67,0.18)';dctx.lineWidth=1;dctx.setLineDash([2,2]);dctx.beginPath();dctx.moveTo(4,CY);dctx.lineTo(CW-4,CY);dctx.stroke();dctx.restore();}
 
     function formatTimeDisplay(mins){if(mins===0)return'0 min';mins=Math.max(1,Math.min(mins,parkingMaxMinutes));if(mins<60)return`${mins} min`;const h=Math.floor(mins/60),m=mins%60;return m>0?`${h} h ${m} min`:`${h} h`;}
 
-    function formatEndTime(mins) {
-      if (mins === 0) return 'Pyöritä rullaa →';
-      const now = parkingStartTime || new Date();
-      const end = new Date(now.getTime() + mins * 60000);
-      const h = end.getHours();
-      const m = end.getMinutes();
-      const time = `${h}:${m.toString().padStart(2,'0')}`;
-      const today = new Date(now);
-      today.setHours(0,0,0,0);
-      const endDay = new Date(end);
-      endDay.setHours(0,0,0,0);
-      const diffDays = Math.floor((endDay - today) / 86400000);
-      if (diffDays === 0) return `Pysäköinti päättyy tänään ${time}`;
-      if (diffDays === 1) return `Pysäköinti päättyy huomenna ${time}`;
-      const d = end.getDate();
-      const mon = end.getMonth() + 1;
-      return `Pysäköinti päättyy ${d}.${mon}. ${time}`;
-    }
+    function formatEndTime(mins){if(mins===0)return'Pyöritä rullaa →';const now=parkingStartTime||new Date(),end=new Date(now.getTime()+mins*60000),h=end.getHours(),m=end.getMinutes(),time=`${h}:${m.toString().padStart(2,'0')}`;const today=new Date(now);today.setHours(0,0,0,0);const endDay=new Date(end);endDay.setHours(0,0,0,0);const diffDays=Math.floor((endDay-today)/86400000);if(diffDays===0)return`Pysäköinti päättyy tänään ${time}`;if(diffDays===1)return`Pysäköinti päättyy huomenna ${time}`;const d=end.getDate(),mon=end.getMonth()+1;return`Pysäköinti päättyy ${d}.${mon}. ${time}`;}
 
-    let lastDisplayedMinutes=-1;
-    let lastVibrateMinute=-1;
-    
+    let lastDisplayedMinutes=-1,lastVibrateMinute=-1;
+
     function updateDisplay(){
       const rounded=Math.max(0,Math.min(Math.round(parkingMinutes),parkingMaxMinutes));
       parkingMinutes=rounded;
       if(rounded!==lastDisplayedMinutes){
         document.getElementById('time-big').textContent=formatTimeDisplay(rounded);
         document.getElementById('time-end-text').textContent=formatEndTime(rounded);
-        const price = calculatePrice(rounded);
-        document.getElementById('p-price').textContent = formatPrice(price.total);
-        const startBtn = document.getElementById('start-btn');
-        if (rounded === 0) {
-          startBtn.classList.add('disabled');
-          startBtn.textContent = 'Lisää pysäköintiaika';
-        } else {
-          startBtn.classList.remove('disabled');
-          startBtn.textContent = 'Aloita pysäköinti';
-        }
-        if(rounded > 0 && rounded !== lastVibrateMinute && navigator.vibrate){
-          navigator.vibrate(10);
-          lastVibrateMinute = rounded;
-        }
+        const price=calculatePrice(rounded);
+        document.getElementById('p-price').textContent=formatPrice(price.total);
+        const startBtn=document.getElementById('start-btn');
+        if(rounded===0){startBtn.classList.add('disabled');startBtn.textContent='Lisää pysäköintiaika';}
+        else{startBtn.classList.remove('disabled');startBtn.textContent='Aloita pysäköinti';}
+        if(rounded>0&&rounded!==lastVibrateMinute&&navigator.vibrate){navigator.vibrate(10);lastVibrateMinute=rounded;}
         lastDisplayedMinutes=rounded;
       }
       drawDrum();
     }
 
-    function openPriceDetail() {
-      const price = calculatePrice(parkingMinutes);
-      document.getElementById('detail-parking').textContent = formatPrice(price.parking);
-      document.getElementById('detail-service').textContent = formatPrice(price.service);
-      document.getElementById('detail-subtotal').textContent = formatPrice(price.subtotal);
-      document.getElementById('detail-vat').textContent = formatPrice(price.vat);
-      document.getElementById('detail-total').textContent = formatPrice(price.total);
-      document.getElementById('price-detail-sheet').classList.add('open');
-    }
-
-    function closePriceDetail() {
-      document.getElementById('price-detail-sheet').classList.remove('open');
-    }
+    function openPriceDetail(){const price=calculatePrice(parkingMinutes);document.getElementById('detail-parking').textContent=formatPrice(price.parking);document.getElementById('detail-service').textContent=formatPrice(price.service);document.getElementById('detail-subtotal').textContent=formatPrice(price.subtotal);document.getElementById('detail-vat').textContent=formatPrice(price.vat);document.getElementById('detail-total').textContent=formatPrice(price.total);document.getElementById('price-detail-sheet').classList.add('open');}
+    function closePriceDetail(){document.getElementById('price-detail-sheet').classList.remove('open');}
 
     let inertiaRAF=null,inertiaVel=0;
-    const FRICTION=0.88, MIN_VEL=0.025;
+    const FRICTION=0.88,MIN_VEL=0.025;
     function stopInertia(){if(inertiaRAF){cancelAnimationFrame(inertiaRAF);inertiaRAF=null;}}
     function runInertia(){if(Math.abs(inertiaVel)<MIN_VEL){inertiaRAF=null;drawDrum();return;}const dpx=inertiaVel*16;drumPhase+=dpx*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(parkingMinutes+dpx/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();if(parkingMinutes<=0||parkingMinutes>=parkingMaxMinutes){inertiaRAF=null;return;}inertiaVel*=FRICTION;inertiaRAF=requestAnimationFrame(runInertia);}
 
     const drumZone=document.getElementById('drum-scroll-zone');
     let tStartY=null,tStartMins,tStartPhase,tLastY,tLastT,tVel;
     drumZone.addEventListener('touchstart',e=>{stopInertia();tStartY=e.touches[0].clientY;tStartMins=parkingMinutes;tStartPhase=drumPhase;tLastY=tStartY;tLastT=Date.now();tVel=0;},{passive:true});
-    drumZone.addEventListener('touchmove',e=>{if(tStartY===null)return;const y=e.touches[0].clientY;const now=Date.now(),dt=now-tLastT;if(dt>0)tVel=(y-tLastY)/dt;tLastY=y;tLastT=now;const fd=y-tStartY;drumPhase=tStartPhase+fd*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(tStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();},{passive:true});
+    drumZone.addEventListener('touchmove',e=>{if(tStartY===null)return;const y=e.touches[0].clientY,now=Date.now(),dt=now-tLastT;if(dt>0)tVel=(y-tLastY)/dt;tLastY=y;tLastT=now;const fd=y-tStartY;drumPhase=tStartPhase+fd*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(tStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();},{passive:true});
     drumZone.addEventListener('touchend',()=>{tStartY=null;inertiaVel=tVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);},{passive:true});
     let mStartY=null,mStartMins,mStartPhase,mLastY,mLastT,mVel;
     drumZone.addEventListener('mousedown',e=>{stopInertia();mStartY=e.clientY;mStartMins=parkingMinutes;mStartPhase=drumPhase;mLastY=e.clientY;mLastT=Date.now();mVel=0;});
@@ -2056,94 +864,29 @@
     window.addEventListener('mouseup',()=>{if(mStartY===null)return;mStartY=null;inertiaVel=mVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);});
     drawDrum();
 
-    let vehicles = [{ reg:'FHY-857', name:'Äitin auto' }];
-    let selectedVehicleIdx = 0;
+    let vehicles=[{reg:'FHY-857',name:'Äitin auto'}], selectedVehicleIdx=0;
 
-    function renderVehicleDisplay() {
-      const v = vehicles[selectedVehicleIdx];
-      document.getElementById('plate-text').textContent = v.reg;
-      document.getElementById('vehicle-nickname').textContent = v.name;
-    }
+    function renderVehicleDisplay(){const v=vehicles[selectedVehicleIdx];document.getElementById('plate-text').textContent=v.reg;document.getElementById('vehicle-nickname').textContent=v.name;}
+    function renderVehicleOptions(){const container=document.getElementById('vehicle-options');container.innerHTML='';vehicles.forEach((v,i)=>{const row=document.createElement('div');row.className='option-row';row.innerHTML=`<div class="option-check ${i===selectedVehicleIdx?'selected':''}"></div><div><div class="option-name">${v.name}</div><div class="option-reg">${v.reg}</div></div>`;row.addEventListener('click',()=>{selectedVehicleIdx=i;renderVehicleDisplay();closeVehicleSheet();});container.appendChild(row);});}
+    function openVehicleSheet(){renderVehicleOptions();document.getElementById('vehicle-sheet').classList.add('open');}
+    function closeVehicleSheet(){document.getElementById('vehicle-sheet').classList.remove('open');}
+    function addVehicle(){const reg=prompt('Rekisterinumero (esim. ABC-123):');if(!reg)return;const name=prompt('Lempinimi (esim. Oma auto):');if(!name)return;vehicles.push({reg:reg.trim().toUpperCase(),name:name.trim()});selectedVehicleIdx=vehicles.length-1;renderVehicleDisplay();closeVehicleSheet();}
 
-    function renderVehicleOptions() {
-      const container = document.getElementById('vehicle-options');
-      container.innerHTML = '';
-      vehicles.forEach((v, i) => {
-        const row = document.createElement('div');
-        row.className = 'option-row';
-        row.innerHTML = `
-          <div class="option-check ${i===selectedVehicleIdx?'selected':''}"></div>
-          <div>
-            <div class="option-name">${v.name}</div>
-            <div class="option-reg">${v.reg}</div>
-          </div>`;
-        row.addEventListener('click', () => { selectedVehicleIdx=i; renderVehicleDisplay(); closeVehicleSheet(); });
-        container.appendChild(row);
-      });
-    }
+    const paymentMethods=[{id:'applepay',name:'Apple Pay',icon:'applepay'},{id:'card',name:'Maksukortti',icon:'card'},{id:'mobilepay',name:'MobilePay',icon:'mobilepay'}];
+    let selectedPaymentIdx=0;
 
-    function openVehicleSheet() { renderVehicleOptions(); document.getElementById('vehicle-sheet').classList.add('open'); }
-    function closeVehicleSheet() { document.getElementById('vehicle-sheet').classList.remove('open'); }
-
-    function addVehicle() {
-      const reg = prompt('Rekisterinumero (esim. ABC-123):');
-      if (!reg) return;
-      const name = prompt('Lempinimi (esim. Oma auto):');
-      if (!name) return;
-      vehicles.push({ reg: reg.trim().toUpperCase(), name: name.trim() });
-      selectedVehicleIdx = vehicles.length - 1;
-      renderVehicleDisplay();
-      closeVehicleSheet();
-    }
-
-    const paymentMethods = [
-      { id:'applepay', name:'Apple Pay', icon:'applepay' },
-      { id:'card', name:'Maksukortti', icon:'card' },
-      { id:'mobilepay', name:'MobilePay', icon:'mobilepay' }
-    ];
-    let selectedPaymentIdx = 0;
-
-    function getPaymentIcon(icon) {
-      if (icon === 'applepay') {
-        return `<svg viewBox="0 0 48 20" xmlns="http://www.w3.org/2000/svg"><path d="M8.4 3.8c.5-.6.8-1.5.7-2.4-.7 0-1.6.5-2.1 1.1-.5.5-.9 1.4-.8 2.2.8.1 1.7-.4 2.2-1zm.8 1.3c-1.2-.1-2.2.7-2.8.7-.6 0-1.5-.7-2.5-.6-1.3.1-2.5.7-3.1 1.9-1.3 2.3-.3 5.7 1 7.6.6.9 1.4 2 2.4 1.9.9 0 1.3-.6 2.4-.6s1.4.6 2.4.6c1 0 1.7-.9 2.3-1.8.7-1 1-2 1-2.1 0 0-2-.8-2-3.1-.1-1.9 1.5-2.8 1.6-2.9-.9-1.3-2.3-1.5-2.7-1.6zm9.5-2.4v13.6h2.1v-4.7h2.9c2.7 0 4.5-1.8 4.5-4.5s-1.8-4.4-4.4-4.4h-5.1zm2.1 1.9h2.4c1.8 0 2.9 1 2.9 2.6s-1 2.6-2.9 2.6h-2.4v-5.2zm11.3 11.8c1.3 0 2.5-.7 3.1-1.7h0v1.6h2v-7.2c0-2.1-1.7-3.4-4.2-3.4-2.4 0-4.1 1.4-4.2 3.3h1.9c.2-.9 1-1.5 2.2-1.5 1.4 0 2.2.7 2.2 1.9v.8l-2.9.2c-2.7.2-4.1 1.2-4.1 3.1 0 1.9 1.5 3.2 3.6 3.2zm.6-1.7c-1.2 0-2-.6-2-1.5s.8-1.5 2.2-1.6l2.6-.2v1c0 1.3-1.1 2.3-2.8 2.3zm8.4 4.7c2.1 0 3.1-.8 4-3.2l3.8-10.7h-2.2l-2.6 8.3h0l-2.6-8.3h-2.2l3.7 10.3-.2.6c-.3 1-.8 1.4-1.7 1.4-.2 0-.5 0-.6-.1v1.7c.1.1.4.1.7.1z" fill="#000"/></svg>`;
-      }
-      if (icon === 'card') {
-        return `<svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/><rect x="1" y="5" width="30" height="3" fill="#555"/><rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/><rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/></svg>`;
-      }
-      if (icon === 'mobilepay') {
-        return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="#5A78FF" stroke-width="1.8"/><circle cx="12" cy="18" r="1.2" fill="#5A78FF"/><path d="M9 7h6M9 10h6M9 13h4" stroke="#5A78FF" stroke-width="1.5" stroke-linecap="round"/></svg>`;
-      }
+    function getPaymentIcon(icon){
+      if(icon==='applepay')return`<svg viewBox="0 0 48 20" xmlns="http://www.w3.org/2000/svg"><path d="M8.4 3.8c.5-.6.8-1.5.7-2.4-.7 0-1.6.5-2.1 1.1-.5.5-.9 1.4-.8 2.2.8.1 1.7-.4 2.2-1zm.8 1.3c-1.2-.1-2.2.7-2.8.7-.6 0-1.5-.7-2.5-.6-1.3.1-2.5.7-3.1 1.9-1.3 2.3-.3 5.7 1 7.6.6.9 1.4 2 2.4 1.9.9 0 1.3-.6 2.4-.6s1.4.6 2.4.6c1 0 1.7-.9 2.3-1.8.7-1 1-2 1-2.1 0 0-2-.8-2-3.1-.1-1.9 1.5-2.8 1.6-2.9-.9-1.3-2.3-1.5-2.7-1.6zm9.5-2.4v13.6h2.1v-4.7h2.9c2.7 0 4.5-1.8 4.5-4.5s-1.8-4.4-4.4-4.4h-5.1zm2.1 1.9h2.4c1.8 0 2.9 1 2.9 2.6s-1 2.6-2.9 2.6h-2.4v-5.2zm11.3 11.8c1.3 0 2.5-.7 3.1-1.7h0v1.6h2v-7.2c0-2.1-1.7-3.4-4.2-3.4-2.4 0-4.1 1.4-4.2 3.3h1.9c.2-.9 1-1.5 2.2-1.5 1.4 0 2.2.7 2.2 1.9v.8l-2.9.2c-2.7.2-4.1 1.2-4.1 3.1 0 1.9 1.5 3.2 3.6 3.2zm.6-1.7c-1.2 0-2-.6-2-1.5s.8-1.5 2.2-1.6l2.6-.2v1c0 1.3-1.1 2.3-2.8 2.3zm8.4 4.7c2.1 0 3.1-.8 4-3.2l3.8-10.7h-2.2l-2.6 8.3h0l-2.6-8.3h-2.2l3.7 10.3-.2.6c-.3 1-.8 1.4-1.7 1.4-.2 0-.5 0-.6-.1v1.7c.1.1.4.1.7.1z" fill="#000"/></svg>`;
+      if(icon==='card')return`<svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/><rect x="1" y="5" width="30" height="3" fill="#555"/><rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/><rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/></svg>`;
+      if(icon==='mobilepay')return`<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="#5A78FF" stroke-width="1.8"/><circle cx="12" cy="18" r="1.2" fill="#5A78FF"/><path d="M9 7h6M9 10h6M9 13h4" stroke="#5A78FF" stroke-width="1.5" stroke-linecap="round"/></svg>`;
       return '';
     }
 
-    function renderPaymentDisplay() {
-      const p = paymentMethods[selectedPaymentIdx];
-      document.getElementById('payment-icon').innerHTML = getPaymentIcon(p.icon);
-      document.getElementById('payment-name').textContent = p.name;
-    }
-
-    function renderPaymentOptions() {
-      const container = document.getElementById('payment-options');
-      container.innerHTML = '';
-      paymentMethods.forEach((p, i) => {
-        const row = document.createElement('div');
-        row.className = 'option-row';
-        row.innerHTML = `
-          <div class="option-check ${i===selectedPaymentIdx?'selected':''}"></div>
-          <div class="payment-icon-box">${getPaymentIcon(p.icon)}</div>
-          <div class="option-name">${p.name}</div>`;
-        row.addEventListener('click', () => { selectedPaymentIdx=i; renderPaymentDisplay(); closePaymentSheet(); });
-        container.appendChild(row);
-      });
-    }
-
-    function openPaymentSheet() { renderPaymentOptions(); document.getElementById('payment-sheet').classList.add('open'); }
-    function closePaymentSheet() { document.getElementById('payment-sheet').classList.remove('open'); }
-
-    function addPaymentMethod() {
-      alert('Tämä toiminto lisäisi uuden maksutavan. Tässä demossa käytetään olemassa olevia maksutapoja.');
-      closePaymentSheet();
-    }
+    function renderPaymentDisplay(){const p=paymentMethods[selectedPaymentIdx];document.getElementById('payment-icon').innerHTML=getPaymentIcon(p.icon);document.getElementById('payment-name').textContent=p.name;}
+    function renderPaymentOptions(){const container=document.getElementById('payment-options');container.innerHTML='';paymentMethods.forEach((p,i)=>{const row=document.createElement('div');row.className='option-row';row.innerHTML=`<div class="option-check ${i===selectedPaymentIdx?'selected':''}"></div><div class="payment-icon-box">${getPaymentIcon(p.icon)}</div><div class="option-name">${p.name}</div>`;row.addEventListener('click',()=>{selectedPaymentIdx=i;renderPaymentDisplay();closePaymentSheet();});container.appendChild(row);});}
+    function openPaymentSheet(){renderPaymentOptions();document.getElementById('payment-sheet').classList.add('open');}
+    function closePaymentSheet(){document.getElementById('payment-sheet').classList.remove('open');}
+    function addPaymentMethod(){alert('Tämä toiminto lisäisi uuden maksutavan. Tässä demossa käytetään olemassa olevia maksutapoja.');closePaymentSheet();}
 
     const overlay=document.getElementById('parking-overlay');
     function openParkingOverlay(p){
@@ -2152,87 +895,46 @@
       const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';
       isIlmainen=luokka.toLowerCase().includes('ilmainen');
       parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;
-      parkingMinutes=0;
-      parkingStartTime=new Date();
-      lastDisplayedMinutes=-1;
-      lastVibrateMinute=-1;
-      drumPhase=0;
+      parkingMinutes=0; parkingStartTime=new Date(); lastDisplayedMinutes=-1; lastVibrateMinute=-1; drumPhase=0;
       document.getElementById('p-code').textContent=areaCode;
       document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);
       document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText} · ${voimassaolo}`;
-      renderVehicleDisplay();
-      renderPaymentDisplay();
-      updateDisplay();
-      overlay.classList.add('open');
+      renderVehicleDisplay(); renderPaymentDisplay(); updateDisplay(); overlay.classList.add('open');
     }
 
-    function goBackToMap() {
-      stopInertia();
-      overlay.classList.remove('open');
-    }
-
+    function goBackToMap(){stopInertia();overlay.classList.remove('open');}
     document.getElementById('back-btn').addEventListener('click',goBackToMap);
-    btn.addEventListener('click',()=>{
-      if(btn.textContent==='Lähennä karttaa'){ openZoomHint(); return; }
-      if(currentParkingProps)openParkingOverlay(currentParkingProps);
-    });
+    btn.addEventListener('click',()=>{if(currentParkingProps)openParkingOverlay(currentParkingProps);});
 
     document.getElementById('start-btn').addEventListener('click',()=>{
-      if(parkingMinutes===0){return;}
-      const v=vehicles[selectedVehicleIdx];
-      const p=paymentMethods[selectedPaymentIdx];
-      const price = calculatePrice(parkingMinutes);
+      if(parkingMinutes===0)return;
+      const v=vehicles[selectedVehicleIdx],p=paymentMethods[selectedPaymentIdx],price=calculatePrice(parkingMinutes);
       alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${v.name} (${v.reg})\nAika: ${formatTimeDisplay(parkingMinutes)}\nMaksutapa: ${p.name}\nAlue: ${document.getElementById('p-code').textContent}\nHinta: ${formatPrice(price.total)}`);
     });
 
     map.on('error',e=>{console.warn('MapLibre virhe:',e.error?.message||e);});
 
     let startY=0,startTranslate=0,lastY=0,lastTime=0,velocity=0,isDragging=false;
-    function snapTo(t){
-      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
-      sheet.style.transform=`translateY(${t}px)`;
-      currentY=t;
-    }
-    
+    function snapTo(t){sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';sheet.style.transform=`translateY(${t}px)`;currentY=t;}
+
     sheet.addEventListener('touchstart',(e)=>{
-      // Estä drag jos ei ole pysäköintialuetta valittuna
-      if(!currentParkingProps || sliderTouching || e.target===sliderMin || e.target===sliderMax){
-        return;
-      }
-      
-      startY=e.touches[0].clientY;
-      lastY=startY;
-      lastTime=Date.now();
-      velocity=0;
-      const matrix=new DOMMatrix(getComputedStyle(sheet).transform);
-      startTranslate=matrix.m42;
-      currentY=startTranslate;
-      isDragging=true;
-      sheet.style.transition='none';
+      if(!currentParkingProps||sliderTouching||e.target===sliderMin||e.target===sliderMax)return;
+      startY=e.touches[0].clientY;lastY=startY;lastTime=Date.now();velocity=0;
+      const matrix=new DOMMatrix(getComputedStyle(sheet).transform);startTranslate=matrix.m42;currentY=startTranslate;isDragging=true;sheet.style.transition='none';
     },{passive:true});
-    
+
     sheet.addEventListener('touchmove',(e)=>{
       if(!isDragging)return;
-      const touch=e.touches[0].clientY;
-      const now=Date.now();
-      const dt=now-lastTime;
-      if(dt>0)velocity=(touch-lastY)/dt;
-      lastY=touch;
-      lastTime=now;
-      const maxY=sheet.clientHeight-60;
-      currentY=Math.max(0,Math.min(maxY,startTranslate+(touch-startY)));
-      sheet.style.transform=`translateY(${currentY}px)`;
+      const touch=e.touches[0].clientY,now=Date.now(),dt=now-lastTime;
+      if(dt>0)velocity=(touch-lastY)/dt;lastY=touch;lastTime=now;
+      const maxY=sheet.clientHeight-60;currentY=Math.max(0,Math.min(maxY,startTranslate+(touch-startY)));sheet.style.transform=`translateY(${currentY}px)`;
     },{passive:true});
-    
+
     sheet.addEventListener('touchend',()=>{
-      if(!isDragging)return;
-      isDragging=false;
+      if(!isDragging)return;isDragging=false;
       const maxY=sheet.clientHeight-60;
-      if(velocity>0.5)snapTo(maxY);
-      else if(velocity<-0.5)snapTo(0);
-      else snapTo(currentY<maxY/2?0:maxY);
+      if(velocity>0.5)snapTo(maxY);else if(velocity<-0.5)snapTo(0);else snapTo(currentY<maxY/2?0:maxY);
     });
   </script>
-
-
-</body></html>
+</body>
+</html>
