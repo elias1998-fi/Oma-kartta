@@ -16,6 +16,62 @@
     .maplibregl-ctrl { display: none !important; }
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
     
+    /* Splash Screen */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      background: white;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+    
+    #splash-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .splash-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .splash-car {
+      width: 48px;
+      height: 48px;
+      fill: #0C0243;
+    }
+    
+    .splash-p {
+      width: 40px;
+      height: 40px;
+      background: #0C0243;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
+    }
+    
     #left-menu-pill {
       position: fixed;
       top: max(16px,env(safe-area-inset-top));
@@ -128,12 +184,23 @@
       padding: 16px;
       background: white;
       border-bottom: 1px solid #eee;
+      position: relative;
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
     }
     
     #search-input {
       width: 100%;
       height: 44px;
-      padding: 0 16px;
+      padding: 0 16px 0 44px;
       border: 1px solid #ddd;
       border-radius: 12px;
       font-size: 16px;
@@ -169,7 +236,7 @@
     
     .search-result-item {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       padding: 14px 16px;
       border-bottom: 1px solid #f0f0f0;
       cursor: pointer;
@@ -191,6 +258,7 @@
       justify-content: center;
       margin-right: 12px;
       flex-shrink: 0;
+      margin-top: 2px;
     }
     
     .search-result-icon svg {
@@ -201,13 +269,15 @@
     .search-result-text {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
     
     .search-result-name {
       font-size: 15px;
       font-weight: 500;
       color: #222;
-      margin-bottom: 2px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -225,8 +295,7 @@
       font-size: 13px;
       color: #0C0243;
       font-weight: 500;
-      margin-left: 12px;
-      flex-shrink: 0;
+      white-space: nowrap;
     }
     
     .search-history-delete {
@@ -242,6 +311,7 @@
       justify-content: center;
       margin-left: 8px;
       flex-shrink: 0;
+      margin-top: 2px;
     }
     
     .search-history-delete:active {
@@ -554,6 +624,16 @@
   </style>
 </head>
 <body>
+  <!-- Splash Screen -->
+  <div id="splash-screen">
+    <div class="splash-content">
+      <svg class="splash-car" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+      </svg>
+      <div class="splash-p">P</div>
+    </div>
+  </div>
+
   <div id="map"></div>
   <svg id="center-pointer" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
@@ -709,6 +789,9 @@
       <div class="overlay-title">Hakutoiminto</div>
     </div>
     <div id="search-input-container">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
       <input type="text" id="search-input" placeholder="Hae osoitetta, paikkaa tai aluekoodia..." autocomplete="off">
     </div>
     <div id="search-results" class="no-scroll"></div>
@@ -871,13 +954,21 @@
   </div>
 
   <script>
+    const splashScreen = document.getElementById('splash-screen');
+    
+    setTimeout(() => {
+      splashScreen.classList.add('fade-out');
+      setTimeout(() => {
+        splashScreen.style.display = 'none';
+      }, 300);
+    }, 500);
+
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
     function transformRequest(url) { if (url.includes('digitransit.fi')) return { url, headers: { 'digitransit-subscription-key': API_KEY } }; return { url }; }
 
     const map = new maplibregl.Map({ container:'map', style:'omakartta_style.json', center:[24.9354,60.1699], zoom:12, minZoom:5, maxZoom:20, transformRequest, maxTileCacheSize:50, fadeDuration:100, dragRotate:false, touchPitch:false, pitchWithRotate:false, keyboard:false, attributionControl:false });
     map.touchZoomRotate.disableRotation();
 
-    // Punainen pin-merkki markkerina
     let currentMarker = null;
     
     function createPinElement() {
@@ -907,7 +998,17 @@
       return el;
     }
 
-    // SVG Pinni-ikoni funktio
+    // Kello-ikoni historialle
+    function getHistoryIconSVG() {
+      return `
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      `;
+    }
+
+    // Pinni-ikoni hakutuloksille
     function getPinIconSVG() {
       return `
         <svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
@@ -924,19 +1025,17 @@
       `;
     }
 
-    // Käyttäjän nykyinen GPS-sijainti
     let userLocation = null;
 
-    // Etäisyyden laskeminen Haversine-kaavalla
     function calculateDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371; // Maapallon säde kilometreinä
+      const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
       const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
                 Math.sin(dLon/2) * Math.sin(dLon/2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c; // Kilometreinä
+      return R * c;
     }
 
     function formatDistance(distanceKm) {
@@ -970,19 +1069,26 @@
     const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
     map.addControl(geolocate);
     
-    // Kuuntele käyttäjän sijainnin päivityksiä
     geolocate.on('geolocate', (e) => {
       userLocation = {
         lat: e.coords.latitude,
         lon: e.coords.longitude
       };
+      
+      if (!map.hasFlownToLocation) {
+        map.flyTo({
+          center: [e.coords.longitude, e.coords.latitude],
+          zoom: 15,
+          duration: 2000
+        });
+        map.hasFlownToLocation = true;
+      }
     });
     
-    // Hae sijainti automaattisesti kun kartta latautuu
     map.on('load', () => {
       setTimeout(() => {
         geolocate.trigger();
-      }, 1000);
+      }, 800);
     });
     
     const locationBtn = document.getElementById('location-btn');
@@ -1005,7 +1111,6 @@
       menuBtn.classList.remove('active');
     }
     
-    // Sulje burger-valikko kun karttaa liikutetaan
     map.on('movestart', () => {
       if (menuExpanded) {
         closeMenu();
@@ -1099,7 +1204,6 @@
       alert('Tietoja - tulossa pian');
     }
 
-    // Hakuhistoria LocalStoragessa
     const SEARCH_HISTORY_KEY = 'parking_search_history';
     const MAX_HISTORY = 8;
     
@@ -1141,7 +1245,6 @@
         return;
       }
       
-      // AINA käytä userLocation jos saatavilla
       let currentLat, currentLon;
       if (userLocation) {
         currentLat = userLocation.lat;
@@ -1158,12 +1261,12 @@
           const distanceText = formatDistance(distanceKm);
           return `
             <div class="search-result-item">
-              <div class="search-result-icon">${getPinIconSVG()}</div>
+              <div class="search-result-icon">${getHistoryIconSVG()}</div>
               <div class="search-result-text" onclick="selectHistoryPlace(${item.lat}, ${item.lon}, '${item.name.replace(/'/g, "\\'")}', ${index})">
                 <div class="search-result-name">${item.name}</div>
                 <div class="search-result-address">${item.locality || ''}</div>
+                <div class="search-result-distance">${distanceText}</div>
               </div>
-              <div class="search-result-distance">${distanceText}</div>
               <button class="search-history-delete" onclick="event.stopPropagation(); removeFromSearchHistory(${index})">✕</button>
             </div>
           `;
@@ -1199,7 +1302,6 @@
           searchResults.classList.remove('no-scroll');
           searchResults.classList.add('allow-scroll');
           
-          // AINA käytä userLocation jos saatavilla
           let currentLat, currentLon;
           if (userLocation) {
             currentLat = userLocation.lat;
@@ -1215,17 +1317,25 @@
             const coords = feature.geometry.coordinates;
             const name = props.name || props.label || 'Tuntematon';
             const locality = props.locality || props.localadmin || props.region || '';
+            const neighbourhood = props.neighbourhood || '';
+            
+            // Yhdistä kaupunki ja alue
+            let fullLocality = locality;
+            if (neighbourhood && neighbourhood !== locality) {
+              fullLocality = `${locality}, ${neighbourhood}`;
+            }
+            
             const distanceKm = calculateDistance(currentLat, currentLon, coords[1], coords[0]);
             const distanceText = formatDistance(distanceKm);
             
             return `
-              <div class="search-result-item" onclick="selectPlace(${coords[1]}, ${coords[0]}, '${name.replace(/'/g, "\\'")}', true, '${props.layer}', '${locality.replace(/'/g, "\\'")}')">
+              <div class="search-result-item" onclick="selectPlace(${coords[1]}, ${coords[0]}, '${name.replace(/'/g, "\\'")}', true, '${props.layer}', '${fullLocality.replace(/'/g, "\\'")}')">
                 <div class="search-result-icon">${getPinIconSVG()}</div>
                 <div class="search-result-text">
                   <div class="search-result-name">${name}</div>
-                  <div class="search-result-address">${locality}</div>
+                  <div class="search-result-address">${fullLocality}</div>
+                  <div class="search-result-distance">${distanceText}</div>
                 </div>
-                <div class="search-result-distance">${distanceText}</div>
               </div>
             `;
           }).join('');
