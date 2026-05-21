@@ -1000,7 +1000,7 @@
               <stop offset="0%" style="stop-color:#888;stop-opacity:1" />
               <stop offset="50%" style="stop-color:#aaa;stop-opacity:1" />
               <stop offset="100%" style="stop-color:#888;stop-opacity:1" />
-            </linearGradient>
+            </radialGradient>
           </defs>
           <ellipse cx="12" cy="12" rx="9" ry="9" fill="url(#pinGradient)" stroke="#990000" stroke-width="0.8"/>
           <ellipse cx="10" cy="10" rx="3" ry="3.5" fill="#ff9999" opacity="0.6"/>
@@ -1014,11 +1014,13 @@
       return el;
     }
 
+    // Kello-ikoni historialle - vastapäivään menevällä nuolella
     function getHistoryIconSVG() {
       return `
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>
           <polyline points="12 6 12 12 16 14"/>
+          <path d="M4 12 L6 10 L4 8" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       `;
     }
@@ -1077,7 +1079,6 @@
         map.addLayer({ id:'helsinki-parkit-outline', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#2B6CB0','line-width':1.5,'line-opacity':0.9} });
         map.addLayer({ id:'helsinki-parkit-highlight', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#0C0243','line-width':4,'line-opacity':1}, filter:['==',['get','hel:id'],-1] });
         
-        // Kutsu checkParking heti kun data ladattu
         setTimeout(() => {
           checkParking();
         }, 100);
@@ -1334,13 +1335,22 @@
             const props = feature.properties;
             const coords = feature.geometry.coordinates;
             const name = props.name || props.label || 'Tuntematon';
-            const locality = props.locality || props.localadmin || props.region || '';
+            
+            // Rakenna sijainti hierarkisesti: ensin localadmin/locality, sitten neighbourhood
+            const parts = [];
+            const mainLocality = props.localadmin || props.locality || props.region || '';
             const neighbourhood = props.neighbourhood || '';
             
-            let fullLocality = locality;
-            if (neighbourhood && neighbourhood !== locality) {
-              fullLocality = `${locality}, ${neighbourhood}`;
+            if (mainLocality) {
+              parts.push(mainLocality);
             }
+            
+            // Lisää neighbourhood vain jos se on eri kuin mainLocality
+            if (neighbourhood && neighbourhood !== mainLocality) {
+              parts.push(neighbourhood);
+            }
+            
+            const fullLocality = parts.join(', ');
             
             const distanceKm = calculateDistance(currentLat, currentLon, coords[1], coords[0]);
             const distanceText = formatDistance(distanceKm);
@@ -1451,7 +1461,6 @@
       applyRangeFilter();
       btnContainer.classList.remove('hidden');
       
-      // Palauta oikea korkeus
       checkParking();
     }
     filterBtn.addEventListener('click',()=>{
@@ -1487,7 +1496,6 @@
       const zoom=map.getZoom();
       
       if(zoom<13){
-        // Zoom liian matala
         summaryHeader.textContent='';
         summaryType.textContent='';
         summaryOperator.textContent='';
@@ -1506,7 +1514,6 @@
       const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});
       
       if(f.length>0){
-        // Pysäköintialue löydetty - näytä kaikki tiedot
         const p=f[0].properties;
         currentParkingProps=p;
         const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';
@@ -1519,11 +1526,9 @@
         btn.classList.add('active');
         gpsWarning.classList.remove('visible');
         
-        // Korkeammalle - näytä kaikki 3 riviä
         sheet.style.transform='translateY(calc(100% - 150px))';
         currentY=sheet.offsetHeight-150;
       } else {
-        // Ei pysäköintialuetta - näytä GPS-varoitus
         currentParkingProps=null;
         summaryHeader.textContent='';
         summaryType.textContent='';
@@ -1534,7 +1539,6 @@
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
         
-        // Matalammalle kun ei aluetta
         sheet.style.transform='translateY(calc(100% - 90px))';
         currentY=sheet.offsetHeight-90;
       }
