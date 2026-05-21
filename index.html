@@ -208,17 +208,6 @@
     #start-btn-container { padding: 10px 14px; padding-bottom: max(20px,env(safe-area-inset-bottom)); flex-shrink: 0; }
     #start-btn { width: 100%; height: 58px; border: none; border-radius: 16px; font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; color: white; background: #0C0243; cursor: pointer; transition: opacity 0.2s ease; }
     #start-btn.disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* Satellite badge */
-    #satellite-badge {
-      position: absolute; bottom: 72px; left: 16px; z-index: 10;
-      background: rgba(0,0,0,0.6); color: white;
-      font-family: Arial, sans-serif; font-size: 12px; font-weight: bold;
-      padding: 4px 10px; border-radius: 8px;
-      pointer-events: none; opacity: 0;
-      transition: opacity 0.4s ease;
-    }
-    #satellite-badge.visible { opacity: 1; }
   </style>
 </head>
 <body>
@@ -417,14 +406,18 @@
     </div>
     <div style="position:relative;flex:1;display:flex;flex-direction:column;">
       <div id="area-map" style="flex:1;"></div>
-      <div id="satellite-badge">🛰 Satelliitti</div>
+      <!-- Floating controls -->
       <div style="position:absolute;top:16px;right:16px;z-index:10;display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+        <!-- Corner +/- -->
         <div style="display:flex;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.22);">
           <button id="corner-minus-btn" onclick="removeCorner()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;">−</button>
           <div style="width:1px;background:#eee;margin:8px 0;"></div>
           <button onclick="addCorner()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;">+</button>
         </div>
+        <!-- Seuraa karttaa -->
         <button id="area-lock-btn" onclick="toggleAreaLock()" style="height:36px;padding:0 14px;border:none;border-radius:10px;background:white;color:#0C0243;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.22);white-space:nowrap;">Seuraa karttaa</button>
+        <!-- Satelliitti toggle -->
+        <button id="sat-toggle-btn" onclick="toggleSatellite()" style="height:36px;padding:0 14px;border-radius:10px;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;white-space:nowrap;transition:all 0.2s ease;background:white;color:#aaa;border:2px solid #ddd;box-shadow:0 2px 8px rgba(0,0,0,0.22);">🛰 Satelliitti</button>
       </div>
     </div>
     <div style="background:white;padding:12px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid #eee;flex-shrink:0;">
@@ -566,7 +559,6 @@
   </div>
 
   <script>
-    // ===== MAPBOX TOKEN =====
     const MAPBOX_TOKEN = 'pk.eyJ1IjoiZWxpYXMxOTk4IiwiYSI6ImNtaHV3NmNlZDA0cHgyanIzMmx0MnBsczQifQ.gUpCyVNlQq8XjUD5lPMGhA';
     const SATELLITE_ZOOM_THRESHOLD = 15;
 
@@ -658,23 +650,17 @@
     let areaMap=null, areaMarkers=[], areaCoords=[];
     let areaLocked=true, lockedPixelPos=[];
     let areaMapMode='map', areaSwitchingStyle=false;
+    // userWantsSatellite: käyttäjän manuaalinen valinta (oletus ON)
+    let userWantsSatellite=true;
 
     function getSatelliteStyle(){
       return {
-        version: 8,
-        sources: {
-          'mapbox-satellite': {
-            type: 'raster',
-            tiles: [`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`],
-            tileSize: 256,
-            attribution: '© Mapbox © Maxar'
-          }
-        },
-        layers: [{ id:'satellite-layer', type:'raster', source:'mapbox-satellite' }]
+        version:8,
+        sources:{'mapbox-satellite':{type:'raster',tiles:[`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`],tileSize:256,attribution:'© Mapbox © Maxar'}},
+        layers:[{id:'satellite-layer',type:'raster',source:'mapbox-satellite'}]
       };
     }
 
-    // Corner element: large invisible hit area + small visible dot
     function createCornerEl(){
       const wrapper=document.createElement('div');
       wrapper.style.cssText='width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
@@ -697,36 +683,59 @@
 
     function addAreaPolygon(){
       if(!areaMap)return;
-      // Polygon line color: white on satellite for contrast, dark blue on map
-      const lineColor = areaMapMode==='satellite' ? '#ffffff' : '#0C0243';
-      if(!areaMap.getSource('area-poly')){
-        areaMap.addSource('area-poly',{type:'geojson',data:getAreaGeoJSON()});
-      }
-      if(!areaMap.getLayer('area-poly-fill')){
-        areaMap.addLayer({id:'area-poly-fill',type:'fill',source:'area-poly',paint:{'fill-color':'#0C0243','fill-opacity':0.15}});
-      }
-      if(!areaMap.getLayer('area-poly-line')){
-        areaMap.addLayer({id:'area-poly-line',type:'line',source:'area-poly',paint:{'line-color':lineColor,'line-width':2.5,'line-opacity':0.95}});
-      }
+      const lineColor=areaMapMode==='satellite'?'#ffffff':'#0C0243';
+      if(!areaMap.getSource('area-poly'))areaMap.addSource('area-poly',{type:'geojson',data:getAreaGeoJSON()});
+      if(!areaMap.getLayer('area-poly-fill'))areaMap.addLayer({id:'area-poly-fill',type:'fill',source:'area-poly',paint:{'fill-color':'#0C0243','fill-opacity':0.15}});
+      if(!areaMap.getLayer('area-poly-line'))areaMap.addLayer({id:'area-poly-line',type:'line',source:'area-poly',paint:{'line-color':lineColor,'line-width':2.5,'line-opacity':0.95}});
     }
 
     function switchAreaMapStyle(mode){
       if(areaSwitchingStyle||areaMapMode===mode)return;
       areaSwitchingStyle=true;
       areaMapMode=mode;
-      const badge=document.getElementById('satellite-badge');
-      if(badge)badge.classList.toggle('visible',mode==='satellite');
+      updateSatBtn();
       areaMap.setStyle(mode==='satellite'?getSatelliteStyle():'omakartta_style.json');
       areaMap.once('style.load',()=>{
         addAreaPolygon();
         updateAreaLayer();
         areaSwitchingStyle=false;
-        // Check if zoom changed while switching
-        const z=areaMap.getZoom();
-        const shouldSat=z>=SATELLITE_ZOOM_THRESHOLD;
-        if(shouldSat&&areaMapMode!=='satellite') switchAreaMapStyle('satellite');
-        else if(!shouldSat&&areaMapMode!=='map') switchAreaMapStyle('map');
       });
+    }
+
+    function updateSatBtn(){
+      const btn=document.getElementById('sat-toggle-btn');
+      if(!btn||!areaMap)return;
+      const atZoom=areaMap.getZoom()>=SATELLITE_ZOOM_THRESHOLD;
+      const active=areaMapMode==='satellite';
+      if(!atZoom){
+        // Disabled — grayed out
+        btn.style.background='white';
+        btn.style.color='#bbb';
+        btn.style.border='2px solid #e0e0e0';
+        btn.style.boxShadow='0 2px 8px rgba(0,0,0,0.12)';
+        btn.style.opacity='0.6';
+      } else if(active){
+        // Satellite active — blue fill with border
+        btn.style.background='#0C0243';
+        btn.style.color='white';
+        btn.style.border='2px solid #0C0243';
+        btn.style.boxShadow='0 2px 8px rgba(12,2,67,0.35)';
+        btn.style.opacity='1';
+      } else {
+        // At zoom, satellite off — white with dark border
+        btn.style.background='white';
+        btn.style.color='#0C0243';
+        btn.style.border='2px solid #0C0243';
+        btn.style.boxShadow='0 2px 8px rgba(0,0,0,0.22)';
+        btn.style.opacity='1';
+      }
+    }
+
+    function toggleSatellite(){
+      if(!areaMap||areaMap.getZoom()<SATELLITE_ZOOM_THRESHOLD)return;
+      userWantsSatellite=!userWantsSatellite;
+      if(userWantsSatellite){switchAreaMapStyle('satellite');}
+      else{switchAreaMapStyle('map');}
     }
 
     function clampPixelPos(px){
@@ -804,11 +813,31 @@
       updateAreaLayer();updateMinusBtn();
     }
 
+    function handleZoomChange(){
+      if(!areaMap)return;
+      const z=areaMap.getZoom();
+      if(z>=SATELLITE_ZOOM_THRESHOLD){
+        // Saavutettiin satelliittitaso — aktivoi automaattisesti jos käyttäjä haluaa
+        if(userWantsSatellite&&areaMapMode!=='satellite'){
+          switchAreaMapStyle('satellite');
+        }
+      } else {
+        // Liian kaukana — paluu karttaan automaattisesti
+        if(areaMapMode!=='map'){
+          switchAreaMapStyle('map');
+        }
+      }
+      updateSatBtn();
+    }
+
     function initAreaMap(){
       const center=map.getCenter(),zoom=Math.max(map.getZoom(),15);
+      userWantsSatellite=true;
       if(areaMap){
         areaMap.resize();areaMap.setCenter([center.lng,center.lat]);areaMap.setZoom(zoom);
-        resetAreaCorners();return;
+        resetAreaCorners();
+        handleZoomChange();
+        return;
       }
       areaMapMode='map';areaSwitchingStyle=false;
       areaMap=new maplibregl.Map({
@@ -819,14 +848,9 @@
       areaMap.on('load',()=>{
         areaMap.touchZoomRotate.disableRotation();areaMap.dragRotate.disable();
         addAreaPolygon();resetAreaCorners();
-        // Check if we opened at satellite zoom
-        if(areaMap.getZoom()>=SATELLITE_ZOOM_THRESHOLD)switchAreaMapStyle('satellite');
+        handleZoomChange();
       });
-      areaMap.on('zoomend',()=>{
-        const z=areaMap.getZoom();
-        if(z>=SATELLITE_ZOOM_THRESHOLD&&areaMapMode!=='satellite')switchAreaMapStyle('satellite');
-        else if(z<SATELLITE_ZOOM_THRESHOLD&&areaMapMode!=='map')switchAreaMapStyle('map');
-      });
+      areaMap.on('zoomend',handleZoomChange);
       areaMap.on('move',()=>{
         if(!areaLocked&&lockedPixelPos.length===areaMarkers.length){
           areaMarkers.forEach((m,i)=>{
