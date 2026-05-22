@@ -1421,7 +1421,15 @@
         map.addLayer({ id:'helsinki-parkit-fill', type:'fill', source:'helsinki-parkit', minzoom:13, paint:{'fill-color':'#4A90D9','fill-opacity':0.25} });
         map.addLayer({ id:'helsinki-parkit-outline', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#2B6CB0','line-width':1.5,'line-opacity':0.9} });
         map.addLayer({ id:'helsinki-parkit-highlight', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#0C0243','line-width':4,'line-opacity':1}, filter:['==',['get','hel:id'],-1] });
-        
+
+        // Click on Helsinki parking areas → fly to centroid at zoom 15
+        map.on('click', 'helsinki-parkit-fill', (e) => {
+          const coords = e.features[0].geometry.coordinates[0];
+          const lng = coords.reduce((s,c) => s+c[0], 0) / coords.length;
+          const lat = coords.reduce((s,c) => s+c[1], 0) / coords.length;
+          map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
+        });
+
         setTimeout(() => {
           checkParking();
         }, 100);
@@ -2293,7 +2301,7 @@
         // ── 1. Community polygons (synchronous, no icon dependency) ───
         const polyFeatures = rows
           .filter(r => r.source === 'community' && r.polygon_coords?.type === 'Polygon')
-          .map(r => ({ type:'Feature', properties:{ id:r.id, source:r.source }, geometry: r.polygon_coords }));
+          .map(r => ({ type:'Feature', properties:{ id:r.id, source:r.source, area_type:r.area_type, extra_info:r.extra_info||'' }, geometry: r.polygon_coords }));
         const polyGeoJSON = { type:'FeatureCollection', features: polyFeatures };
 
         if (map.getSource('community-areas')) {
@@ -2304,6 +2312,34 @@
             minzoom:13, paint:{'fill-color':'#27ae60','fill-opacity':0.28} });
           map.addLayer({ id:'community-areas-outline', type:'line', source:'community-areas',
             minzoom:13, paint:{'line-color':'#1e8449','line-width':2,'line-opacity':0.95} });
+
+          // Hover + click on community areas
+          const TYPE_MAP = {
+            kiekko:'Kiekkopysäköinti', maksullinen:'Maksullinen pysäköinti', ilmainen:'Kiekoton ilmaisparkki'
+          };
+          function showCommunityInfo(e) {
+            const p = e.features[0].properties;
+            const typeName = TYPE_MAP[p.area_type] || p.area_type || 'Yhteisöalue';
+            const extra = p.extra_info ? `<p class="price-label">Lisätiedot</p><p class="price-value">${p.extra_info}</p>` : '';
+            showMasterFeatureInSheet(
+              typeName,
+              'Yhteisön lisäämä alue',
+              'Tiimin varmentama ✓',
+              `<p class="price-label">Tyyppi</p><p class="price-value">${typeName}</p>${extra}`
+            );
+          }
+          map.on('mouseenter', 'community-areas-fill', (e) => {
+            map.getCanvas().style.cursor = 'pointer';
+            showCommunityInfo(e);
+          });
+          map.on('click', 'community-areas-fill', (e) => {
+            showCommunityInfo(e);
+            const coords = e.features[0].geometry.coordinates[0];
+            const lng = coords.reduce((s,c) => s+c[0], 0) / coords.length;
+            const lat = coords.reduce((s,c) => s+c[1], 0) / coords.length;
+            map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
+          });
+          map.on('mouseleave', 'community-areas-fill', () => { map.getCanvas().style.cursor = ''; });
         }
 
         // ── 2. Parking garage markers (icon must load first) ──────────
@@ -2336,6 +2372,22 @@
       } catch(e) { console.error('Master load error:', e); }
     }
 
+
+    // Show any master-layer feature in the bottom sheet
+    function showMasterFeatureInSheet(header, type, operator, detailsHTML) {
+      document.getElementById('summary-header').textContent  = header;
+      document.getElementById('summary-type').textContent    = type;
+      document.getElementById('summary-operator').textContent = operator;
+      document.getElementById('sheet-details').innerHTML     = detailsHTML;
+      document.getElementById('sheet-divider').style.display = 'block';
+      document.getElementById('action-btn').textContent      = header;
+      document.getElementById('action-btn').classList.remove('active');
+      const snap = window.innerHeight * 0.45;
+      document.getElementById('bottom-sheet').style.transition =
+        'transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
+      document.getElementById('bottom-sheet').style.transform = `translateY(${snap}px)`;
+    }
+
     function addHalliLayers(geojson) {
       if (map.getSource('halli-points')) {
         map.getSource('halli-points').setData(geojson);
@@ -2355,26 +2407,27 @@
         }
       });
 
-      // Click → show name in bottom sheet area
-      map.on('click', 'halli-icons', (e) => {
+      // Hover + click → show in bottom sheet
+      function showHalliInfo(e) {
         const props = e.features[0].properties;
         const parts = (props.name || '').split(' | ');
         const name = parts[0] || 'Pysäköintihalli';
         const addr = parts[1] || '';
         const dept = parts[2] || '';
-        document.getElementById('summary-header').textContent = name;
-        document.getElementById('summary-type').textContent = addr;
-        document.getElementById('summary-operator').textContent = dept;
-        document.getElementById('sheet-details').innerHTML =
-          '<p class="price-label">Tyyppi</p><p class="price-value">Pysäköintihalli / -tila</p>';
-        document.getElementById('sheet-divider').style.display = 'block';
-        document.getElementById('action-btn').textContent = 'Pysäköintihalli';
-        document.getElementById('action-btn').classList.remove('active');
-        const snap = window.innerHeight * 0.45;
-        document.getElementById('bottom-sheet').style.transform = `translateY(${snap}px)`;
+        showMasterFeatureInSheet(
+          name, addr, dept,
+          '<p class="price-label">Tyyppi</p><p class="price-value">Pysäköintihalli / -tila</p>'
+        );
+      }
+      map.on('mouseenter', 'halli-icons', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        showHalliInfo(e);
       });
-
-      map.on('mouseenter', 'halli-icons', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('click', 'halli-icons', (e) => {
+        showHalliInfo(e);
+        const coords = e.features[0].geometry.coordinates;
+        map.flyTo({ center: coords, zoom: 15, duration: 800 });
+      });
       map.on('mouseleave', 'halli-icons', () => { map.getCanvas().style.cursor = ''; });
     }
     // ══════════════════════════════════════════════════════════════════
