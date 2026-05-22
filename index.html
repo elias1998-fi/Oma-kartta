@@ -1174,10 +1174,8 @@
   </div>
 
   <!-- Map info bar: follows bottom sheet top edge -->
-  <div id="map-info-bar" style="position:fixed;left:0;right:0;z-index:19;pointer-events:none;display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:22px;transition:opacity 0.15s ease;">
-    <span style="font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">© OpenStreetMap</span>
-    <span id="zoom-indicator" style="font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">Z 12.0</span>
-  </div>
+  <span id="osm-attribution" style="position:fixed;left:12px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:19;pointer-events:none;font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">© OpenStreetMap</span>
+  <span id="zoom-indicator" style="position:fixed;right:12px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:19;pointer-events:none;font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">Z 12.0</span>
 
   <div id="bottom-sheet">
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
@@ -1450,7 +1448,7 @@
           const coords = e.features[0].geometry.coordinates[0];
           const lng = coords.reduce((s,c) => s+c[0], 0) / coords.length;
           const lat = coords.reduce((s,c) => s+c[1], 0) / coords.length;
-          map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
+          map.flyTo({ center: [lng, lat], zoom: 16, duration: 800 });
         });
 
         setTimeout(() => {
@@ -2376,7 +2374,7 @@
             const coords = e.features[0].geometry.coordinates[0];
             const lng = coords.reduce((s,c) => s+c[0], 0) / coords.length;
             const lat = coords.reduce((s,c) => s+c[1], 0) / coords.length;
-            map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
+            map.flyTo({ center: [lng, lat], zoom: 16, duration: 800 });
           });
           map.on('mouseleave', 'community-areas-fill', () => {
             map.getCanvas().style.cursor = '';
@@ -2430,7 +2428,7 @@
       document.getElementById('sheet-details').innerHTML      = detailsHTML;
       document.getElementById('sheet-divider').style.display  = 'block';
       document.getElementById('action-btn').textContent       = header;
-      document.getElementById('action-btn').classList.remove('active');
+      document.getElementById('action-btn').classList.add('active');
       // Open sheet to show ~4 rows of content
       const snap = window.innerHeight * 0.42;
       const bs = document.getElementById('bottom-sheet');
@@ -2488,7 +2486,7 @@
       map.on('click', 'halli-icons', (e) => {
         showHalliInfo(e);
         const coords = e.features[0].geometry.coordinates;
-        map.flyTo({ center: coords, zoom: 15, duration: 800 });
+        map.flyTo({ center: coords, zoom: 16, duration: 800 });
       });
       map.on('mouseleave', 'halli-icons', () => {
         map.getCanvas().style.cursor = '';
@@ -2557,45 +2555,13 @@
     }
 
     // ── Map info bar: © OpenStreetMap + zoom level ───────────────────
-    const mapInfoBar    = document.getElementById('map-info-bar');
     const zoomIndicator = document.getElementById('zoom-indicator');
-    const bottomSheet   = document.getElementById('bottom-sheet');
 
-    function updateMapInfoBar() {
-      // Current sheet translateY
-      const matrix = new DOMMatrix(getComputedStyle(bottomSheet).transform);
-      const sheetY = matrix.m42;   // pixels from top of sheet container
-
-      // Position bar just above the sheet
-      const barY = sheetY - 22;
-      mapInfoBar.style.top = `${barY}px`;
-
-      // Fade: full opacity when sheet is at or below half-screen,
-      // fades to 0 when sheet reaches ~30% from top
-      const winH   = window.innerHeight;
-      const half   = winH * 0.5;
-      const fadeEnd = winH * 0.28;
-      let opacity = 1;
-      if (sheetY < half) {
-        opacity = Math.max(0, (sheetY - fadeEnd) / (half - fadeEnd));
-      }
-      mapInfoBar.style.opacity = opacity;
-
-      // Zoom level
-      const z = map.getZoom();
-      zoomIndicator.textContent = `Z ${z.toFixed(1)}`;
+    function updateZoomIndicator() {
+      zoomIndicator.textContent = `Z ${map.getZoom().toFixed(1)}`;
     }
-
-    // Update on map move/zoom and sheet drag
-    map.on('zoom',    updateMapInfoBar);
-    map.on('move',    updateMapInfoBar);
-    map.on('load',    updateMapInfoBar);
-
-    // Observe sheet transform changes via RAF loop (catches drag)
-    (function sheetObserver() {
-      updateMapInfoBar();
-      requestAnimationFrame(sheetObserver);
-    })();
+    map.on('zoom', updateZoomIndicator);
+    map.on('load', updateZoomIndicator);
 
     function openHelpSettings() {
       alert('Ohje ja tuki - tulossa pian');
