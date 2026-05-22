@@ -751,6 +751,8 @@
       transition: opacity 0.2s ease; 
     }
     #start-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+  #rotation-toggle.on { background: #0C0243; }
+  #rotation-toggle.on #rotation-knob { transform: translateX(20px); }
   </style>
 </head>
 <body>
@@ -813,7 +815,7 @@
   <div id="profile-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeProfileOverlay()">←</button>
-      <div class="overlay-title">Asetukset</div>
+      <div class="overlay-title">Profiili</div>
     </div>
     <div class="overlay-content">
       <div class="settings-section">
@@ -886,6 +888,21 @@
             <div class="settings-item-value">Versio 1.0.0</div>
           </div>
           <div class="settings-item-chevron">›</div>
+        </div>
+      </div>
+
+      <!-- Asetukset-osio -->
+      <div class="settings-section">
+        <div class="settings-item" style="cursor:default;" onclick="toggleRotationSetting()">
+          <div class="settings-item-icon">🔄</div>
+          <div class="settings-item-text">
+            <div class="settings-item-label">Näytön rotaatio</div>
+            <div class="settings-item-value" id="rotation-setting-value">Pois käytöstä</div>
+          </div>
+          <!-- iOS-style toggle -->
+          <div id="rotation-toggle" onclick="event.stopPropagation();toggleRotationSetting()" style="width:51px;height:31px;border-radius:16px;background:#e0e0e0;position:relative;cursor:pointer;transition:background 0.25s ease;flex-shrink:0;">
+            <div id="rotation-knob" style="position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:white;box-shadow:0 2px 5px rgba(0,0,0,0.3);transition:transform 0.25s ease;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1154,6 +1171,12 @@
     <div class="overlay-content" style="align-items:center;justify-content:center;color:#888;font-size:14px;font-family:Arial,sans-serif;">
       Kommenttilomake tulossa – tähän voi jättää palautetta nykyisistä alueista.
     </div>
+  </div>
+
+  <!-- Map info bar: follows bottom sheet top edge -->
+  <div id="map-info-bar" style="position:fixed;left:0;right:0;z-index:19;pointer-events:none;display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:22px;transition:opacity 0.15s ease;">
+    <span style="font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">© OpenStreetMap</span>
+    <span id="zoom-indicator" style="font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">Z 12.0</span>
   </div>
 
   <div id="bottom-sheet">
@@ -2467,6 +2490,70 @@
       alert('Kieliasetukset - tulossa pian');
     }
     
+
+    // ── Rotation toggle ──────────────────────────────────────────────
+    let rotationEnabled = false;
+    function toggleRotationSetting() {
+      rotationEnabled = !rotationEnabled;
+      const toggle = document.getElementById('rotation-toggle');
+      const knob   = document.getElementById('rotation-knob');
+      const label  = document.getElementById('rotation-setting-value');
+      if (rotationEnabled) {
+        toggle.style.background = '#0C0243';
+        knob.style.transform    = 'translateX(20px)';
+        label.textContent       = 'Käytössä';
+        map.dragRotate.enable();
+        map.touchZoomRotate.enableRotation();
+      } else {
+        toggle.style.background = '#e0e0e0';
+        knob.style.transform    = 'translateX(0)';
+        label.textContent       = 'Pois käytöstä';
+        map.dragRotate.disable();
+        map.touchZoomRotate.disableRotation();
+      }
+    }
+
+    // ── Map info bar: © OpenStreetMap + zoom level ───────────────────
+    const mapInfoBar    = document.getElementById('map-info-bar');
+    const zoomIndicator = document.getElementById('zoom-indicator');
+    const bottomSheet   = document.getElementById('bottom-sheet');
+
+    function updateMapInfoBar() {
+      // Current sheet translateY
+      const matrix = new DOMMatrix(getComputedStyle(bottomSheet).transform);
+      const sheetY = matrix.m42;   // pixels from top of sheet container
+
+      // Position bar just above the sheet
+      const barY = sheetY - 22;
+      mapInfoBar.style.top = `${barY}px`;
+
+      // Fade: full opacity when sheet is at or below half-screen,
+      // fades to 0 when sheet reaches ~30% from top
+      const winH   = window.innerHeight;
+      const half   = winH * 0.5;
+      const fadeEnd = winH * 0.28;
+      let opacity = 1;
+      if (sheetY < half) {
+        opacity = Math.max(0, (sheetY - fadeEnd) / (half - fadeEnd));
+      }
+      mapInfoBar.style.opacity = opacity;
+
+      // Zoom level
+      const z = map.getZoom();
+      zoomIndicator.textContent = `Z ${z.toFixed(1)}`;
+    }
+
+    // Update on map move/zoom and sheet drag
+    map.on('zoom',    updateMapInfoBar);
+    map.on('move',    updateMapInfoBar);
+    map.on('load',    updateMapInfoBar);
+
+    // Observe sheet transform changes via RAF loop (catches drag)
+    (function sheetObserver() {
+      updateMapInfoBar();
+      requestAnimationFrame(sheetObserver);
+    })();
+
     function openHelpSettings() {
       alert('Ohje ja tuki - tulossa pian');
     }
