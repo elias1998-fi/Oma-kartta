@@ -2238,17 +2238,17 @@
     async function approveCurrentSubmission() {
       if (!currentSubmission) return;
       try {
+        // Call the approve_submission DB function — copies to master + deletes from submissions
         await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_submissions?id=eq.${currentSubmission.id}`,
+          `${SUPABASE_URL}/rest/v1/rpc/approve_submission`,
           {
-            method: 'PATCH',
+            method: 'POST',
             headers: {
               'Content-Type':  'application/json',
               'apikey':        SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Prefer':        'return=minimal'
+              'Authorization': `Bearer ${SUPABASE_KEY}`
             },
-            body: JSON.stringify({ status: 'approved' })
+            body: JSON.stringify({ submission_id: currentSubmission.id })
           }
         );
       } catch(e) { console.error(e); }
@@ -2278,29 +2278,102 @@
       loadPendingSubmissions();
     }
 
-    // Load all approved community submissions onto the main map (green layer)
+    // ── Parking garage icon (data URL) ────────────────────────────────
+    const HALLI_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0NCIgaGVpZ2h0PSI0NCIgdmlld0JveD0iMCAwIDQ0IDQ0Ij4KICA8cmVjdCB4PSIxIiB5PSIxIiB3aWR0aD0iNDIiIGhlaWdodD0iNDIiIHJ4PSI3IiByeT0iNyIgZmlsbD0iIzE1NjVDMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cG9seWxpbmUgcG9pbnRzPSI5LDE1IDIyLDYgMzUsMTUiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8dGV4dCB4PSIyMiIgeT0iMzgiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UDwvdGV4dD4KPC9zdmc+';
+
+    // Load all entries from parking_master onto the main map
     async function loadApprovedSubmissions() {
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_submissions?status=eq.approved&select=id,polygon_coords,area_type`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,polygon_coords,area_type,source,extra_info`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         const rows = await res.json();
-        const features = rows
-          .filter(r => r.polygon_coords?.coordinates?.[0]?.length >= 3)
-          .map(r => ({ type:'Feature', properties:{ id:r.id, area_type:r.area_type }, geometry: r.polygon_coords }));
-        const geojson = { type:'FeatureCollection', features };
 
-        if (map.getSource('user-submissions')) {
-          map.getSource('user-submissions').setData(geojson);
+        // ── Community polygons ────────────────────────────────────────
+        const polyFeatures = rows
+          .filter(r => r.source === 'community' && r.polygon_coords?.type === 'Polygon')
+          .map(r => ({ type:'Feature', properties:{ id:r.id, source:r.source }, geometry: r.polygon_coords }));
+        const polyGeoJSON = { type:'FeatureCollection', features: polyFeatures };
+
+        if (map.getSource('community-areas')) {
+          map.getSource('community-areas').setData(polyGeoJSON);
         } else {
-          map.addSource('user-submissions', { type:'geojson', data: geojson });
-          map.addLayer({ id:'user-submissions-fill', type:'fill', source:'user-submissions',
+          map.addSource('community-areas', { type:'geojson', data: polyGeoJSON });
+          map.addLayer({ id:'community-areas-fill', type:'fill', source:'community-areas',
             minzoom:13, paint:{'fill-color':'#27ae60','fill-opacity':0.28} });
-          map.addLayer({ id:'user-submissions-outline', type:'line', source:'user-submissions',
+          map.addLayer({ id:'community-areas-outline', type:'line', source:'community-areas',
             minzoom:13, paint:{'line-color':'#1e8449','line-width':2,'line-opacity':0.95} });
         }
-      } catch(e) { console.error('Approved load error:', e); }
+
+        // ── Parking garage point markers ──────────────────────────────
+        const halliFeatures = rows
+          .filter(r => r.source === 'hel_halli' && r.polygon_coords?.type === 'Point')
+          .map(r => ({
+            type:'Feature',
+            properties:{ id:r.id, name: r.extra_info || 'Pysäköintihalli' },
+            geometry: r.polygon_coords
+          }));
+        const halliGeoJSON = { type:'FeatureCollection', features: halliFeatures };
+
+        // Load icon image once
+        if (!map.hasImage('halli-icon')) {
+          const img = new Image(44, 44);
+          img.onload = () => {
+            map.addImage('halli-icon', img);
+            addHalliLayers(halliGeoJSON);
+          };
+          img.src = HALLI_ICON_URL;
+        } else {
+          if (map.getSource('halli-points')) {
+            map.getSource('halli-points').setData(halliGeoJSON);
+          } else {
+            addHalliLayers(halliGeoJSON);
+          }
+        }
+      } catch(e) { console.error('Master load error:', e); }
+    }
+
+    function addHalliLayers(geojson) {
+      if (map.getSource('halli-points')) {
+        map.getSource('halli-points').setData(geojson);
+        return;
+      }
+      map.addSource('halli-points', { type:'geojson', data: geojson });
+      map.addLayer({
+        id: 'halli-icons',
+        type: 'symbol',
+        source: 'halli-points',
+        minzoom: 13,
+        layout: {
+          'icon-image': 'halli-icon',
+          'icon-size': 0.75,
+          'icon-allow-overlap': true,
+          'icon-anchor': 'center'
+        }
+      });
+
+      // Click → show name in bottom sheet area
+      map.on('click', 'halli-icons', (e) => {
+        const props = e.features[0].properties;
+        const parts = (props.name || '').split(' | ');
+        const name = parts[0] || 'Pysäköintihalli';
+        const addr = parts[1] || '';
+        const dept = parts[2] || '';
+        document.getElementById('summary-header').textContent = name;
+        document.getElementById('summary-type').textContent = addr;
+        document.getElementById('summary-operator').textContent = dept;
+        document.getElementById('sheet-details').innerHTML =
+          '<p class="price-label">Tyyppi</p><p class="price-value">Pysäköintihalli / -tila</p>';
+        document.getElementById('sheet-divider').style.display = 'block';
+        document.getElementById('action-btn').textContent = 'Pysäköintihalli';
+        document.getElementById('action-btn').classList.remove('active');
+        const snap = window.innerHeight * 0.45;
+        document.getElementById('bottom-sheet').style.transform = `translateY(${snap}px)`;
+      });
+
+      map.on('mouseenter', 'halli-icons', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'halli-icons', () => { map.getCanvas().style.cursor = ''; });
     }
     // ══════════════════════════════════════════════════════════════════
 
