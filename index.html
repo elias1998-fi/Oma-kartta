@@ -2351,9 +2351,25 @@
               `<p class="price-label">Tyyppi</p><p class="price-value">${typeName}</p>${extra}`
             );
           }
+          // Highlight outline layer (thicker border on hover/click)
+          map.addLayer({ id:'community-areas-highlight', type:'line', source:'community-areas',
+            minzoom:13, paint:{
+              'line-color':'#1a7a3c',
+              'line-width':4,
+              'line-opacity':0
+            }
+          });
+          let hoveredCommunityId = null;
+
           map.on('mouseenter', 'community-areas-fill', (e) => {
             map.getCanvas().style.cursor = 'pointer';
             showCommunityInfo(e);
+            if (hoveredCommunityId !== null) {
+              map.setPaintProperty('community-areas-highlight','line-opacity',0);
+            }
+            hoveredCommunityId = e.features[0].properties.id;
+            map.setFilter('community-areas-highlight', ['==', ['get','id'], hoveredCommunityId]);
+            map.setPaintProperty('community-areas-highlight','line-opacity',1);
           });
           map.on('click', 'community-areas-fill', (e) => {
             showCommunityInfo(e);
@@ -2362,7 +2378,12 @@
             const lat = coords.reduce((s,c) => s+c[1], 0) / coords.length;
             map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
           });
-          map.on('mouseleave', 'community-areas-fill', () => { map.getCanvas().style.cursor = ''; });
+          map.on('mouseleave', 'community-areas-fill', () => {
+            map.getCanvas().style.cursor = '';
+            map.setPaintProperty('community-areas-highlight','line-opacity',0);
+            hoveredCommunityId = null;
+            releaseMasterLock();
+          });
         }
 
         // ── 2. Parking garage markers (icon must load first) ──────────
@@ -2397,18 +2418,34 @@
 
 
     // Show any master-layer feature in the bottom sheet
+    // masterFeatureLocked: true while a halli/community feature is displayed,
+    // prevents checkParking() from collapsing the sheet on map move.
+    let masterFeatureLocked = false;
+    let masterFeatureUnlockTimer = null;
+
     function showMasterFeatureInSheet(header, type, operator, detailsHTML) {
-      document.getElementById('summary-header').textContent  = header;
-      document.getElementById('summary-type').textContent    = type;
+      document.getElementById('summary-header').textContent   = header;
+      document.getElementById('summary-type').textContent     = type;
       document.getElementById('summary-operator').textContent = operator;
-      document.getElementById('sheet-details').innerHTML     = detailsHTML;
-      document.getElementById('sheet-divider').style.display = 'block';
-      document.getElementById('action-btn').textContent      = header;
+      document.getElementById('sheet-details').innerHTML      = detailsHTML;
+      document.getElementById('sheet-divider').style.display  = 'block';
+      document.getElementById('action-btn').textContent       = header;
       document.getElementById('action-btn').classList.remove('active');
-      const snap = window.innerHeight * 0.45;
-      document.getElementById('bottom-sheet').style.transition =
-        'transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
-      document.getElementById('bottom-sheet').style.transform = `translateY(${snap}px)`;
+      // Open sheet to show ~4 rows of content
+      const snap = window.innerHeight * 0.42;
+      const bs = document.getElementById('bottom-sheet');
+      bs.style.transition = 'transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
+      bs.style.transform  = `translateY(${snap}px)`;
+      currentY = snap;
+      // Lock: prevent checkParking from closing it for a while
+      masterFeatureLocked = true;
+      clearTimeout(masterFeatureUnlockTimer);
+      masterFeatureUnlockTimer = setTimeout(() => { masterFeatureLocked = false; }, 3000);
+    }
+
+    function releaseMasterLock() {
+      masterFeatureLocked = false;
+      clearTimeout(masterFeatureUnlockTimer);
     }
 
     function addHalliLayers(geojson) {
@@ -2445,13 +2482,19 @@
       map.on('mouseenter', 'halli-icons', (e) => {
         map.getCanvas().style.cursor = 'pointer';
         showHalliInfo(e);
+        // Scale up icon on hover
+        map.setLayoutProperty('halli-icons', 'icon-size', 0.18);
       });
       map.on('click', 'halli-icons', (e) => {
         showHalliInfo(e);
         const coords = e.features[0].geometry.coordinates;
         map.flyTo({ center: coords, zoom: 15, duration: 800 });
       });
-      map.on('mouseleave', 'halli-icons', () => { map.getCanvas().style.cursor = ''; });
+      map.on('mouseleave', 'halli-icons', () => {
+        map.getCanvas().style.cursor = '';
+        map.setLayoutProperty('halli-icons', 'icon-size', 0.13);
+        releaseMasterLock();
+      });
     }
     // ══════════════════════════════════════════════════════════════════
 
@@ -2829,6 +2872,7 @@
     
     function checkParking(){
       if(filterMode)return;
+      if(masterFeatureLocked)return;  // keep master feature info visible
       
       const zoom=map.getZoom();
       
