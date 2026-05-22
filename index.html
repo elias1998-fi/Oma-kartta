@@ -2279,7 +2279,7 @@
     }
 
     // ── Parking garage icon (data URL) ────────────────────────────────
-    const HALLI_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0NCIgaGVpZ2h0PSI0NCIgdmlld0JveD0iMCAwIDQ0IDQ0Ij4KICA8cmVjdCB4PSIxIiB5PSIxIiB3aWR0aD0iNDIiIGhlaWdodD0iNDIiIHJ4PSI3IiByeT0iNyIgZmlsbD0iIzE1NjVDMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cG9seWxpbmUgcG9pbnRzPSI5LDE1IDIyLDYgMzUsMTUiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8dGV4dCB4PSIyMiIgeT0iMzgiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UDwvdGV4dD4KPC9zdmc+';
+    const HALLI_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+CiAgPCEtLSBTaGFkb3cvZGVwdGggLS0+CiAgPHJlY3QgeD0iNCIgeT0iNSIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSJyZ2JhKDAsMCwwLDAuMTgpIi8+CiAgPCEtLSBCbHVlIGJhY2tncm91bmQgLS0+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSIjMTU2NUMwIi8+CiAgPCEtLSBTdWJ0bGUgaW5uZXIgaGlnaGxpZ2h0IC0tPgogIDxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSIxMjAiIGhlaWdodD0iNjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDcpIi8+CiAgPCEtLSBXaGl0ZSBib3JkZXIgLS0+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjQiLz4KICA8IS0tIFJvb2Ygb3V0bGluZSAtLT4KICA8cG9seWxpbmUgcG9pbnRzPSIyNCw0NCA2NCwxOCAxMDAsNDQiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iNyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPCEtLSBQIGxldHRlciAtIGJvbGQgYW5kIGNlbnRlcmVkIC0tPgogIDx0ZXh0IHg9IjY0IiB5PSIxMDgiIAogICAgICAgIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjaywgQXJpYWwsIEhlbHZldGljYSwgc2Fucy1zZXJpZiIgCiAgICAgICAgZm9udC1zaXplPSI3MiIgZm9udC13ZWlnaHQ9IjkwMCIKICAgICAgICBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImF1dG8iCiAgICAgICAgc3R5bGU9ImxldHRlci1zcGFjaW5nOi0ycHgiPlA8L3RleHQ+Cjwvc3ZnPg==';
 
     // Load all entries from parking_master onto the main map
     async function loadApprovedSubmissions() {
@@ -2290,7 +2290,7 @@
         );
         const rows = await res.json();
 
-        // ── Community polygons ────────────────────────────────────────
+        // ── 1. Community polygons (synchronous, no icon dependency) ───
         const polyFeatures = rows
           .filter(r => r.source === 'community' && r.polygon_coords?.type === 'Polygon')
           .map(r => ({ type:'Feature', properties:{ id:r.id, source:r.source }, geometry: r.polygon_coords }));
@@ -2306,7 +2306,7 @@
             minzoom:13, paint:{'line-color':'#1e8449','line-width':2,'line-opacity':0.95} });
         }
 
-        // ── Parking garage point markers ──────────────────────────────
+        // ── 2. Parking garage markers (icon must load first) ──────────
         const halliFeatures = rows
           .filter(r => r.source === 'hel_halli' && r.polygon_coords?.type === 'Point')
           .map(r => ({
@@ -2316,20 +2316,22 @@
           }));
         const halliGeoJSON = { type:'FeatureCollection', features: halliFeatures };
 
-        // Load icon image once
-        if (!map.hasImage('halli-icon')) {
-          const img = new Image(44, 44);
+        // If source already exists just update data and return
+        if (map.getSource('halli-points')) {
+          map.getSource('halli-points').setData(halliGeoJSON);
+          return;
+        }
+        // Otherwise ensure icon is loaded, then add source + layer
+        if (map.hasImage('halli-icon')) {
+          addHalliLayers(halliGeoJSON);
+        } else {
+          const img = new Image(128, 128);
           img.onload = () => {
-            map.addImage('halli-icon', img);
+            if (!map.hasImage('halli-icon')) map.addImage('halli-icon', img);
             addHalliLayers(halliGeoJSON);
           };
+          img.onerror = () => console.error('Failed to load halli icon');
           img.src = HALLI_ICON_URL;
-        } else {
-          if (map.getSource('halli-points')) {
-            map.getSource('halli-points').setData(halliGeoJSON);
-          } else {
-            addHalliLayers(halliGeoJSON);
-          }
         }
       } catch(e) { console.error('Master load error:', e); }
     }
@@ -2347,7 +2349,7 @@
         minzoom: 13,
         layout: {
           'icon-image': 'halli-icon',
-          'icon-size': 0.75,
+          'icon-size': 0.5,
           'icon-allow-overlap': true,
           'icon-anchor': 'center'
         }
