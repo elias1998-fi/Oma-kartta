@@ -3033,24 +3033,43 @@
       const selFeatures = mergeAllFeatures.filter(f => mergeSelected.has(f.properties.id));
 
       if (mode === 'road') {
-        // Mukaileva: use turf.concave — creates a tight hull that follows actual shapes
-        // Collect all exterior ring points as turf points
-        const turfPts = [];
-        selFeatures.forEach(f => {
-          const geom = f.geometry;
-          const rings = geom.type==='MultiPolygon' ? geom.coordinates.map(p=>p[0]) : [geom.coordinates[0]];
-          rings.forEach(ring => ring.forEach(pt => turfPts.push(turf.point(pt))));
-        });
-        const fc = turf.featureCollection(turfPts);
+        // Mukaileva: buffer each polygon slightly → union → negative buffer
+        // This fills gaps between adjacent strips while following road curves
         try {
-          // maxEdge in km — controls how "tight" the hull is; smaller = follows shapes more closely
-          const concave = turf.concave(fc, { maxEdge: 0.08 });
-          if (concave) return concave.geometry;
-        } catch(e) { console.warn('Concave hull failed, using convex:', e); }
-        // Fallback to convex
-        const allPts2 = turfPts.map(p => p.geometry.coordinates);
-        const hull2 = convexHull(allPts2);
-        return { type:'Polygon', coordinates:[[...hull2, hull2[0]]] };
+          const EXPAND_KM  = 0.008;  // expand 8m to bridge gaps between strips
+          const SHRINK_KM  = 0.005;  // shrink back 5m to remove expansion
+          const turfFeats  = selFeatures.map(f => turf.feature(f.geometry));
+
+          // Buffer each polygon outward
+          const buffered = turfFeats.map(f =>
+            turf.buffer(f, EXPAND_KM, { units:'kilometers', steps:8 })
+          ).filter(Boolean);
+
+          if (!buffered.length) throw new Error('No buffered features');
+
+          // Union all buffered polygons
+          let unified = buffered[0];
+          for (let i = 1; i < buffered.length; i++) {
+            unified = turf.union(turf.featureCollection([unified, buffered[i]]));
+            if (!unified) break;
+          }
+
+          // Shrink back to remove the buffer expansion
+          const shrunk = turf.buffer(unified, -SHRINK_KM, { units:'kilometers', steps:8 });
+          if (shrunk) return shrunk.geometry;
+          return unified.geometry;
+        } catch(e) {
+          console.warn('Road-following union failed:', e);
+          // Fallback to convex
+          const allPts2 = [];
+          selFeatures.forEach(f => {
+            const rings = f.geometry.type==='MultiPolygon'
+              ? f.geometry.coordinates.map(p=>p[0]) : [f.geometry.coordinates[0]];
+            rings.forEach(r => r.forEach(pt => allPts2.push(pt)));
+          });
+          const hull2 = convexHull(allPts2);
+          return { type:'Polygon', coordinates:[[...hull2, hull2[0]]] };
+        }
       } else {
         // Convex hull: one big simple polygon
         const allPts = [];
