@@ -2303,24 +2303,21 @@
     let masterDataLoaded = false;  // load full dataset once, then just reuse
 
     async function loadViewportTiles(signal) {
-      if (map.getZoom() < 13) return;
-      if (masterDataLoaded && map.getSource('master-polygons')) return;
+      if (masterDataLoaded) return;  // already fetched — data stays in source
+      masterDataLoaded = true;       // prevent parallel fetches
 
       try {
         const res = await fetch(
           `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,valid_mape_from,polygon_coords&source=neq.hel_halli&limit=2000`,
-          {
-            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
-            ...(signal ? { signal } : {})
-          }
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const rows = await res.json();
         console.log('Master rows fetched:', rows.length);
-        masterDataLoaded = true;
         renderMasterRows(rows);
       } catch(e) {
-        if (e.name !== 'AbortError') console.error('loadViewportTiles error:', e);
+        masterDataLoaded = false;  // allow retry on error
+        console.error('loadViewportTiles error:', e);
       }
     }
 
@@ -2815,38 +2812,21 @@
     function onMapIdle() {
       const zoom = map.getZoom();
 
-      // Defer ALL DOM/map updates to next animation frame
-      // so MapLibre finishes its render cycle before we touch the DOM
-      requestAnimationFrame(() => {
-        checkParking();
-      });
+      requestAnimationFrame(() => { checkParking(); });
 
-      if (zoom >= 13) {
-        if (!halliLoaded) { halliLoaded = true; setTimeout(loadHalliMarkers, 100); }
+      // Load hallis once we hit zoom 13+
+      if (!halliLoaded && zoom >= 13) {
+        halliLoaded = true;
+        setTimeout(loadHalliMarkers, 200);
+      }
 
-        // Debounced viewport tile load
+      // Load master polygons — only once, then cache in memory
+      // Layers have minzoom:13 so they auto-hide when zoomed out
+      if (!masterDataLoaded) {
         clearTimeout(tileLoadTimer);
         tileLoadTimer = setTimeout(() => {
-          // Skip if bbox hasn't changed (e.g. tiny jitter)
-          const b = map.getBounds();
-          const key = [b.getWest(),b.getSouth(),b.getEast(),b.getNorth()]
-            .map(v=>v.toFixed(3)).join(',');
-          if (key === lastBboxKey) return;
-          lastBboxKey = key;
-
-          if (currentTileFetch) { currentTileFetch.abort(); }
-          currentTileFetch = new AbortController();
-          loadViewportTiles(currentTileFetch.signal);
-        }, 800);
-      } else {
-        if (map.getSource('master-polygons')) {
-          // Defer clearing too — avoid blocking moveend handler
-          requestAnimationFrame(() => {
-            if (map.getSource('master-polygons'))
-              map.getSource('master-polygons').setData({ type:'FeatureCollection', features:[] });
-            lastBboxKey = '';
-          });
-        }
+          loadViewportTiles(null);
+        }, 600);
       }
     }
 
