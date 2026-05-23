@@ -2304,40 +2304,26 @@
 
     async function loadViewportTiles(signal) {
       if (map.getZoom() < 13) return;
-      // If data already loaded & source exists, nothing to do
       if (masterDataLoaded && map.getSource('master-polygons')) return;
 
       try {
-        // Fetch ALL non-halli rows directly from Supabase
-        // (simplified geometries are small enough for full fetch)
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/rpc/get_master_simplified`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,valid_mape_from,polygon_coords&source=neq.hel_halli&limit=2000`,
           {
-            method: 'POST',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({}),
+            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
             ...(signal ? { signal } : {})
           }
         );
-        if (!res.ok) {
-          // Fallback: fetch raw data from REST without simplification
-          console.warn('RPC failed, falling back to REST:', res.status);
-          await loadViewportFallback(signal);
-          return;
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const rows = await res.json();
-        console.log('Parking areas loaded:', rows.length);
-
+        console.log('Master rows fetched:', rows.length);
         masterDataLoaded = true;
-        await renderMasterRows(rows);
+        renderMasterRows(rows);
       } catch(e) {
-        if (e.name !== 'AbortError') console.error('Tile load error:', e);
+        if (e.name !== 'AbortError') console.error('loadViewportTiles error:', e);
       }
     }
+
 
     const SOURCE_STYLE = {
       'community':          { fill:'#27ae60', line:'#1e8449', label:'Yhteisön lisäämä alue' },
