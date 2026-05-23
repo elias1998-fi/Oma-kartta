@@ -8,6 +8,7 @@
   <title>HSL Kartta</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
   <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
@@ -2776,7 +2777,7 @@
     let mergeRect = null;
     let mergeDrawMode = false;      // true = paint mode, false = pan mode
     let mergePreviewGeom = null;
-    let mergeMethod = 'convex';  // 'convex' | 'road'
+    let mergePreviewMode = 'convex';  // current preview mode
 
     function openMergeOverlay() {
       document.getElementById('profile-overlay').classList.remove('open');
@@ -2792,20 +2793,25 @@
       if (mergeCanvas) mergeCanvas.style.pointerEvents = 'none';
     }
 
-    function toggleMergeMethod() {
-      mergeMethod = mergeMethod === 'convex' ? 'road' : 'convex';
-      const btn = document.getElementById('merge-mode-btn');
-      const lbl = document.getElementById('merge-method-label');
-      if (mergeMethod === 'road') {
-        btn.style.background = '#0C0243'; btn.style.color = 'white'; btn.style.border = '2px solid #0C0243';
-        btn.textContent = '〰️';
-        lbl.textContent = '〰️ Tien mukainen';
-        lbl.style.background = '#e8fff0'; lbl.style.color = '#1e8449';
+    function switchPreview(mode) {
+      mergePreviewMode = mode;
+      // Update button styles
+      const cBtn = document.getElementById('preview-toggle-convex');
+      const rBtn = document.getElementById('preview-toggle-road');
+      if (mode === 'convex') {
+        cBtn.style.background='#0C0243'; cBtn.style.color='white'; cBtn.style.border='2px solid #0C0243';
+        rBtn.style.background='white'; rBtn.style.color='#555'; rBtn.style.border='2px solid #ddd';
       } else {
-        btn.style.background = 'white'; btn.style.color = 'black'; btn.style.border = '2px solid #ddd';
-        btn.textContent = '⬡';
-        lbl.textContent = '⬡ Konveksi';
-        lbl.style.background = '#e8eeff'; lbl.style.color = '#0C0243';
+        rBtn.style.background='#27ae60'; rBtn.style.color='white'; rBtn.style.border='2px solid #27ae60';
+        cBtn.style.background='white'; cBtn.style.color='#555'; cBtn.style.border='2px solid #ddd';
+      }
+      // Recompute and show preview with new mode
+      mergePreviewGeom = buildMergedGeom(mode);
+      if (mergeMap && mergeMap.getSource('merge-preview')) {
+        mergeMap.getSource('merge-preview').setData({
+          type:'FeatureCollection',
+          features:[{ type:'Feature', geometry:mergePreviewGeom, properties:{} }]
+        });
       }
     }
 
@@ -3022,20 +3028,31 @@
       return lower.concat(upper);
     }
 
-    function buildMergedGeom() {
+    function buildMergedGeom(mode) {
+      mode = mode || mergePreviewMode || 'convex';
       const selFeatures = mergeAllFeatures.filter(f => mergeSelected.has(f.properties.id));
 
-      if (mergeMethod === 'road') {
-        // Road-following: MultiPolygon preserving exact shapes
-        const polys = [];
+      if (mode === 'road') {
+        // Mukaileva: use turf.concave — creates a tight hull that follows actual shapes
+        // Collect all exterior ring points as turf points
+        const turfPts = [];
         selFeatures.forEach(f => {
           const geom = f.geometry;
-          if (geom.type === 'Polygon') polys.push(geom.coordinates);
-          else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(p => polys.push(p));
+          const rings = geom.type==='MultiPolygon' ? geom.coordinates.map(p=>p[0]) : [geom.coordinates[0]];
+          rings.forEach(ring => ring.forEach(pt => turfPts.push(turf.point(pt))));
         });
-        return { type:'MultiPolygon', coordinates: polys };
+        const fc = turf.featureCollection(turfPts);
+        try {
+          // maxEdge in km — controls how "tight" the hull is; smaller = follows shapes more closely
+          const concave = turf.concave(fc, { maxEdge: 0.08 });
+          if (concave) return concave.geometry;
+        } catch(e) { console.warn('Concave hull failed, using convex:', e); }
+        // Fallback to convex
+        const allPts2 = turfPts.map(p => p.geometry.coordinates);
+        const hull2 = convexHull(allPts2);
+        return { type:'Polygon', coordinates:[[...hull2, hull2[0]]] };
       } else {
-        // Convex hull: one big polygon spanning all areas
+        // Convex hull: one big simple polygon
         const allPts = [];
         selFeatures.forEach(f => {
           const geom = f.geometry;
@@ -3049,7 +3066,13 @@
 
     function previewMerge() {
       if (mergeSelected.size < 2) return;
-      mergePreviewGeom = buildMergedGeom();
+      mergePreviewMode = 'convex';
+      // Reset preview toggle buttons
+      const cBtn = document.getElementById('preview-toggle-convex');
+      const rBtn = document.getElementById('preview-toggle-road');
+      if (cBtn) { cBtn.style.background='#0C0243'; cBtn.style.color='white'; cBtn.style.border='2px solid #0C0243'; }
+      if (rBtn) { rBtn.style.background='white'; rBtn.style.color='#555'; rBtn.style.border='2px solid #ddd'; }
+      mergePreviewGeom = buildMergedGeom('convex');
       if (mergeMap.getSource('merge-preview')) {
         mergeMap.getSource('merge-preview').setData({ type:'FeatureCollection', features:[{ type:'Feature', geometry:mergePreviewGeom, properties:{} }] });
       }
@@ -3941,7 +3964,6 @@
       <!-- Mode toggle -->
       <div style="position:absolute;top:12px;right:12px;z-index:20;display:flex;flex-direction:column;gap:8px;">
         <button id="merge-draw-btn" onclick="toggleMergeDrawMode()" title="Maalaustyökalu" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">✏️</button>
-        <button id="merge-mode-btn" onclick="toggleMergeMethod()" title="Yhdistämistapa" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);" title="Vaihda yhdistämistapaa">⬡</button>
         <button onclick="clearMergeSelection()" title="Tyhjennä" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">🗑️</button>
       </div>
     </div>
@@ -3951,7 +3973,11 @@
     </div>
     <!-- Preview confirm bar (hidden initially) -->
     <div id="merge-preview-bar" style="display:none;background:white;border-top:1px solid #eee;padding:12px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom));flex-shrink:0;">
-      <div style="font-family:Arial,sans-serif;font-size:13px;color:#555;margin-bottom:10px;text-align:center;">Oranssi alue on esikatselu yhdistetystä alueesta</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;justify-content:center;">
+        <span style="font-family:Arial,sans-serif;font-size:13px;color:#555;">Esikatselu:</span>
+        <button id="preview-toggle-convex" onclick="switchPreview('convex')" style="padding:5px 12px;border-radius:8px;border:2px solid #0C0243;background:#0C0243;color:white;font-size:12px;font-weight:bold;cursor:pointer;font-family:Arial,sans-serif;">⬡ Konveksi</button>
+        <button id="preview-toggle-road" onclick="switchPreview('road')" style="padding:5px 12px;border-radius:8px;border:2px solid #ddd;background:white;color:#555;font-size:12px;font-weight:bold;cursor:pointer;font-family:Arial,sans-serif;">〰️ Mukaileva</button>
+      </div>
       <div style="display:flex;gap:10px;">
         <button onclick="cancelMergePreview()" style="flex:1;height:46px;background:#f5f5f5;border:none;border-radius:12px;font-size:15px;cursor:pointer;color:#333;font-family:Arial,sans-serif;">✕ Hylkää</button>
         <button onclick="executeMerge()" style="flex:2;height:46px;background:#27ae60;border:none;border-radius:12px;font-size:15px;font-weight:bold;cursor:pointer;color:white;font-family:Arial,sans-serif;">✓ Hyväksy ja yhdistä</button>
