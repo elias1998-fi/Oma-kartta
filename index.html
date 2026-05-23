@@ -2314,77 +2314,133 @@
     async function loadApprovedSubmissions() {
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,polygon_coords,area_type,source,extra_info`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,polygon_coords,area_type,source,extra_info,max_hours,valid_mape_from,valid_mape_to`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         const rows = await res.json();
 
-        // ── 1. Community polygons (synchronous, no icon dependency) ───
-        const polyFeatures = rows
-          .filter(r => r.source === 'community' && r.polygon_coords?.type === 'Polygon')
-          .map(r => ({ type:'Feature', properties:{ id:r.id, source:r.source, area_type:r.area_type, extra_info:r.extra_info||'' }, geometry: r.polygon_coords }));
-        const polyGeoJSON = { type:'FeatureCollection', features: polyFeatures };
+        // ── Color map by source ───────────────────────────────────────
+        const SOURCE_STYLE = {
+          'community':         { fill:'#27ae60', line:'#1e8449', label:'Yhteisön lisäämä alue' },
+          'hel_ilmainen_pitka':{ fill:'#2980b9', line:'#1a5276', label:'Ilmainen pitkäaikainen pysäköinti' },
+          'hel_kertamaksu_1h': { fill:'#e67e22', line:'#ca6f1e', label:'Maksullinen pysäköinti (max. 1h)' },
+          'hel_kertamaksu_2h': { fill:'#e74c3c', line:'#cb4335', label:'Maksullinen pysäköinti (max. 2h)' },
+          'hel_kertamaksu_4h': { fill:'#8e44ad', line:'#7d3c98', label:'Maksullinen pysäköinti (max. 4h)' },
+        };
+        const POLYGON_SOURCES = Object.keys(SOURCE_STYLE);
 
-        if (map.getSource('community-areas')) {
-          map.getSource('community-areas').setData(polyGeoJSON);
+        // ── 1. All polygon layers from parking_master ─────────────────
+        const polygonRows = rows.filter(r =>
+          POLYGON_SOURCES.includes(r.source) &&
+          (r.polygon_coords?.type === 'Polygon' || r.polygon_coords?.type === 'MultiPolygon')
+        );
+
+        // Helper: get centroid for polygon or multipolygon
+        function getCentroid(geom) {
+          const ring = geom.type === 'MultiPolygon'
+            ? geom.coordinates[0][0]
+            : geom.coordinates[0];
+          if (!ring || !ring.length) return [25, 60];
+          const lng = ring.reduce((s,c) => s+c[0], 0) / ring.length;
+          const lat = ring.reduce((s,c) => s+c[1], 0) / ring.length;
+          return [lng, lat];
+        }
+
+        const allPolyFeatures = polygonRows.map(r => ({
+          type:'Feature',
+          properties:{
+            id: r.id,
+            source: r.source,
+            area_type: r.area_type,
+            extra_info: r.extra_info || '',
+            max_hours: r.max_hours,
+            valid: r.valid_mape_from || ''
+          },
+          geometry: r.polygon_coords
+        }));
+        const allPolyGeoJSON = { type:'FeatureCollection', features: allPolyFeatures };
+
+        if (map.getSource('master-polygons')) {
+          map.getSource('master-polygons').setData(allPolyGeoJSON);
         } else {
-          map.addSource('community-areas', { type:'geojson', data: polyGeoJSON });
-          map.addLayer({ id:'community-areas-fill', type:'fill', source:'community-areas',
-            minzoom:13, paint:{'fill-color':'#27ae60','fill-opacity':0.28} });
-          map.addLayer({ id:'community-areas-outline', type:'line', source:'community-areas',
-            minzoom:13, paint:{'line-color':'#1e8449','line-width':2,'line-opacity':0.95} });
+          map.addSource('master-polygons', { type:'geojson', data: allPolyGeoJSON });
 
-          // Hover + click on community areas
-          const TYPE_MAP = {
-            kiekko:'Kiekkopysäköinti', maksullinen:'Maksullinen pysäköinti', ilmainen:'Kiekoton ilmaisparkki'
-          };
-          function showCommunityInfo(e) {
+          // Fill layer — color by source using match expression
+          map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
+            paint:{ 'fill-opacity': 0.28,
+              'fill-color': ['match', ['get','source'],
+                'community',          '#27ae60',
+                'hel_ilmainen_pitka', '#2980b9',
+                'hel_kertamaksu_1h',  '#e67e22',
+                'hel_kertamaksu_2h',  '#e74c3c',
+                'hel_kertamaksu_4h',  '#8e44ad',
+                '#4A90D9'  // default (existing hel areas)
+              ]
+            }
+          });
+
+          // Outline layer
+          map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
+            paint:{ 'line-width': 1.5, 'line-opacity': 0.9,
+              'line-color': ['match', ['get','source'],
+                'community',          '#1e8449',
+                'hel_ilmainen_pitka', '#1a5276',
+                'hel_kertamaksu_1h',  '#ca6f1e',
+                'hel_kertamaksu_2h',  '#cb4335',
+                'hel_kertamaksu_4h',  '#7d3c98',
+                '#2B6CB0'
+              ]
+            }
+          });
+
+          // Highlight layer (on hover)
+          map.addLayer({ id:'master-poly-highlight', type:'line', source:'master-polygons', minzoom:13,
+            paint:{ 'line-width': 3.5, 'line-opacity': 0, 'line-color': '#ffffff' }
+          });
+
+          // Hover + click
+          let hoveredPolyId = null;
+          function showMasterPolyInfo(e) {
             const p = e.features[0].properties;
-            const typeName = TYPE_MAP[p.area_type] || p.area_type || 'Yhteisöalue';
-            const extra = p.extra_info ? `<p class="price-label">Lisätiedot</p><p class="price-value">${p.extra_info}</p>` : '';
+            const style = SOURCE_STYLE[p.source] || { label: p.source };
+            const extra = p.extra_info ? p.extra_info.split(' | ') : [];
+            const name = extra[0] || style.label;
+            const kesto = p.max_hours ? `Max. ${p.max_hours}h` : '';
+            const valid = p.valid ? `Voimassaolo: ${p.valid}` : '';
             showMasterFeatureInSheet(
-              typeName,
-              'Yhteisön lisäämä alue',
-              'Tiimin varmentama ✓',
-              `<p class="price-label">Tyyppi</p><p class="price-value">${typeName}</p>${extra}`
+              name,
+              style.label,
+              'Helsingin kaupunki',
+              `${kesto ? `<p class="price-label">Kesto</p><p class="price-value">${kesto}</p>` : ''}
+               ${valid ? `<p class="price-label">Voimassaolo</p><p class="price-value">${valid}</p>` : ''}`
             );
           }
-          // Highlight outline layer (thicker border on hover/click)
-          map.addLayer({ id:'community-areas-highlight', type:'line', source:'community-areas',
-            minzoom:13, paint:{
-              'line-color':'#1a7a3c',
-              'line-width':4,
-              'line-opacity':0
-            }
-          });
-          let hoveredCommunityId = null;
 
-          map.on('mouseenter', 'community-areas-fill', (e) => {
+          map.on('mouseenter', 'master-poly-fill', (e) => {
             map.getCanvas().style.cursor = 'pointer';
-            showCommunityInfo(e);
-            if (hoveredCommunityId !== null) {
-              map.setPaintProperty('community-areas-highlight','line-opacity',0);
-            }
-            hoveredCommunityId = e.features[0].properties.id;
-            map.setFilter('community-areas-highlight', ['==', ['get','id'], hoveredCommunityId]);
-            map.setPaintProperty('community-areas-highlight','line-opacity',1);
+            showMasterPolyInfo(e);
+            hoveredPolyId = e.features[0].properties.id;
+            map.setFilter('master-poly-highlight', ['==', ['get','id'], hoveredPolyId]);
+            map.setPaintProperty('master-poly-highlight', 'line-opacity', 1);
           });
-          map.on('click', 'community-areas-fill', (e) => {
-            showCommunityInfo(e);
-            const coords = e.features[0].geometry.coordinates[0];
-            const lng = coords.reduce((s,c) => s+c[0], 0) / coords.length;
-            const lat = coords.reduce((s,c) => s+c[1], 0) / coords.length;
+          map.on('click', 'master-poly-fill', (e) => {
+            showMasterPolyInfo(e);
+            const [lng, lat] = getCentroid(e.features[0].geometry);
             map.flyTo({ center: [lng, lat], zoom: 16, duration: 800 });
           });
-          map.on('mouseleave', 'community-areas-fill', () => {
+          map.on('mouseleave', 'master-poly-fill', () => {
             map.getCanvas().style.cursor = '';
-            map.setPaintProperty('community-areas-highlight','line-opacity',0);
-            hoveredCommunityId = null;
+            map.setPaintProperty('master-poly-highlight', 'line-opacity', 0);
+            hoveredPolyId = null;
             releaseMasterLock();
           });
         }
 
-        // ── 2. Parking garage markers (icon must load first) ──────────
+        // ── Keep old community-areas source for backward compat ───────
+        // (needed by community-areas-highlight layer if it still exists)
+        // Just skip if already removed
+
+        // ── 2. Parking garage point markers ──────────────────────────
         const halliFeatures = rows
           .filter(r => r.source === 'hel_halli' && r.polygon_coords?.type === 'Point')
           .map(r => ({
@@ -2394,12 +2450,10 @@
           }));
         const halliGeoJSON = { type:'FeatureCollection', features: halliFeatures };
 
-        // If source already exists just update data and return
         if (map.getSource('halli-points')) {
           map.getSource('halli-points').setData(halliGeoJSON);
           return;
         }
-        // Otherwise ensure icon is loaded, then add source + layer
         if (map.hasImage('halli-icon')) {
           addHalliLayers(halliGeoJSON);
         } else {
@@ -2414,86 +2468,6 @@
       } catch(e) { console.error('Master load error:', e); }
     }
 
-
-    // Show any master-layer feature in the bottom sheet
-    // masterFeatureLocked: true while a halli/community feature is displayed,
-    // prevents checkParking() from collapsing the sheet on map move.
-    let masterFeatureLocked = false;
-    let masterFeatureUnlockTimer = null;
-
-    function showMasterFeatureInSheet(header, type, operator, detailsHTML) {
-      document.getElementById('summary-header').textContent   = header;
-      document.getElementById('summary-type').textContent     = type;
-      document.getElementById('summary-operator').textContent = operator;
-      document.getElementById('sheet-details').innerHTML      = detailsHTML;
-      document.getElementById('sheet-divider').style.display  = 'block';
-      document.getElementById('action-btn').textContent       = header;
-      document.getElementById('action-btn').classList.add('active');
-      // Open sheet to show ~4 rows of content
-      const snap = window.innerHeight * 0.42;
-      const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
-      bs.style.transform  = `translateY(${snap}px)`;
-      currentY = snap;
-      // Lock: prevent checkParking from closing it for a while
-      masterFeatureLocked = true;
-      clearTimeout(masterFeatureUnlockTimer);
-      masterFeatureUnlockTimer = setTimeout(() => { masterFeatureLocked = false; }, 3000);
-    }
-
-    function releaseMasterLock() {
-      masterFeatureLocked = false;
-      clearTimeout(masterFeatureUnlockTimer);
-    }
-
-    function addHalliLayers(geojson) {
-      if (map.getSource('halli-points')) {
-        map.getSource('halli-points').setData(geojson);
-        return;
-      }
-      map.addSource('halli-points', { type:'geojson', data: geojson });
-      map.addLayer({
-        id: 'halli-icons',
-        type: 'symbol',
-        source: 'halli-points',
-        minzoom: 13,
-        layout: {
-          'icon-image': 'halli-icon',
-          'icon-size': 0.13,
-          'icon-allow-overlap': true,
-          'icon-anchor': 'center'
-        }
-      });
-
-      // Hover + click → show in bottom sheet
-      function showHalliInfo(e) {
-        const props = e.features[0].properties;
-        const parts = (props.name || '').split(' | ');
-        const name = parts[0] || 'Pysäköintihalli';
-        const addr = parts[1] || '';
-        const dept = parts[2] || '';
-        showMasterFeatureInSheet(
-          name, addr, dept,
-          '<p class="price-label">Tyyppi</p><p class="price-value">Pysäköintihalli / -tila</p>'
-        );
-      }
-      map.on('mouseenter', 'halli-icons', (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-        showHalliInfo(e);
-        // Scale up icon on hover
-        map.setLayoutProperty('halli-icons', 'icon-size', 0.18);
-      });
-      map.on('click', 'halli-icons', (e) => {
-        showHalliInfo(e);
-        const coords = e.features[0].geometry.coordinates;
-        map.flyTo({ center: coords, zoom: 16, duration: 800 });
-      });
-      map.on('mouseleave', 'halli-icons', () => {
-        map.getCanvas().style.cursor = '';
-        map.setLayoutProperty('halli-icons', 'icon-size', 0.13);
-        releaseMasterLock();
-      });
-    }
     // ══════════════════════════════════════════════════════════════════
 
     function openCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(0)'; }
