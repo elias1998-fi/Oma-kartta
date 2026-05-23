@@ -2445,37 +2445,68 @@
           );
         }
 
-        let hoveredPolyId = null;
-        map.on('mousemove', 'master-poly-fill', (e) => {
-          map.getCanvas().style.cursor = 'pointer';
-          const newId = e.features[0].properties.id;
-          if (newId !== hoveredPolyId) {
-            hoveredPolyId = newId;
-            map.setFilter('master-poly-highlight', ['==', ['get','id'], hoveredPolyId]);
-            map.setPaintProperty('master-poly-highlight', 'line-opacity', 1);
-            showMasterPolyInfo(e);
-          }
-        });
-        map.on('mouseenter', 'master-poly-fill', (e) => {
-          map.getCanvas().style.cursor = 'pointer';
-          hoveredPolyId = e.features[0].properties.id;
-          map.setFilter('master-poly-highlight', ['==', ['get','id'], hoveredPolyId]);
-          map.setPaintProperty('master-poly-highlight', 'line-opacity', 1);
-          showMasterPolyInfo(e);
-        });
-        map.on('click', 'master-poly-fill', (e) => {
-          showMasterPolyInfo(e);
-          const [lng, lat] = getCentroid(e.features[0].geometry);
-          map.flyTo({ center:[lng, lat], zoom:16, duration:800 });
-        });
-        map.on('mouseleave', 'master-poly-fill', () => {
-          map.getCanvas().style.cursor = '';
-          map.setPaintProperty('master-poly-highlight', 'line-opacity', 0);
-          hoveredPolyId = null;
-          releaseMasterLock();
-        });
-
     }
+
+    // ── Master polygon hover/click — defined outside renderMasterRows ──
+    // so they survive source setData() calls
+    let hoveredPolyId = null;
+
+    function showMasterPolyInfo(e) {
+      if (!e.features || !e.features.length) return;
+      const p = e.features[0].properties;
+      const style = SOURCE_STYLE[p.source] || { label: p.source || 'Pysäköintialue' };
+      const extra = p.extra_info ? p.extra_info.split(' | ') : [];
+      const name = extra[0] || style.label;
+      const kesto = p.max_hours ? `Max. ${p.max_hours}h` : '';
+      const valid = p.valid ? `Voimassaolo: ${p.valid}` : '';
+      showMasterFeatureInSheet(
+        name, style.label, 'Helsingin kaupunki',
+        `${kesto ? `<p class="price-label">Kesto</p><p class="price-value">${kesto}</p>` : ''}
+         ${valid ? `<p class="price-label">Voimassaolo</p><p class="price-value">${valid}</p>` : ''}`
+      );
+    }
+
+    map.on('mousemove', 'master-poly-fill', (e) => {
+      if (!e.features.length) return;
+      map.getCanvas().style.cursor = 'pointer';
+      const newId = e.features[0].properties.id;
+      if (newId !== hoveredPolyId) {
+        hoveredPolyId = newId;
+        if (map.getLayer('master-poly-highlight')) {
+          map.setFilter('master-poly-highlight', ['==', ['get','id'], String(hoveredPolyId)]);
+          map.setPaintProperty('master-poly-highlight', 'line-opacity', 1);
+        }
+        showMasterPolyInfo(e);
+      }
+    });
+    map.on('mouseenter', 'master-poly-fill', (e) => {
+      if (!e.features.length) return;
+      map.getCanvas().style.cursor = 'pointer';
+      hoveredPolyId = e.features[0].properties.id;
+      if (map.getLayer('master-poly-highlight')) {
+        map.setFilter('master-poly-highlight', ['==', ['get','id'], String(hoveredPolyId)]);
+        map.setPaintProperty('master-poly-highlight', 'line-opacity', 1);
+      }
+      showMasterPolyInfo(e);
+    });
+    map.on('click', 'master-poly-fill', (e) => {
+      if (!e.features.length) return;
+      showMasterPolyInfo(e);
+      const geom = e.features[0].geometry;
+      const ring = geom.type === 'MultiPolygon' ? geom.coordinates[0][0] : geom.coordinates[0];
+      if (ring && ring.length) {
+        const lng = ring.reduce((s,c)=>s+c[0],0)/ring.length;
+        const lat = ring.reduce((s,c)=>s+c[1],0)/ring.length;
+        map.flyTo({ center:[lng,lat], zoom:16, duration:800 });
+      }
+    });
+    map.on('mouseleave', 'master-poly-fill', () => {
+      map.getCanvas().style.cursor = '';
+      if (map.getLayer('master-poly-highlight'))
+        map.setPaintProperty('master-poly-highlight', 'line-opacity', 0);
+      hoveredPolyId = null;
+      releaseMasterLock();
+    });
 
     // ── Draw P icon on canvas (avoids SVG/Image loading issues) ────────
     function createHalliIconCanvas() {
