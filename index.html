@@ -2300,15 +2300,16 @@
     const HALLI_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+CiAgPCEtLSBTaGFkb3cvZGVwdGggLS0+CiAgPHJlY3QgeD0iNCIgeT0iNSIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSJyZ2JhKDAsMCwwLDAuMTgpIi8+CiAgPCEtLSBCbHVlIGJhY2tncm91bmQgLS0+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSIjMTU2NUMwIi8+CiAgPCEtLSBTdWJ0bGUgaW5uZXIgaGlnaGxpZ2h0IC0tPgogIDxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSIxMjAiIGhlaWdodD0iNjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDcpIi8+CiAgPCEtLSBXaGl0ZSBib3JkZXIgLS0+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjQiLz4KICA8IS0tIFJvb2Ygb3V0bGluZSAtLT4KICA8cG9seWxpbmUgcG9pbnRzPSIyNCw0NCA2NCwxOCAxMDAsNDQiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iNyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPCEtLSBQIGxldHRlciAtIGJvbGQgYW5kIGNlbnRlcmVkIC0tPgogIDx0ZXh0IHg9IjY0IiB5PSIxMDgiIAogICAgICAgIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjaywgQXJpYWwsIEhlbHZldGljYSwgc2Fucy1zZXJpZiIgCiAgICAgICAgZm9udC1zaXplPSI3MiIgZm9udC13ZWlnaHQ9IjkwMCIKICAgICAgICBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImF1dG8iCiAgICAgICAgc3R5bGU9ImxldHRlci1zcGFjaW5nOi0ycHgiPlA8L3RleHQ+Cjwvc3ZnPg==';
 
     // ── Parking area loader ──────────────────────────────────────────
-    let masterDataLoaded = false;  // load full dataset once, then just reuse
+    let masterDataLoaded = false;
+    let masterRowCount = 0;  // track how many rows were loaded
 
     async function loadViewportTiles(signal) {
-      if (masterDataLoaded) return;  // already fetched — data stays in source
-      masterDataLoaded = true;       // prevent parallel fetches
+      if (masterDataLoaded) return;
+      masterDataLoaded = true;
 
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,valid_mape_from,polygon_coords&source=neq.hel_halli&limit=2000`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,valid_mape_from,polygon_coords&source=neq.hel_halli&limit=10000`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
