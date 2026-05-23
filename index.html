@@ -2768,11 +2768,14 @@
 
     // ══ ALUEIDEN YHDISTÄMINEN ════════════════════════════════════════
     let mergeMap = null;
-    let mergeAllFeatures = [];      // all polygon features from DB
-    let mergeSelected = new Set(); // selected feature ids
+    let mergeAllFeatures = [];
+    let mergeSelected = new Set();  // ids of selected features
+    let mergeFirstProps = null;     // props of first selected area (used for compatibility)
     let mergePainting = false;
     let mergeCanvas, mergeCtx;
-    let mergeRect = null;           // current drag rect {x1,y1,x2,y2}
+    let mergeRect = null;
+    let mergeDrawMode = false;      // true = paint mode, false = pan mode
+    let mergePreviewGeom = null;    // convex hull geom for preview
 
     function openMergeOverlay() {
       document.getElementById('profile-overlay').classList.remove('open');
@@ -2783,16 +2786,32 @@
     function closeMergeOverlay() {
       document.getElementById('merge-overlay').classList.remove('open');
       clearMergeSelection();
+      cancelMergePreview();
+      mergeDrawMode = false;
+      if (mergeCanvas) mergeCanvas.style.pointerEvents = 'none';
+    }
+
+    function toggleMergeDrawMode() {
+      mergeDrawMode = !mergeDrawMode;
+      const btn = document.getElementById('merge-draw-btn');
+      if (mergeDrawMode) {
+        btn.style.background = '#0C0243'; btn.style.color = 'white'; btn.style.border = '2px solid #0C0243';
+        if (mergeCanvas) mergeCanvas.style.pointerEvents = 'all';
+        document.getElementById('merge-status').textContent = 'Maalaa alue — vedä sormella';
+      } else {
+        btn.style.background = 'white'; btn.style.color = 'black'; btn.style.border = '2px solid #ddd';
+        if (mergeCanvas) mergeCanvas.style.pointerEvents = 'none';
+        document.getElementById('merge-status').textContent = mergeSelected.size
+          ? `${mergeSelected.size} aluetta valittu` : 'Paina ✏️ ja maalaa alueita valitaksesi';
+      }
     }
 
     async function initMergeMap() {
       if (!mergeMap) {
         mergeMap = new maplibregl.Map({
-          container: 'merge-map',
-          style: 'omakartta_style.json',
+          container: 'merge-map', style: 'omakartta_style.json',
           center: map.getCenter(), zoom: map.getZoom(),
-          minZoom:5, maxZoom:20,
-          transformRequest,
+          minZoom:5, maxZoom:20, transformRequest,
           dragRotate:false, attributionControl:false
         });
         mergeMap.on('load', async () => {
@@ -2810,16 +2829,16 @@
 
     async function loadMergeFeatures() {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,max_hours,extra_info,polygon_coords&source=neq.hel_halli`,
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Prefer':'count=none' } }
+        `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,max_hours,valid_mape_from,extra_info,polygon_coords&source=neq.hel_halli`,
+        { headers: { 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Prefer':'count=none' } }
       );
       const rows = await res.json();
       mergeAllFeatures = rows
-        .filter(r => r.polygon_coords?.type === 'Polygon' || r.polygon_coords?.type === 'MultiPolygon')
+        .filter(r => r.polygon_coords?.type==='Polygon' || r.polygon_coords?.type==='MultiPolygon')
         .map(r => ({
           type:'Feature',
           properties:{ id:r.id, source:r.source, area_type:r.area_type,
-                       max_hours:r.max_hours, extra_info:r.extra_info||'' },
+                       max_hours:r.max_hours, valid:r.valid_mape_from||'', extra_info:r.extra_info||'' },
           geometry: r.polygon_coords
         }));
 
@@ -2829,20 +2848,33 @@
       } else {
         mergeMap.addSource('merge-all', { type:'geojson', data: geojson });
         mergeMap.addLayer({ id:'merge-fill', type:'fill', source:'merge-all', minzoom:13,
-          paint:{ 'fill-color':['match',['get','source'],
-            'community','#27ae60','hel_ilmainen_pitka','#27ae60','hel_ilmainen_lyhyt','#27ae60',
-            'hel_sallittu_kiellon_ulkopuolella','#27ae60','#4A90D9'],
-            'fill-opacity':0.35 } });
+          paint:{ 'fill-color':'#4A90D9', 'fill-opacity':0.35 } });
         mergeMap.addLayer({ id:'merge-line', type:'line', source:'merge-all', minzoom:13,
-          paint:{ 'line-color':'#888', 'line-width':1 } });
-        mergeMap.addLayer({ id:'merge-selected-fill', type:'fill', source:'merge-all', minzoom:13,
-          paint:{ 'fill-color':'#e53935','fill-opacity':0.55 },
+          paint:{ 'line-color':'#2B6CB0', 'line-width':1 } });
+        mergeMap.addLayer({ id:'merge-sel-fill', type:'fill', source:'merge-all', minzoom:13,
+          paint:{ 'fill-color':'#0C0243','fill-opacity':0.6 },
           filter:['in',['get','id'],['literal',[]]] });
-        mergeMap.addLayer({ id:'merge-selected-line', type:'line', source:'merge-all', minzoom:13,
-          paint:{ 'line-color':'#e53935','line-width':2.5 },
+        mergeMap.addLayer({ id:'merge-sel-line', type:'line', source:'merge-all', minzoom:13,
+          paint:{ 'line-color':'#0C0243','line-width':2.5 },
           filter:['in',['get','id'],['literal',[]]] });
+        // Preview layer (convex hull)
+        mergeMap.addSource('merge-preview', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
+        mergeMap.addLayer({ id:'merge-preview-fill', type:'fill', source:'merge-preview',
+          paint:{ 'fill-color':'#f39c12','fill-opacity':0.5 } });
+        mergeMap.addLayer({ id:'merge-preview-line', type:'line', source:'merge-preview',
+          paint:{ 'line-color':'#e67e22','line-width':3 } });
       }
-      updateMergeSelection();
+      updateMergeUI();
+    }
+
+    // Check if a feature is compatible with the first selected feature
+    function isCompatible(feat) {
+      if (!mergeFirstProps) return true;
+      const p = feat.properties;
+      return p.area_type === mergeFirstProps.area_type &&
+             String(p.max_hours) === String(mergeFirstProps.max_hours) &&
+             p.valid === mergeFirstProps.valid &&
+             p.source === mergeFirstProps.source;
     }
 
     function setupMergePaint() {
@@ -2851,205 +2883,193 @@
       mergeCanvas.width  = mapEl.clientWidth;
       mergeCanvas.height = mapEl.clientHeight;
       mergeCtx = mergeCanvas.getContext('2d');
-      mergeCanvas.style.pointerEvents = 'all';
 
-      // Touch events for paint selection
-      mergeCanvas.addEventListener('touchstart', e => {
-        e.preventDefault();
-        const t = e.touches[0];
-        const r = mergeCanvas.getBoundingClientRect();
-        mergeRect = { x1: t.clientX-r.left, y1: t.clientY-r.top,
-                      x2: t.clientX-r.left, y2: t.clientY-r.top };
+      const onStart = (cx, cy) => {
+        if (!mergeDrawMode) return;
+        mergeRect = { x1:cx, y1:cy, x2:cx, y2:cy };
         mergePainting = true;
-      }, { passive:false });
-
-      mergeCanvas.addEventListener('touchmove', e => {
-        e.preventDefault();
-        if (!mergePainting) return;
-        const t = e.touches[0];
-        const r = mergeCanvas.getBoundingClientRect();
-        mergeRect.x2 = t.clientX-r.left;
-        mergeRect.y2 = t.clientY-r.top;
+      };
+      const onMove = (cx, cy) => {
+        if (!mergePainting || !mergeRect) return;
+        mergeRect.x2 = cx; mergeRect.y2 = cy;
         drawMergeRect();
-      }, { passive:false });
-
-      mergeCanvas.addEventListener('touchend', e => {
-        e.preventDefault();
+      };
+      const onEnd = () => {
         if (!mergePainting || !mergeRect) return;
         mergePainting = false;
         selectFeaturesInRect(mergeRect);
-        mergeCtx.clearRect(0, 0, mergeCanvas.width, mergeCanvas.height);
+        mergeCtx.clearRect(0,0,mergeCanvas.width,mergeCanvas.height);
         mergeRect = null;
-      }, { passive:false });
+        // Auto-exit draw mode after selection
+        toggleMergeDrawMode();
+      };
 
-      // Mouse events
-      mergeCanvas.addEventListener('mousedown', e => {
-        const r = mergeCanvas.getBoundingClientRect();
-        mergeRect = { x1:e.clientX-r.left, y1:e.clientY-r.top,
-                      x2:e.clientX-r.left, y2:e.clientY-r.top };
-        mergePainting = true;
-      });
-      mergeCanvas.addEventListener('mousemove', e => {
-        if (!mergePainting) return;
-        const r = mergeCanvas.getBoundingClientRect();
-        mergeRect.x2 = e.clientX-r.left;
-        mergeRect.y2 = e.clientY-r.top;
-        drawMergeRect();
-      });
-      mergeCanvas.addEventListener('mouseup', e => {
-        if (!mergePainting || !mergeRect) return;
-        mergePainting = false;
-        selectFeaturesInRect(mergeRect);
-        mergeCtx.clearRect(0, 0, mergeCanvas.width, mergeCanvas.height);
-        mergeRect = null;
-      });
+      mergeCanvas.addEventListener('touchstart', e => { e.preventDefault(); const t=e.touches[0], r=mergeCanvas.getBoundingClientRect(); onStart(t.clientX-r.left,t.clientY-r.top); },{passive:false});
+      mergeCanvas.addEventListener('touchmove',  e => { e.preventDefault(); const t=e.touches[0], r=mergeCanvas.getBoundingClientRect(); onMove(t.clientX-r.left,t.clientY-r.top); },{passive:false});
+      mergeCanvas.addEventListener('touchend',   e => { e.preventDefault(); onEnd(); },{passive:false});
+      mergeCanvas.addEventListener('mousedown',  e => { const r=mergeCanvas.getBoundingClientRect(); onStart(e.clientX-r.left,e.clientY-r.top); });
+      mergeCanvas.addEventListener('mousemove',  e => { const r=mergeCanvas.getBoundingClientRect(); onMove(e.clientX-r.left,e.clientY-r.top); });
+      mergeCanvas.addEventListener('mouseup',    () => onEnd());
     }
 
     function drawMergeRect() {
       if (!mergeCtx || !mergeRect) return;
-      mergeCtx.clearRect(0, 0, mergeCanvas.width, mergeCanvas.height);
+      mergeCtx.clearRect(0,0,mergeCanvas.width,mergeCanvas.height);
       const {x1,y1,x2,y2} = mergeRect;
-      mergeCtx.strokeStyle = '#e53935';
-      mergeCtx.lineWidth = 2;
-      mergeCtx.setLineDash([6,3]);
-      mergeCtx.strokeRect(Math.min(x1,x2), Math.min(y1,y2), Math.abs(x2-x1), Math.abs(y2-y1));
-      mergeCtx.fillStyle = 'rgba(229,57,53,0.08)';
-      mergeCtx.fillRect(Math.min(x1,x2), Math.min(y1,y2), Math.abs(x2-x1), Math.abs(y2-y1));
+      mergeCtx.strokeStyle='#0C0243'; mergeCtx.lineWidth=2; mergeCtx.setLineDash([6,3]);
+      mergeCtx.strokeRect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1));
+      mergeCtx.fillStyle='rgba(12,2,67,0.06)';
+      mergeCtx.fillRect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1));
     }
 
     function selectFeaturesInRect(rect) {
       if (!mergeMap) return;
-      const minX = Math.min(rect.x1, rect.x2);
-      const minY = Math.min(rect.y1, rect.y2);
-      const maxX = Math.max(rect.x1, rect.x2);
-      const maxY = Math.max(rect.y1, rect.y2);
-
-      // Use queryRenderedFeatures on the bounding box
-      const hits = mergeMap.queryRenderedFeatures(
-        [[minX, minY], [maxX, maxY]],
-        { layers: ['merge-fill'] }
-      );
-      hits.forEach(f => mergeSelected.add(f.properties.id));
-      updateMergeSelection();
+      const minX=Math.min(rect.x1,rect.x2), minY=Math.min(rect.y1,rect.y2);
+      const maxX=Math.max(rect.x1,rect.x2), maxY=Math.max(rect.y1,rect.y2);
+      const hits = mergeMap.queryRenderedFeatures([[minX,minY],[maxX,maxY]], { layers:['merge-fill'] });
+      let anyRejected = false;
+      hits.forEach(f => {
+        const id = f.properties.id;
+        if (mergeSelected.has(id)) return;
+        const feat = mergeAllFeatures.find(x => x.properties.id === id);
+        if (!feat) return;
+        if (!mergeFirstProps) mergeFirstProps = { ...feat.properties };
+        if (isCompatible(feat)) {
+          mergeSelected.add(id);
+        } else {
+          anyRejected = true;
+          flashRejectFeature(id);
+        }
+      });
+      if (anyRejected) {
+        document.getElementById('merge-status').textContent = '⚠️ Jotkut alueet hylättiin — eri tyyppi tai aika';
+      }
+      updateMergeUI();
     }
 
-    function updateMergeSelection() {
-      if (!mergeMap || !mergeMap.getLayer('merge-selected-fill')) return;
+    function flashRejectFeature(id) {
+      // Flash the feature red 3 times
+      let count = 0;
+      const interval = setInterval(() => {
+        const ids = Array.from(mergeSelected).concat(count%2===0 ? [id] : []);
+        if (mergeMap.getLayer('merge-sel-fill')) {
+          mergeMap.setFilter('merge-sel-fill', ['in',['get','id'],['literal',ids]]);
+          mergeMap.setPaintProperty('merge-sel-fill','fill-color', count%2===0 ? '#e53935' : '#0C0243');
+        }
+        count++;
+        if (count > 5) {
+          clearInterval(interval);
+          updateMergeUI();
+        }
+      }, 220);
+    }
+
+    function updateMergeUI() {
+      if (!mergeMap || !mergeMap.getLayer('merge-sel-fill')) return;
       const ids = Array.from(mergeSelected);
-      const filter = ['in', ['get','id'], ['literal', ids]];
-      mergeMap.setFilter('merge-selected-fill', ids.length ? filter : ['==','id','']);
-      mergeMap.setFilter('merge-selected-line',  ids.length ? filter : ['==','id','']);
+      const filter = ids.length ? ['in',['get','id'],['literal',ids]] : ['==','id','__none__'];
+      mergeMap.setFilter('merge-sel-fill', filter);
+      mergeMap.setFilter('merge-sel-line', filter);
+      mergeMap.setPaintProperty('merge-sel-fill','fill-color','#0C0243');
 
-      const count = ids.length;
-      document.getElementById('merge-count').textContent = count ? `${count} valittu` : '';
-
-      // Check compatibility
-      const btn = document.getElementById('merge-btn');
-      if (count < 2) {
-        document.getElementById('merge-status').textContent = 'Maalaa alueita sormella valitaksesi';
-        btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed'; return;
-      }
-
-      // Get selected features
-      const selFeatures = mergeAllFeatures.filter(f => mergeSelected.has(f.properties.id));
-      // Check all have same max_hours and same area_type
-      const hours = new Set(selFeatures.map(f => f.properties.max_hours));
-      const types = new Set(selFeatures.map(f => f.properties.area_type));
-      if (hours.size > 1 || types.size > 1) {
-        document.getElementById('merge-status').textContent =
-          '⚠️ Valitut alueet ovat eri tyyppisiä (eri max-aika tai tyyppi)';
-        btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
+      const cnt = ids.length;
+      document.getElementById('merge-count').textContent = cnt ? `${cnt} valittu` : '';
+      const previewBtn = document.getElementById('merge-preview-btn');
+      if (cnt >= 2) {
+        previewBtn.style.opacity = '1'; previewBtn.style.cursor = 'pointer';
+        document.getElementById('merge-status').textContent = `✓ ${cnt} yhteensopivaa aluetta valittu`;
       } else {
-        document.getElementById('merge-status').textContent =
-          `✓ ${count} yhteensopivaa aluetta valittu`;
-        btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+        previewBtn.style.opacity = '0.4'; previewBtn.style.cursor = 'not-allowed';
+        if (!cnt) { mergeFirstProps = null; }
       }
     }
 
     function clearMergeSelection() {
-      mergeSelected.clear();
-      updateMergeSelection();
+      mergeSelected.clear(); mergeFirstProps = null;
+      cancelMergePreview();
+      updateMergeUI();
+      document.getElementById('merge-status').textContent = 'Paina ✏️ ja maalaa alueita valitaksesi';
+      document.getElementById('merge-count').textContent = '';
     }
 
-    // Compute convex hull from all outer ring coordinates
+    // Convex hull (Graham scan)
     function convexHull(points) {
       if (points.length < 3) return points;
-      points = points.slice().sort((a,b) => a[0]-b[0] || a[1]-b[1]);
+      points = points.slice().sort((a,b) => a[0]-b[0]||a[1]-b[1]);
       const cross = (O,A,B) => (A[0]-O[0])*(B[1]-O[1])-(A[1]-O[1])*(B[0]-O[0]);
-      const lower = [], upper = [];
-      for (const p of points) {
-        while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) lower.pop();
-        lower.push(p);
-      }
-      for (let i = points.length-1; i >= 0; i--) {
-        const p = points[i];
-        while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) upper.pop();
-        upper.push(p);
-      }
+      const lower=[], upper=[];
+      for (const p of points) { while(lower.length>=2&&cross(lower[lower.length-2],lower[lower.length-1],p)<=0)lower.pop(); lower.push(p); }
+      for (let i=points.length-1;i>=0;i--) { const p=points[i]; while(upper.length>=2&&cross(upper[upper.length-2],upper[upper.length-1],p)<=0)upper.pop(); upper.push(p); }
       upper.pop(); lower.pop();
       return lower.concat(upper);
     }
 
-    async function executeMerge() {
-      const ids = Array.from(mergeSelected);
-      if (ids.length < 2) return;
-
+    function buildMergedGeom() {
       const selFeatures = mergeAllFeatures.filter(f => mergeSelected.has(f.properties.id));
-      const hours = new Set(selFeatures.map(f => f.properties.max_hours));
-      const types = new Set(selFeatures.map(f => f.properties.area_type));
-      if (hours.size > 1 || types.size > 1) return;
-
-      // Collect all outer ring coordinates
       const allPts = [];
       selFeatures.forEach(f => {
         const geom = f.geometry;
-        const rings = geom.type === 'MultiPolygon'
-          ? geom.coordinates.map(p => p[0])
-          : [geom.coordinates[0]];
+        const rings = geom.type==='MultiPolygon' ? geom.coordinates.map(p=>p[0]) : [geom.coordinates[0]];
         rings.forEach(ring => ring.forEach(pt => allPts.push(pt)));
       });
-
       const hull = convexHull(allPts);
-      const mergedGeom = { type:'Polygon', coordinates:[[...hull, hull[0]]] };
+      return { type:'Polygon', coordinates:[[...hull, hull[0]]] };
+    }
 
+    function previewMerge() {
+      if (mergeSelected.size < 2) return;
+      mergePreviewGeom = buildMergedGeom();
+      if (mergeMap.getSource('merge-preview')) {
+        mergeMap.getSource('merge-preview').setData({ type:'FeatureCollection', features:[{ type:'Feature', geometry:mergePreviewGeom, properties:{} }] });
+      }
+      document.getElementById('merge-normal-bar').style.display = 'none';
+      document.getElementById('merge-preview-bar').style.display = 'block';
+      document.getElementById('merge-status').textContent = 'Esikatselu — oranssi = yhdistetty alue';
+    }
+
+    function cancelMergePreview() {
+      mergePreviewGeom = null;
+      if (mergeMap && mergeMap.getSource('merge-preview'))
+        mergeMap.getSource('merge-preview').setData({ type:'FeatureCollection', features:[] });
+      document.getElementById('merge-normal-bar').style.display = 'block';
+      document.getElementById('merge-preview-bar').style.display = 'none';
+    }
+
+    async function executeMerge() {
+      if (!mergePreviewGeom || mergeSelected.size < 2) return;
+      const ids = Array.from(mergeSelected);
+      const selFeatures = mergeAllFeatures.filter(f => mergeSelected.has(f.properties.id));
       const ref = selFeatures[0].properties;
       const newRow = {
-        source:    ref.source,
-        area_type: ref.area_type,
-        max_hours: ref.max_hours,
-        extra_info: ref.extra_info,
-        polygon_coords: mergedGeom,
+        source: ref.source, area_type: ref.area_type, max_hours: ref.max_hours,
+        valid_mape_from: ref.valid, valid_mape_to: ref.valid,
+        valid_la_from: ref.valid, valid_la_to: ref.valid,
+        valid_su_from: ref.valid, valid_su_to: ref.valid,
+        extra_info: ref.extra_info, polygon_coords: mergePreviewGeom,
         approved_at: new Date().toISOString()
       };
-
       try {
-        // Insert merged area
         const insRes = await fetch(`${SUPABASE_URL}/rest/v1/parking_master`, {
           method:'POST',
-          headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`,
-                    'Content-Type':'application/json', 'Prefer':'return=minimal' },
+          headers:{ 'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal' },
           body: JSON.stringify(newRow)
         });
-        if (!insRes.ok) throw new Error('Insert failed: ' + insRes.status);
-
-        // Delete originals
+        if (!insRes.ok) throw new Error('Insert: ' + insRes.status);
         for (const id of ids) {
           await fetch(`${SUPABASE_URL}/rest/v1/parking_master?id=eq.${id}`, {
             method:'DELETE',
-            headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Prefer':'return=minimal' }
+            headers:{ 'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal' }
           });
         }
-
-        alert(`✓ ${ids.length} aluetta yhdistetty yhdeksi!`);
+        alert(`✓ ${ids.length} aluetta yhdistetty onnistuneesti!`);
         clearMergeSelection();
+        cancelMergePreview();
         await loadMergeFeatures();
-        masterDataLoaded = false; // force main map refresh
-      } catch(e) {
-        console.error('Merge error:', e);
-        alert('Yhdistäminen epäonnistui: ' + e.message);
-      }
+        masterDataLoaded = false;
+      } catch(e) { alert('Virhe: ' + e.message); }
     }
     // ════════════════════════════════════════════════════════════════
+
     function openCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(0)'; }
     function closeCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(100%)'; }
 
@@ -3880,18 +3900,29 @@
     </div>
     <!-- Info bar -->
     <div id="merge-info-bar" style="background:#f8f8f8;border-bottom:1px solid #eee;padding:10px 16px;font-family:Arial,sans-serif;font-size:13px;color:#555;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
-      <span id="merge-status">Maalaa alueita sormella valitaksesi</span>
+      <span id="merge-status">Paina ✏️ ja maalaa alueita valitaksesi</span>
       <span id="merge-count" style="font-weight:bold;color:#0C0243;"></span>
     </div>
     <!-- Map -->
     <div id="merge-map" style="flex:1;position:relative;">
-      <!-- Paint overlay canvas -->
       <canvas id="merge-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;touch-action:none;pointer-events:none;"></canvas>
+      <!-- Mode toggle -->
+      <div style="position:absolute;top:12px;right:12px;z-index:20;display:flex;flex-direction:column;gap:8px;">
+        <button id="merge-draw-btn" onclick="toggleMergeDrawMode()" title="Maalaustyökalu" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">✏️</button>
+        <button onclick="clearMergeSelection()" title="Tyhjennä" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">🗑️</button>
+      </div>
     </div>
-    <!-- Bottom controls -->
-    <div style="background:white;border-top:1px solid #eee;padding:12px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom));flex-shrink:0;display:flex;gap:10px;align-items:center;">
-      <button onclick="clearMergeSelection()" style="flex:1;height:46px;background:#f5f5f5;border:none;border-radius:12px;font-size:14px;cursor:pointer;color:#333;font-family:Arial,sans-serif;">Tyhjennä</button>
-      <button id="merge-btn" onclick="executeMerge()" style="flex:2;height:46px;background:#0C0243;border:none;border-radius:12px;font-size:15px;font-weight:bold;cursor:not-allowed;color:white;font-family:Arial,sans-serif;opacity:0.4;transition:opacity 0.2s;">Yhdistä valitut</button>
+    <!-- Normal controls -->
+    <div id="merge-normal-bar" style="background:white;border-top:1px solid #eee;padding:12px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom));flex-shrink:0;">
+      <button id="merge-preview-btn" onclick="previewMerge()" style="width:100%;height:50px;background:#0C0243;border:none;border-radius:14px;font-size:15px;font-weight:bold;cursor:not-allowed;color:white;font-family:Arial,sans-serif;opacity:0.4;transition:opacity 0.2s;">👁 Esikatsele yhdistämistä</button>
+    </div>
+    <!-- Preview confirm bar (hidden initially) -->
+    <div id="merge-preview-bar" style="display:none;background:white;border-top:1px solid #eee;padding:12px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom));flex-shrink:0;">
+      <div style="font-family:Arial,sans-serif;font-size:13px;color:#555;margin-bottom:10px;text-align:center;">Oranssi alue on esikatselu yhdistetystä alueesta</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="cancelMergePreview()" style="flex:1;height:46px;background:#f5f5f5;border:none;border-radius:12px;font-size:15px;cursor:pointer;color:#333;font-family:Arial,sans-serif;">✕ Hylkää</button>
+        <button onclick="executeMerge()" style="flex:2;height:46px;background:#27ae60;border:none;border-radius:12px;font-size:15px;font-weight:bold;cursor:pointer;color:white;font-family:Arial,sans-serif;">✓ Hyväksy ja yhdistä</button>
+      </div>
     </div>
   </div>
 
