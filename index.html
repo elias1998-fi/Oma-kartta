@@ -1439,13 +1439,13 @@
       // Trigger initial viewport load once map is stable
       setTimeout(() => {
         checkParking();
+        // Load hallis always — they're just 113 points, lightweight
+        if (!halliLoaded) { halliLoaded = true; loadHalliMarkers(); }
+        // Load master polygons if zoomed in, else wait for onMapIdle
         if (map.getZoom() >= 13) {
-          if (!halliLoaded) { halliLoaded = true; loadHalliMarkers(); }
-          const b = map.getBounds();
-          lastBboxKey = '';   // force first load
           loadViewportTiles(null);
         }
-      }, 500);
+      }, 800);
     });
 
     const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
@@ -2324,10 +2324,10 @@
 
     const SOURCE_STYLE = {
       'community':          { fill:'#27ae60', line:'#1e8449', label:'Yhteisön lisäämä alue' },
-      'hel_ilmainen_pitka': { fill:'#2980b9', line:'#1a5276', label:'Ilmainen pitkäaikainen pysäköinti' },
-      'hel_kertamaksu_1h':  { fill:'#e67e22', line:'#ca6f1e', label:'Maksullinen pysäköinti (max. 1h)' },
-      'hel_kertamaksu_2h':  { fill:'#e74c3c', line:'#cb4335', label:'Maksullinen pysäköinti (max. 2h)' },
-      'hel_kertamaksu_4h':  { fill:'#8e44ad', line:'#7d3c98', label:'Maksullinen pysäköinti (max. 4h)' },
+      'hel_ilmainen_pitka': { fill:'#27ae60', line:'#1e8449', label:'Ilmainen pitkäaikainen pysäköinti' },
+      'hel_kertamaksu_1h':  { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 1h)' },
+      'hel_kertamaksu_2h':  { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 2h)' },
+      'hel_kertamaksu_4h':  { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 4h)' },
     };
 
     async function renderMasterRows(rows) {
@@ -2358,13 +2358,13 @@
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
 
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
-          paint:{ 'fill-opacity': 0.28,
+          paint:{ 'fill-opacity': 0.30,
             'fill-color': ['match', ['get','source'],
               'community',          '#27ae60',
-              'hel_ilmainen_pitka', '#2980b9',
-              'hel_kertamaksu_1h',  '#e67e22',
-              'hel_kertamaksu_2h',  '#e74c3c',
-              'hel_kertamaksu_4h',  '#8e44ad',
+              'hel_ilmainen_pitka', '#27ae60',
+              'hel_kertamaksu_1h',  '#4A90D9',
+              'hel_kertamaksu_2h',  '#4A90D9',
+              'hel_kertamaksu_4h',  '#4A90D9',
               '#4A90D9'
             ]
           }
@@ -2374,10 +2374,10 @@
           paint:{ 'line-width': 1.5, 'line-opacity': 0.9,
             'line-color': ['match', ['get','source'],
               'community',          '#1e8449',
-              'hel_ilmainen_pitka', '#1a5276',
-              'hel_kertamaksu_1h',  '#ca6f1e',
-              'hel_kertamaksu_2h',  '#cb4335',
-              'hel_kertamaksu_4h',  '#7d3c98',
+              'hel_ilmainen_pitka', '#1e8449',
+              'hel_kertamaksu_1h',  '#2B6CB0',
+              'hel_kertamaksu_2h',  '#2B6CB0',
+              'hel_kertamaksu_4h',  '#2B6CB0',
               '#2B6CB0'
             ]
           }
@@ -2412,12 +2412,22 @@
         }
 
         let hoveredPolyId = null;
+        map.on('mousemove', 'master-poly-fill', (e) => {
+          map.getCanvas().style.cursor = 'pointer';
+          const newId = e.features[0].properties.id;
+          if (newId !== hoveredPolyId) {
+            hoveredPolyId = newId;
+            map.setFilter('master-poly-highlight', ['==', ['get','id'], hoveredPolyId]);
+            map.setPaintProperty('master-poly-highlight', 'line-opacity', 1);
+            showMasterPolyInfo(e);
+          }
+        });
         map.on('mouseenter', 'master-poly-fill', (e) => {
           map.getCanvas().style.cursor = 'pointer';
-          showMasterPolyInfo(e);
           hoveredPolyId = e.features[0].properties.id;
           map.setFilter('master-poly-highlight', ['==', ['get','id'], hoveredPolyId]);
           map.setPaintProperty('master-poly-highlight', 'line-opacity', 1);
+          showMasterPolyInfo(e);
         });
         map.on('click', 'master-poly-fill', (e) => {
           showMasterPolyInfo(e);
@@ -2815,10 +2825,7 @@
       requestAnimationFrame(() => { checkParking(); });
 
       // Load hallis once we hit zoom 13+
-      if (!halliLoaded && zoom >= 13) {
-        halliLoaded = true;
-        setTimeout(loadHalliMarkers, 200);
-      }
+      if (!halliLoaded) { halliLoaded = true; setTimeout(loadHalliMarkers, 200); }
 
       // Load master polygons — only once, then cache in memory
       // Layers have minzoom:13 so they auto-hide when zoomed out
