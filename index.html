@@ -398,10 +398,9 @@
       box-shadow: 0 -2px 16px rgba(0,0,0,0.15); 
       z-index: 20; 
       transform: translateY(calc(100% - 60px)); 
-      touch-action: pan-y; 
+      touch-action: none;
       display: flex; 
       flex-direction: column;
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
     }
     #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
@@ -2333,7 +2332,11 @@
         const geojson = { type: 'FeatureCollection', features };
 
         if (map.getSource('master-polygons')) {
-          map.getSource('master-polygons').setData(geojson);
+          // Defer setData so it doesn't block during map interaction
+          requestAnimationFrame(() => {
+            if (map.getSource('master-polygons'))
+              map.getSource('master-polygons').setData(geojson);
+          });
           return;
         }
 
@@ -2787,31 +2790,46 @@
 
     let moveTimer=null;
     // All map updates on moveend only — never on move (avoids 60fps queryRenderedFeatures freeze)
-    // ── Single consolidated event handler block ─────────────────────
+    // ── Event handlers: everything deferred via rAF to avoid iOS freeze ──
     let tileLoadTimer = null;
-    let currentTileFetch = null;  // AbortController for in-flight fetch
+    let currentTileFetch = null;
     let halliLoaded = false;
+    let lastBboxKey = '';
 
     function onMapIdle() {
       const zoom = map.getZoom();
-      highlightParking();
-      checkParking();
+
+      // Defer ALL DOM/map updates to next animation frame
+      // so MapLibre finishes its render cycle before we touch the DOM
+      requestAnimationFrame(() => {
+        checkParking();
+      });
 
       if (zoom >= 13) {
-        // Load hallis once
-        if (!halliLoaded) { halliLoaded = true; loadHalliMarkers(); }
+        if (!halliLoaded) { halliLoaded = true; setTimeout(loadHalliMarkers, 100); }
 
-        // Debounced viewport tile load — cancel previous fetch if still pending
+        // Debounced viewport tile load
         clearTimeout(tileLoadTimer);
         tileLoadTimer = setTimeout(() => {
+          // Skip if bbox hasn't changed (e.g. tiny jitter)
+          const b = map.getBounds();
+          const key = [b.getWest(),b.getSouth(),b.getEast(),b.getNorth()]
+            .map(v=>v.toFixed(3)).join(',');
+          if (key === lastBboxKey) return;
+          lastBboxKey = key;
+
           if (currentTileFetch) { currentTileFetch.abort(); }
           currentTileFetch = new AbortController();
           loadViewportTiles(currentTileFetch.signal);
-        }, 600);
+        }, 800);
       } else {
-        // Zoomed out — clear master polygons to free GPU memory
         if (map.getSource('master-polygons')) {
-          map.getSource('master-polygons').setData({ type:'FeatureCollection', features:[] });
+          // Defer clearing too — avoid blocking moveend handler
+          requestAnimationFrame(() => {
+            if (map.getSource('master-polygons'))
+              map.getSource('master-polygons').setData({ type:'FeatureCollection', features:[] });
+            lastBboxKey = '';
+          });
         }
       }
     }
@@ -2872,6 +2890,7 @@
         btn.textContent = 'Pysäköi tähän';
         btn.classList.add('active');
         gpsWarning.classList.remove('visible');
+        sheet.style.transition = 'transform 0.2s ease';
         sheet.style.transform = 'translateY(calc(100% - 150px))';
         currentY = sheet.offsetHeight - 150;
       } else if (!masterFeatureLocked) {
@@ -2884,6 +2903,7 @@
         btn.textContent = 'Valitse pysäköintialue';
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
+        sheet.style.transition = 'transform 0.2s ease';
         sheet.style.transform = 'translateY(calc(100% - 90px))';
         currentY = sheet.offsetHeight - 90;
       }
