@@ -1437,27 +1437,8 @@
 
     map.on('load', () => {
       map.touchZoomRotate.disableRotation(); map.dragRotate.disable();
-      fetch('helsinki_parkit.geojson').then(r=>r.json()).then(data => {
-        data.features = data.features.map(f => { f.properties.kesto_min = kestoToMinutes(f.properties['hel:kesto']); return f; });
-        map.addSource('helsinki-parkit', { type:'geojson', data });
-        map.addLayer({ id:'helsinki-parkit-fill', type:'fill', source:'helsinki-parkit', minzoom:13, paint:{'fill-color':'#4A90D9','fill-opacity':0.25} });
-        map.addLayer({ id:'helsinki-parkit-outline', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#2B6CB0','line-width':1.5,'line-opacity':0.9} });
-        map.addLayer({ id:'helsinki-parkit-highlight', type:'line', source:'helsinki-parkit', minzoom:13, paint:{'line-color':'#0C0243','line-width':4,'line-opacity':1}, filter:['==',['get','hel:id'],-1] });
-
-        // Click on Helsinki parking areas → fly to centroid at zoom 15
-        map.on('click', 'helsinki-parkit-fill', (e) => {
-          const coords = e.features[0].geometry.coordinates[0];
-          const lng = coords.reduce((s,c) => s+c[0], 0) / coords.length;
-          const lat = coords.reduce((s,c) => s+c[1], 0) / coords.length;
-          map.flyTo({ center: [lng, lat], zoom: 16, duration: 800 });
-        });
-
-        setTimeout(() => {
-          checkParking();
-        }, 100);
-        // Master areas loaded lazily on first zoom to level 13
-        // (avoids freezing on startup with large dataset)
-      });
+      // helsinki_parkit.geojson removed — data served via Supabase Edge Function
+      setTimeout(() => { checkParking(); }, 100);
     });
 
     const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
@@ -2754,7 +2735,7 @@
     function idxToMinutes(i){if(i===0)return 0;if(i===1)return 30;if(i>=26)return 9999;return(i-1)*60;}
     function formatHourLabel(i){if(i===0)return'0h';if(i===1)return'30min';if(i>=26)return'24h+';return`${i-1}h`;}
     function updateSliderUI(){const a=parseInt(sliderMin.value),b=parseInt(sliderMax.value);rangeFill.style.left=(a/26*100)+'%';rangeFill.style.width=((b-a)/26*100)+'%';if(a===0&&b===26){sliderValueEl.textContent='Kaikki';filterResult.textContent='';}else{sliderValueEl.textContent=`${formatHourLabel(a)} – ${formatHourLabel(b)}`;filterResult.textContent=`Näytetään ${formatHourLabel(a)} – ${formatHourLabel(b)} pysäköintialueet`;}}
-    function applyRangeFilter(){if(!map.getSource('helsinki-parkit'))return;const a=parseInt(sliderMin.value),b=parseInt(sliderMax.value);if(a===0&&b===26){map.setFilter('helsinki-parkit-fill',null);map.setFilter('helsinki-parkit-outline',null);}else{const f=['all',['>=',['get','kesto_min'],idxToMinutes(a)],['<=',['get','kesto_min'],idxToMinutes(b)]];map.setFilter('helsinki-parkit-fill',f);map.setFilter('helsinki-parkit-outline',f);}}
+    function applyRangeFilter(){} // helsinki-parkit removed
     let sliderTouching=false;
     sliderMin.addEventListener('touchstart',()=>{sliderTouching=true;},{passive:true});
     sliderMax.addEventListener('touchstart',()=>{sliderTouching=true;},{passive:true});
@@ -2842,7 +2823,7 @@
     const gpsWarning = document.getElementById('gps-warning');
     let currentHighlightId=null,currentY=0,currentParkingProps=null;
 
-    function highlightParking(){if(!map.getLayer('helsinki-parkit-highlight'))return;const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});if(f.length>0){const id=f[0].properties['hel:id'];if(id!==currentHighlightId){currentHighlightId=id;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],id]);}}else{if(currentHighlightId!==null){currentHighlightId=null;map.setFilter('helsinki-parkit-highlight',['==',['get','hel:id'],-1]);}}}
+    function highlightParking(){} // removed with helsinki_parkit.geojson
     function getOwnerName(r){if(!r)return'Tuntematon';if(r.includes('KYMP')||r.includes('HEL')||r.includes('Helsinki'))return'Helsinki Vyöhyke 2';return r;}
     function getTypeName(r){if(!r)return'-';const l=r.toLowerCase();if(l.includes('kadunvarsi')||l.includes('kadunsuuntainen'))return'Kadunvarsipysäköinti';if(l.includes('halli'))return'Pysäköintihalli';if(l.includes('tori')||l.includes('kenttä'))return'Pysäköintikenttä';return r;}
     function getPriceText(l){if(!l)return'-';const s=l.toLowerCase();if(s.includes('ilmainen'))return'Ilmainen pysäköintikiekolla';if(s.includes('maksullinen'))return'Maksullinen';if(s.includes('asukas'))return'Asukaspysäköinti';return l;}
@@ -2870,36 +2851,41 @@
         return;
       }
       
-      const f=map.queryRenderedFeatures(map.project(map.getCenter()),{layers:['helsinki-parkit-fill']});
-      
-      if(f.length>0){
-        const p=f[0].properties;
-        currentParkingProps=p;
-        const kt=p['hel:kesto']?`Max. ${p['hel:kesto']}`:'Rajoittamaton';
-        summaryHeader.textContent=`${getOwnerName(p['hel:datanomistaja'])}  |  ${kt}`;
-        summaryType.textContent=getTypeName(p['hel:paikan_asento']);
-        summaryOperator.textContent='Helsingin kaupungin pysäköinti';
-        details.innerHTML=`${formatHours(p['hel:voimassaolo'])}<p class="price-label">Hinta:</p><p class="price-value">${getPriceText(p['hel:luokka_nimi']||'')}</p>`;
-        divider.style.display='block';
-        btn.textContent='Pysäköi tähän';
+      // Check master-poly-fill for any parking area under center crosshair
+      const layers = map.getLayer('master-poly-fill') ? ['master-poly-fill'] : [];
+      const f = layers.length ? map.queryRenderedFeatures(map.project(map.getCenter()), {layers}) : [];
+
+      if(f.length>0 && !masterFeatureLocked){
+        currentParkingProps = f[0].properties;
+        const p = f[0].properties;
+        const SOURCE_LABELS = {
+          'community':'Yhteisön lisäämä','hel_ilmainen_pitka':'Ilmainen pitkäaikainen',
+          'hel_kertamaksu_1h':'Kertamaksu max. 1h','hel_kertamaksu_2h':'Kertamaksu max. 2h',
+          'hel_kertamaksu_4h':'Kertamaksu max. 4h'
+        };
+        summaryHeader.textContent = (p.extra_info||'').split(' | ')[0] || SOURCE_LABELS[p.source] || p.source;
+        summaryType.textContent = SOURCE_LABELS[p.source] || '';
+        summaryOperator.textContent = p.source==='community' ? 'Tiimin varmentama ✓' : 'Helsingin kaupunki';
+        const kesto = p.max_hours ? `Max. ${p.max_hours}h` : '';
+        details.innerHTML = kesto ? `<p class="price-label">Kesto</p><p class="price-value">${kesto}</p>` : '';
+        divider.style.display = 'block';
+        btn.textContent = 'Pysäköi tähän';
         btn.classList.add('active');
         gpsWarning.classList.remove('visible');
-        
-        sheet.style.transform='translateY(calc(100% - 150px))';
-        currentY=sheet.offsetHeight-150;
-      } else {
-        currentParkingProps=null;
-        summaryHeader.textContent='';
-        summaryType.textContent='';
-        summaryOperator.textContent='';
-        details.innerHTML='';
-        divider.style.display='none';
-        btn.textContent='Valitse pysäköintialue';
+        sheet.style.transform = 'translateY(calc(100% - 150px))';
+        currentY = sheet.offsetHeight - 150;
+      } else if (!masterFeatureLocked) {
+        currentParkingProps = null;
+        summaryHeader.textContent = '';
+        summaryType.textContent = '';
+        summaryOperator.textContent = '';
+        details.innerHTML = '';
+        divider.style.display = 'none';
+        btn.textContent = 'Valitse pysäköintialue';
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
-        
-        sheet.style.transform='translateY(calc(100% - 90px))';
-        currentY=sheet.offsetHeight-90;
+        sheet.style.transform = 'translateY(calc(100% - 90px))';
+        currentY = sheet.offsetHeight - 90;
       }
     }
 
