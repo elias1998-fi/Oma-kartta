@@ -2775,7 +2775,8 @@
     let mergeCanvas, mergeCtx;
     let mergeRect = null;
     let mergeDrawMode = false;      // true = paint mode, false = pan mode
-    let mergePreviewGeom = null;    // convex hull geom for preview
+    let mergePreviewGeom = null;
+    let mergeMethod = 'convex';  // 'convex' | 'road'
 
     function openMergeOverlay() {
       document.getElementById('profile-overlay').classList.remove('open');
@@ -2789,6 +2790,23 @@
       cancelMergePreview();
       mergeDrawMode = false;
       if (mergeCanvas) mergeCanvas.style.pointerEvents = 'none';
+    }
+
+    function toggleMergeMethod() {
+      mergeMethod = mergeMethod === 'convex' ? 'road' : 'convex';
+      const btn = document.getElementById('merge-mode-btn');
+      const lbl = document.getElementById('merge-method-label');
+      if (mergeMethod === 'road') {
+        btn.style.background = '#0C0243'; btn.style.color = 'white'; btn.style.border = '2px solid #0C0243';
+        btn.textContent = '〰️';
+        lbl.textContent = '〰️ Tien mukainen';
+        lbl.style.background = '#e8fff0'; lbl.style.color = '#1e8449';
+      } else {
+        btn.style.background = 'white'; btn.style.color = 'black'; btn.style.border = '2px solid #ddd';
+        btn.textContent = '⬡';
+        lbl.textContent = '⬡ Konveksi';
+        lbl.style.background = '#e8eeff'; lbl.style.color = '#0C0243';
+      }
     }
 
     function toggleMergeDrawMode() {
@@ -3006,14 +3024,27 @@
 
     function buildMergedGeom() {
       const selFeatures = mergeAllFeatures.filter(f => mergeSelected.has(f.properties.id));
-      const allPts = [];
-      selFeatures.forEach(f => {
-        const geom = f.geometry;
-        const rings = geom.type==='MultiPolygon' ? geom.coordinates.map(p=>p[0]) : [geom.coordinates[0]];
-        rings.forEach(ring => ring.forEach(pt => allPts.push(pt)));
-      });
-      const hull = convexHull(allPts);
-      return { type:'Polygon', coordinates:[[...hull, hull[0]]] };
+
+      if (mergeMethod === 'road') {
+        // Road-following: MultiPolygon preserving exact shapes
+        const polys = [];
+        selFeatures.forEach(f => {
+          const geom = f.geometry;
+          if (geom.type === 'Polygon') polys.push(geom.coordinates);
+          else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(p => polys.push(p));
+        });
+        return { type:'MultiPolygon', coordinates: polys };
+      } else {
+        // Convex hull: one big polygon spanning all areas
+        const allPts = [];
+        selFeatures.forEach(f => {
+          const geom = f.geometry;
+          const rings = geom.type==='MultiPolygon' ? geom.coordinates.map(p=>p[0]) : [geom.coordinates[0]];
+          rings.forEach(ring => ring.forEach(pt => allPts.push(pt)));
+        });
+        const hull = convexHull(allPts);
+        return { type:'Polygon', coordinates:[[...hull, hull[0]]] };
+      }
     }
 
     function previewMerge() {
@@ -3901,6 +3932,7 @@
     <!-- Info bar -->
     <div id="merge-info-bar" style="background:#f8f8f8;border-bottom:1px solid #eee;padding:10px 16px;font-family:Arial,sans-serif;font-size:13px;color:#555;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
       <span id="merge-status">Paina ✏️ ja maalaa alueita valitaksesi</span>
+<span id="merge-method-label" style="font-size:11px;color:#0C0243;font-weight:bold;background:#e8eeff;padding:3px 8px;border-radius:8px;">⬡ Konveksi</span>
       <span id="merge-count" style="font-weight:bold;color:#0C0243;"></span>
     </div>
     <!-- Map -->
@@ -3909,6 +3941,7 @@
       <!-- Mode toggle -->
       <div style="position:absolute;top:12px;right:12px;z-index:20;display:flex;flex-direction:column;gap:8px;">
         <button id="merge-draw-btn" onclick="toggleMergeDrawMode()" title="Maalaustyökalu" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">✏️</button>
+        <button id="merge-mode-btn" onclick="toggleMergeMethod()" title="Yhdistämistapa" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);" title="Vaihda yhdistämistapaa">⬡</button>
         <button onclick="clearMergeSelection()" title="Tyhjennä" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">🗑️</button>
       </div>
     </div>
