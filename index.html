@@ -2525,7 +2525,7 @@
       map.addLayer({
         id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
         layout: {
-          'icon-image': 'halli-icon', 'icon-size': 0.13,
+          'icon-image': 'halli-icon', 'icon-size': 0.52,
           'icon-allow-overlap': true, 'icon-anchor': 'center'
         }
       });
@@ -2543,7 +2543,7 @@
       }
       map.on('mouseenter', 'halli-icons', (e) => {
         map.getCanvas().style.cursor = 'pointer';
-        map.setLayoutProperty('halli-icons', 'icon-size', 0.18);
+        map.setLayoutProperty('halli-icons', 'icon-size', 0.72);
         showHalliInfo(e);
       });
       map.on('click', 'halli-icons', (e) => {
@@ -2553,7 +2553,7 @@
       });
       map.on('mouseleave', 'halli-icons', () => {
         map.getCanvas().style.cursor = '';
-        map.setLayoutProperty('halli-icons', 'icon-size', 0.13);
+        map.setLayoutProperty('halli-icons', 'icon-size', 0.52);
         releaseMasterLock();
       });
     }
