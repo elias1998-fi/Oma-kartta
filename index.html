@@ -2804,8 +2804,9 @@
     filterCloseBtn.addEventListener('click',closeFilter);
 
     let moveTimer=null;
-    map.on('move',()=>{highlightParking();clearTimeout(moveTimer);moveTimer=setTimeout(checkParking,150);});
-    map.on('zoomend', checkParking);
+    // All map updates on moveend only — never on move (avoids 60fps queryRenderedFeatures freeze)
+    map.on('moveend', () => { highlightParking(); checkParking(); });
+    map.on('zoomend', () => { highlightParking(); checkParking(); });
 
     // Viewport-based tile loading — fetch only visible polygons on each map move
     let tileLoadTimer = null;
