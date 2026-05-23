@@ -3036,13 +3036,13 @@
         // Mukaileva: buffer each polygon slightly → union → negative buffer
         // This fills gaps between adjacent strips while following road curves
         try {
-          const EXPAND_KM  = 0.008;  // expand 8m to bridge gaps between strips
-          const SHRINK_KM  = 0.005;  // shrink back 5m to remove expansion
+          const EXPAND_KM  = 0.003;  // expand 3m — just enough to bridge small gaps
+          const SHRINK_KM  = 0.001;  // shrink back 1m — keeps shape tight
           const turfFeats  = selFeatures.map(f => turf.feature(f.geometry));
 
           // Buffer each polygon outward
           const buffered = turfFeats.map(f =>
-            turf.buffer(f, EXPAND_KM, { units:'kilometers', steps:8 })
+            turf.buffer(f, EXPAND_KM, { units:'kilometers', steps:16 })
           ).filter(Boolean);
 
           if (!buffered.length) throw new Error('No buffered features');
@@ -3055,7 +3055,7 @@
           }
 
           // Shrink back to remove the buffer expansion
-          const shrunk = turf.buffer(unified, -SHRINK_KM, { units:'kilometers', steps:8 });
+          const shrunk = turf.buffer(unified, -SHRINK_KM, { units:'kilometers', steps:16 });
           if (shrunk) return shrunk.geometry;
           return unified.geometry;
         } catch(e) {
