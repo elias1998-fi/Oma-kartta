@@ -1454,8 +1454,8 @@
         setTimeout(() => {
           checkParking();
         }, 100);
-        // Load community-approved parking areas
-        loadApprovedSubmissions();
+        // Master areas loaded lazily on first zoom to level 13
+        // (avoids freezing on startup with large dataset)
       });
     });
 
@@ -2363,7 +2363,12 @@
         if (map.getSource('master-polygons')) {
           map.getSource('master-polygons').setData(allPolyGeoJSON);
         } else {
-          map.addSource('master-polygons', { type:'geojson', data: allPolyGeoJSON });
+          map.addSource('master-polygons', {
+            type:'geojson', data: allPolyGeoJSON,
+            tolerance: 0.75,
+            buffer: 4,
+            generateId: true
+          });
 
           // Fill layer — color by source using match expression
           map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
@@ -2798,7 +2803,23 @@
 
     let moveTimer=null;
     map.on('move',()=>{highlightParking();clearTimeout(moveTimer);moveTimer=setTimeout(checkParking,150);});
-    map.on('zoomend',checkParking);
+    map.on('zoomend', checkParking);
+
+    // Lazy-load master areas: only fetch once when user first zooms to level 13+
+    let masterLoaded = false;
+    map.on('zoomend', () => {
+      if (!masterLoaded && map.getZoom() >= 13) {
+        masterLoaded = true;
+        loadApprovedSubmissions();
+      }
+    });
+    // Also trigger if map already starts at zoom 13+ (e.g. after geolocate flyTo)
+    map.on('moveend', () => {
+      if (!masterLoaded && map.getZoom() >= 13) {
+        masterLoaded = true;
+        loadApprovedSubmissions();
+      }
+    });
 
     const btn=document.getElementById('action-btn'),summaryHeader=document.getElementById('summary-header'),summaryType=document.getElementById('summary-type'),summaryOperator=document.getElementById('summary-operator'),details=document.getElementById('sheet-details'),divider=document.getElementById('sheet-divider');
     const gpsWarning = document.getElementById('gps-warning');
