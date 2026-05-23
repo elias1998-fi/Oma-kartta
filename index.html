@@ -2323,11 +2323,12 @@
 
 
     const SOURCE_STYLE = {
-      'community':          { fill:'#27ae60', line:'#1e8449', label:'Yhteisön lisäämä alue' },
-      'hel_ilmainen_pitka': { fill:'#27ae60', line:'#1e8449', label:'Ilmainen pitkäaikainen pysäköinti' },
-      'hel_kertamaksu_1h':  { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 1h)' },
-      'hel_kertamaksu_2h':  { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 2h)' },
-      'hel_kertamaksu_4h':  { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 4h)' },
+      'community':           { fill:'#27ae60', line:'#1e8449', label:'Yhteisön lisäämä alue' },
+      'hel_ilmainen_pitka':  { fill:'#27ae60', line:'#1e8449', label:'Ilmainen pitkäaikainen pysäköinti' },
+      'hel_ilmainen_lyhyt':  { fill:'#27ae60', line:'#1e8449', label:'Ilmainen lyhytaikainen pysäköinti' },
+      'hel_kertamaksu_1h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 1h)' },
+      'hel_kertamaksu_2h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 2h)' },
+      'hel_kertamaksu_4h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 4h)' },
     };
 
     async function renderMasterRows(rows) {
@@ -2362,6 +2363,7 @@
             'fill-color': ['match', ['get','source'],
               'community',          '#27ae60',
               'hel_ilmainen_pitka', '#27ae60',
+              'hel_ilmainen_lyhyt',  '#27ae60',
               'hel_kertamaksu_1h',  '#4A90D9',
               'hel_kertamaksu_2h',  '#4A90D9',
               'hel_kertamaksu_4h',  '#4A90D9',
@@ -2375,6 +2377,7 @@
             'line-color': ['match', ['get','source'],
               'community',          '#1e8449',
               'hel_ilmainen_pitka', '#1e8449',
+              'hel_ilmainen_lyhyt',  '#1e8449',
               'hel_kertamaksu_1h',  '#2B6CB0',
               'hel_kertamaksu_2h',  '#2B6CB0',
               'hel_kertamaksu_4h',  '#2B6CB0',
@@ -2443,14 +2446,54 @@
 
     }
 
-    // ── Halli point markers (loaded once, light dataset) ─────────────
+    // ── Draw P icon on canvas (avoids SVG/Image loading issues) ────────
+    function createHalliIconCanvas() {
+      const size = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const r = 10;
+      // Blue rounded rect
+      ctx.beginPath();
+      ctx.moveTo(r, 2); ctx.lineTo(size-r, 2);
+      ctx.quadraticCurveTo(size-2, 2, size-2, r);
+      ctx.lineTo(size-2, size-r);
+      ctx.quadraticCurveTo(size-2, size-2, size-r, size-2);
+      ctx.lineTo(r, size-2);
+      ctx.quadraticCurveTo(2, size-2, 2, size-r);
+      ctx.lineTo(2, r);
+      ctx.quadraticCurveTo(2, 2, r, 2);
+      ctx.closePath();
+      ctx.fillStyle = '#1565C0';
+      ctx.fill();
+      // White border
+      ctx.strokeStyle = 'white'; ctx.lineWidth = 2.5;
+      ctx.stroke();
+      // Roof outline
+      ctx.beginPath();
+      ctx.moveTo(12, 24); ctx.lineTo(size/2, 10); ctx.lineTo(size-12, 24);
+      ctx.strokeStyle = 'white'; ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.stroke();
+      // P letter
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 32px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText('P', size/2, size - 6);
+      return ctx.getImageData(0, 0, size, size);
+    }
+
+    // ── Halli point markers ───────────────────────────────────────────
     async function loadHalliMarkers() {
       try {
         const res = await fetch(
           `${SUPABASE_URL}/rest/v1/parking_master?select=id,polygon_coords,extra_info&source=eq.hel_halli`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const rows = await res.json();
+        console.log('Hallit loaded:', rows.length);
         const halliFeatures = rows
           .filter(r => r.polygon_coords?.type === 'Point')
           .map(r => ({
@@ -2464,18 +2507,55 @@
           map.getSource('halli-points').setData(halliGeoJSON);
           return;
         }
-        if (map.hasImage('halli-icon')) {
-          addHalliLayers(halliGeoJSON);
-        } else {
-          const img = new Image(128, 128);
-          img.onload = () => {
-            if (!map.hasImage('halli-icon')) map.addImage('halli-icon', img);
-            addHalliLayers(halliGeoJSON);
-          };
-          img.onerror = () => console.error('Failed to load halli icon');
-          img.src = HALLI_ICON_URL;
+        // Register canvas icon with MapLibre
+        if (!map.hasImage('halli-icon')) {
+          const imgData = createHalliIconCanvas();
+          map.addImage('halli-icon', imgData, { pixelRatio: 2 });
         }
+        addHalliLayers(halliGeoJSON);
       } catch(e) { console.error('Halli load error:', e); }
+    }
+
+    function addHalliLayers(geojson) {
+      if (map.getSource('halli-points')) {
+        map.getSource('halli-points').setData(geojson);
+        return;
+      }
+      map.addSource('halli-points', { type:'geojson', data: geojson });
+      map.addLayer({
+        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
+        layout: {
+          'icon-image': 'halli-icon', 'icon-size': 0.13,
+          'icon-allow-overlap': true, 'icon-anchor': 'center'
+        }
+      });
+
+      function showHalliInfo(e) {
+        const props = e.features[0].properties;
+        const parts = (props.name || '').split(' | ');
+        const name = parts[0] || 'Pysäköintihalli';
+        const addr = parts[1] || '';
+        const dept = parts[2] || '';
+        showMasterFeatureInSheet(
+          name, addr || 'Pysäköintihalli / -tila', dept || 'Helsingin kaupunki',
+          '<p class="price-label">Tyyppi</p><p class="price-value">Pysäköintihalli / -tila</p>'
+        );
+      }
+      map.on('mouseenter', 'halli-icons', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        map.setLayoutProperty('halli-icons', 'icon-size', 0.18);
+        showHalliInfo(e);
+      });
+      map.on('click', 'halli-icons', (e) => {
+        showHalliInfo(e);
+        const coords = e.features[0].geometry.coordinates;
+        map.flyTo({ center: coords, zoom: 16, duration: 800 });
+      });
+      map.on('mouseleave', 'halli-icons', () => {
+        map.getCanvas().style.cursor = '';
+        map.setLayoutProperty('halli-icons', 'icon-size', 0.13);
+        releaseMasterLock();
+      });
     }
 
     // Keep loadApprovedSubmissions for admin approve refresh
