@@ -2434,28 +2434,6 @@
           releaseMasterLock();
         });
 
-      } catch(e) {
-        if (e.name !== 'AbortError') console.error('Tile load error:', e);
-      }
-    }
-
-    // Fallback: load directly from REST without PostGIS simplification
-    async function loadViewportFallback(signal) {
-      try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,valid_mape_from,polygon_coords&source=neq.hel_halli`,
-          {
-            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
-            ...(signal ? { signal } : {})
-          }
-        );
-        if (!res.ok) throw new Error(`Fallback HTTP ${res.status}`);
-        const rows = await res.json();
-        console.log('Fallback loaded:', rows.length, 'rows');
-        await renderMasterRows(rows);
-      } catch(e) {
-        if (e.name !== 'AbortError') console.error('Fallback error:', e);
-      }
     }
 
     // ── Halli point markers (loaded once, light dataset) ─────────────
