@@ -3533,9 +3533,40 @@
     
     function checkParking(){
       if(filterMode)return;
-      if(masterFeatureLocked)return;  // keep master feature info visible
-      
+      if(masterFeatureLocked)return;
+
       const zoom=map.getZoom();
+
+      // Highlight parking area under map center (works on mobile & desktop)
+      if(zoom>=13 && map.getLayer('master-poly-fill')){
+        const cpt = map.project(map.getCenter());
+        const cf  = map.queryRenderedFeatures(cpt, { layers:['master-poly-fill'] });
+        if(cf.length){
+          const f = cf[0];
+          if(f.properties.id !== hoveredPolyId){
+            hoveredPolyId = f.properties.id;
+            applyHoverHighlight(f.properties, f.id);
+            // Show info in bottom sheet
+            const p = f.properties;
+            const style = SOURCE_STYLE[p.source]||{label:p.source||'Pysäköintialue'};
+            const extra = p.extra_info?(p.extra_info.split(' | ')):[];
+            const name  = extra[0]||style.label;
+            const kesto = p.max_hours?`Max. ${p.max_hours}h`:'';
+            const valid = p.valid?`Voimassaolo: ${p.valid}`:'';
+            showMasterFeatureInSheet(
+              name, style.label, 'Helsingin kaupunki',
+              `${kesto?`<p class="price-label">Kesto</p><p class="price-value">${kesto}</p>`:''}
+               ${valid?`<p class="price-label">Voimassaolo</p><p class="price-value">${valid}</p>`:''}`
+            );
+            return; // skip rest of checkParking
+          } else {
+            return; // same area, already shown
+          }
+        } else {
+          // No area under center — clear highlight
+          if(hoveredPolyId){ clearHoverHighlight(); hoveredPolyId=null; }
+        }
+      }
       
       if(zoom<13){
         summaryHeader.textContent='';
