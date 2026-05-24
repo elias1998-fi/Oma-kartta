@@ -2521,15 +2521,18 @@
         map.setPaintProperty('master-poly-hovered','fill-opacity', 0);
     }
 
-    // ── Unified hover/touch highlight ───────────────────────────────
-    const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
-    let touchHoldTimer = null;
-
-    // DESKTOP: mouse hover
-    map.on('mousemove', 'master-poly-fill', (e) => {
-      if (isTouchDevice()) return;
+    // ── Hover + touch highlight (MapLibre fires synthetic mouse events on iOS too) ──
+    map.on('mouseenter', 'master-poly-fill', (e) => {
       if (!e.features.length) return;
       map.getCanvas().style.cursor = 'pointer';
+      const props = e.features[0].properties;
+      hoveredPolyId = props.id;
+      applyHoverHighlight(props);
+      showMasterPolyInfo(e);
+    });
+
+    map.on('mousemove', 'master-poly-fill', (e) => {
+      if (!e.features.length) return;
       const newId = e.features[0].properties.id;
       if (newId !== hoveredPolyId) {
         hoveredPolyId = newId;
@@ -2537,78 +2540,17 @@
         showMasterPolyInfo(e);
       }
     });
+
     map.on('mouseleave', 'master-poly-fill', () => {
-      if (isTouchDevice()) return;
       map.getCanvas().style.cursor = '';
       clearHoverHighlight();
       hoveredPolyId = null;
       releaseMasterLock();
     });
 
-    // MOBILE: touchstart → highlight immediately on first touch
-    map.getCanvas().addEventListener('touchstart', (e) => {
-      if (!isTouchDevice()) return;
-      clearTimeout(touchHoldTimer);
-      const touch = e.touches[0];
-      const rect  = map.getCanvas().getBoundingClientRect();
-      const point = {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
-      };
-      const features = map.queryRenderedFeatures(point, { layers: ['master-poly-fill'] });
-      if (features.length) {
-        const props = features[0].properties;
-        if (props.id !== hoveredPolyId) {
-          hoveredPolyId = props.id;
-          applyHoverHighlight(props);
-          showMasterPolyInfo({ features });
-        }
-      } else {
-        // Touched empty area — clear highlight
-        clearHoverHighlight();
-        hoveredPolyId = null;
-        releaseMasterLock();
-      }
-    }, { passive: true });
-
-    // MOBILE: touchmove → update highlight as finger slides
-    map.getCanvas().addEventListener('touchmove', (e) => {
-      if (!isTouchDevice()) return;
-      const touch = e.touches[0];
-      const rect  = map.getCanvas().getBoundingClientRect();
-      const point = {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
-      };
-      const features = map.queryRenderedFeatures(point, { layers: ['master-poly-fill'] });
-      if (features.length) {
-        const props = features[0].properties;
-        if (props.id !== hoveredPolyId) {
-          hoveredPolyId = props.id;
-          applyHoverHighlight(props);
-        }
-      } else {
-        if (hoveredPolyId) {
-          clearHoverHighlight();
-          hoveredPolyId = null;
-        }
-      }
-    }, { passive: true });
-
-    // MOBILE: touchend → clear highlight after short delay (so user sees it)
-    map.getCanvas().addEventListener('touchend', () => {
-      if (!isTouchDevice()) return;
-      touchHoldTimer = setTimeout(() => {
-        clearHoverHighlight();
-        hoveredPolyId = null;
-        releaseMasterLock();
-      }, 2000);  // keep highlight visible 2s after lift
-    }, { passive: true });
-
-    // Click → flyTo + sheet (both platforms)
+    // Click → flyTo (highlight already applied by mouseenter above)
     map.on('click', 'master-poly-fill', (e) => {
       if (!e.features.length) return;
-      showMasterPolyInfo(e);
       const geom = e.features[0].geometry;
       const ring = geom.type === 'MultiPolygon' ? geom.coordinates[0][0] : geom.coordinates[0];
       if (ring && ring.length) {
