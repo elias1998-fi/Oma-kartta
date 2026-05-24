@@ -2521,6 +2521,7 @@
         map.setPaintProperty('master-poly-hovered','fill-opacity', 0);
     }
 
+    // Desktop: mouse hover
     map.on('mousemove', 'master-poly-fill', (e) => {
       if (!e.features.length) return;
       map.getCanvas().style.cursor = 'pointer';
@@ -2531,16 +2532,33 @@
         showMasterPolyInfo(e);
       }
     });
-    map.on('mouseenter', 'master-poly-fill', (e) => {
-      if (!e.features.length) return;
-      map.getCanvas().style.cursor = 'pointer';
-      hoveredPolyId = e.features[0].properties.id;
-      applyHoverHighlight(e.features[0].properties);
-      showMasterPolyInfo(e);
+    map.on('mouseleave', 'master-poly-fill', () => {
+      map.getCanvas().style.cursor = '';
+      clearHoverHighlight();
+      hoveredPolyId = null;
+      releaseMasterLock();
     });
+
+    // Mobile + desktop: click/tap triggers highlight + flyTo + sheet
+    let lastClickedId = null;
     map.on('click', 'master-poly-fill', (e) => {
       if (!e.features.length) return;
+      const props = e.features[0].properties;
+      const id    = props.id;
+
+      if (lastClickedId === id) {
+        // Second tap on same area — clear highlight
+        clearHoverHighlight();
+        lastClickedId = null;
+        releaseMasterLock();
+        return;
+      }
+      lastClickedId = id;
+      hoveredPolyId = id;
+      applyHoverHighlight(props);
       showMasterPolyInfo(e);
+
+      // FlyTo centroid
       const geom = e.features[0].geometry;
       const ring = geom.type === 'MultiPolygon' ? geom.coordinates[0][0] : geom.coordinates[0];
       if (ring && ring.length) {
@@ -2549,13 +2567,16 @@
         map.flyTo({ center:[lng,lat], zoom:16, duration:800 });
       }
     });
-    map.on('mouseleave', 'master-poly-fill', () => {
-      map.getCanvas().style.cursor = '';
-      clearHoverHighlight();
-      if (map.getLayer('master-poly-highlight'))
-        map.setPaintProperty('master-poly-highlight', 'line-opacity', 0);
-      hoveredPolyId = null;
-      releaseMasterLock();
+
+    // Clear highlight when tapping empty map
+    map.on('click', (e) => {
+      if (masterFeatureLocked) return;
+      const f = map.queryRenderedFeatures(e.point, { layers:['master-poly-fill','halli-icons'] });
+      if (!f.length) {
+        clearHoverHighlight();
+        lastClickedId = null;
+        hoveredPolyId = null;
+      }
     });
 
     // ── Draw P icon on canvas (avoids SVG/Image loading issues) ────────
