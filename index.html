@@ -2467,9 +2467,7 @@
 
     // ── Master polygon hover/click — defined outside renderMasterRows ──
     // so they survive source setData() calls
-    let hoveredPolyId = null;      // UUID (for comparison)
-    let hoveredNumericId = null;   // MapLibre numeric id (for feature-state)
-    let groupedNumericIds = [];    // numeric ids of same-group features
+    let hoveredPolyId = null;
 
     // Returns all feature IDs that share the same "group" as the given props
     function getSameGroupIds(props) {
@@ -2497,39 +2495,24 @@
       );
     }
 
-    // Use feature-state for reliable per-feature styling
-    function applyHoverHighlight(props, numericId) {
-      clearHoverHighlight();
-      if (!map.getSource('master-polygons')) return;
-
-      // Set hovered state on the specific feature
-      if (numericId != null) {
-        hoveredNumericId = numericId;
-        map.setFeatureState({ source:'master-polygons', id: numericId }, { hovered: true, grouped: true });
-      }
-
-      // Set grouped state on all same-group features (by matching rendered features)
-      const groupUUIDs = new Set(getSameGroupIds(props));
-      groupedNumericIds = [];
-      const allRendered = map.queryRenderedFeatures({ layers:['master-poly-fill'] });
-      allRendered.forEach(f => {
-        if (groupUUIDs.has(f.properties.id) && f.id != null) {
-          groupedNumericIds.push(f.id);
-          map.setFeatureState({ source:'master-polygons', id: f.id }, { grouped: true });
-        }
-      });
+    function applyHoverHighlight(props) {
+      if (!map.getLayer('master-poly-hover-fill')) return;
+      const hovId    = String(props.id || '');
+      const groupIds = getSameGroupIds(props).map(String);
+      // Red fill on hovered area
+      map.setFilter('master-poly-hover-fill',
+        hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
+      );
+      // Thick dark outline on all group areas (includes hovered)
+      map.setFilter('master-poly-group-line',
+        groupIds.length ? ['in', ['get','id'], ['literal', groupIds]] : ['==','id','__none__']
+      );
     }
 
     function clearHoverHighlight() {
-      if (!map.getSource('master-polygons')) return;
-      if (hoveredNumericId != null) {
-        map.removeFeatureState({ source:'master-polygons', id: hoveredNumericId });
-        hoveredNumericId = null;
-      }
-      groupedNumericIds.forEach(id => {
-        map.removeFeatureState({ source:'master-polygons', id });
-      });
-      groupedNumericIds = [];
+      if (!map.getLayer('master-poly-hover-fill')) return;
+      map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
+      map.setFilter('master-poly-group-line',  ['==','id','__none__']);
     }
 
     // ── Hover + touch highlight (MapLibre fires synthetic mouse events on iOS too) ──
@@ -2538,7 +2521,7 @@
       map.getCanvas().style.cursor = 'pointer';
       const f = e.features[0];
       hoveredPolyId = f.properties.id;
-      applyHoverHighlight(f.properties, f.id);
+      applyHoverHighlight(f.properties);
       showMasterPolyInfo(e);
     });
 
@@ -2547,7 +2530,7 @@
       const f = e.features[0];
       if (f.properties.id !== hoveredPolyId) {
         hoveredPolyId = f.properties.id;
-        applyHoverHighlight(f.properties, f.id);
+        applyHoverHighlight(f.properties);
         showMasterPolyInfo(e);
       }
     });
@@ -3545,7 +3528,7 @@
           const f = cf[0];
           if(f.properties.id !== hoveredPolyId){
             hoveredPolyId = f.properties.id;
-            applyHoverHighlight(f.properties, f.id);
+            applyHoverHighlight(f.properties);
             // Show info in bottom sheet
             const p = f.properties;
             const style = SOURCE_STYLE[p.source]||{label:p.source||'Pysäköintialue'};
