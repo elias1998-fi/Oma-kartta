@@ -2358,19 +2358,22 @@
     }
 
     // Like showMasterFeatureInSheet but NO lock — for center/P-marker detection
-    function showCenterFeatureInSheet(header, type, operator, detailsHTML) {
+    // Shows only 3 lines: header, type, operator — no extra details
+    function showCenterFeatureInSheet(header, type, operator) {
       document.getElementById('summary-header').textContent   = header;
       document.getElementById('summary-type').textContent     = type;
       document.getElementById('summary-operator').textContent = operator;
-      document.getElementById('sheet-details').innerHTML      = detailsHTML;
-      document.getElementById('sheet-divider').style.display  = 'block';
-      // btn text set by caller to 'Pysäköi tähän'
+      document.getElementById('sheet-details').innerHTML      = '';
+      document.getElementById('sheet-divider').style.display  = 'none';
       document.getElementById('action-btn').classList.add('active');
-      const snap = window.innerHeight * 0.42;
+      // Size sheet to show: drag handle + 3 text rows + button bar
+      // drag handle area: ~44px, summary (3 rows ~22px each): ~80px, btn: ~90px → ~214px total
       const bs = document.getElementById('bottom-sheet');
+      const openHeight = 210;
+      const snap = bs.offsetHeight - openHeight;
       bs.style.transition = 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)';
-      bs.style.transform  = `translateY(${snap}px)`;
-      currentY = snap;
+      bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
+      currentY = Math.max(0, snap);
       // NO masterFeatureLocked — center detection must always be interruptible
     }
 
@@ -2561,11 +2564,22 @@
           const name  = extra[0] || style.label;
           const kesto = p.max_hours ? `Max. ${p.max_hours}h` : '';
           const valid = p.valid ? `Voimassaolo: ${p.valid}` : '';
-          showCenterFeatureInSheet(
-            name, style.label, 'Helsingin kaupunki',
-            `${kesto ? `<p class="price-label">Kesto</p><p class="price-value">${kesto}</p>` : ''}
-             ${valid ? `<p class="price-label">Voimassaolo</p><p class="price-value">${valid}</p>` : ''}`
-          );
+          // Line 1: "Helsinki, Vyöhyke 2 | Max. Xh"  or just area name
+          const line1Parts = [];
+          // Use source to determine zone label
+          const zoneLabel = (p.source && p.source !== 'community') ? 'Helsinki' : name;
+          if (kesto) line1Parts.push(kesto);
+          const line1 = kesto ? `${zoneLabel}  |  ${kesto}` : zoneLabel;
+          // Line 2: parking type
+          const srcType = p.source === 'hel_halli' ? 'Pysäköintihalli'
+            : (p.source && p.source.includes('ilmainen')) ? 'Kadunvarsipysäköinti'
+            : (p.source && p.source.includes('kertamaksu')) ? 'Kadunvarsipysäköinti'
+            : (p.source && p.source.includes('maksullinen')) ? 'Kadunvarsipysäköinti'
+            : (p.source && p.source.includes('sallittu')) ? 'Kadunvarsipysäköinti'
+            : 'Pysäköintialue';
+          // Line 3: operator
+          const op = 'Helsingin kaupunki';
+          showCenterFeatureInSheet(line1, srcType, op);
           btn.textContent = 'Pysäköi tähän';
           btn.classList.add('active');
         }
