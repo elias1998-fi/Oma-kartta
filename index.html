@@ -2521,8 +2521,13 @@
         map.setPaintProperty('master-poly-hovered','fill-opacity', 0);
     }
 
-    // Desktop: mouse hover
+    // ── Unified hover/touch highlight ───────────────────────────────
+    const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
+    let touchHoldTimer = null;
+
+    // DESKTOP: mouse hover
     map.on('mousemove', 'master-poly-fill', (e) => {
+      if (isTouchDevice()) return;
       if (!e.features.length) return;
       map.getCanvas().style.cursor = 'pointer';
       const newId = e.features[0].properties.id;
@@ -2533,49 +2538,83 @@
       }
     });
     map.on('mouseleave', 'master-poly-fill', () => {
+      if (isTouchDevice()) return;
       map.getCanvas().style.cursor = '';
       clearHoverHighlight();
       hoveredPolyId = null;
       releaseMasterLock();
     });
 
-    // Mobile + desktop: click/tap triggers highlight + flyTo + sheet
-    let lastClickedId = null;
+    // MOBILE: touchstart → highlight immediately on first touch
+    map.getCanvas().addEventListener('touchstart', (e) => {
+      if (!isTouchDevice()) return;
+      clearTimeout(touchHoldTimer);
+      const touch = e.touches[0];
+      const rect  = map.getCanvas().getBoundingClientRect();
+      const point = {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      };
+      const features = map.queryRenderedFeatures(point, { layers: ['master-poly-fill'] });
+      if (features.length) {
+        const props = features[0].properties;
+        if (props.id !== hoveredPolyId) {
+          hoveredPolyId = props.id;
+          applyHoverHighlight(props);
+          showMasterPolyInfo({ features });
+        }
+      } else {
+        // Touched empty area — clear highlight
+        clearHoverHighlight();
+        hoveredPolyId = null;
+        releaseMasterLock();
+      }
+    }, { passive: true });
+
+    // MOBILE: touchmove → update highlight as finger slides
+    map.getCanvas().addEventListener('touchmove', (e) => {
+      if (!isTouchDevice()) return;
+      const touch = e.touches[0];
+      const rect  = map.getCanvas().getBoundingClientRect();
+      const point = {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      };
+      const features = map.queryRenderedFeatures(point, { layers: ['master-poly-fill'] });
+      if (features.length) {
+        const props = features[0].properties;
+        if (props.id !== hoveredPolyId) {
+          hoveredPolyId = props.id;
+          applyHoverHighlight(props);
+        }
+      } else {
+        if (hoveredPolyId) {
+          clearHoverHighlight();
+          hoveredPolyId = null;
+        }
+      }
+    }, { passive: true });
+
+    // MOBILE: touchend → clear highlight after short delay (so user sees it)
+    map.getCanvas().addEventListener('touchend', () => {
+      if (!isTouchDevice()) return;
+      touchHoldTimer = setTimeout(() => {
+        clearHoverHighlight();
+        hoveredPolyId = null;
+        releaseMasterLock();
+      }, 2000);  // keep highlight visible 2s after lift
+    }, { passive: true });
+
+    // Click → flyTo + sheet (both platforms)
     map.on('click', 'master-poly-fill', (e) => {
       if (!e.features.length) return;
-      const props = e.features[0].properties;
-      const id    = props.id;
-
-      if (lastClickedId === id) {
-        // Second tap on same area — clear highlight
-        clearHoverHighlight();
-        lastClickedId = null;
-        releaseMasterLock();
-        return;
-      }
-      lastClickedId = id;
-      hoveredPolyId = id;
-      applyHoverHighlight(props);
       showMasterPolyInfo(e);
-
-      // FlyTo centroid
       const geom = e.features[0].geometry;
       const ring = geom.type === 'MultiPolygon' ? geom.coordinates[0][0] : geom.coordinates[0];
       if (ring && ring.length) {
         const lng = ring.reduce((s,c)=>s+c[0],0)/ring.length;
         const lat = ring.reduce((s,c)=>s+c[1],0)/ring.length;
         map.flyTo({ center:[lng,lat], zoom:16, duration:800 });
-      }
-    });
-
-    // Clear highlight when tapping empty map
-    map.on('click', (e) => {
-      if (masterFeatureLocked) return;
-      const f = map.queryRenderedFeatures(e.point, { layers:['master-poly-fill','halli-icons'] });
-      if (!f.length) {
-        clearHoverHighlight();
-        lastClickedId = null;
-        hoveredPolyId = null;
       }
     });
 
