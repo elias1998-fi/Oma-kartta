@@ -2368,7 +2368,7 @@
       document.getElementById('action-btn').classList.add('active');
       const snap = window.innerHeight * 0.42;
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.15s ease';
+      bs.style.transition = 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)';
       bs.style.transform  = `translateY(${snap}px)`;
       currentY = snap;
       // NO masterFeatureLocked — center detection must always be interruptible
@@ -2376,7 +2376,7 @@
 
     function collapseCenterSheet() {
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.15s ease';
+      bs.style.transition = 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)';
       bs.style.transform  = 'translateY(calc(100% - 90px))';
       currentY = bs.offsetHeight - 90;
       document.getElementById('summary-header').textContent = '';
