@@ -2369,7 +2369,7 @@
       // Size sheet to show: drag handle + 3 text rows + button bar
       // drag handle area: ~44px, summary (3 rows ~22px each): ~80px, btn: ~90px → ~214px total
       const bs = document.getElementById('bottom-sheet');
-      const openHeight = 210;
+      const openHeight = 148;
       const snap = bs.offsetHeight - openHeight;
       bs.style.transition = 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)';
       bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
@@ -2596,7 +2596,7 @@
           if (visibleAreas.length > 0) {
             btn.textContent = 'Siirrä kursori pysäköintialueelle';
           } else {
-            btn.textContent = 'Siirrä karttaa';
+            btn.textContent = 'Siirrä karttaa nähdäksesi pysäköintialueet';
           }
           btn.classList.remove('active');
         }
@@ -3662,16 +3662,13 @@
       }
       
       if(zoom<13){
-        summaryHeader.textContent='';
-        summaryType.textContent='';
-        summaryOperator.textContent='';
-        details.innerHTML='';
+        summaryHeader.textContent=''; summaryType.textContent='';
+        summaryOperator.textContent=''; details.innerHTML='';
         divider.style.display='none';
-        btn.textContent='Siirrä karttaa';
+        btn.textContent='Lähennä karttaa';
         btn.classList.remove('active');
         currentParkingProps=null;
         gpsWarning.classList.remove('visible');
-        
         sheet.style.transform='translateY(calc(100% - 60px))';
         currentY=sheet.offsetHeight-60;
         return;
