@@ -2424,19 +2424,19 @@
           }
         });
 
-        // Highlight: same-group borders (strong outline)
-        map.addLayer({ id:'master-poly-group-hl', type:'line', source:'master-polygons', minzoom:13,
-          paint:{ 'line-width': 3, 'line-opacity': 0, 'line-color': '#0C0243' },
-          filter:['==','id','__none__']
-        });
-        // Hovered area: red fill
-        map.addLayer({ id:'master-poly-hovered', type:'fill', source:'master-polygons', minzoom:13,
-          paint:{ 'fill-color':'#e53935', 'fill-opacity': 0 },
-          filter:['==','id','__none__']
-        });
         // Keep old highlight layer for backward compat
         map.addLayer({ id:'master-poly-highlight', type:'line', source:'master-polygons', minzoom:13,
           paint:{ 'line-width': 3.5, 'line-opacity': 0, 'line-color': '#ffffff' }
+        });
+        // Group highlight: strong outline on all same-group areas (added after fill for correct z-order)
+        map.addLayer({ id:'master-poly-group-hl', type:'line', source:'master-polygons', minzoom:13,
+          paint:{ 'line-width': 3.5, 'line-opacity': 0, 'line-color': '#0C0243' },
+          filter:['in',['get','id'],['literal',[]]]
+        });
+        // Hovered area: red fill (topmost)
+        map.addLayer({ id:'master-poly-hovered', type:'fill', source:'master-polygons', minzoom:13,
+          paint:{ 'fill-color':'#e53935', 'fill-opacity': 0 },
+          filter:['==',['get','id'],'__none__']
         });
 
         // Helper: centroid for polygon/multipolygon
@@ -2471,13 +2471,13 @@
 
     // Returns all feature IDs that share the same "group" as the given props
     function getSameGroupIds(props) {
+      if (!masterRows || !masterRows.length) return [];
       return masterRows
         .filter(r =>
-          r.source    === props.source &&
-          String(r.max_hours||'') === String(props.max_hours||'') &&
-          (r.valid_mape_from||'') === (props.valid||'')
+          r.source === props.source &&
+          String(r.max_hours ?? '') === String(props.max_hours ?? '')
         )
-        .map(r => r.id);
+        .map(r => String(r.id));
     }
 
     function showMasterPolyInfo(e) {
@@ -2496,18 +2496,21 @@
     }
 
     function applyHoverHighlight(props) {
-      // Group: all same-type areas get strong outline
       const groupIds = getSameGroupIds(props);
       const hovered  = String(props.id || '');
+      // Strong outline on all same-group areas
       if (map.getLayer('master-poly-group-hl')) {
-        map.setFilter('master-poly-group-hl', ['in',['get','id'],['literal', groupIds.map(String)]]);
-        map.setPaintProperty('master-poly-group-hl','line-opacity', 1);
-        map.setPaintProperty('master-poly-group-hl','line-color', '#0C0243');
+        map.setFilter('master-poly-group-hl',
+          groupIds.length
+            ? ['in', ['get','id'], ['literal', groupIds]]
+            : ['==', ['get','id'], '__none__']
+        );
+        map.setPaintProperty('master-poly-group-hl', 'line-opacity', 1);
       }
-      // Hovered area: red fill
+      // Red fill on hovered area
       if (map.getLayer('master-poly-hovered')) {
-        map.setFilter('master-poly-hovered', ['==',['get','id'], hovered]);
-        map.setPaintProperty('master-poly-hovered','fill-opacity', 0.45);
+        map.setFilter('master-poly-hovered', ['==', ['get','id'], hovered]);
+        map.setPaintProperty('master-poly-hovered', 'fill-opacity', 0.45);
       }
     }
 
