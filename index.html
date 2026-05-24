@@ -2357,6 +2357,38 @@
       clearTimeout(masterFeatureUnlockTimer);
     }
 
+    // Like showMasterFeatureInSheet but NO lock — for center/P-marker detection
+    function showCenterFeatureInSheet(header, type, operator, detailsHTML) {
+      document.getElementById('summary-header').textContent   = header;
+      document.getElementById('summary-type').textContent     = type;
+      document.getElementById('summary-operator').textContent = operator;
+      document.getElementById('sheet-details').innerHTML      = detailsHTML;
+      document.getElementById('sheet-divider').style.display  = 'block';
+      document.getElementById('action-btn').textContent       = header;
+      document.getElementById('action-btn').classList.add('active');
+      const snap = window.innerHeight * 0.42;
+      const bs = document.getElementById('bottom-sheet');
+      bs.style.transition = 'transform 0.15s ease';
+      bs.style.transform  = `translateY(${snap}px)`;
+      currentY = snap;
+      // NO masterFeatureLocked — center detection must always be interruptible
+    }
+
+    function collapseCenterSheet() {
+      const bs = document.getElementById('bottom-sheet');
+      bs.style.transition = 'transform 0.15s ease';
+      bs.style.transform  = 'translateY(calc(100% - 90px))';
+      currentY = bs.offsetHeight - 90;
+      document.getElementById('summary-header').textContent = '';
+      document.getElementById('summary-type').textContent = '';
+      document.getElementById('summary-operator').textContent = '';
+      document.getElementById('sheet-details').innerHTML = '';
+      document.getElementById('sheet-divider').style.display = 'none';
+      document.getElementById('action-btn').textContent = 'Valitse pysäköintialue';
+      document.getElementById('action-btn').classList.remove('active');
+      document.getElementById('gps-warning').classList.add('visible');
+    }
+
     const SOURCE_STYLE = {
       'community':           { fill:'#27ae60', line:'#1e8449', label:'Yhteisön lisäämä alue' },
       'hel_ilmainen_pitka':  { fill:'#27ae60', line:'#1e8449', label:'Ilmainen pitkäaikainen pysäköinti' },
@@ -2478,7 +2510,7 @@
     }
 
     function showMasterPolyInfo(e) {
-      if (!e.features || !e.features.length) return;
+      if (!e || !e.features || !e.features.length) return;
       const p = e.features[0].properties;
       const style = SOURCE_STYLE[p.source] || { label: p.source || 'Pysäköintialue' };
       const extra = p.extra_info ? p.extra_info.split(' | ') : [];
@@ -2510,6 +2542,39 @@
       if (!map.getLayer('master-poly-hover-fill')) return;
       map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
       map.setFilter('master-poly-group-line',  ['==','id','__none__']);
+    }
+
+    // Real-time center P-marker detection (no lock, immediate response)
+    function checkCenterHighlight() {
+      if (!map.getLayer('master-poly-fill')) return;
+      const cpt = map.project(map.getCenter());
+      const cf  = map.queryRenderedFeatures(cpt, { layers: ['master-poly-fill'] });
+      if (cf.length) {
+        const f = cf[0];
+        if (f.properties.id !== hoveredPolyId) {
+          hoveredPolyId = f.properties.id;
+          applyHoverHighlight(f.properties);
+          // Show info without locking
+          const p = f.properties;
+          const style = SOURCE_STYLE[p.source] || { label: p.source || 'Pysäköintialue' };
+          const extra = p.extra_info ? p.extra_info.split(' | ') : [];
+          const name  = extra[0] || style.label;
+          const kesto = p.max_hours ? `Max. ${p.max_hours}h` : '';
+          const valid = p.valid ? `Voimassaolo: ${p.valid}` : '';
+          showCenterFeatureInSheet(
+            name, style.label, 'Helsingin kaupunki',
+            `${kesto ? `<p class="price-label">Kesto</p><p class="price-value">${kesto}</p>` : ''}
+             ${valid ? `<p class="price-label">Voimassaolo</p><p class="price-value">${valid}</p>` : ''}`
+          );
+        }
+      } else {
+        // No area under center — clear immediately
+        if (hoveredPolyId) {
+          clearHoverHighlight();
+          hoveredPolyId = null;
+          collapseCenterSheet();
+        }
+      }
     }
 
     // ── Hover + touch highlight (MapLibre fires synthetic mouse events on iOS too) ──
@@ -3498,6 +3563,15 @@
       }
     }
 
+    // Real-time P-marker highlight: fires on every frame while dragging
+    let _centerRAF = null;
+    map.on('move', () => {
+      if (_centerRAF) return;
+      _centerRAF = requestAnimationFrame(() => {
+        _centerRAF = null;
+        checkCenterHighlight();
+      });
+    });
     map.on('moveend', onMapIdle);
     map.on('zoomend', onMapIdle);
 
