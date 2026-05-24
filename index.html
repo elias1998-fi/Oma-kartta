@@ -1211,7 +1211,7 @@
     </div>
   </div>
 
-  <div id="btn-container"><button id="action-btn">Valitse pysäköintialue</button></div>
+  <div id="btn-container"><button id="action-btn">Siirrä kursori pysäköintialueelle</button></div>
 
   <div id="vehicle-sheet">
     <div class="sheet-backdrop" onclick="closeVehicleSheet()"></div>
@@ -2364,7 +2364,7 @@
       document.getElementById('summary-operator').textContent = operator;
       document.getElementById('sheet-details').innerHTML      = detailsHTML;
       document.getElementById('sheet-divider').style.display  = 'block';
-      document.getElementById('action-btn').textContent       = header;
+      // btn text set by caller to 'Pysäköi tähän'
       document.getElementById('action-btn').classList.add('active');
       const snap = window.innerHeight * 0.42;
       const bs = document.getElementById('bottom-sheet');
@@ -2384,7 +2384,7 @@
       document.getElementById('summary-operator').textContent = '';
       document.getElementById('sheet-details').innerHTML = '';
       document.getElementById('sheet-divider').style.display = 'none';
-      document.getElementById('action-btn').textContent = 'Valitse pysäköintialue';
+      document.getElementById('action-btn').textContent = 'Siirrä kursori pysäköintialueelle';
       document.getElementById('action-btn').classList.remove('active');
       document.getElementById('gps-warning').classList.add('visible');
     }
@@ -2566,6 +2566,8 @@
             `${kesto ? `<p class="price-label">Kesto</p><p class="price-value">${kesto}</p>` : ''}
              ${valid ? `<p class="price-label">Voimassaolo</p><p class="price-value">${valid}</p>` : ''}`
           );
+          btn.textContent = 'Pysäköi tähän';
+          btn.classList.add('active');
         }
       } else {
         // No area under center — clear immediately
@@ -2573,6 +2575,16 @@
           clearHoverHighlight();
           hoveredPolyId = null;
           collapseCenterSheet();
+        }
+        // Check if any areas are visible in viewport at all
+        if (map.getZoom() >= 13 && !masterFeatureLocked) {
+          const visibleAreas = map.queryRenderedFeatures({ layers: ['master-poly-fill'] });
+          if (visibleAreas.length > 0) {
+            btn.textContent = 'Siirrä kursori pysäköintialueelle';
+          } else {
+            btn.textContent = 'Siirrä karttaa';
+          }
+          btn.classList.remove('active');
         }
       }
     }
@@ -3625,7 +3637,7 @@
               summaryHeader.textContent=''; summaryType.textContent='';
               summaryOperator.textContent=''; details.innerHTML='';
               divider.style.display='none';
-              btn.textContent='Valitse pysäköintialue'; btn.classList.remove('active');
+              btn.textContent='Siirrä kursori pysäköintialueelle'; btn.classList.remove('active');
               gpsWarning.classList.add('visible');
               sheet.style.transition='transform 0.2s ease';
               sheet.style.transform='translateY(calc(100% - 90px))';
@@ -3641,7 +3653,7 @@
         summaryOperator.textContent='';
         details.innerHTML='';
         divider.style.display='none';
-        btn.textContent='Lähennä karttaa';
+        btn.textContent='Siirrä karttaa';
         btn.classList.remove('active');
         currentParkingProps=null;
         gpsWarning.classList.remove('visible');
@@ -3682,7 +3694,7 @@
         summaryOperator.textContent = '';
         details.innerHTML = '';
         divider.style.display = 'none';
-        btn.textContent = 'Valitse pysäköintialue';
+        btn.textContent = 'Siirrä kursori pysäköintialueelle';
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
         sheet.style.transition = 'transform 0.2s ease';
