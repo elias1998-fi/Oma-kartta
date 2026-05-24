@@ -2369,7 +2369,7 @@
       // Size sheet to show: drag handle + 3 text rows + button bar
       // drag handle area: ~44px, summary (3 rows ~22px each): ~80px, btn: ~90px → ~214px total
       const bs = document.getElementById('bottom-sheet');
-      const openHeight = 148;
+      const openHeight = 185;
       const snap = bs.offsetHeight - openHeight;
       bs.style.transition = 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)';
       bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
@@ -2567,8 +2567,7 @@
           // Line 1: "Helsinki, Vyöhyke 2 | Max. Xh"  or just area name
           const line1Parts = [];
           // Use source to determine zone label
-          const zoneLabel = (p.source && p.source !== 'community') ? 'Helsinki' : name;
-          if (kesto) line1Parts.push(kesto);
+          const zoneLabel = (p.source && p.source !== 'community') ? 'Helsinki, Vyöhyke 2' : name;
           const line1 = kesto ? `${zoneLabel}  |  ${kesto}` : zoneLabel;
           // Line 2: parking type
           const srcType = p.source === 'hel_halli' ? 'Pysäköintihalli'
@@ -4003,7 +4002,7 @@
     
     sheet.addEventListener('touchstart',(e)=>{
       // Estä drag jos ei ole pysäköintialuetta valittuna
-      if(!currentParkingProps || sliderTouching || e.target===sliderMin || e.target===sliderMax){
+      if((!currentParkingProps && !hoveredPolyId) || sliderTouching || e.target===sliderMin || e.target===sliderMax){
         return;
       }
       
