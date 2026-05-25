@@ -2703,22 +2703,68 @@
     function applyHoverHighlight(props) {
       if (!map.getLayer('master-poly-hover-fill')) return;
       const hovId = String(props.id || '');
-      // Bright red fill (100%, no border) ONLY on the area directly under P-marker
+      const groupIds = getSameGroupIds(props).map(String);
+      const groupMinusHov = groupIds.filter(id => id !== hovId);
+      
+      // Red fill on hovered area (will be animated to pulse)
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
-      // No red border
+      // No red border on hovered area
       if (map.getLayer('master-poly-hover-line')) {
         map.setFilter('master-poly-hover-line', ['==','id','__none__']);
       }
-      // No special group highlighting — same-category areas stay at normal 30%
-      map.setFilter('master-poly-group-line', ['==','id','__none__']);
+      
+      // Dark blue fill (100%) on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
-        map.setFilter('master-poly-group-fill', ['==','id','__none__']);
+        map.setPaintProperty('master-poly-group-fill', 'fill-color', '#0C0243');
+        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', 1.0);
+        map.setFilter('master-poly-group-fill',
+          groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
+        );
+      }
+      // Dark blue border on OTHER same-category areas
+      map.setPaintProperty('master-poly-group-line', 'line-color', '#0C0243');
+      map.setPaintProperty('master-poly-group-line', 'line-opacity', 1.0);
+      map.setFilter('master-poly-group-line',
+        groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
+      );
+      
+      // Start pulsing animation on hovered area
+      startPulseAnimation();
+    }
+    
+    let pulseAnimationId = null;
+    function startPulseAnimation() {
+      stopPulseAnimation();
+      const startTime = Date.now();
+      const pulseDuration = 4000; // 4 seconds per breath cycle
+      
+      function animate() {
+        if (!map.getLayer('master-poly-hover-fill')) return;
+        const elapsed = Date.now() - startTime;
+        const progress = (elapsed % pulseDuration) / pulseDuration;
+        // Sine wave: breathe in and out smoothly
+        const opacity = 0.7 + 0.3 * Math.sin(progress * Math.PI * 2);
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', opacity);
+        pulseAnimationId = requestAnimationFrame(animate);
+      }
+      animate();
+    }
+    
+    function stopPulseAnimation() {
+      if (pulseAnimationId !== null) {
+        cancelAnimationFrame(pulseAnimationId);
+        pulseAnimationId = null;
+      }
+      // Reset to solid opacity
+      if (map.getLayer('master-poly-hover-fill')) {
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
       }
     }
 
     function clearHoverHighlight() {
+      stopPulseAnimation();
       if (!map.getLayer('master-poly-hover-fill')) return;
       map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
       map.setFilter('master-poly-group-line',  ['==','id','__none__']);
