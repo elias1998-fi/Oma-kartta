@@ -1507,7 +1507,17 @@
     const locationBtn = document.getElementById('location-btn');
     const sheet = document.getElementById('bottom-sheet');
     
-    locationBtn.addEventListener('click', () => geolocate.trigger());
+    locationBtn.addEventListener('click', () => {
+      geolocate.trigger();
+      // Flash blue then return to white
+      locationBtn.style.transition = 'background 0.15s ease';
+      locationBtn.style.background = '#0C0243';
+      locationBtn.querySelector('svg path').style.fill = 'white';
+      setTimeout(() => {
+        locationBtn.style.background = 'white';
+        locationBtn.querySelector('svg path').style.fill = '#333';
+      }, 300);
+    });
 
     let menuExpanded = false;
     const menuPill = document.getElementById('left-menu-pill');
