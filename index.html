@@ -448,11 +448,11 @@
     #summary-type { font-size: 14px; color: #555; }
     #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
     #sheet-divider { border: none; border-top: 1px solid #eee; margin: 5px 20px 0 20px; flex-shrink: 0; }
-    #sheet-details { padding: 14px 20px 16px 20px; overflow-y: auto; flex: 1; font-family: Arial, sans-serif; background: white; }
+    #sheet-details { padding: 0 20px 16px 20px; overflow-y: auto; flex: 1; font-family: Arial, sans-serif; background: white; }
     .hours-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; color: #333; }
     .hours-day { color: #555; min-width: 60px; }
     .hours-time { font-weight: 500; }
-    .price-label { font-size: 13px; color: #888; margin-top: 14px; margin-bottom: 4px; }
+    .price-label { font-size: 13px; color: #888; margin-top: 8px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
     #sheet-filter { display: none; flex-direction: column; padding: 4px 24px 24px 24px; flex: 1; font-family: Arial, sans-serif; }
     #sheet-filter.visible { display: flex; }
@@ -2458,7 +2458,7 @@
         document.getElementById('sheet-divider').style.display = 'none';
       }
       const bs = document.getElementById('bottom-sheet');
-      const openHeight = 156;
+      const openHeight = 148;
       const snap = bs.offsetHeight - openHeight;
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
