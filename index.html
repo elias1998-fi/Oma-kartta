@@ -2706,18 +2706,13 @@
       const groupIds = getSameGroupIds(props).map(String);
       const groupMinusHov = groupIds.filter(id => id !== hovId);
       
-      // Solid red fill on hovered area
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
+      // Red fill on hovered area (will be animated)
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
-      // Red outline on hovered area (subtle glow for scale effect)
+      // No border line at all
       if (map.getLayer('master-poly-hover-line')) {
-        map.setPaintProperty('master-poly-hover-line', 'line-color', '#ff1744');
-        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 0.3);
-        map.setFilter('master-poly-hover-line',
-          hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
-        );
+        map.setFilter('master-poly-hover-line', ['==','id','__none__']);
       }
       
       // Dark blue fill (100%) on OTHER same-category areas
@@ -2735,39 +2730,38 @@
         groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
       
-      // Start scale animation on hovered area
-      startScaleAnimation();
+      // Start breathing animation on hovered area
+      startBreathingAnimation();
     }
     
-    let scaleAnimationId = null;
-    function startScaleAnimation() {
-      stopScaleAnimation();
+    let breathingAnimationId = null;
+    function startBreathingAnimation() {
+      stopBreathingAnimation();
       const startTime = Date.now();
-      const cycleDuration = 2000; // 2 seconds per cycle
+      const cycleDuration = 2000; // 2 seconds per breath
       
       function animate() {
-        if (!map.getLayer('master-poly-hover-line')) return;
+        if (!map.getLayer('master-poly-hover-fill')) return;
         const elapsed = Date.now() - startTime;
         const progress = (elapsed % cycleDuration) / cycleDuration;
         
-        // Smooth breathing: expand and contract
-        // Sine wave for smooth expansion/contraction
-        const lineWidth = 3 + 5 * Math.sin(progress * Math.PI * 2);
+        // Smooth breathing through opacity: expand (brighter) and contract (softer)
+        const opacity = 0.75 + 0.25 * Math.sin(progress * Math.PI * 2);
         
-        map.setPaintProperty('master-poly-hover-line', 'line-width', lineWidth);
-        scaleAnimationId = requestAnimationFrame(animate);
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', opacity);
+        breathingAnimationId = requestAnimationFrame(animate);
       }
       animate();
     }
     
-    function stopScaleAnimation() {
-      if (scaleAnimationId !== null) {
-        cancelAnimationFrame(scaleAnimationId);
-        scaleAnimationId = null;
+    function stopBreathingAnimation() {
+      if (breathingAnimationId !== null) {
+        cancelAnimationFrame(breathingAnimationId);
+        breathingAnimationId = null;
       }
-      // Reset to default width
-      if (map.getLayer('master-poly-hover-line')) {
-        map.setPaintProperty('master-poly-hover-line', 'line-width', 1.5);
+      // Reset to solid opacity
+      if (map.getLayer('master-poly-hover-fill')) {
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
       }
     }
     
@@ -2819,7 +2813,7 @@
     }
 
     function clearHoverHighlight() {
-      stopScaleAnimation();
+      stopBreathingAnimation();
       if (!map.getLayer('master-poly-hover-fill')) return;
       map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
       map.setFilter('master-poly-group-line',  ['==','id','__none__']);
