@@ -2620,6 +2620,24 @@
           paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
+        // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
+        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13,
+          paint:{ 'fill-opacity': 0.50,
+            'fill-color': ['match', ['get','source'],
+              'community',          '#27ae60',
+              'hel_ilmainen_pitka', '#27ae60',
+              'hel_ilmainen_lyhyt', '#27ae60',
+              'hel_sallittu_kiellon_ulkopuolella', '#27ae60',
+              'hel_kertamaksu_1h',  '#4A90D9',
+              'hel_kertamaksu_2h',  '#4A90D9',
+              'hel_kertamaksu_4h',  '#4A90D9',
+              'hel_maksullinen_ei_tunnusta',        '#4A90D9',
+              'hel_kertamaksu_1h_ei_tunnusta',      '#4A90D9',
+              '#4A90D9'
+            ]
+          },
+          filter:['==', ['get','id'], '__none__']
+        }, 'master-poly-group-line');
 
         // Helper: centroid for polygon/multipolygon
         function getCentroid(geom) {
@@ -2696,12 +2714,20 @@
       map.setFilter('master-poly-group-line',
         groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
+      // 50% fill on all same-group areas (including hovered)
+      if (map.getLayer('master-poly-group-fill')) {
+        map.setFilter('master-poly-group-fill',
+          groupIds.length ? ['in', ['get','id'], ['literal', groupIds]] : ['==','id','__none__']
+        );
+      }
     }
 
     function clearHoverHighlight() {
       if (!map.getLayer('master-poly-hover-fill')) return;
       map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
       map.setFilter('master-poly-group-line',  ['==','id','__none__']);
+      if (map.getLayer('master-poly-group-fill'))
+        map.setFilter('master-poly-group-fill', ['==','id','__none__']);
       if (map.getLayer('master-poly-hover-line'))
         map.setFilter('master-poly-hover-line', ['==','id','__none__']);
     }
