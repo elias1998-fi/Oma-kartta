@@ -443,11 +443,11 @@
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
     #filter-close-btn.visible { display: flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    #sheet-summary { padding: 14px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
+    #sheet-summary { padding: 7px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
     #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
     #summary-type { font-size: 14px; color: #555; }
     #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
-    #sheet-divider { border: none; border-top: 1px solid #eee; margin: 8px 20px 0 20px; flex-shrink: 0; }
+    #sheet-divider { border: none; border-top: 1px solid #eee; margin: 5px 20px 0 20px; flex-shrink: 0; }
     #sheet-details { padding: 14px 20px 16px 20px; overflow-y: auto; flex: 1; font-family: Arial, sans-serif; background: white; }
     .hours-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; color: #333; }
     .hours-day { color: #555; min-width: 60px; }
@@ -2458,7 +2458,13 @@
         document.getElementById('sheet-divider').style.display = 'none';
       }
       const bs = document.getElementById('bottom-sheet');
-      const openHeight = 185;
+      // Measure content height up to divider, then add btn-container height
+      // so divider lands exactly at btn-container top
+      const dragH = document.getElementById('drag-handle-area').offsetHeight || 18;
+      const summaryH = document.getElementById('sheet-summary').offsetHeight || 70;
+      const divMargin = 5; // margin-top of #sheet-divider
+      const btnH = btnContainer.offsetHeight || 90;
+      const openHeight = dragH + summaryH + divMargin + 1 + btnH;
       const snap = bs.offsetHeight - openHeight;
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
