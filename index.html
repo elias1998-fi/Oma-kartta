@@ -756,6 +756,11 @@
   /* Burger → X */
   #menu-btn.active { background: transparent !important; border-radius: 50%; }
   #menu-btn.active svg line { stroke: #333; }
+  /* Active pill button icon: white so it shows on dark ball */
+  #left-menu-pill.expanded .pill-btn.ball-here svg { color: white; }
+  #left-menu-pill.expanded .pill-btn.ball-here svg line { stroke: white !important; }
+  #left-menu-pill.expanded .pill-btn.ball-here svg circle { fill: white !important; stroke: white !important; }
+  #left-menu-pill.expanded .pill-btn.ball-here svg path { stroke: white !important; }
   #menu-btn.active #bl-top  { transform: translateY(6px) rotate(45deg); }
   #menu-btn.active #bl-mid  { opacity: 0; transform: scaleX(0); }
   #menu-btn.active #bl-bot  { transform: translateY(-6px) rotate(-45deg); }
@@ -1516,9 +1521,15 @@
 
     // Ball positions: translateY to each button index (0=top/menu, 1=profile, 2=filter, 3=plus, 4=search)
     const BALL_POS = [0, 48, 96, 144, 192]; // 48px per button
+    const PILL_BTNS = [menuBtn, profileBtn, filterBtn, plusMenuBtn, searchBtn];
+
+    function setBallHere(idx) {
+      PILL_BTNS.forEach((b, i) => b.classList.toggle('ball-here', i === idx));
+    }
 
     function moveBallTo(idx, cb) {
       pillBall.style.transform = `translateY(${BALL_POS[idx]}px)`;
+      setBallHere(idx);
       setTimeout(cb || (() => {}), 500);
     }
 
@@ -1526,14 +1537,28 @@
       menuExpanded = true;
       menuPill.classList.add('expanded');
       menuBtn.classList.add('active');
-      moveBallTo(0); // ball stays at top (menu/X button)
+      if (filterMode) {
+        // Filter is active — show ball at filter position, no ball at X
+        pillBall.style.transition = 'none';
+        pillBall.style.transform = `translateY(${BALL_POS[2]}px)`;
+        pillBall.style.opacity = '1';
+        setTimeout(() => { pillBall.style.transition = ''; }, 50);
+        setBallHere(2);
+      } else {
+        moveBallTo(0);
+        setBallHere(0);
+      }
     }
 
     function closeMenu() {
       menuExpanded = false;
       menuPill.classList.remove('expanded');
       menuBtn.classList.remove('active');
-      pillBall.style.transform = `translateY(0px)`;
+      // If filter is active, keep ball at filter pos (not visible since pill is collapsed)
+      if (!filterMode) {
+        pillBall.style.transform = `translateY(0px)`;
+      }
+      PILL_BTNS.forEach(b => b.classList.remove('ball-here'));
     }
 
     map.on('movestart', () => { if (menuExpanded) closeMenu(); });
@@ -3582,7 +3607,8 @@
       updateSliderUI();
       applyRangeFilter();
       btnContainer.classList.remove('hidden');
-      
+      pillBall.style.transform = 'translateY(0px)';
+      PILL_BTNS.forEach(b => b.classList.remove('ball-here'));
       checkParking();
     }
     // filterBtn click handled in menuItemClick above
