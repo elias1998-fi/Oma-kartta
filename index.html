@@ -2711,10 +2711,10 @@
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
-      // Red outline on hovered area (will be animated to create scale effect)
+      // Red outline on hovered area (subtle glow for scale effect)
       if (map.getLayer('master-poly-hover-line')) {
         map.setPaintProperty('master-poly-hover-line', 'line-color', '#ff1744');
-        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 0.6);
+        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 0.3);
         map.setFilter('master-poly-hover-line',
           hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
         );
