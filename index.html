@@ -15,13 +15,13 @@
     #map { width: 100%; height: 100%; height: -webkit-fill-available; }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
-    #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, calc(-100% + 3px)); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
+    #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, calc(-100% + 6.5px)); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
     #center-pointer.hidden { display: none; }
 
     /* Expanded badge: pin + area code, speech-bubble with rounded centered tail */
     #center-badge {
       position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, calc(-100% + 3px));
+      transform: translate(-50%, calc(-100% + 6.5px));
       pointer-events: none; z-index: 11;
       display: none;
       flex-direction: column; align-items: center;
@@ -2600,7 +2600,7 @@
         });
         // Base line layer
         map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
-          paint:{ 'line-width': 1.5, 'line-opacity': 0.9,
+          paint:{ 'line-width': 1.5, 'line-opacity': 0.30,
             'line-color': ['match', ['get','source'],
               'community',          '#1e8449',
               'hel_ilmainen_pitka', '#1e8449',
