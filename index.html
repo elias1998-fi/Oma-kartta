@@ -753,6 +753,23 @@
     #start-btn.disabled { opacity: 0.4; cursor: not-allowed; }
   #rotation-toggle.on { background: #0C0243; }
   #rotation-toggle.on #rotation-knob { transform: translateX(20px); }
+  /* Burger → X */
+  #menu-btn.active { background: transparent !important; border-radius: 50%; }
+  #menu-btn.active svg line { stroke: #333; }
+  #menu-btn.active #bl-top  { transform: translateY(6px) rotate(45deg); }
+  #menu-btn.active #bl-mid  { opacity: 0; transform: scaleX(0); }
+  #menu-btn.active #bl-bot  { transform: translateY(-6px) rotate(-45deg); }
+  /* Sliding ball in pill */
+  #pill-ball {
+    position: absolute; left: 8px; top: 8px;
+    width: 32px; height: 32px;
+    background: #0C0243; border-radius: 50%;
+    pointer-events: none; z-index: 0;
+    transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+    opacity: 0;
+  }
+  #left-menu-pill.expanded #pill-ball { opacity: 1; }
+  .pill-btn { position: relative; z-index: 1; }
   </style>
 </head>
 <body>
@@ -773,9 +790,12 @@
   </svg>
 
   <div id="left-menu-pill">
+    <div id="pill-ball"></div>
     <button class="pill-btn" id="menu-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="3.5" stroke-linecap="round">
-        <line x1="2" y1="6" x2="22" y2="6"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="18" x2="22" y2="18"/>
+      <svg id="burger-svg" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="3.5" stroke-linecap="round">
+        <line id="bl-top" x1="2" y1="6" x2="22" y2="6" style="transform-origin:12px 6px;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;"/>
+        <line id="bl-mid" x1="2" y1="12" x2="22" y2="12" style="transform-origin:12px 12px;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;"/>
+        <line id="bl-bot" x1="2" y1="18" x2="22" y2="18" style="transform-origin:12px 18px;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;"/>
       </svg>
     </button>
     
@@ -1486,64 +1506,67 @@
 
     let menuExpanded = false;
     const menuPill = document.getElementById('left-menu-pill');
-    const menuBtn = document.getElementById('menu-btn');
-    const profileBtn = document.getElementById('profile-btn');
-    const filterBtn = document.getElementById('filter-btn');
-    const searchBtn = document.getElementById('search-btn');
-    const plusMenuBtn = document.getElementById('plus-menu-btn');
+    const menuBtn  = document.getElementById('menu-btn');
+    const profileBtn   = document.getElementById('profile-btn');
+    const filterBtn    = document.getElementById('filter-btn');
+    const searchBtn    = document.getElementById('search-btn');
+    const plusMenuBtn  = document.getElementById('plus-menu-btn');
     const btnContainer = document.getElementById('btn-container');
-    
+    const pillBall     = document.getElementById('pill-ball');
+
+    // Ball positions: translateY to each button index (0=top/menu, 1=profile, 2=filter, 3=plus, 4=search)
+    const BALL_POS = [0, 48, 96, 144, 192]; // 48px per button
+
+    function moveBallTo(idx, cb) {
+      pillBall.style.transform = `translateY(${BALL_POS[idx]}px)`;
+      setTimeout(cb || (() => {}), 340);
+    }
+
+    function openMenu() {
+      menuExpanded = true;
+      menuPill.classList.add('expanded');
+      menuBtn.classList.add('active');
+      moveBallTo(0); // ball stays at top (menu/X button)
+    }
+
     function closeMenu() {
       menuExpanded = false;
       menuPill.classList.remove('expanded');
       menuBtn.classList.remove('active');
+      pillBall.style.transform = `translateY(0px)`;
     }
-    
-    map.on('movestart', () => {
-      if (menuExpanded) {
-        closeMenu();
-      }
-    });
-    
+
+    map.on('movestart', () => { if (menuExpanded) closeMenu(); });
+
     menuBtn.addEventListener('click', () => {
-      menuExpanded = !menuExpanded;
-      if (menuExpanded) {
-        menuPill.classList.add('expanded');
-        menuBtn.classList.add('active');
-      } else {
-        closeMenu();
-      }
+      if (menuExpanded) closeMenu(); else openMenu();
     });
-    
+
+    function menuItemClick(idx, action) {
+      moveBallTo(idx, () => {
+        closeMenu();
+        setTimeout(action, 50);
+      });
+    }
+
     profileBtn.addEventListener('click', () => {
-      profileBtn.classList.add('active');
-      setTimeout(() => {
-        profileBtn.classList.remove('active');
-        closeMenu();
-        document.getElementById('profile-overlay').classList.add('open');
-      }, 200);
+      menuItemClick(1, () => document.getElementById('profile-overlay').classList.add('open'));
     });
-    
-    searchBtn.addEventListener('click', () => {
-      searchBtn.classList.add('active');
-      setTimeout(() => {
-        searchBtn.classList.remove('active');
-        closeMenu();
-        document.getElementById('search-overlay').classList.add('open');
-        setTimeout(() => {
-          document.getElementById('search-input').focus();
-          showSearchHistory();
-        }, 100);
-      }, 200);
+
+    filterBtn.addEventListener('click', () => {
+      if (filterMode) { closeFilter(); closeMenu(); return; }
+      menuItemClick(2, () => { openFilter(); });
     });
-    
+
     plusMenuBtn.addEventListener('click', () => {
-      plusMenuBtn.classList.add('active');
-      setTimeout(() => {
-        plusMenuBtn.classList.remove('active');
-        closeMenu();
-        document.getElementById('plus-overlay').classList.add('open');
-      }, 200);
+      menuItemClick(3, () => document.getElementById('plus-overlay').classList.add('open'));
+    });
+
+    searchBtn.addEventListener('click', () => {
+      menuItemClick(4, () => {
+        document.getElementById('search-overlay').classList.add('open');
+        setTimeout(() => { document.getElementById('search-input').focus(); showSearchHistory(); }, 100);
+      });
     });
     
     function closeProfileOverlay() {
@@ -2365,6 +2388,7 @@
       document.getElementById('summary-operator').textContent = operator;
       document.getElementById('sheet-details').innerHTML      = '';
       document.getElementById('sheet-divider').style.display  = 'none';
+      document.getElementById('gps-warning').classList.remove('visible');
       document.getElementById('action-btn').classList.add('active');
       // Size sheet to show: drag handle + 3 text rows + button bar
       // drag handle area: ~44px, summary (3 rows ~22px each): ~80px, btn: ~90px → ~214px total
@@ -3549,17 +3573,7 @@
       
       checkParking();
     }
-    filterBtn.addEventListener('click',()=>{
-      if (filterMode) {
-        closeFilter();
-      } else {
-        filterBtn.classList.add('active');
-        setTimeout(() => {
-          closeMenu();
-          openFilter();
-        }, 200);
-      }
-    });
+    // filterBtn click handled in menuItemClick above
     filterCloseBtn.addEventListener('click',closeFilter);
 
     let moveTimer=null;
@@ -3981,7 +3995,25 @@
     }
 
     document.getElementById('back-btn').addEventListener('click',goBackToMap);
-    btn.addEventListener('click',()=>{if(currentParkingProps)openParkingOverlay(currentParkingProps);});
+    btn.addEventListener('click', () => {
+      if (hoveredPolyId && !currentParkingProps) {
+        // Center-based hover: build parking props from feature info
+        const f = map.queryRenderedFeatures(map.project(map.getCenter()), { layers: ['master-poly-fill'] });
+        if (f.length) {
+          const p = f[0].properties;
+          openParkingOverlay({
+            'hel:id': p.id || '—',
+            'hel:kesto': p.max_hours ? `${p.max_hours}h` : null,
+            'hel:paikan_asento': 'Kadunvarsipysäköinti',
+            'hel:datanomistaja': 'HEL',
+            'hel:luokka_nimi': p.source || '',
+            'hel:voimassaolo': p.valid || ''
+          });
+        }
+      } else if (currentParkingProps) {
+        openParkingOverlay(currentParkingProps);
+      }
+    });
 
     document.getElementById('start-btn').addEventListener('click',()=>{
       if(parkingMinutes===0){return;}
