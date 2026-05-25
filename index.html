@@ -2702,17 +2702,16 @@
 
     function applyHoverHighlight(props) {
       if (!map.getLayer('master-poly-hover-fill')) return;
-      const groupIds = getSameGroupIds(props).map(String);
-      const groupFilter = groupIds.length
-        ? ['in', ['get','id'], ['literal', groupIds]]
-        : ['==','id','__none__'];
-      // Bright red fill (100%) on ALL same-category areas
-      map.setFilter('master-poly-hover-fill', groupFilter);
-      // Same red-area outline (1.15px / 0.90) on ALL same-category areas
+      const hovId = String(props.id || '');
+      // Bright red fill (100%, no border) ONLY on the area directly under P-marker
+      map.setFilter('master-poly-hover-fill',
+        hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
+      );
+      // No red border
       if (map.getLayer('master-poly-hover-line')) {
-        map.setFilter('master-poly-hover-line', groupFilter);
+        map.setFilter('master-poly-hover-line', ['==','id','__none__']);
       }
-      // Disable the separate group line / 50% group fill — everything is red now
+      // No special group highlighting — same-category areas stay at normal 30%
       map.setFilter('master-poly-group-line', ['==','id','__none__']);
       if (map.getLayer('master-poly-group-fill')) {
         map.setFilter('master-poly-group-fill', ['==','id','__none__']);
