@@ -2458,13 +2458,15 @@
         document.getElementById('sheet-divider').style.display = 'none';
       }
       const bs = document.getElementById('bottom-sheet');
-      // Sheet shows drag-handle + summary only; divider hides behind btn-container
-      // User swipes up to reveal divider and details below
-      const dragH = document.getElementById('drag-handle-area').offsetHeight || 18;
-      const summaryH = document.getElementById('sheet-summary').offsetHeight || 70;
-      const btnH = btnContainer.offsetHeight || 90;
-      const openHeight = dragH + summaryH + btnH;
-      const snap = bs.offsetHeight - openHeight;
+      // Measure divider position precisely: briefly open sheet fully, measure, snap back
+      bs.style.transition = 'none';
+      bs.style.transform = 'translateY(0)';
+      bs.getBoundingClientRect(); // force reflow
+      const dividerEl = document.getElementById('sheet-divider');
+      const dividerTop = dividerEl.getBoundingClientRect().top;
+      const btnTop = window.innerHeight - (btnContainer.offsetHeight || 90);
+      // Move sheet down so divider lands exactly at btn-container top (hidden behind it)
+      const snap = Math.max(0, Math.round(btnTop - dividerTop));
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
       currentY = Math.max(0, snap);
