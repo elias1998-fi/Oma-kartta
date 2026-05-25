@@ -496,9 +496,9 @@
       font-family: Arial, sans-serif; 
       color: white; 
       background: #0C0243; 
-      opacity: 0.65; 
+      opacity: 0.80; 
       cursor: pointer; 
-      transition: opacity 0.2s ease; 
+      transition: opacity 0.3s ease; 
       text-align: center; 
     }
     #action-btn.active { opacity: 1; }
@@ -748,7 +748,7 @@
       color: white; 
       background: #0C0243; 
       cursor: pointer; 
-      transition: opacity 0.2s ease; 
+      transition: opacity 0.3s ease; 
     }
     #start-btn.disabled { opacity: 0.4; cursor: not-allowed; }
   #rotation-toggle.on { background: #0C0243; }
@@ -1214,8 +1214,9 @@
       <span class="gps-info-icon" onclick="openGpsInfo()">i</span>
     </div>
     <div id="sheet-normal">
-      <div id="sheet-summary">
-        <div id="summary-header"></div>
+      <div id="sheet-summary" style="position:relative;">
+        <div id="area-code-badge" style="display:none;position:absolute;top:0;left:0;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;padding:2px 7px;border-radius:5px;letter-spacing:0.3px;"></div>
+        <div id="summary-header" style="padding-top:0;"></div>
         <div id="summary-type"></div>
         <div id="summary-operator"></div>
       </div>
@@ -2435,8 +2436,17 @@
 
     // Like showMasterFeatureInSheet but NO lock — for center/P-marker detection
     // Shows only 3 lines: header, type, operator — no extra details
-    function showCenterFeatureInSheet(header, type, operator) {
+    function showCenterFeatureInSheet(header, type, operator, areaCode) {
       document.getElementById('summary-header').textContent   = header;
+      const badge = document.getElementById('area-code-badge');
+      if (areaCode) {
+        badge.textContent = areaCode;
+        badge.style.display = 'block';
+        document.getElementById('sheet-summary').style.paddingTop = '22px';
+      } else {
+        badge.style.display = 'none';
+        document.getElementById('sheet-summary').style.paddingTop = '';
+      }
       document.getElementById('summary-type').textContent     = type;
       document.getElementById('summary-operator').textContent = operator;
       document.getElementById('sheet-details').innerHTML      = '';
@@ -2448,15 +2458,19 @@
       const bs = document.getElementById('bottom-sheet');
       const openHeight = 185;
       const snap = bs.offsetHeight - openHeight;
-      bs.style.transition = 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)';
+      bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
       currentY = Math.max(0, snap);
       // NO masterFeatureLocked — center detection must always be interruptible
     }
 
     function collapseCenterSheet() {
+      const badge = document.getElementById('area-code-badge');
+      if (badge) { badge.style.display = 'none'; }
+      const summary = document.getElementById('sheet-summary');
+      if (summary) summary.style.paddingTop = '';
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)';
+      bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = 'translateY(calc(100% - 90px))';
       currentY = bs.offsetHeight - 90;
       document.getElementById('summary-header').textContent = '';
@@ -2664,7 +2678,7 @@
             : 'Pysäköintialue';
           // Line 3: operator
           const op = 'Helsingin kaupunki';
-          showCenterFeatureInSheet(line1, srcType, op);
+          showCenterFeatureInSheet(line1, srcType, op, p.id ? String(p.id).split('-')[0].toUpperCase().slice(0,6) : null);
           btn.textContent = 'Pysäköi tähän';
           btn.classList.add('active');
         }
