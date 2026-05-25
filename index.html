@@ -3144,23 +3144,38 @@
       if (editorCanvas) editorCanvas.style.pointerEvents = 'none';
     }
 
+    function toggleEditorMode() {
+      const newMode = editorMode === 'merge' ? 'delete' : 'merge';
+      setEditorMode(newMode);
+    }
+
     function setEditorMode(mode) {
       editorMode = mode;
       clearEditorSelection();
       cancelEditorPreview();
-      const mBtn = document.getElementById('editor-mode-merge');
-      const dBtn = document.getElementById('editor-mode-delete');
+      const modeBtn = document.getElementById('editor-mode-btn');
       if (mode === 'merge') {
-        mBtn.style.background='#0C0243'; mBtn.style.color='white'; mBtn.style.border='2px solid #0C0243';
-        dBtn.style.background='white';   dBtn.style.color='#555';  dBtn.style.border='2px solid #ddd';
-        document.getElementById('editor-status').textContent = 'Aktivoi kynä tai klikkaa aluetta';
-        document.getElementById('editor-action-btn').textContent = '👁 Esikatsele yhdistämistä';
+        modeBtn.textContent = '✏️';
+        modeBtn.style.background = '#0C0243';
+        modeBtn.style.color = 'white';
+        modeBtn.style.border = '2px solid #0C0243';
+        modeBtn.title = 'Yhdistä (vaihda poistoon)';
+        document.getElementById('editor-status').textContent = 'Klikkaa alueita yhdistääksesi';
+        document.getElementById('editor-action-btn').textContent = 'Esikatsele';
       } else {
-        dBtn.style.background='#e53935'; dBtn.style.color='white'; dBtn.style.border='2px solid #e53935';
-        mBtn.style.background='white';   mBtn.style.color='#555';  mBtn.style.border='2px solid #ddd';
+        modeBtn.textContent = '✕';
+        modeBtn.style.background = '#e53935';
+        modeBtn.style.color = 'white';
+        modeBtn.style.border = '2px solid #e53935';
+        modeBtn.title = 'Poista (vaihda yhdistämiseen)';
         document.getElementById('editor-status').textContent = 'Klikkaa alue joka poistetaan';
-        document.getElementById('editor-action-btn').textContent = '👁 Esikatsele poistoa';
+        document.getElementById('editor-action-btn').textContent = 'Esikatsele';
       }
+    }
+
+    function undoLastEditorAction() {
+      // Placeholder for undo functionality
+      console.log('Undo not yet implemented');
     }
 
     function toggleEditorDraw() {
@@ -3423,6 +3438,16 @@
     }
 
     // Preview
+    let editorInPreview = false;
+
+    function handleEditorAction() {
+      if (!editorInPreview) {
+        editorPreview();
+      } else {
+        confirmEditorAction();
+      }
+    }
+
     function editorPreview() {
       if (editorMode === 'merge') previewMergeEditor();
       else previewDeleteEditor();
@@ -3430,6 +3455,7 @@
 
     function previewMergeEditor() {
       if (editorSelected.size < 2) return;
+      editorInPreview = true;
       editorPreviewMode = 'convex';
       const cBtn=document.getElementById('preview-toggle-convex'), rBtn=document.getElementById('preview-toggle-road');
       if(cBtn){cBtn.style.background='#0C0243';cBtn.style.color='white';cBtn.style.border='2px solid #0C0243';}
@@ -3437,24 +3463,25 @@
       editorPreviewGeom = buildMergedGeom('convex');
       _showPreviewGeom(editorPreviewGeom);
       document.getElementById('editor-merge-toggles').style.display='flex';
-      document.getElementById('editor-normal-bar').style.display='none';
-      document.getElementById('editor-preview-bar').style.display='block';
+      document.getElementById('editor-cancel-btn').style.display='block';
+      document.getElementById('editor-action-btn').textContent='Hyväksy muutos';
+      document.getElementById('editor-action-btn').style.background='#27ae60';
       document.getElementById('editor-status').textContent='Esikatselu — oranssi = yhdistetty alue';
     }
 
     function previewDeleteEditor() {
       if (editorSelected.size !== 1) return;
+      editorInPreview = true;
       const id   = Array.from(editorSelected)[0];
       const feat = editorAllFeatures.find(f=>f.properties.id===id);
       const name = feat ? (feat.properties.extra_info||'').split(' | ')[0]||'Alue' : 'Alue';
       if (editorMap.getLayer('editor-del-fill'))
         editorMap.setFilter('editor-del-fill',['==',['get','id'],id]);
       document.getElementById('editor-merge-toggles').style.display='none';
-      document.getElementById('editor-normal-bar').style.display='none';
-      document.getElementById('editor-preview-bar').style.display='block';
+      document.getElementById('editor-cancel-btn').style.display='block';
+      document.getElementById('editor-action-btn').textContent='Hyväksy muutos';
+      document.getElementById('editor-action-btn').style.background='#e53935';
       document.getElementById('editor-status').textContent=`Poistetaanko: "${name}"?`;
-      document.getElementById('editor-confirm-btn').textContent='✓ Poista';
-      document.getElementById('editor-confirm-btn').style.background='#e53935';
     }
 
     function _showPreviewGeom(geom) {
@@ -3466,6 +3493,7 @@
     }
 
     function cancelEditorPreview() {
+      editorInPreview = false;
       editorPreviewGeom = null;
       if (editorMap) {
         if (editorMap.getSource('editor-preview'))
@@ -3473,11 +3501,12 @@
         if (editorMap.getLayer('editor-del-fill'))
           editorMap.setFilter('editor-del-fill',['==','id','__none__']);
       }
-      document.getElementById('editor-normal-bar').style.display='block';
-      document.getElementById('editor-preview-bar').style.display='none';
       document.getElementById('editor-merge-toggles').style.display='none';
-      document.getElementById('editor-confirm-btn').textContent='✓ Hyväksy';
-      document.getElementById('editor-confirm-btn').style.background='#27ae60';
+      document.getElementById('editor-cancel-btn').style.display='none';
+      document.getElementById('editor-action-btn').textContent='Esikatsele';
+      document.getElementById('editor-action-btn').style.background='#0C0243';
+      const statusText = editorMode === 'merge' ? 'Klikkaa alueita yhdistääksesi' : 'Klikkaa alue joka poistetaan';
+      document.getElementById('editor-status').textContent = statusText;
     }
 
     async function confirmEditorAction() {
@@ -4457,12 +4486,6 @@
       <div class="overlay-title">Alueiden muokkaus</div>
     </div>
 
-    <!-- Mode selector bar -->
-    <div style="background:white;border-bottom:1px solid #eee;padding:8px 16px;flex-shrink:0;display:flex;gap:8px;align-items:center;font-family:Arial,sans-serif;">
-      <button id="editor-mode-merge" onclick="setEditorMode('merge')" style="flex:1;height:38px;border-radius:10px;border:2px solid #0C0243;background:#0C0243;color:white;font-size:13px;font-weight:bold;cursor:pointer;transition:all 0.2s;">✏️ Yhdistä</button>
-      <button id="editor-mode-delete" onclick="setEditorMode('delete')" style="flex:1;height:38px;border-radius:10px;border:2px solid #ddd;background:white;color:#555;font-size:13px;font-weight:bold;cursor:pointer;transition:all 0.2s;">✕ Poista</button>
-    </div>
-
     <!-- Status bar -->
     <div style="background:#f8f8f8;border-bottom:1px solid #eee;padding:8px 16px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;font-family:Arial,sans-serif;font-size:13px;color:#555;">
       <span id="editor-status">Aktivoi kynä tai klikkaa aluetta</span>
@@ -4474,27 +4497,22 @@
       <canvas id="editor-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;touch-action:none;pointer-events:none;"></canvas>
       <!-- Floating toolbar -->
       <div style="position:absolute;top:12px;right:12px;z-index:20;display:flex;flex-direction:column;gap:8px;">
-        <button id="editor-draw-btn" onclick="toggleEditorDraw()" title="Maalaustyökalu" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">✏️</button>
-        <button onclick="clearEditorSelection()" title="Tyhjennä valinta" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">🗑️</button>
+        <button id="editor-mode-btn" onclick="toggleEditorMode()" title="Yhdistä / Poista" style="width:44px;height:44px;border-radius:12px;border:2px solid #0C0243;background:#0C0243;color:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">✏️</button>
+        <button onclick="undoLastEditorAction()" title="Peru viimeisin toiminto" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">↶</button>
       </div>
     </div>
 
     <!-- Normal bottom bar -->
     <div id="editor-normal-bar" style="background:white;border-top:1px solid #eee;padding:12px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom));flex-shrink:0;">
-      <button id="editor-action-btn" onclick="editorPreview()" style="width:100%;height:50px;background:#0C0243;border:none;border-radius:14px;font-size:15px;font-weight:bold;cursor:not-allowed;color:white;font-family:Arial,sans-serif;opacity:0.7;transition:opacity 0.2s;">👁 Esikatsele</button>
-    </div>
-
-    <!-- Preview bar -->
-    <div id="editor-preview-bar" style="display:none;background:white;border-top:1px solid #eee;padding:12px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom));flex-shrink:0;font-family:Arial,sans-serif;">
-      <!-- Merge preview mode toggles (shown only in merge mode) -->
-      <div id="editor-merge-toggles" style="display:none;gap:8px;margin-bottom:10px;align-items:center;justify-content:center;flex-wrap:wrap;">
+      <!-- Merge preview toggles (shown in preview mode for merge) -->
+      <div id="editor-merge-toggles" style="display:none;gap:8px;margin-bottom:10px;align-items:center;justify-content:center;flex-wrap:wrap;font-family:Arial,sans-serif;">
         <span style="font-size:13px;color:#555;">Tapa:</span>
         <button id="preview-toggle-convex" onclick="switchPreview('convex')" style="padding:5px 12px;border-radius:8px;border:2px solid #0C0243;background:#0C0243;color:white;font-size:12px;font-weight:bold;cursor:pointer;">⬡ Konveksi</button>
         <button id="preview-toggle-road" onclick="switchPreview('road')" style="padding:5px 12px;border-radius:8px;border:2px solid #ddd;background:white;color:#555;font-size:12px;font-weight:bold;cursor:pointer;">〰️ Mukaileva</button>
       </div>
-      <div style="display:flex;gap:10px;">
-        <button onclick="cancelEditorPreview()" style="flex:1;height:46px;background:#f5f5f5;border:none;border-radius:12px;font-size:15px;cursor:pointer;color:#333;">✕ Hylkää</button>
-        <button id="editor-confirm-btn" onclick="confirmEditorAction()" style="flex:2;height:46px;background:#27ae60;border:none;border-radius:12px;font-size:15px;font-weight:bold;cursor:pointer;color:white;">✓ Hyväksy</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="editor-cancel-btn" onclick="cancelEditorPreview()" style="display:none;flex:0 0 46px;height:50px;background:#f5f5f5;border:none;border-radius:12px;font-size:18px;cursor:pointer;color:#666;">✕</button>
+        <button id="editor-action-btn" onclick="handleEditorAction()" style="flex:1;height:50px;background:#0C0243;border:none;border-radius:14px;font-size:15px;font-weight:bold;cursor:not-allowed;color:white;font-family:Arial,sans-serif;opacity:0.7;transition:all 0.2s;">Esikatsele</button>
       </div>
     </div>
   </div>
