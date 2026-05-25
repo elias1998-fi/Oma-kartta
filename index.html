@@ -403,7 +403,7 @@
       display: flex; 
       flex-direction: column;
     }
-    #drag-handle-area { width: 100%; padding: 14px 0 10px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
+    #drag-handle-area { width: 100%; padding: 8px 0 6px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
     #gps-warning {
       font-family: Arial, sans-serif;
@@ -443,7 +443,7 @@
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
     #filter-close-btn.visible { display: flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    #sheet-summary { padding: 0 20px 12px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
+    #sheet-summary { padding: 0 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
     #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
     #summary-type { font-size: 14px; color: #555; }
     #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
@@ -2436,7 +2436,7 @@
 
     // Like showMasterFeatureInSheet but NO lock — for center/P-marker detection
     // Shows only 3 lines: header, type, operator — no extra details
-    function showCenterFeatureInSheet(header, type, operator, areaCode) {
+    function showCenterFeatureInSheet(header, type, operator, areaCode, detailsHTML) {
       document.getElementById('summary-header').textContent   = header;
       const badge = document.getElementById('area-code-badge');
       if (areaCode) {
@@ -2447,19 +2447,21 @@
       }
       document.getElementById('summary-type').textContent     = type;
       document.getElementById('summary-operator').textContent = operator;
-      document.getElementById('sheet-details').innerHTML      = '';
-      document.getElementById('sheet-divider').style.display  = 'none';
       document.getElementById('gps-warning').classList.remove('visible');
       document.getElementById('action-btn').classList.add('active');
-      // Size sheet to show: drag handle + 3 text rows + button bar
-      // drag handle area: ~44px, summary (3 rows ~22px each): ~80px, btn: ~90px → ~214px total
+      if (detailsHTML) {
+        document.getElementById('sheet-details').innerHTML     = detailsHTML;
+        document.getElementById('sheet-divider').style.display = 'block';
+      } else {
+        document.getElementById('sheet-details').innerHTML     = '';
+        document.getElementById('sheet-divider').style.display = 'none';
+      }
       const bs = document.getElementById('bottom-sheet');
       const openHeight = 185;
       const snap = bs.offsetHeight - openHeight;
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
       currentY = Math.max(0, snap);
-      // NO masterFeatureLocked — center detection must always be interruptible
     }
 
     function collapseCenterSheet() {
@@ -2554,7 +2556,7 @@
         });
         // Group highlight line — thick dark, toggled via setFilter
         map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13,
-          paint:{ 'line-color':'#0C0243', 'line-width': 2.3, 'line-opacity': 0.95 },
+          paint:{ 'line-color':'#0C0243', 'line-width': 1.15, 'line-opacity': 0.95 },
           filter:['==', ['get','id'], '__none__']
         });
 
@@ -2659,22 +2661,22 @@
           const extra = p.extra_info ? p.extra_info.split(' | ') : [];
           const name  = extra[0] || style.label;
           const kesto = p.max_hours ? `Max. ${p.max_hours}h` : '';
-          const valid = p.valid ? `Voimassaolo: ${p.valid}` : '';
-          // Line 1: "Helsinki, Vyöhyke 2 | Max. Xh"  or just area name
-          const line1Parts = [];
-          // Use source to determine zone label
+          const valid = p.valid || '';
+          const extraInfo = p.extra_info || '';
           const zoneLabel = (p.source && p.source !== 'community') ? 'Helsinki, Vyöhyke 2' : name;
           const line1 = kesto ? `${zoneLabel}  |  ${kesto}` : zoneLabel;
-          // Line 2: parking type
           const srcType = p.source === 'hel_halli' ? 'Pysäköintihalli'
             : (p.source && p.source.includes('ilmainen')) ? 'Kadunvarsipysäköinti'
-            : (p.source && p.source.includes('kertamaksu')) ? 'Kadunvarsipysäköinti'
-            : (p.source && p.source.includes('maksullinen')) ? 'Kadunvarsipysäköinti'
-            : (p.source && p.source.includes('sallittu')) ? 'Kadunvarsipysäköinti'
-            : 'Pysäköintialue';
-          // Line 3: operator
+            : 'Kadunvarsipysäköinti';
           const op = 'Helsingin kaupunki';
-          showCenterFeatureInSheet(line1, srcType, op, p.id ? String(p.id).split('-')[0].toUpperCase().slice(0,6) : null);
+          // Build details: voimassaoloaika, hinta, lisätiedot
+          const isMaksullinen = p.source && (p.source.includes('kertamaksu') || p.source.includes('maksullinen'));
+          let detailsHTML = '';
+          if (valid) detailsHTML += `<p class="price-label">Voimassaoloaika</p><p class="price-value">${valid}</p>`;
+          if (isMaksullinen) detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">Maksullinen — katso tarkemmat hinnat paikan opastekylteistä</p>`;
+          else detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">Ilmainen</p>`;
+          if (extraInfo) detailsHTML += `<p class="price-label">Lisätiedot</p><p class="price-value">${extraInfo}</p>`;
+          showCenterFeatureInSheet(line1, srcType, op, p.id ? String(p.id).split('-')[0].toUpperCase().slice(0,6) : null, detailsHTML);
           btn.textContent = 'Pysäköi tähän';
           btn.classList.add('active');
         }
