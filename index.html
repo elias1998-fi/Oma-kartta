@@ -2458,13 +2458,12 @@
         document.getElementById('sheet-divider').style.display = 'none';
       }
       const bs = document.getElementById('bottom-sheet');
-      // Measure content height up to divider, then add btn-container height
-      // so divider lands exactly at btn-container top
+      // Sheet shows drag-handle + summary only; divider hides behind btn-container
+      // User swipes up to reveal divider and details below
       const dragH = document.getElementById('drag-handle-area').offsetHeight || 18;
       const summaryH = document.getElementById('sheet-summary').offsetHeight || 70;
-      const divMargin = 5; // margin-top of #sheet-divider
       const btnH = btnContainer.offsetHeight || 90;
-      const openHeight = dragH + summaryH + divMargin + 1 + btnH;
+      const openHeight = dragH + summaryH + btnH;
       const snap = bs.offsetHeight - openHeight;
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
