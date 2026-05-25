@@ -496,7 +496,7 @@
       font-family: Arial, sans-serif; 
       color: white; 
       background: #0C0243; 
-      opacity: 1; 
+      opacity: 0.65; 
       cursor: pointer; 
       transition: opacity 0.2s ease; 
       text-align: center; 
@@ -2681,6 +2681,7 @@
 
     function updateButtonText() {
       if (masterFeatureLocked) return;
+      if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
       const zoom = map.getZoom();
       if (zoom < 13) {
         btn.textContent = 'Lähennä karttaa';
@@ -3670,7 +3671,7 @@
     function onMapIdle() {
       const zoom = map.getZoom();
 
-      requestAnimationFrame(() => { checkParking(); updateButtonText(); });
+      requestAnimationFrame(() => { checkParking(); if (!hoveredPolyId) updateButtonText(); });
 
       // Load hallis once we hit zoom 13+
       if (!halliLoaded) { halliLoaded = true; setTimeout(loadHalliMarkers, 200); }
