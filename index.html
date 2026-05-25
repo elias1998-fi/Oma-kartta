@@ -18,7 +18,7 @@
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
     #center-pointer.hidden { display: none; }
 
-    /* Expanded badge: pin + area code, speech-bubble with centered tail */
+    /* Expanded badge: pin + area code, speech-bubble with rounded centered tail */
     #center-badge {
       position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -100%);
@@ -28,35 +28,37 @@
     }
     #center-badge.visible { display: flex; }
     #center-badge-body {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 3px;
       background: white;
-      border: 3px solid #0C0243;
-      border-radius: 14px;
-      padding: 5px 14px 5px 8px;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      border: 2px solid #0C0243;
+      border-radius: 9px;
+      padding: 2px 8px 2px 4px;
+      box-shadow: 0 2px 7px rgba(0,0,0,0.22);
       white-space: nowrap;
     }
-    #center-badge-pin { width: 26px; height: 26px; flex-shrink: 0; }
+    #center-badge-pin { width: 18px; height: 18px; flex-shrink: 0; display: block; }
     #center-badge-code {
       font-family: Arial, sans-serif;
-      font-size: 22px; font-weight: 900;
-      color: #111; letter-spacing: 0.5px;
+      font-size: 16px; font-weight: 800;
+      color: #111; letter-spacing: 0.3px;
+      line-height: 1;
     }
-    /* Centered downward tail (triangle) */
+    /* Rounded downward speech-bubble tail (SVG) */
     #center-badge-tail {
-      width: 0; height: 0; margin-top: -1px;
-      border-left: 11px solid transparent;
-      border-right: 11px solid transparent;
-      border-top: 13px solid #0C0243;
-      position: relative;
+      width: 34px; height: 13px; margin-top: -4px;
+      display: block;
+      position: relative; z-index: 1;
     }
-    #center-badge-tail::after {
-      content: ''; position: absolute;
-      left: -7px; top: -13px;
-      width: 0; height: 0;
-      border-left: 7px solid transparent;
-      border-right: 7px solid transparent;
-      border-top: 9px solid white;
+    #center-badge-tail #tail-fill {
+      fill: white;
+      stroke: none;
+    }
+    #center-badge-tail #tail-stroke {
+      fill: none;
+      stroke: #0C0243;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     
     /* Splash Screen */
@@ -838,13 +840,13 @@
 
   <div id="center-badge">
     <div id="center-badge-body">
-      <svg id="center-badge-pin" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
-        <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
-      </svg>
+      <img id="center-badge-pin" src="data:image/png;base64,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" alt="P" />
       <span id="center-badge-code">—</span>
     </div>
-    <div id="center-badge-tail"></div>
+    <svg id="center-badge-tail" viewBox="0 0 60 26" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <path id="tail-fill" d="M0 0 L60 0 L60 4 Q 42 4 36 13 Q 30 22 24 13 Q 18 4 0 4 Z"/>
+      <path id="tail-stroke" d="M3 2.5 Q 23 3 28 12 Q 30 17 32 12 Q 37 3 57 2.5"/>
+    </svg>
   </div>
 
   <div id="left-menu-pill">
