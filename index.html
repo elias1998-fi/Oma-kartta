@@ -2756,10 +2756,11 @@
         const lineWidth = 1 + 6 * sineValue;
         
         // Sync opacity inversely with size: small area (thin border) = 100%, large area (thick border) = 70%
-        const fillOpacity = 1.0 - 0.3 * sineValue;
+        const opacity = 1.0 - 0.3 * sineValue;
         
         map.setPaintProperty('master-poly-hover-line', 'line-width', lineWidth);
-        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', fillOpacity);
+        map.setPaintProperty('master-poly-hover-line', 'line-opacity', opacity);
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', opacity);
         sizeAnimationId = requestAnimationFrame(animate);
       }
       animate();
@@ -2772,6 +2773,7 @@
       }
       if (map.getLayer('master-poly-hover-line')) {
         map.setPaintProperty('master-poly-hover-line', 'line-width', 1.5);
+        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 1.0);
       }
       if (map.getLayer('master-poly-hover-fill')) {
         map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
