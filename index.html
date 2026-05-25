@@ -789,6 +789,17 @@
   </div>
 
   <div id="map"></div>
+  <!-- Directional heading cone, positioned over user dot via JS -->
+  <svg id="user-heading-cone" width="40" height="48" viewBox="0 0 40 48" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="coneGrad" cx="50%" cy="100%" r="100%">
+        <stop offset="0%" stop-color="#1a8fff" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="#1a8fff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <path d="M20 44 L3 4 Q20 12 37 4 Z" fill="url(#coneGrad)"/>
+    <path d="M20 44 L3 4 Q20 12 37 4 Z" fill="none" stroke="#1a8fff" stroke-width="0.5" stroke-opacity="0.4"/>
+  </svg>
   <svg id="center-pointer" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
     <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
@@ -4118,6 +4129,52 @@
       const price = calculatePrice(parkingMinutes);
       alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${v.name} (${v.reg})\nAika: ${formatTimeDisplay(parkingMinutes)}\nMaksutapa: ${p.name}\nAlue: ${document.getElementById('p-code').textContent}\nHinta: ${formatPrice(price.total)}`);
     });
+
+
+    // ── Directional heading cone ──────────────────────────────────────────
+    let userHeadingDeg = null;
+    const headingCone = document.getElementById('user-heading-cone');
+
+    function updateHeadingCone() {
+      if (!headingCone) return;
+      // Find the user location dot in the DOM
+      const dot = document.querySelector('.maplibregl-user-location-dot');
+      if (!dot || userHeadingDeg === null) {
+        headingCone.style.display = 'none';
+        return;
+      }
+      const rect = dot.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      // Center cone tip at user dot center
+      headingCone.style.display = 'block';
+      headingCone.style.left = (cx - 20) + 'px';
+      headingCone.style.top  = (cy - 44) + 'px';  // tip points down (toward dot)
+      headingCone.style.transform = `rotate(${userHeadingDeg}deg)`;
+    }
+
+    // Device orientation → compass heading
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientationabsolute', (e) => {
+        if (e.alpha !== null) {
+          userHeadingDeg = 360 - e.alpha;  // convert to map bearing
+          updateHeadingCone();
+        }
+      }, { passive: true });
+      // iOS fallback
+      window.addEventListener('deviceorientation', (e) => {
+        if (userHeadingDeg !== null) return;  // absolute already working
+        if (e.webkitCompassHeading !== undefined) {
+          userHeadingDeg = e.webkitCompassHeading;
+          updateHeadingCone();
+        }
+      }, { passive: true });
+    }
+
+    // Update cone position whenever map moves or user dot moves
+    map.on('move', updateHeadingCone);
+    map.on('zoom', updateHeadingCone);
+    geolocate.on('geolocate', () => { setTimeout(updateHeadingCone, 100); });
 
     map.on('error',e=>{console.warn('MapLibre virhe:',e.error?.message||e);});
 
