@@ -2846,7 +2846,13 @@
     function checkCenterHighlight() {
       if (!map.getLayer('master-poly-fill')) { hideCenterBadge(); updateButtonText(); return; }
       const cpt = map.project(map.getCenter());
-      const cf  = map.queryRenderedFeatures(cpt, { layers: ['master-poly-fill'] });
+      // Create detection area: 5px radius circle around center (easier targeting)
+      const radius = 5;
+      const bbox = [
+        [cpt.x - radius, cpt.y - radius],
+        [cpt.x + radius, cpt.y + radius]
+      ];
+      const cf  = map.queryRenderedFeatures(bbox, { layers: ['master-poly-fill'] });
       if (cf.length) {
         const f = cf[0];
         if (f.properties.id !== hoveredPolyId) {
@@ -3954,7 +3960,13 @@
       // Highlight parking area under map center (works on mobile & desktop)
       if(zoom>=13 && map.getLayer('master-poly-fill')){
         const cpt = map.project(map.getCenter());
-        const cf  = map.queryRenderedFeatures(cpt, { layers:['master-poly-fill'] });
+        // Create detection area: 5px radius circle around center (easier targeting)
+        const radius = 5;
+        const bbox = [
+          [cpt.x - radius, cpt.y - radius],
+          [cpt.x + radius, cpt.y + radius]
+        ];
+        const cf  = map.queryRenderedFeatures(bbox, { layers:['master-poly-fill'] });
         if(cf.length){
           const f = cf[0];
           if(f.properties.id !== hoveredPolyId){
