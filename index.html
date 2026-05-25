@@ -2392,7 +2392,7 @@
 
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,valid_mape_from,polygon_coords&source=neq.hel_halli&limit=10000`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coords&source=neq.hel_halli&limit=10000`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -2502,7 +2502,12 @@
             properties: {
               id: r.id, source: r.source, area_type: r.area_type,
               extra_info: r.extra_info || '', max_hours: r.max_hours,
-              valid: r.valid_mape_from || ''
+              valid: r.valid_mape_from || '',
+              valid_mape_to: r.valid_mape_to || '',
+              valid_la_from: r.valid_la_from || '',
+              valid_la_to: r.valid_la_to || '',
+              valid_su_from: r.valid_su_from || '',
+              valid_su_to: r.valid_su_to || ''
             },
             geometry: r.polygon_coords
           }));
@@ -2673,7 +2678,24 @@
           // Build details: voimassaoloaika, hinta, lisätiedot
           const isMaksullinen = p.source && (p.source.includes('kertamaksu') || p.source.includes('maksullinen'));
           let detailsHTML = '';
-          if (valid) detailsHTML += `<p class="price-label">Voimassaoloaika</p><p class="price-value">${valid}</p>`;
+          const vMaPeTo  = p.valid_mape_to || '';
+          const vLaFrom  = p.valid_la_from || '';
+          const vLaTo    = p.valid_la_to || '';
+          const vSuFrom  = p.valid_su_from || '';
+          const vSuTo    = p.valid_su_to || '';
+          const hasMaPe = valid || vMaPeTo;
+          const hasLa   = vLaFrom || vLaTo;
+          const hasSu   = vSuFrom || vSuTo;
+          if (hasMaPe || hasLa || hasSu) {
+            detailsHTML += '<p class="price-label">Voimassaoloaika</p>';
+            detailsHTML += '<table style="width:100%;font-size:14px;color:#333;border-collapse:collapse;">';
+            if (hasMaPe) detailsHTML += `<tr><td style="color:#555;padding:2px 0;width:52px;">Ma–Pe</td><td style="font-weight:500;">${valid}${vMaPeTo ? ' – ' + vMaPeTo : ''}</td></tr>`;
+            if (hasLa)   detailsHTML += `<tr><td style="color:#555;padding:2px 0;">La</td><td style="font-weight:500;">${vLaFrom}${vLaTo ? ' – ' + vLaTo : ''}</td></tr>`;
+            if (hasSu)   detailsHTML += `<tr><td style="color:#e53935;padding:2px 0;">Su</td><td style="font-weight:500;color:#e53935;">${vSuFrom}${vSuTo ? ' – ' + vSuTo : ''}</td></tr>`;
+            detailsHTML += '</table>';
+          } else if (valid) {
+            detailsHTML += `<p class="price-label">Voimassaoloaika</p><p class="price-value">${valid}</p>`;
+          }
           if (isMaksullinen) detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">Maksullinen — katso tarkemmat hinnat paikan opastekylteistä</p>`;
           else detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">Ilmainen</p>`;
           if (extraInfo) detailsHTML += `<p class="price-label">Lisätiedot</p><p class="price-value">${extraInfo}</p>`;
