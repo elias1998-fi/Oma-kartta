@@ -477,12 +477,12 @@
       background: white; 
       padding: 12px 16px; 
       padding-bottom: max(24px,env(safe-area-inset-bottom)); 
-      transition: opacity 0.3s ease, transform 0.3s ease;
+      transition: opacity 0.3s ease;
+      transform: none !important;
       pointer-events: auto;
     }
     #btn-container.hidden { 
       opacity: 0; 
-      transform: translateY(100%); 
       pointer-events: none; 
     }
     
@@ -1214,9 +1214,9 @@
       <span class="gps-info-icon" onclick="openGpsInfo()">i</span>
     </div>
     <div id="sheet-normal">
-      <div id="sheet-summary" style="position:relative;">
-        <div id="area-code-badge" style="display:none;position:absolute;top:0;left:0;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;padding:2px 7px;border-radius:5px;letter-spacing:0.3px;"></div>
-        <div id="summary-header" style="padding-top:0;"></div>
+      <div id="sheet-summary">
+        <div id="area-code-badge" style="display:none;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;margin-bottom:3px;"></div>
+        <div id="summary-header"></div>
         <div id="summary-type"></div>
         <div id="summary-operator"></div>
       </div>
@@ -2441,11 +2441,9 @@
       const badge = document.getElementById('area-code-badge');
       if (areaCode) {
         badge.textContent = areaCode;
-        badge.style.display = 'block';
-        document.getElementById('sheet-summary').style.paddingTop = '22px';
+        badge.style.display = 'inline-block';
       } else {
         badge.style.display = 'none';
-        document.getElementById('sheet-summary').style.paddingTop = '';
       }
       document.getElementById('summary-type').textContent     = type;
       document.getElementById('summary-operator').textContent = operator;
@@ -2467,8 +2465,6 @@
     function collapseCenterSheet() {
       const badge = document.getElementById('area-code-badge');
       if (badge) { badge.style.display = 'none'; }
-      const summary = document.getElementById('sheet-summary');
-      if (summary) summary.style.paddingTop = '';
       const bs = document.getElementById('bottom-sheet');
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = 'translateY(calc(100% - 90px))';
@@ -2553,7 +2549,7 @@
         });
         // Hover fill — red, toggled via setFilter
         map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13,
-          paint:{ 'fill-color':'#e53935', 'fill-opacity': 0.55 },
+          paint:{ 'fill-color':'#ff1744', 'fill-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
