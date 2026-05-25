@@ -4157,7 +4157,10 @@
       lastY=touch;
       lastTime=now;
       const maxY=sheet.clientHeight-60;
-      currentY=Math.max(0,Math.min(maxY,startTranslate+(touch-startY)));
+      // minY is negative: sheet bottom stops at (viewport - btnH) so btn is never overlapped
+      const btnH = btnContainer.offsetHeight || 90;
+      const minY = -btnH;
+      currentY=Math.max(minY,Math.min(maxY,startTranslate+(touch-startY)));
       sheet.style.transform=`translateY(${currentY}px)`;
     },{passive:true});
     
@@ -4165,9 +4168,11 @@
       if(!isDragging)return;
       isDragging=false;
       const maxY=sheet.clientHeight-60;
+      const btnH = btnContainer.offsetHeight || 90;
+      const minY = -btnH;
       if(velocity>0.5)snapTo(maxY);
-      else if(velocity<-0.5)snapTo(0);
-      else snapTo(currentY<maxY/2?0:maxY);
+      else if(velocity<-0.5)snapTo(minY);
+      else snapTo(currentY<maxY/2?minY:maxY);
     });
   </script>
 
