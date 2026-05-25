@@ -2852,7 +2852,7 @@
     }
 
     function checkCenterHighlight() {
-      if (!map.getLayer('master-poly-fill')) { hideCenterBadge(); updateButtonText(); return; }
+      if (!map.getLayer('master-poly-fill')) { updateButtonText(); return; }
       const cpt = map.project(map.getCenter());
       // Create detection area: 5px radius circle around center (easier targeting)
       const radius = 5;
@@ -2909,9 +2909,6 @@
         // ALWAYS update btn when feature is under center (regardless of same/different ID)
         btn.textContent = 'Pysäköi tähän';
         btn.classList.add('active');
-        // Swap center pin → expanded badge with area code
-        const code = f.properties.id ? String(f.properties.id).split('-')[0].toUpperCase().slice(0,6) : '';
-        showCenterBadge(code);
       } else {
         // No area under center — clear immediately
         if (hoveredPolyId) {
@@ -2919,7 +2916,6 @@
           hoveredPolyId = null;
           collapseCenterSheet();
         }
-        hideCenterBadge();
         updateButtonText();
       }
     }
