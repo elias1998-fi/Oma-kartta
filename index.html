@@ -761,11 +761,11 @@
   #menu-btn.active #bl-bot  { transform: translateY(-6px) rotate(-45deg); }
   /* Sliding ball in pill */
   #pill-ball {
-    position: absolute; left: 8px; top: 8px;
-    width: 32px; height: 32px;
+    position: absolute; left: 0; top: 0;
+    width: 48px; height: 48px;
     background: #0C0243; border-radius: 50%;
     pointer-events: none; z-index: 0;
-    transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+    transition: transform 0.48s cubic-bezier(0.4,0,0.2,1);
     opacity: 0;
   }
   #left-menu-pill.expanded #pill-ball { opacity: 1; }
@@ -1519,7 +1519,7 @@
 
     function moveBallTo(idx, cb) {
       pillBall.style.transform = `translateY(${BALL_POS[idx]}px)`;
-      setTimeout(cb || (() => {}), 340);
+      setTimeout(cb || (() => {}), 500);
     }
 
     function openMenu() {
@@ -1555,7 +1555,10 @@
 
     filterBtn.addEventListener('click', () => {
       if (filterMode) { closeFilter(); closeMenu(); return; }
-      menuItemClick(2, () => { openFilter(); });
+      menuItemClick(2, () => {
+        filterBtn.classList.remove('active');  // remove highlight after selection
+        openFilter();
+      });
     });
 
     plusMenuBtn.addEventListener('click', () => {
@@ -2491,7 +2494,7 @@
         });
         // Group highlight line — thick dark, toggled via setFilter
         map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13,
-          paint:{ 'line-color':'#0C0243', 'line-width': 3.5, 'line-opacity': 0.95 },
+          paint:{ 'line-color':'#0C0243', 'line-width': 2.3, 'line-opacity': 0.95 },
           filter:['==', ['get','id'], '__none__']
         });
 
@@ -2559,9 +2562,16 @@
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
-      // Thick dark outline on all group areas (includes hovered)
+      // Red outline on hovered area only
+      if (map.getLayer('master-poly-hover-line')) {
+        map.setFilter('master-poly-hover-line',
+          hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
+        );
+      }
+      // Dark outline on same-group areas (excluding hovered — it gets red outline)
+      const groupMinusHov = groupIds.filter(id => id !== hovId);
       map.setFilter('master-poly-group-line',
-        groupIds.length ? ['in', ['get','id'], ['literal', groupIds]] : ['==','id','__none__']
+        groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
     }
 
@@ -2569,6 +2579,8 @@
       if (!map.getLayer('master-poly-hover-fill')) return;
       map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
       map.setFilter('master-poly-group-line',  ['==','id','__none__']);
+      if (map.getLayer('master-poly-hover-line'))
+        map.setFilter('master-poly-hover-line', ['==','id','__none__']);
     }
 
     // Real-time center P-marker detection (no lock, immediate response)
