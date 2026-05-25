@@ -2752,9 +2752,14 @@
         
         // Pulse border width: area grows when border is thick, shrinks when thin
         // Border extends outward, making the red area appear larger/smaller
-        const lineWidth = 1 + 6 * (0.5 + 0.5 * Math.sin(progress * Math.PI * 2));
+        const sineValue = 0.5 + 0.5 * Math.sin(progress * Math.PI * 2);
+        const lineWidth = 1 + 6 * sineValue;
+        
+        // Sync opacity inversely with size: small area (thin border) = 100%, large area (thick border) = 70%
+        const fillOpacity = 1.0 - 0.3 * sineValue;
         
         map.setPaintProperty('master-poly-hover-line', 'line-width', lineWidth);
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', fillOpacity);
         sizeAnimationId = requestAnimationFrame(animate);
       }
       animate();
@@ -2767,6 +2772,9 @@
       }
       if (map.getLayer('master-poly-hover-line')) {
         map.setPaintProperty('master-poly-hover-line', 'line-width', 1.5);
+      }
+      if (map.getLayer('master-poly-hover-fill')) {
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
       }
     }
     
@@ -3403,7 +3411,7 @@
       document.getElementById('editor-count').textContent = ids.length ? `${ids.length} valittu` : '';
       const btn = document.getElementById('editor-action-btn');
       const canAct = editorMode==='delete' ? ids.length===1 : ids.length>=2;
-      btn.style.opacity  = canAct ? '1' : '0.4';
+      btn.style.opacity  = canAct ? '1' : '0.7';
       btn.style.cursor   = canAct ? 'pointer' : 'not-allowed';
       if (ids.length===0) editorFirstProps = null;
     }
@@ -4475,7 +4483,7 @@
 
     <!-- Normal bottom bar -->
     <div id="editor-normal-bar" style="background:white;border-top:1px solid #eee;padding:12px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom));flex-shrink:0;">
-      <button id="editor-action-btn" onclick="editorPreview()" style="width:100%;height:50px;background:#0C0243;border:none;border-radius:14px;font-size:15px;font-weight:bold;cursor:not-allowed;color:white;font-family:Arial,sans-serif;opacity:0.4;transition:opacity 0.2s;">👁 Esikatsele</button>
+      <button id="editor-action-btn" onclick="editorPreview()" style="width:100%;height:50px;background:#0C0243;border:none;border-radius:14px;font-size:15px;font-weight:bold;cursor:not-allowed;color:white;font-family:Arial,sans-serif;opacity:0.7;transition:opacity 0.2s;">👁 Esikatsele</button>
     </div>
 
     <!-- Preview bar -->
