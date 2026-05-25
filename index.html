@@ -2706,13 +2706,18 @@
       const groupIds = getSameGroupIds(props).map(String);
       const groupMinusHov = groupIds.filter(id => id !== hovId);
       
-      // Red fill on hovered area (will be animated to pulse)
+      // Solid red fill on hovered area
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
-      // No red border on hovered area
+      // Red outline on hovered area (will be animated to create scale effect)
       if (map.getLayer('master-poly-hover-line')) {
-        map.setFilter('master-poly-hover-line', ['==','id','__none__']);
+        map.setPaintProperty('master-poly-hover-line', 'line-color', '#ff1744');
+        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 0.6);
+        map.setFilter('master-poly-hover-line',
+          hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
+        );
       }
       
       // Dark blue fill (100%) on OTHER same-category areas
@@ -2730,8 +2735,40 @@
         groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
       
-      // Start pulsing animation on hovered area
-      startPulseAnimation();
+      // Start scale animation on hovered area
+      startScaleAnimation();
+    }
+    
+    let scaleAnimationId = null;
+    function startScaleAnimation() {
+      stopScaleAnimation();
+      const startTime = Date.now();
+      const cycleDuration = 2000; // 2 seconds per cycle
+      
+      function animate() {
+        if (!map.getLayer('master-poly-hover-line')) return;
+        const elapsed = Date.now() - startTime;
+        const progress = (elapsed % cycleDuration) / cycleDuration;
+        
+        // Smooth breathing: expand and contract
+        // Sine wave for smooth expansion/contraction
+        const lineWidth = 3 + 5 * Math.sin(progress * Math.PI * 2);
+        
+        map.setPaintProperty('master-poly-hover-line', 'line-width', lineWidth);
+        scaleAnimationId = requestAnimationFrame(animate);
+      }
+      animate();
+    }
+    
+    function stopScaleAnimation() {
+      if (scaleAnimationId !== null) {
+        cancelAnimationFrame(scaleAnimationId);
+        scaleAnimationId = null;
+      }
+      // Reset to default width
+      if (map.getLayer('master-poly-hover-line')) {
+        map.setPaintProperty('master-poly-hover-line', 'line-width', 1.5);
+      }
     }
     
     let pulseAnimationId = null;
@@ -2782,7 +2819,7 @@
     }
 
     function clearHoverHighlight() {
-      stopPulseAnimation();
+      stopScaleAnimation();
       if (!map.getLayer('master-poly-hover-fill')) return;
       map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
       map.setFilter('master-poly-group-line',  ['==','id','__none__']);
