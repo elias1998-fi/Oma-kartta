@@ -756,14 +756,6 @@
   /* Burger → X */
   #menu-btn.active { background: transparent !important; border-radius: 50%; }
   #menu-btn.active svg line { stroke: #333; }
-  /* Filter active indicator dot */
-  #filter-btn.filter-on::after {
-    content: '';
-    position: absolute; top: 6px; right: 6px;
-    width: 8px; height: 8px;
-    background: #0C0243; border-radius: 50%;
-    border: 1.5px solid white;
-  }
   /* Active pill button icon: white so it shows on dark ball */
   #left-menu-pill.expanded .pill-btn.ball-here svg { color: white; }
   #left-menu-pill.expanded .pill-btn.ball-here svg line { stroke: white !important; }
@@ -1545,13 +1537,16 @@
       menuExpanded = true;
       menuPill.classList.add('expanded');
       menuBtn.classList.add('active');
-      // When filter is active: no ball (filter button already highlighted separately)
-      // Ball only appears when menu opens in neutral state
-      if (!filterMode) {
+      if (filterMode) {
+        // Ball at filter position (idx=2), no ball at X
+        pillBall.style.transition = 'none';
+        pillBall.style.transform = `translateY(${BALL_POS[2]}px)`;
+        requestAnimationFrame(() => { pillBall.style.transition = ''; });
+        setBallHere(2);
+      } else {
         moveBallTo(0);
         setBallHere(0);
       }
-      // filterMode: pill-ball stays hidden (opacity:0 via CSS when not .expanded with ball)
     }
 
     function closeMenu() {
@@ -3612,13 +3607,13 @@
       updateSliderUI();
       applyRangeFilter();
       btnContainer.classList.remove('hidden');
-      PILL_BTNS.forEach(b => b.classList.remove('ball-here'));
       if (menuExpanded) {
-        // Ball is visible — animate it away then close menu
-        pillBall.style.transform = 'translateY(0px)';
-        setTimeout(() => { closeMenu(); }, 500);
+        // Move ball from filter (idx=2) to X (idx=0), then close menu + hide ball
+        setBallHere(0);
+        moveBallTo(0, () => { closeMenu(); });
       } else {
         pillBall.style.transform = 'translateY(0px)';
+        PILL_BTNS.forEach(b => b.classList.remove('ball-here'));
       }
       checkParking();
     }
