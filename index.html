@@ -1358,6 +1358,8 @@
     <div id="start-btn-container"><button id="start-btn" class="disabled">Lisää pysäköintiaika</button></div>
   </div>
 
+  <div id="btn-container"><button id="action-btn">Siirrä kursori pysäköintialueelle</button></div>
+
   <script>
     const splashScreen = document.getElementById('splash-screen');
     
@@ -2646,7 +2648,7 @@
 
     // Real-time center P-marker detection (no lock, immediate response)
     function checkCenterHighlight() {
-      if (!map.getLayer('master-poly-fill')) return;
+      if (!map.getLayer('master-poly-fill')) { updateButtonText(); return; }
       const cpt = map.project(map.getCenter());
       const cf  = map.queryRenderedFeatures(cpt, { layers: ['master-poly-fill'] });
       if (cf.length) {
@@ -2676,9 +2678,10 @@
           else detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">Ilmainen</p>`;
           if (extraInfo) detailsHTML += `<p class="price-label">Lisätiedot</p><p class="price-value">${extraInfo}</p>`;
           showCenterFeatureInSheet(line1, srcType, op, p.id ? String(p.id).split('-')[0].toUpperCase().slice(0,6) : null, detailsHTML);
-          btn.textContent = 'Pysäköi tähän';
-          btn.classList.add('active');
         }
+        // ALWAYS update btn when feature is under center (regardless of same/different ID)
+        btn.textContent = 'Pysäköi tähän';
+        btn.classList.add('active');
       } else {
         // No area under center — clear immediately
         if (hoveredPolyId) {
@@ -2691,9 +2694,15 @@
     }
 
     function updateButtonText() {
+      // Always show "Lähennä karttaa" when zoomed out, regardless of lock or hoveredPolyId
+      const zoom = map.getZoom();
+      if (zoom < 13) {
+        btn.textContent = 'Lähennä karttaa';
+        btn.classList.remove('active');
+        return;
+      }
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
-      const zoom = map.getZoom();
       if (zoom < 13) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
@@ -4255,6 +4264,5 @@
     </div>
   </div>
 
-  <div id="btn-container"><button id="action-btn">Siirrä kursori pysäköintialueelle</button></div>
 </body>
 </html>
