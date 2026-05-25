@@ -2458,15 +2458,8 @@
         document.getElementById('sheet-divider').style.display = 'none';
       }
       const bs = document.getElementById('bottom-sheet');
-      // Measure divider position precisely: briefly open sheet fully, measure, snap back
-      bs.style.transition = 'none';
-      bs.style.transform = 'translateY(0)';
-      bs.getBoundingClientRect(); // force reflow
-      const dividerEl = document.getElementById('sheet-divider');
-      const dividerTop = dividerEl.getBoundingClientRect().top;
-      const btnTop = window.innerHeight - (btnContainer.offsetHeight || 90);
-      // Move sheet down so divider lands exactly at btn-container top (hidden behind it)
-      const snap = Math.max(0, Math.round(btnTop - dividerTop));
+      const openHeight = 200;
+      const snap = bs.offsetHeight - openHeight;
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
       currentY = Math.max(0, snap);
