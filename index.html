@@ -756,6 +756,14 @@
   /* Burger → X */
   #menu-btn.active { background: transparent !important; border-radius: 50%; }
   #menu-btn.active svg line { stroke: #333; }
+  /* Filter active indicator dot */
+  #filter-btn.filter-on::after {
+    content: '';
+    position: absolute; top: 6px; right: 6px;
+    width: 8px; height: 8px;
+    background: #0C0243; border-radius: 50%;
+    border: 1.5px solid white;
+  }
   /* Active pill button icon: white so it shows on dark ball */
   #left-menu-pill.expanded .pill-btn.ball-here svg { color: white; }
   #left-menu-pill.expanded .pill-btn.ball-here svg line { stroke: white !important; }
@@ -1537,27 +1545,22 @@
       menuExpanded = true;
       menuPill.classList.add('expanded');
       menuBtn.classList.add('active');
-      if (filterMode) {
-        // Filter is active — show ball at filter position, no ball at X
-        pillBall.style.transition = 'none';
-        pillBall.style.transform = `translateY(${BALL_POS[2]}px)`;
-        pillBall.style.opacity = '1';
-        setTimeout(() => { pillBall.style.transition = ''; }, 50);
-        setBallHere(2);
-      } else {
+      // When filter is active: no ball (filter button already highlighted separately)
+      // Ball only appears when menu opens in neutral state
+      if (!filterMode) {
         moveBallTo(0);
         setBallHere(0);
       }
+      // filterMode: pill-ball stays hidden (opacity:0 via CSS when not .expanded with ball)
     }
 
     function closeMenu() {
       menuExpanded = false;
       menuPill.classList.remove('expanded');
       menuBtn.classList.remove('active');
-      // If filter is active, keep ball at filter pos (not visible since pill is collapsed)
-      if (!filterMode) {
-        pillBall.style.transform = `translateY(0px)`;
-      }
+      // Always reset ball position and hide it
+      pillBall.style.transform = `translateY(0px)`;
+      // opacity transitions back to 0 via CSS (#left-menu-pill.expanded #pill-ball)
       PILL_BTNS.forEach(b => b.classList.remove('ball-here'));
     }
 
@@ -1581,7 +1584,8 @@
     filterBtn.addEventListener('click', () => {
       if (filterMode) { closeFilter(); closeMenu(); return; }
       menuItemClick(2, () => {
-        filterBtn.classList.remove('active');  // remove highlight after selection
+        filterBtn.classList.remove('active');
+        filterBtn.classList.add('filter-on');
         openFilter();
       });
     });
@@ -3599,6 +3603,7 @@
     function closeFilter(){
       filterMode=false;
       filterBtn.classList.remove('active');
+      filterBtn.classList.remove('filter-on');
       filterCloseBtn.classList.remove('visible');
       sheetNormal.style.display='flex';
       sheetFilter.classList.remove('visible');
@@ -3607,8 +3612,14 @@
       updateSliderUI();
       applyRangeFilter();
       btnContainer.classList.remove('hidden');
-      pillBall.style.transform = 'translateY(0px)';
       PILL_BTNS.forEach(b => b.classList.remove('ball-here'));
+      if (menuExpanded) {
+        // Ball is visible — animate it away then close menu
+        pillBall.style.transform = 'translateY(0px)';
+        setTimeout(() => { closeMenu(); }, 500);
+      } else {
+        pillBall.style.transform = 'translateY(0px)';
+      }
       checkParking();
     }
     // filterBtn click handled in menuItemClick above
