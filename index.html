@@ -16,6 +16,48 @@
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-100%); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
+    #center-pointer.hidden { display: none; }
+
+    /* Expanded badge: pin + area code, speech-bubble with centered tail */
+    #center-badge {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -100%);
+      pointer-events: none; z-index: 11;
+      display: none;
+      flex-direction: column; align-items: center;
+    }
+    #center-badge.visible { display: flex; }
+    #center-badge-body {
+      display: flex; align-items: center; gap: 6px;
+      background: white;
+      border: 3px solid #0C0243;
+      border-radius: 14px;
+      padding: 5px 14px 5px 8px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      white-space: nowrap;
+    }
+    #center-badge-pin { width: 26px; height: 26px; flex-shrink: 0; }
+    #center-badge-code {
+      font-family: Arial, sans-serif;
+      font-size: 22px; font-weight: 900;
+      color: #111; letter-spacing: 0.5px;
+    }
+    /* Centered downward tail (triangle) */
+    #center-badge-tail {
+      width: 0; height: 0; margin-top: -1px;
+      border-left: 11px solid transparent;
+      border-right: 11px solid transparent;
+      border-top: 13px solid #0C0243;
+      position: relative;
+    }
+    #center-badge-tail::after {
+      content: ''; position: absolute;
+      left: -7px; top: -13px;
+      width: 0; height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 9px solid white;
+    }
     
     /* Splash Screen */
     #splash-screen {
@@ -793,6 +835,17 @@
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
     <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
   </svg>
+
+  <div id="center-badge">
+    <div id="center-badge-body">
+      <svg id="center-badge-pin" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
+        <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
+      </svg>
+      <span id="center-badge-code">—</span>
+    </div>
+    <div id="center-badge-tail"></div>
+  </div>
 
   <div id="left-menu-pill">
     <div id="pill-ball"></div>
@@ -2652,8 +2705,22 @@
     }
 
     // Real-time center P-marker detection (no lock, immediate response)
+    const centerPointerEl = document.getElementById('center-pointer');
+    const centerBadgeEl   = document.getElementById('center-badge');
+    const centerBadgeCode = document.getElementById('center-badge-code');
+
+    function showCenterBadge(code) {
+      if (code) centerBadgeCode.textContent = code;
+      centerBadgeEl.classList.add('visible');
+      centerPointerEl.classList.add('hidden');
+    }
+    function hideCenterBadge() {
+      centerBadgeEl.classList.remove('visible');
+      centerPointerEl.classList.remove('hidden');
+    }
+
     function checkCenterHighlight() {
-      if (!map.getLayer('master-poly-fill')) { updateButtonText(); return; }
+      if (!map.getLayer('master-poly-fill')) { hideCenterBadge(); updateButtonText(); return; }
       const cpt = map.project(map.getCenter());
       const cf  = map.queryRenderedFeatures(cpt, { layers: ['master-poly-fill'] });
       if (cf.length) {
@@ -2704,6 +2771,9 @@
         // ALWAYS update btn when feature is under center (regardless of same/different ID)
         btn.textContent = 'Pysäköi tähän';
         btn.classList.add('active');
+        // Swap center pin → expanded badge with area code
+        const code = f.properties.id ? String(f.properties.id).split('-')[0].toUpperCase().slice(0,6) : '';
+        showCenterBadge(code);
       } else {
         // No area under center — clear immediately
         if (hoveredPolyId) {
@@ -2711,6 +2781,7 @@
           hoveredPolyId = null;
           collapseCenterSheet();
         }
+        hideCenterBadge();
         updateButtonText();
       }
     }
