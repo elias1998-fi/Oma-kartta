@@ -2738,14 +2738,32 @@
     function startPulseAnimation() {
       stopPulseAnimation();
       const startTime = Date.now();
-      const pulseDuration = 2000; // 2 seconds per breath cycle
+      const bounceDuration = 2000; // 2 seconds per bounce cycle
       
       function animate() {
         if (!map.getLayer('master-poly-hover-fill')) return;
         const elapsed = Date.now() - startTime;
-        const progress = (elapsed % pulseDuration) / pulseDuration;
-        // Sine wave: breathe in and out smoothly
-        const opacity = 0.7 + 0.3 * Math.sin(progress * Math.PI * 2);
+        const progress = (elapsed % bounceDuration) / bounceDuration;
+        
+        // Bounce pattern: two quick pops then rest
+        // First pop at 0-0.15, second pop at 0.2-0.35, rest 0.35-1.0
+        let opacity;
+        if (progress < 0.15) {
+          // First pop: quick rise and fall
+          const t = progress / 0.15;
+          opacity = 0.6 + 0.4 * Math.sin(t * Math.PI);
+        } else if (progress < 0.2) {
+          // Brief dip between pops
+          opacity = 0.6;
+        } else if (progress < 0.35) {
+          // Second pop: quick rise and fall
+          const t = (progress - 0.2) / 0.15;
+          opacity = 0.6 + 0.4 * Math.sin(t * Math.PI);
+        } else {
+          // Rest period - stay at base
+          opacity = 0.6;
+        }
+        
         map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', opacity);
         pulseAnimationId = requestAnimationFrame(animate);
       }
