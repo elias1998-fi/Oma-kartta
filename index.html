@@ -2706,13 +2706,18 @@
       const groupIds = getSameGroupIds(props).map(String);
       const groupMinusHov = groupIds.filter(id => id !== hovId);
       
-      // Red fill on hovered area (will be animated)
+      // Solid bright red fill (100%) on hovered area
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
-      // No border line at all
+      // Solid bright red border (100%, same as fill) - will pulse to create growth
       if (map.getLayer('master-poly-hover-line')) {
-        map.setFilter('master-poly-hover-line', ['==','id','__none__']);
+        map.setPaintProperty('master-poly-hover-line', 'line-color', '#ff1744');
+        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 1.0);
+        map.setFilter('master-poly-hover-line',
+          hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
+        );
       }
       
       // Dark blue fill (100%) on OTHER same-category areas
@@ -2730,38 +2735,38 @@
         groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
       
-      // Start breathing animation on hovered area
-      startBreathingAnimation();
+      // Start size change animation
+      startSizeAnimation();
     }
     
-    let breathingAnimationId = null;
-    function startBreathingAnimation() {
-      stopBreathingAnimation();
+    let sizeAnimationId = null;
+    function startSizeAnimation() {
+      stopSizeAnimation();
       const startTime = Date.now();
-      const cycleDuration = 2000; // 2 seconds per breath
+      const cycleDuration = 2000; // 2 seconds per cycle
       
       function animate() {
-        if (!map.getLayer('master-poly-hover-fill')) return;
+        if (!map.getLayer('master-poly-hover-line')) return;
         const elapsed = Date.now() - startTime;
         const progress = (elapsed % cycleDuration) / cycleDuration;
         
-        // Smooth breathing through opacity: expand (brighter) and contract (softer)
-        const opacity = 0.75 + 0.25 * Math.sin(progress * Math.PI * 2);
+        // Pulse border width: area grows when border is thick, shrinks when thin
+        // Border extends outward, making the red area appear larger/smaller
+        const lineWidth = 1 + 6 * (0.5 + 0.5 * Math.sin(progress * Math.PI * 2));
         
-        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', opacity);
-        breathingAnimationId = requestAnimationFrame(animate);
+        map.setPaintProperty('master-poly-hover-line', 'line-width', lineWidth);
+        sizeAnimationId = requestAnimationFrame(animate);
       }
       animate();
     }
     
-    function stopBreathingAnimation() {
-      if (breathingAnimationId !== null) {
-        cancelAnimationFrame(breathingAnimationId);
-        breathingAnimationId = null;
+    function stopSizeAnimation() {
+      if (sizeAnimationId !== null) {
+        cancelAnimationFrame(sizeAnimationId);
+        sizeAnimationId = null;
       }
-      // Reset to solid opacity
-      if (map.getLayer('master-poly-hover-fill')) {
-        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
+      if (map.getLayer('master-poly-hover-line')) {
+        map.setPaintProperty('master-poly-hover-line', 'line-width', 1.5);
       }
     }
     
@@ -2813,7 +2818,7 @@
     }
 
     function clearHoverHighlight() {
-      stopBreathingAnimation();
+      stopSizeAnimation();
       if (!map.getLayer('master-poly-hover-fill')) return;
       map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
       map.setFilter('master-poly-group-line',  ['==','id','__none__']);
