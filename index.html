@@ -1566,6 +1566,18 @@
     });
 
     function menuItemClick(idx, action) {
+      // If filter is active, close it silently before switching
+      if (filterMode && idx !== 2) {
+        filterMode = false;
+        filterBtn.classList.remove('active', 'filter-on');
+        filterCloseBtn.classList.remove('visible');
+        sheetNormal.style.display = 'flex';
+        sheetFilter.classList.remove('visible');
+        sliderMin.value = 0; sliderMax.value = 26;
+        updateSliderUI(); applyRangeFilter();
+        btnContainer.classList.remove('hidden');
+      }
+      // Ball moves from wherever it is → target button
       moveBallTo(idx, () => {
         closeMenu();
         setTimeout(action, 50);
@@ -1598,18 +1610,21 @@
     
     function closeProfileOverlay() {
       document.getElementById('profile-overlay').classList.remove('open');
+      if (filterMode) closeFilter();
     }
     
     function closeSearchOverlay() {
       document.getElementById('search-overlay').classList.remove('open');
       document.getElementById('search-input').value = '';
       document.getElementById('search-results').innerHTML = '';
+      if (filterMode) closeFilter();
     }
     
     function closePlusOverlay() {
       document.getElementById('plus-overlay').classList.remove('open');
       closeAddParkingArea();
       closeCommentAreas();
+      if (filterMode) closeFilter();
     }
     function openAddParkingArea() {
       document.getElementById('add-parking-overlay').style.transform = 'translateX(0)';
