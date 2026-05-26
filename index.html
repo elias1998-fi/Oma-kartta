@@ -2581,11 +2581,11 @@
         document.getElementById('sheet-details').innerHTML     = '';
         document.getElementById('sheet-divider').style.display = 'none';
       }
-      // Keep sheet at closed position (60px) - don't auto-open
+      // Auto-open to 156px from bottom when P-marker is on area
       const bs = document.getElementById('bottom-sheet');
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
-      bs.style.transform  = 'translateY(calc(100% - 60px))';
-      currentY = bs.offsetHeight - 60;
+      bs.style.transform  = 'translateY(calc(100% - 156px))';
+      currentY = bs.offsetHeight - 156;
     }
 
     function collapseCenterSheet() {
