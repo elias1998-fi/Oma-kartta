@@ -438,7 +438,7 @@
     
     #bottom-sheet { 
       position: absolute; left: 0; right: 0; bottom: 0; 
-      height: min(80vh, 700px); 
+      height: 80vh; 
       background: white; 
       border-radius: 20px 20px 0 0; 
       box-shadow: 0 -2px 24px rgba(0,0,0,0.25); 
@@ -1315,6 +1315,10 @@
 
   <!-- Map info bar: follows bottom sheet top edge -->
   <span id="osm-attribution" style="position:fixed;left:12px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:19;pointer-events:none;font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">© OpenStreetMap</span>
+  
+  <!-- Backdrop for bottom sheet -->
+  <div id="sheet-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:19;opacity:0;pointer-events:none;transition:opacity 0.3s ease;"></div>
+  
   <div id="bottom-sheet">
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
     <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
@@ -1627,6 +1631,7 @@
     
     const locationBtn = document.getElementById('location-btn');
     const sheet = document.getElementById('bottom-sheet');
+    const sheetBackdrop = document.getElementById('sheet-backdrop');
     
     locationBtn.addEventListener('click', () => {
       geolocate.trigger();
@@ -4625,6 +4630,11 @@
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
+      
+      // Update backdrop
+      const maxY = sheet.clientHeight - 60;
+      const openProgress = 1 - (t / maxY);
+      sheetBackdrop.style.opacity = Math.max(0, Math.min(1, openProgress - 0.3));
     }
     
     sheet.addEventListener('touchstart',(e)=>{
@@ -4653,11 +4663,19 @@
       lastY=touch;
       lastTime=now;
       const maxY=sheet.clientHeight-60;
-      // minY is negative: sheet bottom stops at (viewport - btnH) so btn is never overlapped
+      // minY is constrained: sheet can only go up to 20% from top (80% visible)
       const btnH = btnContainer.offsetHeight || 90;
-      const minY = -btnH;
+      const viewportHeight = window.innerHeight;
+      const maxSheetVisible = viewportHeight * 0.8; // 80% of viewport
+      const minYFromBtn = -btnH;
+      const minYFromTop = -(sheet.clientHeight - maxSheetVisible);
+      const minY = Math.max(minYFromBtn, minYFromTop);
       currentY=Math.max(minY,Math.min(maxY,startTranslate+(touch-startY)));
       sheet.style.transform=`translateY(${currentY}px)`;
+      
+      // Update backdrop opacity based on sheet position
+      const openProgress = 1 - (currentY / maxY); // 0 = closed, 1 = fully open
+      sheetBackdrop.style.opacity = Math.max(0, Math.min(1, openProgress - 0.3)); // Start fading in after 30% open
     },{passive:true});
     
     sheet.addEventListener('touchend',()=>{
@@ -4665,7 +4683,11 @@
       isDragging=false;
       const maxY=sheet.clientHeight-60;
       const btnH = btnContainer.offsetHeight || 90;
-      const minY = -btnH;
+      const viewportHeight = window.innerHeight;
+      const maxSheetVisible = viewportHeight * 0.8;
+      const minYFromBtn = -btnH;
+      const minYFromTop = -(sheet.clientHeight - maxSheetVisible);
+      const minY = Math.max(minYFromBtn, minYFromTop);
       if(velocity>0.5)snapTo(maxY);
       else if(velocity<-0.5)snapTo(minY);
       else snapTo(currentY<maxY/2?minY:maxY);
