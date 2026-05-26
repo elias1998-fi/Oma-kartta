@@ -3532,14 +3532,21 @@
       editorInPreview = true;
       editorMode = 'merge';
       editorPreviewMode = 'convex';
+      // Show preview UI first so buttons always appear
       const cBtn=document.getElementById('preview-toggle-convex'), rBtn=document.getElementById('preview-toggle-road');
       if(cBtn){cBtn.style.background='#0C0243';cBtn.style.color='white';cBtn.style.border='2px solid #0C0243';}
       if(rBtn){rBtn.style.background='white';rBtn.style.color='#555';rBtn.style.border='2px solid #ddd';}
-      editorPreviewGeom = buildMergedGeom('convex');
-      _showPreviewGeom(editorPreviewGeom);
       document.getElementById('editor-merge-toggles').style.display='flex';
       _showPreviewButtons();
       document.getElementById('editor-status').textContent='Esikatselu — keltainen = yhdistetty alue';
+      // Build + show preview geometry (guarded)
+      try {
+        editorPreviewGeom = buildMergedGeom('convex');
+        _showPreviewGeom(editorPreviewGeom);
+      } catch(e) {
+        console.error('Preview geom failed:', e);
+        document.getElementById('editor-status').textContent='Esikatselun luonti epäonnistui';
+      }
     }
 
     function previewDeleteEditor() {
@@ -3547,13 +3554,15 @@
       editorInPreview = true;
       editorMode = 'delete';
       const ids = Array.from(editorSelected);
-      if (editorMap.getLayer('editor-del-fill'))
-        editorMap.setFilter('editor-del-fill',['in',['get','id'],['literal',ids]]);
       document.getElementById('editor-merge-toggles').style.display='none';
       _showPreviewButtons();
       document.getElementById('editor-status').textContent = ids.length===1
         ? 'Esikatselu — punainen = poistettava alue'
         : `Esikatselu — ${ids.length} aluetta poistetaan`;
+      try {
+        if (editorMap.getLayer('editor-del-fill'))
+          editorMap.setFilter('editor-del-fill',['in',['get','id'],['literal',ids]]);
+      } catch(e) { console.error('Delete preview failed:', e); }
     }
 
     function _showPreviewGeom(geom) {
