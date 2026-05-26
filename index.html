@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="fi">
 <head>
   <meta charset="utf-8" />
@@ -2541,11 +2541,11 @@
       'community':           { fill:'#27ae60', line:'#1e8449', label:'Yhteisön lisäämä alue' },
       'hel_ilmainen_pitka':  { fill:'#27ae60', line:'#1e8449', label:'Ilmainen pitkäaikainen pysäköinti' },
       'hel_ilmainen_lyhyt':  { fill:'#27ae60', line:'#1e8449', label:'Ilmainen lyhytaikainen pysäköinti' },
-      'hel_kertamaksu_1h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 1h)' },
-      'hel_kertamaksu_2h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 2h)' },
-      'hel_kertamaksu_4h':            { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 4h)' },
-      'hel_maksullinen_ei_tunnusta':      { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (ilman tunnusta)' },
-      'hel_kertamaksu_1h_ei_tunnusta':          { fill:'#4A90D9', line:'#2B6CB0', label:'Kertamaksu max. 1h (ilman tunnusta)' },
+      'hel_kertamaksu_1h':   { fill:'#0C0243', line:'#0C0243', label:'Maksullinen pysäköinti (max. 1h)' },
+      'hel_kertamaksu_2h':   { fill:'#0C0243', line:'#0C0243', label:'Maksullinen pysäköinti (max. 2h)' },
+      'hel_kertamaksu_4h':            { fill:'#0C0243', line:'#0C0243', label:'Maksullinen pysäköinti (max. 4h)' },
+      'hel_maksullinen_ei_tunnusta':      { fill:'#0C0243', line:'#0C0243', label:'Maksullinen pysäköinti (ilman tunnusta)' },
+      'hel_kertamaksu_1h_ei_tunnusta':          { fill:'#0C0243', line:'#0C0243', label:'Kertamaksu max. 1h (ilman tunnusta)' },
       'hel_sallittu_kiellon_ulkopuolella': { fill:'#27ae60', line:'#1e8449', label:'Sallittu pysäköintikieltoajan ulkopuolella' },
     };
 
@@ -2589,12 +2589,12 @@
               'hel_ilmainen_pitka', '#27ae60',
               'hel_ilmainen_lyhyt', '#27ae60',
               'hel_sallittu_kiellon_ulkopuolella', '#27ae60',
-              'hel_kertamaksu_1h',  '#4A90D9',
-              'hel_kertamaksu_2h',  '#4A90D9',
-              'hel_kertamaksu_4h',  '#4A90D9',
-              'hel_maksullinen_ei_tunnusta',        '#4A90D9',
-              'hel_kertamaksu_1h_ei_tunnusta',      '#4A90D9',
-              '#4A90D9'
+              'hel_kertamaksu_1h',  '#0C0243',
+              'hel_kertamaksu_2h',  '#0C0243',
+              'hel_kertamaksu_4h',  '#0C0243',
+              'hel_maksullinen_ei_tunnusta',        '#0C0243',
+              'hel_kertamaksu_1h_ei_tunnusta',      '#0C0243',
+              '#0C0243'
             ]
           }
         });
@@ -2606,7 +2606,7 @@
               'hel_ilmainen_pitka', '#1e8449',
               'hel_ilmainen_lyhyt', '#1e8449',
               'hel_sallittu_kiellon_ulkopuolella', '#1e8449',
-              '#2B6CB0'
+              '#0C0243'
             ]
           }
         });
@@ -2633,12 +2633,12 @@
               'hel_ilmainen_pitka', '#27ae60',
               'hel_ilmainen_lyhyt', '#27ae60',
               'hel_sallittu_kiellon_ulkopuolella', '#27ae60',
-              'hel_kertamaksu_1h',  '#4A90D9',
-              'hel_kertamaksu_2h',  '#4A90D9',
-              'hel_kertamaksu_4h',  '#4A90D9',
-              'hel_maksullinen_ei_tunnusta',        '#4A90D9',
-              'hel_kertamaksu_1h_ei_tunnusta',      '#4A90D9',
-              '#4A90D9'
+              'hel_kertamaksu_1h',  '#0C0243',
+              'hel_kertamaksu_2h',  '#0C0243',
+              'hel_kertamaksu_4h',  '#0C0243',
+              'hel_maksullinen_ei_tunnusta',        '#0C0243',
+              'hel_kertamaksu_1h_ei_tunnusta',      '#0C0243',
+              '#0C0243'
             ]
           },
           filter:['==', ['get','id'], '__none__']
@@ -3239,9 +3239,9 @@
       } else {
         editorMap.addSource('editor-all', { type:'geojson', data: geojson });
         editorMap.addLayer({ id:'editor-fill', type:'fill', source:'editor-all', minzoom:13,
-          paint:{ 'fill-color':'#4A90D9','fill-opacity':0.35 } });
+          paint:{ 'fill-color':'#0C0243','fill-opacity':0.35 } });
         editorMap.addLayer({ id:'editor-line', type:'line', source:'editor-all', minzoom:13,
-          paint:{ 'line-color':'#2B6CB0','line-width':1 } });
+          paint:{ 'line-color':'#0C0243','line-width':1 } });
         editorMap.addLayer({ id:'editor-sel-fill', type:'fill', source:'editor-all', minzoom:13,
           paint:{ 'fill-color':'#0C0243','fill-opacity':0.6 },
           filter:['in',['get','id'],['literal',[]]] });
