@@ -2581,12 +2581,11 @@
         document.getElementById('sheet-details').innerHTML     = '';
         document.getElementById('sheet-divider').style.display = 'none';
       }
+      // Keep sheet at closed position (60px) - don't auto-open
       const bs = document.getElementById('bottom-sheet');
-      const openHeight = 148;
-      const snap = bs.offsetHeight - openHeight;
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
-      bs.style.transform  = `translateY(${Math.max(0, snap)}px)`;
-      currentY = Math.max(0, snap);
+      bs.style.transform  = 'translateY(calc(100% - 60px))';
+      currentY = bs.offsetHeight - 60;
     }
 
     function collapseCenterSheet() {
@@ -4631,10 +4630,10 @@
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
       
-      // Update backdrop
+      // Update backdrop (fade starts at 50% open)
       const maxY = sheet.clientHeight - 60;
       const openProgress = 1 - (t / maxY);
-      sheetBackdrop.style.opacity = Math.max(0, Math.min(1, openProgress - 0.3));
+      sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
     }
     
     sheet.addEventListener('touchstart',(e)=>{
@@ -4673,9 +4672,9 @@
       currentY=Math.max(minY,Math.min(maxY,startTranslate+(touch-startY)));
       sheet.style.transform=`translateY(${currentY}px)`;
       
-      // Update backdrop opacity based on sheet position
+      // Update backdrop opacity based on sheet position (fade starts at 50% open)
       const openProgress = 1 - (currentY / maxY); // 0 = closed, 1 = fully open
-      sheetBackdrop.style.opacity = Math.max(0, Math.min(1, openProgress - 0.3)); // Start fading in after 30% open
+      sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
     },{passive:true});
     
     sheet.addEventListener('touchend',()=>{
