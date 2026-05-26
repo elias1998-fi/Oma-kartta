@@ -1529,7 +1529,7 @@
         // Load hallis always — they're just 113 points, lightweight
         if (!halliLoaded) { halliLoaded = true; loadHalliMarkers(); }
         // Load master polygons if zoomed in, else wait for onMapIdle
-        if (map.getZoom() >= 13) {
+        if (map.getZoom() >= 14.3) {
           loadViewportTiles(null);
         }
       }, 800);
@@ -2581,7 +2581,7 @@
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
 
         // Base fill layer
-        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:14.3,
           paint:{ 'fill-opacity': 0.30,
             'fill-color': ['match', ['get','source'],
               'community',          '#27ae60',
@@ -2598,7 +2598,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:14.3,
           paint:{ 'line-width': 1.5, 'line-opacity': 0.30,
             'line-color': ['match', ['get','source'],
               'community',          '#1e8449',
@@ -2610,22 +2610,22 @@
           }
         });
         // Hover fill — red, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:14.3,
           paint:{ 'fill-color':'#ff1744', 'fill-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Hover outline — on the red hovered area, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:14.3,
           paint:{ 'line-color':'#ff1744', 'line-width': 1.5, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:14.3,
           paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:14.3,
           paint:{ 'fill-opacity': 0.50,
             'fill-color': ['match', ['get','source'],
               'community',          '#27ae60',
@@ -2924,14 +2924,14 @@
     function updateButtonText() {
       // Always show "Lähennä karttaa" when zoomed out, regardless of lock or hoveredPolyId
       const zoom = map.getZoom();
-      if (zoom < 13) {
+      if (zoom < 14.3) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
         return;
       }
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
-      if (zoom < 13) {
+      if (zoom < 14.3) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
         return;
@@ -3066,7 +3066,7 @@
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
       map.addLayer({
-        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
+        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 14.3,
         layout: {
           'icon-image': 'halli-icon', 'icon-size': 0.52,
           'icon-allow-overlap': true, 'icon-anchor': 'center'
@@ -3243,9 +3243,27 @@
       } else {
         editorMap.addSource('editor-all', { type:'geojson', data: geojson });
         editorMap.addLayer({ id:'editor-fill', type:'fill', source:'editor-all', minzoom:13,
-          paint:{ 'fill-color':'#4A90D9','fill-opacity':0.35 } });
+          paint:{ 'fill-opacity':0.35,
+            'fill-color': ['match', ['get','source'],
+              'community',          '#27ae60',
+              'hel_ilmainen_pitka', '#27ae60',
+              'hel_ilmainen_lyhyt', '#27ae60',
+              'hel_sallittu_kiellon_ulkopuolella', '#27ae60',
+              '#4A90D9'
+            ]
+          }
+        });
         editorMap.addLayer({ id:'editor-line', type:'line', source:'editor-all', minzoom:13,
-          paint:{ 'line-color':'#2B6CB0','line-width':1 } });
+          paint:{ 'line-width':1,
+            'line-color': ['match', ['get','source'],
+              'community',          '#1e8449',
+              'hel_ilmainen_pitka', '#1e8449',
+              'hel_ilmainen_lyhyt', '#1e8449',
+              'hel_sallittu_kiellon_ulkopuolella', '#1e8449',
+              '#2B6CB0'
+            ]
+          }
+        });
         editorMap.addLayer({ id:'editor-sel-fill', type:'fill', source:'editor-all', minzoom:13,
           paint:{ 'fill-color':'#0C0243','fill-opacity':0.6 },
           filter:['in',['get','id'],['literal',[]]] });
@@ -4085,8 +4103,15 @@
 
       const zoom=map.getZoom();
 
+      // Hide P-marker when zoomed out
+      if(zoom < 14.3) {
+        centerPointerEl.classList.add('hidden');
+      } else {
+        centerPointerEl.classList.remove('hidden');
+      }
+
       // Highlight parking area under map center (works on mobile & desktop)
-      if(zoom>=13 && map.getLayer('master-poly-fill')){
+      if(zoom>=14.3 && map.getLayer('master-poly-fill')){
         const cpt = map.project(map.getCenter());
         // Create detection area: 5px radius circle around center (easier targeting)
         const radius = 5;
@@ -4135,7 +4160,7 @@
         }
       }
       
-      if(zoom<13){
+      if(zoom<14.3){
         summaryHeader.textContent=''; summaryType.textContent='';
         summaryOperator.textContent=''; details.innerHTML='';
         divider.style.display='none';
