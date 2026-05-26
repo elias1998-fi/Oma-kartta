@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fi">
 <head>
   <meta charset="utf-8" />
@@ -1260,10 +1260,9 @@
 
   <!-- Map info bar: follows bottom sheet top edge -->
   <span id="osm-attribution" style="position:fixed;left:12px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:19;pointer-events:none;font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">© OpenStreetMap</span>
-  <span id="zoom-indicator" style="position:fixed;right:12px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:19;pointer-events:none;font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">Z 12.0</span>
-
   <div id="bottom-sheet">
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
+    <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
     <div id="gps-warning">
       <span>GPS-sijaintisi saattaa olla epätarkka</span>
@@ -2541,11 +2540,11 @@
       'community':           { fill:'#27ae60', line:'#1e8449', label:'Yhteisön lisäämä alue' },
       'hel_ilmainen_pitka':  { fill:'#27ae60', line:'#1e8449', label:'Ilmainen pitkäaikainen pysäköinti' },
       'hel_ilmainen_lyhyt':  { fill:'#27ae60', line:'#1e8449', label:'Ilmainen lyhytaikainen pysäköinti' },
-      'hel_kertamaksu_1h':   { fill:'#0C0243', line:'#0C0243', label:'Maksullinen pysäköinti (max. 1h)' },
-      'hel_kertamaksu_2h':   { fill:'#0C0243', line:'#0C0243', label:'Maksullinen pysäköinti (max. 2h)' },
-      'hel_kertamaksu_4h':            { fill:'#0C0243', line:'#0C0243', label:'Maksullinen pysäköinti (max. 4h)' },
-      'hel_maksullinen_ei_tunnusta':      { fill:'#0C0243', line:'#0C0243', label:'Maksullinen pysäköinti (ilman tunnusta)' },
-      'hel_kertamaksu_1h_ei_tunnusta':          { fill:'#0C0243', line:'#0C0243', label:'Kertamaksu max. 1h (ilman tunnusta)' },
+      'hel_kertamaksu_1h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 1h)' },
+      'hel_kertamaksu_2h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 2h)' },
+      'hel_kertamaksu_4h':            { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 4h)' },
+      'hel_maksullinen_ei_tunnusta':      { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (ilman tunnusta)' },
+      'hel_kertamaksu_1h_ei_tunnusta':          { fill:'#4A90D9', line:'#2B6CB0', label:'Kertamaksu max. 1h (ilman tunnusta)' },
       'hel_sallittu_kiellon_ulkopuolella': { fill:'#27ae60', line:'#1e8449', label:'Sallittu pysäköintikieltoajan ulkopuolella' },
     };
 
@@ -2589,12 +2588,12 @@
               'hel_ilmainen_pitka', '#27ae60',
               'hel_ilmainen_lyhyt', '#27ae60',
               'hel_sallittu_kiellon_ulkopuolella', '#27ae60',
-              'hel_kertamaksu_1h',  '#0C0243',
-              'hel_kertamaksu_2h',  '#0C0243',
-              'hel_kertamaksu_4h',  '#0C0243',
-              'hel_maksullinen_ei_tunnusta',        '#0C0243',
-              'hel_kertamaksu_1h_ei_tunnusta',      '#0C0243',
-              '#0C0243'
+              'hel_kertamaksu_1h',  '#4A90D9',
+              'hel_kertamaksu_2h',  '#4A90D9',
+              'hel_kertamaksu_4h',  '#4A90D9',
+              'hel_maksullinen_ei_tunnusta',        '#4A90D9',
+              'hel_kertamaksu_1h_ei_tunnusta',      '#4A90D9',
+              '#4A90D9'
             ]
           }
         });
@@ -2606,7 +2605,7 @@
               'hel_ilmainen_pitka', '#1e8449',
               'hel_ilmainen_lyhyt', '#1e8449',
               'hel_sallittu_kiellon_ulkopuolella', '#1e8449',
-              '#0C0243'
+              '#2B6CB0'
             ]
           }
         });
@@ -2633,12 +2632,12 @@
               'hel_ilmainen_pitka', '#27ae60',
               'hel_ilmainen_lyhyt', '#27ae60',
               'hel_sallittu_kiellon_ulkopuolella', '#27ae60',
-              'hel_kertamaksu_1h',  '#0C0243',
-              'hel_kertamaksu_2h',  '#0C0243',
-              'hel_kertamaksu_4h',  '#0C0243',
-              'hel_maksullinen_ei_tunnusta',        '#0C0243',
-              'hel_kertamaksu_1h_ei_tunnusta',      '#0C0243',
-              '#0C0243'
+              'hel_kertamaksu_1h',  '#4A90D9',
+              'hel_kertamaksu_2h',  '#4A90D9',
+              'hel_kertamaksu_4h',  '#4A90D9',
+              'hel_maksullinen_ei_tunnusta',        '#4A90D9',
+              'hel_kertamaksu_1h_ei_tunnusta',      '#4A90D9',
+              '#4A90D9'
             ]
           },
           filter:['==', ['get','id'], '__none__']
@@ -3115,13 +3114,16 @@
     let editorAllFeatures = [];
     let editorSelected = new Set();
     let editorFirstProps = null;
-    let editorMode = 'merge';       // 'merge' | 'delete'
+    let editorMode = 'merge';       // kept for legacy execute fns; mirrors editorAction
+    let editorAction = null;        // null | 'merge' | 'delete' — chosen via toolbar after selecting
+    let editorHistory = [];         // selection snapshots for undo
     let editorDrawActive = false;
     let editorCanvas, editorCtx;
     let editorPainting = false;
     let editorPath = [];            // freehand paint path points
     let editorPreviewGeom = null;
     let editorPreviewMode = 'convex';
+    let editorInPreview = false;
 
     // Stubs for old function names (called from settings menu)
     function openAreaManagement()  { openAreaEditor(); }
@@ -3144,47 +3146,38 @@
       if (editorCanvas) editorCanvas.style.pointerEvents = 'none';
     }
 
-    function toggleEditorMode() {
-      const newMode = editorMode === 'merge' ? 'delete' : 'merge';
-      setEditorMode(newMode);
+    function selectEditorAction(action) {
+      if (editorInPreview) return;
+      if (editorSelected.size === 0) return; // must select areas first
+      // Toggle off if already chosen
+      editorAction = (editorAction === action) ? null : action;
+      editorMode = editorAction || 'merge';  // keep legacy execute fns happy
+      updateEditorUI();
     }
 
-    function setEditorMode(mode) {
-      editorMode = mode;
-      clearEditorSelection();
-      cancelEditorPreview();
-      const modeBtn = document.getElementById('editor-mode-btn');
-      if (mode === 'merge') {
-        modeBtn.textContent = '✏️';
-        modeBtn.style.background = '#0C0243';
-        modeBtn.style.color = 'white';
-        modeBtn.style.border = '2px solid #0C0243';
-        modeBtn.title = 'Yhdistä (vaihda poistoon)';
-        document.getElementById('editor-status').textContent = 'Klikkaa alueita yhdistääksesi';
-        document.getElementById('editor-action-btn').textContent = 'Esikatsele';
+    function pushEditorHistory() {
+      editorHistory.push(new Set(editorSelected));
+      if (editorHistory.length > 50) editorHistory.shift();
+    }
+
+    function undoEditorSelection() {
+      if (editorInPreview) { cancelEditorPreview(); return; }
+      if (editorHistory.length === 0) return;
+      editorSelected = editorHistory.pop();
+      if (editorSelected.size === 0) {
+        editorFirstProps = null;
       } else {
-        modeBtn.textContent = '✕';
-        modeBtn.style.background = '#e53935';
-        modeBtn.style.color = 'white';
-        modeBtn.style.border = '2px solid #e53935';
-        modeBtn.title = 'Poista (vaihda yhdistämiseen)';
-        document.getElementById('editor-status').textContent = 'Klikkaa alue joka poistetaan';
-        document.getElementById('editor-action-btn').textContent = 'Esikatsele';
+        const firstId = editorSelected.values().next().value;
+        const ff = editorAllFeatures.find(f => f.properties.id === firstId);
+        editorFirstProps = ff ? { ...ff.properties } : null;
       }
-    }
-
-    function undoLastEditorAction() {
-      // Placeholder for undo functionality
-      console.log('Undo not yet implemented');
+      updateEditorUI();
     }
 
     function toggleEditorDraw() {
       editorDrawActive = !editorDrawActive;
       _updateDrawBtn();
       if (editorCanvas) editorCanvas.style.pointerEvents = editorDrawActive ? 'all' : 'none';
-      document.getElementById('editor-status').textContent = editorDrawActive
-        ? 'Maalaa alueita vapaakädellä'
-        : (editorMode === 'merge' ? 'Aktivoi kynä tai klikkaa aluetta' : 'Klikkaa alue joka poistetaan');
     }
 
     function _updateDrawBtn() {
@@ -3239,9 +3232,9 @@
       } else {
         editorMap.addSource('editor-all', { type:'geojson', data: geojson });
         editorMap.addLayer({ id:'editor-fill', type:'fill', source:'editor-all', minzoom:13,
-          paint:{ 'fill-color':'#0C0243','fill-opacity':0.35 } });
+          paint:{ 'fill-color':'#4A90D9','fill-opacity':0.35 } });
         editorMap.addLayer({ id:'editor-line', type:'line', source:'editor-all', minzoom:13,
-          paint:{ 'line-color':'#0C0243','line-width':1 } });
+          paint:{ 'line-color':'#2B6CB0','line-width':1 } });
         editorMap.addLayer({ id:'editor-sel-fill', type:'fill', source:'editor-all', minzoom:13,
           paint:{ 'fill-color':'#0C0243','fill-opacity':0.6 },
           filter:['in',['get','id'],['literal',[]]] });
@@ -3251,12 +3244,19 @@
         // Preview layer
         editorMap.addSource('editor-preview', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
         editorMap.addLayer({ id:'editor-preview-fill', type:'fill', source:'editor-preview',
-          paint:{ 'fill-color':'#f39c12','fill-opacity':0.5 } });
+          paint:{ 'fill-color':'#FFD600','fill-opacity':0.55 } });
         editorMap.addLayer({ id:'editor-preview-line', type:'line', source:'editor-preview',
-          paint:{ 'line-color':'#e67e22','line-width':3 } });
+          paint:{ 'line-color':'#F9A825','line-width':3 } });
         // Delete highlight
         editorMap.addLayer({ id:'editor-del-fill', type:'fill', source:'editor-all', minzoom:13,
           paint:{ 'fill-color':'#e53935','fill-opacity':0.6 },
+          filter:['==','id','__none__'] });
+        // Reject flash (incompatible area blink)
+        editorMap.addLayer({ id:'editor-reject-fill', type:'fill', source:'editor-all', minzoom:13,
+          paint:{ 'fill-color':'#e53935','fill-opacity':0.75 },
+          filter:['==','id','__none__'] });
+        editorMap.addLayer({ id:'editor-reject-line', type:'line', source:'editor-all', minzoom:13,
+          paint:{ 'line-color':'#e53935','line-width':3 },
           filter:['==','id','__none__'] });
       }
       updateEditorUI();
@@ -3280,35 +3280,33 @@
 
       // Click on map features (select/deselect individual areas)
       editorMap.on('click', 'editor-fill', (e) => {
+        if (editorInPreview) return;   // no selection changes during preview
         if (editorDrawActive) return;  // in paint mode, ignore clicks
         const id   = e.features[0].properties.id;
         const feat = editorAllFeatures.find(f => f.properties.id === id);
         if (!feat) return;
 
         if (editorSelected.has(id)) {
-          // Deselect
+          // Deselect (toggle off)
+          pushEditorHistory();
           editorSelected.delete(id);
           if (editorSelected.size === 0) editorFirstProps = null;
         } else {
-          if (editorMode === 'merge') {
-            if (!editorFirstProps) editorFirstProps = { ...feat.properties };
-            if (isEditorCompatible(feat)) {
-              editorSelected.add(id);
-            } else {
-              flashEditorReject(id);
-              return;
-            }
-          } else {
-            // Delete mode: only one at a time (show preview)
-            editorSelected.clear();
+          // Select — first area sets the reference category
+          if (!editorFirstProps) {
+            pushEditorHistory();
+            editorFirstProps = { ...feat.properties };
             editorSelected.add(id);
+          } else if (isEditorCompatible(feat)) {
+            pushEditorHistory();
+            editorSelected.add(id);
+          } else {
+            // Incompatible — blink red 3x, do not select
+            flashEditorReject(id);
+            return;
           }
         }
         updateEditorUI();
-        if (editorMode === 'delete' && editorSelected.size === 1) {
-          // Auto-preview delete
-          editorPreview();
-        }
       });
       editorMap.on('mouseenter','editor-fill',()=>{ editorMap.getCanvas().style.cursor='pointer'; });
       editorMap.on('mouseleave','editor-fill',()=>{ editorMap.getCanvas().style.cursor=''; });
@@ -3401,61 +3399,138 @@
     }
 
     function flashEditorReject(id) {
+      if (!editorMap.getLayer('editor-reject-fill')) return;
       let count = 0;
+      const totalBlinks = 3;
+      const show = () => {
+        editorMap.setFilter('editor-reject-fill', ['==',['get','id'],id]);
+        editorMap.setFilter('editor-reject-line', ['==',['get','id'],id]);
+      };
+      const hide = () => {
+        editorMap.setFilter('editor-reject-fill', ['==','id','__none__']);
+        editorMap.setFilter('editor-reject-line', ['==','id','__none__']);
+      };
       const iv = setInterval(() => {
-        const allIds = Array.from(editorSelected).concat(count%2===0?[id]:[]);
-        if (editorMap.getLayer('editor-sel-fill')) {
-          editorMap.setFilter('editor-sel-fill',['in',['get','id'],['literal',allIds]]);
-          editorMap.setPaintProperty('editor-sel-fill','fill-color',count%2===0?'#e53935':'#0C0243');
-        }
+        if (count % 2 === 0) show(); else hide();
         count++;
-        if (count>5) { clearInterval(iv); updateEditorUI(); }
-      }, 200);
+        if (count >= totalBlinks * 2) { clearInterval(iv); hide(); }
+      }, 130);
     }
 
     function updateEditorUI() {
       if (!editorMap || !editorMap.getLayer('editor-sel-fill')) return;
       const ids = Array.from(editorSelected);
-      const f   = ids.length ? ['in',['get','id'],['literal',ids]] : ['==','id','__none__'];
+      const n   = ids.length;
+      const f   = n ? ['in',['get','id'],['literal',ids]] : ['==','id','__none__'];
       editorMap.setFilter('editor-sel-fill', f);
       editorMap.setFilter('editor-sel-line', f);
-      editorMap.setPaintProperty('editor-sel-fill','fill-color', editorMode==='delete'?'#e53935':'#0C0243');
+      // Selection color: red when delete chosen, dark blue otherwise
+      const selColor = editorAction === 'delete' ? '#e53935' : '#0C0243';
+      editorMap.setPaintProperty('editor-sel-fill','fill-color', selColor);
+      editorMap.setPaintProperty('editor-sel-line','line-color', selColor);
 
-      document.getElementById('editor-count').textContent = ids.length ? `${ids.length} valittu` : '';
+      document.getElementById('editor-count').textContent = n ? `${n} valittu` : '';
+
+      // Toolbar action button states
+      updateActionButtons();
+
+      if (editorInPreview) return; // preview buttons control the bar
+
       const btn = document.getElementById('editor-action-btn');
-      const canAct = editorMode==='delete' ? ids.length===1 : ids.length>=2;
-      btn.style.opacity  = canAct ? '1' : '0.7';
-      btn.style.cursor   = canAct ? 'pointer' : 'not-allowed';
-      if (ids.length===0) editorFirstProps = null;
+      const status = document.getElementById('editor-status');
+      if (n === 0) {
+        // State: select areas
+        editorAction = null;
+        btn.textContent = 'Valitse alueet';
+        btn.style.background = '#0C0243';
+        btn.style.opacity = '0.7';
+        btn.style.cursor = 'not-allowed';
+        editorFirstProps = null;
+        status.textContent = 'Klikkaa alueita kartalta';
+      } else if (!editorAction) {
+        // State: choose action
+        btn.textContent = 'Valitse toiminto';
+        btn.style.background = '#0C0243';
+        btn.style.opacity = '1';
+        btn.style.cursor = 'not-allowed';
+        status.textContent = 'Valitse kynä (yhdistä) tai ✕ (poista)';
+      } else {
+        // State: ready to preview
+        btn.textContent = 'Esikatsele muutos';
+        btn.style.background = '#0C0243';
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        status.textContent = editorAction === 'merge'
+          ? (n < 2 ? 'Valitse vähintään 2 aluetta yhdistääksesi' : 'Valmis esikatseluun')
+          : 'Valmis esikatseluun';
+      }
+    }
+
+    function updateActionButtons() {
+      const mergeBtn = document.getElementById('editor-merge-btn');
+      const delBtn   = document.getElementById('editor-delete-btn');
+      if (!mergeBtn || !delBtn) return;
+      const hasSel = editorSelected.size > 0;
+      // Merge button
+      if (editorAction === 'merge') {
+        mergeBtn.style.background = '#0C0243'; mergeBtn.style.color = 'white'; mergeBtn.style.border = '2px solid #0C0243';
+      } else {
+        mergeBtn.style.background = 'white'; mergeBtn.style.color = '#0C0243'; mergeBtn.style.border = '2px solid #ddd';
+      }
+      // Delete button
+      if (editorAction === 'delete') {
+        delBtn.style.background = '#e53935'; delBtn.style.color = 'white'; delBtn.style.border = '2px solid #e53935';
+      } else {
+        delBtn.style.background = 'white'; delBtn.style.color = '#e53935'; delBtn.style.border = '2px solid #ddd';
+      }
+      mergeBtn.style.opacity = hasSel ? '1' : '0.4';
+      delBtn.style.opacity   = hasSel ? '1' : '0.4';
+      mergeBtn.style.cursor  = hasSel ? 'pointer' : 'not-allowed';
+      delBtn.style.cursor    = hasSel ? 'pointer' : 'not-allowed';
     }
 
     function clearEditorSelection() {
-      editorSelected.clear(); editorFirstProps = null;
+      editorSelected.clear();
+      editorFirstProps = null;
+      editorAction = null;
+      editorHistory = [];
       updateEditorUI();
-      document.getElementById('editor-status').textContent =
-        editorMode==='merge' ? 'Aktivoi kynä tai klikkaa aluetta' : 'Klikkaa alue joka poistetaan';
-      document.getElementById('editor-count').textContent='';
+      document.getElementById('editor-count').textContent = '';
     }
 
     // Preview
-    let editorInPreview = false;
-
     function handleEditorAction() {
-      if (!editorInPreview) {
-        editorPreview();
+      const n = editorSelected.size;
+      if (n === 0 || !editorAction) return;
+      if (editorAction === 'merge') {
+        if (n < 2) {
+          document.getElementById('editor-status').textContent = 'Valitse vähintään 2 aluetta yhdistääksesi';
+          return;
+        }
+        previewMergeEditor();
       } else {
-        confirmEditorAction();
+        previewDeleteEditor();
       }
     }
 
     function editorPreview() {
-      if (editorMode === 'merge') previewMergeEditor();
-      else previewDeleteEditor();
+      if (editorAction === 'merge') previewMergeEditor();
+      else if (editorAction === 'delete') previewDeleteEditor();
+    }
+
+    function _showPreviewButtons() {
+      document.getElementById('editor-action-btn').style.display = 'none';
+      document.getElementById('editor-preview-buttons').style.display = 'flex';
+    }
+    function _hidePreviewButtons() {
+      document.getElementById('editor-action-btn').style.display = 'block';
+      document.getElementById('editor-preview-buttons').style.display = 'none';
     }
 
     function previewMergeEditor() {
       if (editorSelected.size < 2) return;
       editorInPreview = true;
+      editorMode = 'merge';
       editorPreviewMode = 'convex';
       const cBtn=document.getElementById('preview-toggle-convex'), rBtn=document.getElementById('preview-toggle-road');
       if(cBtn){cBtn.style.background='#0C0243';cBtn.style.color='white';cBtn.style.border='2px solid #0C0243';}
@@ -3463,25 +3538,22 @@
       editorPreviewGeom = buildMergedGeom('convex');
       _showPreviewGeom(editorPreviewGeom);
       document.getElementById('editor-merge-toggles').style.display='flex';
-      document.getElementById('editor-cancel-btn').style.display='block';
-      document.getElementById('editor-action-btn').textContent='Hyväksy muutos';
-      document.getElementById('editor-action-btn').style.background='#27ae60';
-      document.getElementById('editor-status').textContent='Esikatselu — oranssi = yhdistetty alue';
+      _showPreviewButtons();
+      document.getElementById('editor-status').textContent='Esikatselu — keltainen = yhdistetty alue';
     }
 
     function previewDeleteEditor() {
-      if (editorSelected.size !== 1) return;
+      if (editorSelected.size < 1) return;
       editorInPreview = true;
-      const id   = Array.from(editorSelected)[0];
-      const feat = editorAllFeatures.find(f=>f.properties.id===id);
-      const name = feat ? (feat.properties.extra_info||'').split(' | ')[0]||'Alue' : 'Alue';
+      editorMode = 'delete';
+      const ids = Array.from(editorSelected);
       if (editorMap.getLayer('editor-del-fill'))
-        editorMap.setFilter('editor-del-fill',['==',['get','id'],id]);
+        editorMap.setFilter('editor-del-fill',['in',['get','id'],['literal',ids]]);
       document.getElementById('editor-merge-toggles').style.display='none';
-      document.getElementById('editor-cancel-btn').style.display='block';
-      document.getElementById('editor-action-btn').textContent='Hyväksy muutos';
-      document.getElementById('editor-action-btn').style.background='#e53935';
-      document.getElementById('editor-status').textContent=`Poistetaanko: "${name}"?`;
+      _showPreviewButtons();
+      document.getElementById('editor-status').textContent = ids.length===1
+        ? 'Esikatselu — punainen = poistettava alue'
+        : `Esikatselu — ${ids.length} aluetta poistetaan`;
     }
 
     function _showPreviewGeom(geom) {
@@ -3493,6 +3565,7 @@
     }
 
     function cancelEditorPreview() {
+      // "Hylkää" — return to pre-preview state, keep selection + action
       editorInPreview = false;
       editorPreviewGeom = null;
       if (editorMap) {
@@ -3502,11 +3575,8 @@
           editorMap.setFilter('editor-del-fill',['==','id','__none__']);
       }
       document.getElementById('editor-merge-toggles').style.display='none';
-      document.getElementById('editor-cancel-btn').style.display='none';
-      document.getElementById('editor-action-btn').textContent='Esikatsele';
-      document.getElementById('editor-action-btn').style.background='#0C0243';
-      const statusText = editorMode === 'merge' ? 'Klikkaa alueita yhdistääksesi' : 'Klikkaa alue joka poistetaan';
-      document.getElementById('editor-status').textContent = statusText;
+      _hidePreviewButtons();
+      updateEditorUI();
     }
 
     async function confirmEditorAction() {
@@ -3572,21 +3642,30 @@
         const ir=await fetch(`${SUPABASE_URL}/rest/v1/parking_master`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(newRow)});
         if(!ir.ok) throw new Error('Insert '+ir.status);
         for(const id of ids) await fetch(`${SUPABASE_URL}/rest/v1/parking_master?id=eq.${id}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'}});
-        document.getElementById('editor-status').textContent=`✓ ${ids.length} aluetta yhdistetty!`;
-        clearEditorSelection(); cancelEditorPreview();
+        _hidePreviewButtons();
+        editorInPreview=false; editorPreviewGeom=null;
+        if(editorMap.getSource('editor-preview')) editorMap.getSource('editor-preview').setData({type:'FeatureCollection',features:[]});
+        document.getElementById('editor-merge-toggles').style.display='none';
+        clearEditorSelection();
         await loadEditorFeatures(); masterDataLoaded=false;
+        document.getElementById('editor-status').textContent=`✓ ${ids.length} aluetta yhdistetty!`;
       } catch(e) { alert('Virhe: '+e.message); }
     }
 
     async function executeDeleteEditor() {
-      if(editorSelected.size!==1) return;
-      const id=Array.from(editorSelected)[0];
+      const ids=Array.from(editorSelected);
+      if(!ids.length) return;
       try {
-        const r=await fetch(`${SUPABASE_URL}/rest/v1/parking_master?id=eq.${id}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'}});
-        if(!r.ok) throw new Error('Delete '+r.status);
-        document.getElementById('editor-status').textContent='✓ Alue poistettu';
-        clearEditorSelection(); cancelEditorPreview();
+        for(const id of ids){
+          const r=await fetch(`${SUPABASE_URL}/rest/v1/parking_master?id=eq.${id}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'}});
+          if(!r.ok) throw new Error('Delete '+r.status);
+        }
+        _hidePreviewButtons();
+        editorInPreview=false;
+        if(editorMap.getLayer('editor-del-fill')) editorMap.setFilter('editor-del-fill',['==','id','__none__']);
+        clearEditorSelection();
         await loadEditorFeatures(); masterDataLoaded=false;
+        document.getElementById('editor-status').textContent=`✓ ${ids.length} aluetta poistettu`;
       } catch(e) { alert('Virhe: '+e.message); }
     }
 
@@ -4497,8 +4576,9 @@
       <canvas id="editor-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;touch-action:none;pointer-events:none;"></canvas>
       <!-- Floating toolbar -->
       <div style="position:absolute;top:12px;right:12px;z-index:20;display:flex;flex-direction:column;gap:8px;">
-        <button id="editor-mode-btn" onclick="toggleEditorMode()" title="Yhdistä / Poista" style="width:44px;height:44px;border-radius:12px;border:2px solid #0C0243;background:#0C0243;color:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">✏️</button>
-        <button onclick="undoLastEditorAction()" title="Peru viimeisin toiminto" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">↶</button>
+        <button id="editor-merge-btn" onclick="selectEditorAction('merge')" title="Yhdistä valitut alueet" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;color:#0C0243;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);opacity:0.4;transition:all 0.2s;">✏️</button>
+        <button id="editor-delete-btn" onclick="selectEditorAction('delete')" title="Poista valitut alueet" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;color:#e53935;font-size:18px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);opacity:0.4;transition:all 0.2s;">✕</button>
+        <button id="editor-undo-btn" onclick="undoEditorSelection()" title="Peru viimeisin valinta" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:all 0.2s;">↶</button>
       </div>
     </div>
 
@@ -4510,9 +4590,12 @@
         <button id="preview-toggle-convex" onclick="switchPreview('convex')" style="padding:5px 12px;border-radius:8px;border:2px solid #0C0243;background:#0C0243;color:white;font-size:12px;font-weight:bold;cursor:pointer;">⬡ Konveksi</button>
         <button id="preview-toggle-road" onclick="switchPreview('road')" style="padding:5px 12px;border-radius:8px;border:2px solid #ddd;background:white;color:#555;font-size:12px;font-weight:bold;cursor:pointer;">〰️ Mukaileva</button>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button id="editor-cancel-btn" onclick="cancelEditorPreview()" style="display:none;flex:0 0 46px;height:50px;background:#f5f5f5;border:none;border-radius:12px;font-size:18px;cursor:pointer;color:#666;">✕</button>
-        <button id="editor-action-btn" onclick="handleEditorAction()" style="flex:1;height:50px;background:#0C0243;border:none;border-radius:14px;font-size:15px;font-weight:bold;cursor:not-allowed;color:white;font-family:Arial,sans-serif;opacity:0.7;transition:all 0.2s;">Esikatsele</button>
+      <!-- Single action button (select / action / ready states) -->
+      <button id="editor-action-btn" onclick="handleEditorAction()" style="width:100%;height:50px;background:#0C0243;border:none;border-radius:14px;font-size:15px;font-weight:bold;cursor:not-allowed;color:white;font-family:Arial,sans-serif;opacity:0.7;transition:all 0.2s;">Valitse alueet</button>
+      <!-- Split buttons (preview state) -->
+      <div id="editor-preview-buttons" style="display:none;gap:8px;">
+        <button onclick="cancelEditorPreview()" style="flex:1;height:50px;background:#e53935;border:none;border-radius:14px;font-size:15px;font-weight:bold;cursor:pointer;color:white;font-family:Arial,sans-serif;">Hylkää</button>
+        <button onclick="confirmEditorAction()" style="flex:1;height:50px;background:#0C0243;border:none;border-radius:14px;font-size:15px;font-weight:bold;cursor:pointer;color:white;font-family:Arial,sans-serif;">Hyväksy</button>
       </div>
     </div>
   </div>
