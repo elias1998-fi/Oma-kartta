@@ -3134,11 +3134,17 @@
     function openAreaEditor() {
       document.getElementById('profile-overlay').classList.remove('open');
       document.getElementById('area-editor-overlay').classList.add('open');
+      // Hide the main-map floating button (z-index 9990) so it doesn't overlap the editor
+      const bc = document.getElementById('btn-container');
+      if (bc) bc.style.display = 'none';
       setTimeout(() => initEditorMap(), 300);
     }
 
     function closeAreaEditor() {
       document.getElementById('area-editor-overlay').classList.remove('open');
+      // Restore main-map floating button
+      const bc = document.getElementById('btn-container');
+      if (bc) bc.style.display = '';
       clearEditorSelection();
       cancelEditorPreview();
       editorDrawActive = false;
