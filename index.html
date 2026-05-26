@@ -500,8 +500,62 @@
     .price-value { font-size: 14px; color: #333; }
     #sheet-filter { display: none; flex-direction: column; padding: 4px 24px 24px 24px; flex: 1; font-family: Arial, sans-serif; }
     #sheet-filter.visible { display: flex; }
-    #filter-title { font-size: 16px; font-weight: bold; color: #222; margin-bottom: 6px; }
-    #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 28px; }
+    #filter-title { font-size: 16px; font-weight: bold; color: #222; margin-bottom: 16px; }
+    
+    .filter-toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .filter-toggle-label {
+      font-size: 14px;
+      color: #222;
+      font-weight: 500;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 28px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 28px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+      background-color: #27ae60;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+    
+    #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 16px; }
     #slider-label { font-size: 15px; color: #222; margin-bottom: 16px; text-align: center; }
     #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
     .range-container { position: relative; height: 40px; display: flex; align-items: center; margin-bottom: 8px; }
@@ -1278,8 +1332,18 @@
       <div id="sheet-details"></div>
     </div>
     <div id="sheet-filter">
-      <div id="filter-title">Suodata pysäköintialueet</div>
-      <div id="filter-subtitle">Näytä vain alueet joilla sallittu pysäköintiaika on valitulla välillä:</div>
+      <div id="filter-title">Suodata karttanäkymää</div>
+      
+      <!-- Toggle for free parking areas -->
+      <div class="filter-toggle-row">
+        <span class="filter-toggle-label">Näytä ilmaiset pysäköintialueet</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-free-parking" checked onchange="toggleFreeParkingAreas()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      
+      <div id="filter-subtitle">Näytä alueet, joilla sallittu max. pysäköintiaika on valitulla välillä</div>
       <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
       <div class="range-container">
         <div class="range-track"></div><div class="range-fill" id="range-fill"></div>
@@ -3985,7 +4049,17 @@
     const rangeFill=document.getElementById('range-fill'), sliderValueEl=document.getElementById('slider-value'), filterResult=document.getElementById('filter-result');
     function idxToMinutes(i){if(i===0)return 0;if(i===1)return 30;if(i>=26)return 9999;return(i-1)*60;}
     function formatHourLabel(i){if(i===0)return'0h';if(i===1)return'30min';if(i>=26)return'24h+';return`${i-1}h`;}
-    function updateSliderUI(){const a=parseInt(sliderMin.value),b=parseInt(sliderMax.value);rangeFill.style.left=(a/26*100)+'%';rangeFill.style.width=((b-a)/26*100)+'%';if(a===0&&b===26){sliderValueEl.textContent='Kaikki';filterResult.textContent='';}else{sliderValueEl.textContent=`${formatHourLabel(a)} – ${formatHourLabel(b)}`;filterResult.textContent=`Näytetään ${formatHourLabel(a)} – ${formatHourLabel(b)} pysäköintialueet`;}}
+    function updateSliderUI(){
+      const a=parseInt(sliderMin.value),b=parseInt(sliderMax.value);
+      rangeFill.style.left=(a/26*100)+'%';
+      rangeFill.style.width=((b-a)/26*100)+'%';
+      if(a===0&&b===26){
+        sliderValueEl.textContent='Kaikki';
+      }else{
+        sliderValueEl.textContent=`${formatHourLabel(a)} – ${formatHourLabel(b)}`;
+      }
+      filterResult.textContent=''; // Always empty now
+    }
     function applyRangeFilter(){
       if (!map.getLayer('master-poly-fill')) return;
       const a = parseInt(sliderMin.value), b = parseInt(sliderMax.value);
@@ -4012,6 +4086,39 @@
     updateSliderUI();
 
     let filterMode=false;
+    let showFreeParking=true; // Toggle for free parking areas
+    
+    function toggleFreeParkingAreas() {
+      showFreeParking = document.getElementById('toggle-free-parking').checked;
+      
+      // Update filters on master-poly layers
+      const freeSourcesFilter = showFreeParking 
+        ? ['all'] // Show all
+        : ['!in', ['get', 'source'], ['literal', ['community', 'hel_ilmainen_pitka', 'hel_ilmainen_lyhyt', 'hel_sallittu_kiellon_ulkopuolella']]];
+      
+      if (map.getLayer('master-poly-fill')) {
+        map.setFilter('master-poly-fill', freeSourcesFilter);
+      }
+      if (map.getLayer('master-poly-line')) {
+        map.setFilter('master-poly-line', freeSourcesFilter);
+      }
+      if (map.getLayer('master-poly-hover-fill')) {
+        map.setFilter('master-poly-hover-fill', freeSourcesFilter);
+      }
+      if (map.getLayer('master-poly-hover-line')) {
+        map.setFilter('master-poly-hover-line', freeSourcesFilter);
+      }
+      if (map.getLayer('master-poly-group-fill')) {
+        map.setFilter('master-poly-group-fill', freeSourcesFilter);
+      }
+      if (map.getLayer('master-poly-group-line')) {
+        map.setFilter('master-poly-group-line', freeSourcesFilter);
+      }
+      
+      // Re-check parking after filter change
+      requestAnimationFrame(checkParking);
+    }
+    
     const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
     function openFilter(){
       filterMode=true;
