@@ -3148,7 +3148,7 @@
       clearEditorSelection();
       cancelEditorPreview();
       editorDrawActive = false;
-      _updateDrawBtn();
+      _updateBrushBtn();
       if (editorCanvas) editorCanvas.style.pointerEvents = 'none';
     }
 
@@ -3182,16 +3182,21 @@
 
     function toggleEditorDraw() {
       editorDrawActive = !editorDrawActive;
-      _updateDrawBtn();
+      _updateBrushBtn();
       if (editorCanvas) editorCanvas.style.pointerEvents = editorDrawActive ? 'all' : 'none';
     }
 
-    function _updateDrawBtn() {
-      const btn = document.getElementById('editor-draw-btn'); if (!btn) return;
+    function _updateBrushBtn() {
+      const btn = document.getElementById('editor-brush-btn');
+      if (!btn) return;
       if (editorDrawActive) {
-        btn.style.background='#0C0243'; btn.style.border='2px solid #0C0243';
+        btn.style.background = '#0C0243';
+        btn.style.border = '2px solid #0C0243';
+        btn.style.color = 'white';
       } else {
-        btn.style.background='white'; btn.style.border='2px solid #ddd';
+        btn.style.background = 'white';
+        btn.style.border = '2px solid #ddd';
+        btn.style.color = '#0C0243';
       }
     }
 
@@ -3334,7 +3339,7 @@
         if (!editorPainting) return;
         const pt = getXY(e); editorPath.push(pt);
         editorCtx.lineTo(...pt);
-        editorCtx.strokeStyle = editorMode==='delete' ? '#e53935' : '#0C0243';
+        editorCtx.strokeStyle = 'rgba(12,2,67,0.5)'; // pale dark blue
         editorCtx.lineWidth = 3; editorCtx.lineCap = 'round';
         editorCtx.setLineDash([]);
         editorCtx.stroke();
@@ -3344,17 +3349,15 @@
         editorPainting = false;
         // Close path visually
         editorCtx.closePath();
-        editorCtx.fillStyle = editorMode==='delete' ? 'rgba(229,57,53,0.08)' : 'rgba(12,2,67,0.06)';
+        editorCtx.fillStyle = 'rgba(12,2,67,0.1)'; // very pale dark blue
         editorCtx.fill();
         // Find features inside the painted path
         selectFeaturesInPath();
         setTimeout(() => {
           editorCtx.clearRect(0,0,editorCanvas.width,editorCanvas.height);
           editorPath = [];
-        }, 400);
-        // Auto-deactivate draw after one stroke
-        editorDrawActive = false; _updateDrawBtn();
-        editorCanvas.style.pointerEvents = 'none';
+        }, 300);
+        // Brush stays active for next stroke (no auto-disable)
       };
 
       editorCanvas.addEventListener('touchstart', e=>{e.preventDefault();onPaintStart(e);},{passive:false});
@@ -3375,33 +3378,29 @@
         [[minX,minY],[maxX,maxY]], { layers:['editor-fill'] }
       );
 
-      // Filter to only hits whose center is roughly inside path bbox
       let anyRejected = false;
       hits.forEach(f => {
         const id = f.properties.id;
-        if (editorSelected.has(id)) {
-          if (editorMode === 'merge') { editorSelected.delete(id); } // re-paint deselects
-          return;
-        }
+        if (editorSelected.has(id)) return; // already selected, skip
         const feat = editorAllFeatures.find(x => x.properties.id === id);
         if (!feat) return;
-        if (editorMode === 'merge') {
-          if (!editorFirstProps) editorFirstProps = { ...feat.properties };
-          if (isEditorCompatible(feat)) {
-            editorSelected.add(id);
-          } else {
-            anyRejected = true;
-            flashEditorReject(id);
-          }
+        // Apply same selection logic as click
+        if (!editorFirstProps) {
+          pushEditorHistory();
+          editorFirstProps = { ...feat.properties };
+          editorSelected.add(id);
+        } else if (isEditorCompatible(feat)) {
+          pushEditorHistory();
+          editorSelected.add(id);
         } else {
-          editorSelected.clear(); editorSelected.add(id);
+          anyRejected = true;
+          flashEditorReject(id);
         }
       });
       if (anyRejected) {
         document.getElementById('editor-status').textContent = '⚠️ Jotkut alueet hylättiin — eri tyyppi tai aika';
       }
       updateEditorUI();
-      if (editorMode === 'delete' && editorSelected.size === 1) editorPreview();
     }
 
     function flashEditorReject(id) {
@@ -4593,6 +4592,7 @@
       <div style="position:absolute;top:12px;right:12px;z-index:20;display:flex;flex-direction:column;gap:8px;">
         <button id="editor-merge-btn" onclick="selectEditorAction('merge')" title="Yhdistä valitut alueet" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;color:#0C0243;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);opacity:0.4;transition:all 0.2s;">✏️</button>
         <button id="editor-delete-btn" onclick="selectEditorAction('delete')" title="Poista valitut alueet" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;color:#e53935;font-size:18px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);opacity:0.4;transition:all 0.2s;">✕</button>
+        <button id="editor-brush-btn" onclick="toggleEditorDraw()" title="Maalaa alueita" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;color:#0C0243;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:all 0.2s;">🖌️</button>
         <button id="editor-undo-btn" onclick="undoEditorSelection()" title="Peru viimeisin valinta" style="width:44px;height:44px;border-radius:12px;border:2px solid #ddd;background:white;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:all 0.2s;">↶</button>
       </div>
     </div>
