@@ -4131,7 +4131,7 @@
       const parts = ['all'];
       // Free-area visibility (hide free sources when toggle is off)
       if (!showFreeParking) {
-        parts.push(['!in', ['get','source'], ['literal', ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella']]]);
+        parts.push(['!', ['in', ['get','source'], ['literal', ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella']]]]);
       }
       // Time range
       const a = parseInt(sliderMin.value), b = parseInt(sliderMax.value);
