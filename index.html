@@ -4958,12 +4958,18 @@
       renderVehicleDisplay();
       renderPaymentDisplay();
       updateDisplay();
+      // Hide the map's floating "Siirrä kursori..." action button while
+      // the parking overlay is shown. It sits at z-index 9990 (above the
+      // overlay) so without this it would overlap #start-btn and steal taps.
+      btnContainer.classList.add('hidden');
       overlay.classList.add('open');
     }
 
     function goBackToMap() {
       stopInertia();
       overlay.classList.remove('open');
+      // Restore the map's floating action button now that we're back on the map
+      btnContainer.classList.remove('hidden');
       // Open the bottom sheet to the 153px mid-level used when a P-marker is
       // on a parking area, so the user can immediately drag it up or down.
       setTimeout(() => {
