@@ -4837,8 +4837,12 @@
     }
     
     sheet.addEventListener('touchstart',(e)=>{
-      // Estä drag jos ei ole pysäköintialuetta valittuna
-      if((!currentParkingProps && !hoveredPolyId) || sliderTouching || e.target===sliderMin || e.target===sliderMax){
+      // Estä drag jos ei ole pysäköintialuetta valittuna — paitsi filter-näkymässä, jossa drag aina sallittu
+      if(!filterMode && ((!currentParkingProps && !hoveredPolyId) || sliderTouching || e.target===sliderMin || e.target===sliderMax)){
+        return;
+      }
+      // In filter mode, ignore drags that start on the slider thumbs
+      if(filterMode && (sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
       }
       
@@ -4861,25 +4865,35 @@
       if(dt>0)velocity=(touch-lastY)/dt;
       lastY=touch;
       lastTime=now;
-      const maxY=sheet.clientHeight-60;
-      // minY is constrained: sheet can only go up to 20% from top (80% visible)
-      const btnH = btnContainer.offsetHeight || 90;
-      const viewportHeight = window.innerHeight;
-      const maxSheetVisible = viewportHeight * 0.8; // 80% of viewport
-      const minYFromBtn = -btnH;
-      const minYFromTop = -(sheet.clientHeight - maxSheetVisible);
-      const minY = Math.max(minYFromBtn, minYFromTop);
+      let maxY, minY;
+      if(filterMode){
+        // Filter view: free drag between 125px (min) and 700px (max) from phone bottom
+        maxY = sheet.clientHeight - 125;
+        minY = sheet.clientHeight - 700;
+      } else {
+        maxY = sheet.clientHeight - 60;
+        const btnH = btnContainer.offsetHeight || 90;
+        const maxSheetVisible = window.innerHeight * 0.8;
+        minY = Math.max(-btnH, -(sheet.clientHeight - maxSheetVisible));
+      }
       currentY=Math.max(minY,Math.min(maxY,startTranslate+(touch-startY)));
       sheet.style.transform=`translateY(${currentY}px)`;
       
       // Update backdrop opacity based on sheet position (fade starts at 50% open)
-      const openProgress = 1 - (currentY / maxY); // 0 = closed, 1 = fully open
+      const openProgress = 1 - (currentY / (sheet.clientHeight - 60)); // 0 = closed, 1 = fully open
       sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
     },{passive:true});
     
     sheet.addEventListener('touchend',()=>{
       if(!isDragging)return;
       isDragging=false;
+      if(filterMode){
+        // Stay wherever the user left it, clamped to 125–700px from bottom
+        const maxY = sheet.clientHeight - 125;
+        const minY = sheet.clientHeight - 700;
+        snapTo(Math.max(minY, Math.min(maxY, currentY)));
+        return;
+      }
       const maxY=sheet.clientHeight-60;
       const btnH = btnContainer.offsetHeight || 90;
       const viewportHeight = window.innerHeight;
