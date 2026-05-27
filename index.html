@@ -4751,7 +4751,42 @@
 
     let inertiaRAF=null,inertiaVel=0;
     const FRICTION=0.88, MIN_VEL=0.025;
-    function stopInertia(){if(inertiaRAF){cancelAnimationFrame(inertiaRAF);inertiaRAF=null;}}
+    let jiggleRAF=null;
+    function stopInertia(){
+      if(inertiaRAF){cancelAnimationFrame(inertiaRAF);inertiaRAF=null;}
+      if(jiggleRAF){cancelAnimationFrame(jiggleRAF);jiggleRAF=null;}
+    }
+    // Subtle drum nudge — plays when the user taps the disabled
+    // "Aseta pysäköintiaika" button. Hints that the drum is what they should
+    // grab to set the parking time. Animates drumPhase along a damped sine
+    // (down → up → settle) without touching parkingMinutes, so the time
+    // value stays at 0.
+    function jiggleDrum() {
+      if (jiggleRAF !== null) return; // already animating — ignore
+      stopInertia();
+      const baseline = drumPhase;
+      // Peak amplitude ~5 minutes worth of scroll; damping makes the
+      // first visible peak ≈60% of this, then it oscillates back smaller.
+      const peak = RADIANS_PER_PX * PIXELS_PER_MINUTE * 5;
+      const duration = 550;
+      const start = performance.now();
+      function step(now) {
+        const t = Math.min(1, (now - start) / duration);
+        // Damped sine — first positive lobe (drum rolls visually "down"),
+        // then negative lobe (rolls "up"), then settles at baseline.
+        const offset = peak * Math.exp(-t * 2.5) * Math.sin(t * Math.PI * 2.5);
+        drumPhase = baseline + offset;
+        drawDrum();
+        if (t < 1) {
+          jiggleRAF = requestAnimationFrame(step);
+        } else {
+          drumPhase = baseline;
+          drawDrum();
+          jiggleRAF = null;
+        }
+      }
+      jiggleRAF = requestAnimationFrame(step);
+    }
     function runInertia(){if(Math.abs(inertiaVel)<MIN_VEL){inertiaRAF=null;drawDrum();return;}const dpx=inertiaVel*16;drumPhase+=dpx*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(parkingMinutes+dpx/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();if(parkingMinutes<=0||parkingMinutes>=parkingMaxMinutes){inertiaRAF=null;return;}inertiaVel*=FRICTION;inertiaRAF=requestAnimationFrame(runInertia);}
 
     const drumZone=document.getElementById('drum-scroll-zone');
@@ -4801,8 +4836,16 @@
       container.appendChild(addRow);
     }
 
-    function openVehicleSheet() { renderVehicleOptions(); document.getElementById('vehicle-sheet').classList.add('open'); }
-    function closeVehicleSheet() { document.getElementById('vehicle-sheet').classList.remove('open'); }
+    function openVehicleSheet() {
+      renderVehicleOptions();
+      document.getElementById('vehicle-sheet').classList.add('open');
+      // Hide the big dark-blue start button while the selection sheet is open
+      document.getElementById('start-btn-container').style.display = 'none';
+    }
+    function closeVehicleSheet() {
+      document.getElementById('vehicle-sheet').classList.remove('open');
+      document.getElementById('start-btn-container').style.display = '';
+    }
 
     function addVehicle() {
       const reg = prompt('Rekisterinumero (esim. ABC-123):');
@@ -4866,8 +4909,16 @@
       container.appendChild(addRow);
     }
 
-    function openPaymentSheet() { renderPaymentOptions(); document.getElementById('payment-sheet').classList.add('open'); }
-    function closePaymentSheet() { document.getElementById('payment-sheet').classList.remove('open'); }
+    function openPaymentSheet() {
+      renderPaymentOptions();
+      document.getElementById('payment-sheet').classList.add('open');
+      // Hide the big dark-blue start button while the selection sheet is open
+      document.getElementById('start-btn-container').style.display = 'none';
+    }
+    function closePaymentSheet() {
+      document.getElementById('payment-sheet').classList.remove('open');
+      document.getElementById('start-btn-container').style.display = '';
+    }
 
     function addPaymentMethod() {
       alert('Tämä toiminto lisäisi uuden maksutavan. Tässä demossa käytetään olemassa olevia maksutapoja.');
@@ -4947,7 +4998,7 @@
     });
 
     document.getElementById('start-btn').addEventListener('click',()=>{
-      if(parkingMinutes===0){return;}
+      if(parkingMinutes===0){ jiggleDrum(); return; }
       const v=vehicles[selectedVehicleIdx];
       const p=paymentMethods[selectedPaymentIdx];
       const price = calculatePrice(parkingMinutes);
