@@ -4125,19 +4125,21 @@
     }
     function applyRangeFilter(){
       if (!map.getLayer('master-poly-fill')) return;
-      const a = parseInt(sliderMin.value), b = parseInt(sliderMax.value);
-      if (a === 0 && b === 26) {
-        map.setFilter('master-poly-fill', null);
-        map.setFilter('master-poly-line', null);
-      } else {
-        const minMin = idxToMinutes(a), maxMin = idxToMinutes(b);
-        const f = ['all',
-          ['>=', ['*', ['coalesce', ['get','max_hours'], 0], 60], minMin],
-          ['<=', ['*', ['coalesce', ['get','max_hours'], 24], 60], maxMin]
-        ];
-        map.setFilter('master-poly-fill', f);
-        map.setFilter('master-poly-line', f);
+      const parts = ['all'];
+      // Free-area visibility (hide free sources when toggle is off)
+      if (!showFreeParking) {
+        parts.push(['!in', ['get','source'], ['literal', ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella']]]);
       }
+      // Time range
+      const a = parseInt(sliderMin.value), b = parseInt(sliderMax.value);
+      if (!(a === 0 && b === 26)) {
+        const minMin = idxToMinutes(a), maxMin = idxToMinutes(b);
+        parts.push(['>=', ['*', ['coalesce', ['get','max_hours'], 0], 60], minMin]);
+        parts.push(['<=', ['*', ['coalesce', ['get','max_hours'], 24], 60], maxMin]);
+      }
+      const f = parts.length === 1 ? null : parts;
+      map.setFilter('master-poly-fill', f);
+      map.setFilter('master-poly-line', f);
     }
     let sliderTouching=false;
     sliderMin.addEventListener('touchstart',()=>{sliderTouching=true;},{passive:true});
@@ -4152,14 +4154,10 @@
     let showFreeParking=true; // Toggle for free parking areas
     let freeTermsAccepted=false; // User must accept terms before free areas are shown
     
-    // Apply free-area visibility to all master-poly layers
+    // Apply free-area visibility via the combined master filter
     function applyFreeVisibility(show) {
-      const freeSourcesFilter = show
-        ? ['all']
-        : ['!in', ['get', 'source'], ['literal', ['community', 'hel_ilmainen_pitka', 'hel_ilmainen_lyhyt', 'hel_sallittu_kiellon_ulkopuolella']]];
-      ['master-poly-fill','master-poly-line','master-poly-hover-fill','master-poly-hover-line','master-poly-group-fill','master-poly-group-line'].forEach(id => {
-        if (map.getLayer(id)) map.setFilter(id, freeSourcesFilter);
-      });
+      showFreeParking = show;
+      applyRangeFilter();
       requestAnimationFrame(checkParking);
     }
 
