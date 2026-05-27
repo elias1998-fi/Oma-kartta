@@ -1724,6 +1724,271 @@
     const SUPABASE_KEY = 'sb_publishable_MEZLuJOl-QsZxgLZI3nnTA_e-xL5VQW';
     function transformRequest(url) { if (url.includes('digitransit.fi')) return { url, headers: { 'digitransit-subscription-key': API_KEY } }; return { url }; }
 
+    // ── Helsinki parking zones — extracted from maksuvyohykkeet.pdf ─────
+    // Polygons trace the dark-green (Vyöhyke 1) and light-green (Vyöhyke 2)
+    // areas in the source PDF. Each point is [lng, lat]. Anything outside
+    // both polygons is treated as Vyöhyke 3.
+    const ZONE_1_POLYGON = [
+      [24.978979,60.168021],
+      [24.96755,60.175817],
+      [24.962453,60.179286],
+      [24.959848,60.177827],
+      [24.958793,60.178222],
+      [24.955627,60.179463],
+      [24.954684,60.179759],
+      [24.953561,60.180153],
+      [24.952281,60.180597],
+      [24.95136,60.180912],
+      [24.949497,60.179877],
+      [24.947476,60.178764],
+      [24.946061,60.178409],
+      [24.944804,60.177965],
+      [24.943479,60.177778],
+      [24.932791,60.177709],
+      [24.925381,60.181257],
+      [24.924797,60.180607],
+      [24.921182,60.179473],
+      [24.920149,60.179069],
+      [24.918644,60.178507],
+      [24.91714,60.177887],
+      [24.91595,60.176852],
+      [24.914984,60.17631],
+      [24.915051,60.175955],
+      [24.914131,60.172456],
+      [24.91083,60.170623],
+      [24.911953,60.168681],
+      [24.912581,60.167114],
+      [24.912626,60.16669],
+      [24.912784,60.164019],
+      [24.912492,60.1633],
+      [24.912694,60.162531],
+      [24.912626,60.161792],
+      [24.913255,60.15985],
+      [24.915501,60.15847],
+      [24.917971,60.15713],
+      [24.920328,60.156883],
+      [24.922417,60.156657],
+      [24.926773,60.155454],
+      [24.927671,60.154262],
+      [24.927873,60.153976],
+      [24.928569,60.154025],
+      [24.931264,60.154114],
+      [24.938786,60.1544],
+      [24.946263,60.154686],
+      [24.952483,60.15575],
+      [24.954145,60.156006],
+      [24.956884,60.156657],
+      [24.958726,60.156519],
+      [24.959399,60.156391],
+      [24.960118,60.156006],
+      [24.962049,60.156341],
+      [24.963823,60.159347],
+      [24.970739,60.15918],
+      [24.972894,60.159131],
+      [24.980057,60.160944],
+      [24.986861,60.162659],
+      [24.984413,60.164325],
+      [24.983044,60.165261],
+      [24.981674,60.166187],
+      [24.978979,60.168021]
+    ];
+    const ZONE_2_POLYGON = [
+      [24.962026,60.199126],
+      [24.958726,60.199412],
+      [24.953673,60.199195],
+      [24.949048,60.198298],
+      [24.945275,60.19681],
+      [24.941323,60.198042],
+      [24.940942,60.19889],
+      [24.941593,60.206419],
+      [24.940133,60.206262],
+      [24.933172,60.204369],
+      [24.928726,60.204379],
+      [24.927581,60.204438],
+      [24.924415,60.204596],
+      [24.910471,60.206587],
+      [24.906788,60.206962],
+      [24.903914,60.207001],
+      [24.900928,60.195115],
+      [24.888667,60.194799],
+      [24.887253,60.194001],
+      [24.887657,60.192956],
+      [24.88,60.191498],
+      [24.882021,60.190768],
+      [24.888353,60.188777],
+      [24.892507,60.185712],
+      [24.89473,60.184027],
+      [24.896684,60.182745],
+      [24.897515,60.18246],
+      [24.888533,60.176507],
+      [24.883076,60.172909],
+      [24.881819,60.172071],
+      [24.880337,60.171106],
+      [24.8811,60.16941],
+      [24.881796,60.167824],
+      [24.882358,60.166552],
+      [24.883031,60.165054],
+      [24.883974,60.162935],
+      [24.884491,60.161752],
+      [24.885007,60.160579],
+      [24.885973,60.158401],
+      [24.886849,60.15643],
+      [24.887747,60.154419],
+      [24.888353,60.15301],
+      [24.889431,60.150595],
+      [24.891564,60.145786],
+      [24.90086,60.143539],
+      [24.90717,60.142001],
+      [24.924819,60.142001],
+      [24.928075,60.142001],
+      [24.93196,60.142001],
+      [24.936563,60.142001],
+      [24.940245,60.142001],
+      [24.943681,60.142001],
+      [24.948284,60.142001],
+      [24.953786,60.142001],
+      [24.956929,60.142001],
+      [24.959646,60.142001],
+      [24.962431,60.142001],
+      [24.964878,60.142001],
+      [24.967168,60.142001],
+      [24.968538,60.143391],
+      [24.970918,60.145894],
+      [24.975993,60.151226],
+      [24.979384,60.154784],
+      [24.980057,60.155484],
+      [24.980664,60.156125],
+      [24.981292,60.156795],
+      [24.982011,60.157534],
+      [24.982572,60.158135],
+      [24.983493,60.159111],
+      [24.983785,60.159407],
+      [24.984166,60.15986],
+      [24.984638,60.160303],
+      [24.985065,60.160757],
+      [24.985514,60.16123],
+      [24.986277,60.162038],
+      [24.986861,60.162659],
+      [24.980057,60.160944],
+      [24.972894,60.159131],
+      [24.970739,60.15918],
+      [24.963823,60.159347],
+      [24.962049,60.156341],
+      [24.960118,60.156006],
+      [24.959399,60.156391],
+      [24.956884,60.156657],
+      [24.954145,60.156006],
+      [24.946263,60.154686],
+      [24.938786,60.1544],
+      [24.931264,60.154114],
+      [24.928569,60.154025],
+      [24.927873,60.153976],
+      [24.927671,60.154262],
+      [24.926773,60.155454],
+      [24.922417,60.156657],
+      [24.920328,60.156883],
+      [24.917971,60.15713],
+      [24.915501,60.15847],
+      [24.913255,60.15985],
+      [24.912626,60.161792],
+      [24.912694,60.162531],
+      [24.912492,60.1633],
+      [24.912784,60.164019],
+      [24.912626,60.16669],
+      [24.912581,60.167114],
+      [24.911953,60.168681],
+      [24.91083,60.170623],
+      [24.914131,60.172456],
+      [24.915051,60.175955],
+      [24.914984,60.17631],
+      [24.91595,60.176852],
+      [24.91714,60.177887],
+      [24.918644,60.178507],
+      [24.920149,60.179069],
+      [24.921182,60.179473],
+      [24.924797,60.180607],
+      [24.925381,60.181257],
+      [24.932791,60.177709],
+      [24.943479,60.177778],
+      [24.944804,60.177965],
+      [24.946061,60.178409],
+      [24.947476,60.178764],
+      [24.949497,60.179877],
+      [24.95136,60.180912],
+      [24.952281,60.180597],
+      [24.953561,60.180153],
+      [24.954684,60.179759],
+      [24.955627,60.179463],
+      [24.958793,60.178222],
+      [24.959848,60.177827],
+      [24.962453,60.179286],
+      [24.967393,60.175925],
+      [24.978979,60.168021],
+      [24.978979,60.168513],
+      [24.978979,60.170219],
+      [24.978979,60.171017],
+      [24.978979,60.171332],
+      [24.980192,60.173372],
+      [24.983313,60.178616],
+      [24.988882,60.180134],
+      [24.994765,60.195637],
+      [24.996,60.198811],
+      [24.964047,60.198811],
+      [24.962026,60.199126]
+    ];
+
+    // Ray-casting point-in-polygon test (standard algorithm)
+    function pointInPolygon(point, polygon) {
+      const x = point[0], y = point[1];
+      let inside = false;
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0], yi = polygon[i][1];
+        const xj = polygon[j][0], yj = polygon[j][1];
+        if (((yi > y) !== (yj > y)) &&
+            (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+      }
+      return inside;
+    }
+
+    function polygonCentroid(ring) {
+      let cx = 0, cy = 0;
+      for (const c of ring) { cx += c[0]; cy += c[1]; }
+      return [cx / ring.length, cy / ring.length];
+    }
+
+    // Determine the parking zone (1, 2, or 3) for a geometry (Polygon/MultiPolygon).
+    // Checks the centroid of the outer ring against the two zone polygons.
+    function getZoneForGeometry(geom) {
+      if (!geom) return 3;
+      const ring = geom.type === 'MultiPolygon'
+        ? (geom.coordinates && geom.coordinates[0] && geom.coordinates[0][0])
+        : (geom.coordinates && geom.coordinates[0]);
+      if (!ring || !ring.length) return 3;
+      const c = polygonCentroid(ring);
+      if (pointInPolygon(c, ZONE_1_POLYGON)) return 1;
+      if (pointInPolygon(c, ZONE_2_POLYGON)) return 2;
+      return 3;
+    }
+
+    // Encode max parking hours into a single digit:
+    //   24h+ → 0,  1h → 1,  2h → 2,  4h → 4,  8h → 8,  other/null → 0
+    function encodeMaxHours(hours) {
+      if (hours == null) return 0;
+      const h = Number(hours);
+      if (h >= 24) return 0;
+      if (h === 1 || h === 2 || h === 4 || h === 8) return h;
+      return 0;
+    }
+
+    // Generate the area code shown in the badge: "{zone}{encodedHours}"
+    // e.g. Vyöhyke 1 with max 4h → "14"; Vyöhyke 2 with 24h → "20".
+    function computeAreaCodeFromFeature(feature) {
+      if (!feature) return '—';
+      const zone = getZoneForGeometry(feature.geometry);
+      const hours = encodeMaxHours(feature.properties && feature.properties.max_hours);
+      return `${zone}${hours}`;
+    }
+
     const map = new maplibregl.Map({ container:'map', style:'omakartta_style.json', center:[24.9354,60.1699], zoom:12, minZoom:5, maxZoom:20, transformRequest, maxTileCacheSize:50, fadeDuration:100, dragRotate:false, touchPitch:false, pitchWithRotate:false, keyboard:false, attributionControl:false });
     map.touchZoomRotate.disableRotation();
 
@@ -3236,7 +3501,7 @@
           if (isMaksullinen) detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">Maksullinen — katso tarkemmat hinnat paikan opastekylteistä</p>`;
           else detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">Ilmainen</p>`;
           if (extraInfo) detailsHTML += `<p class="price-label">Lisätiedot</p><p class="price-value">${extraInfo}</p>`;
-          showCenterFeatureInSheet(line1, srcType, op, p.id ? String(p.id).split('-')[0].toUpperCase().slice(0,6) : null, detailsHTML);
+          showCenterFeatureInSheet(line1, srcType, op, computeAreaCodeFromFeature(f), detailsHTML);
         }
         // ALWAYS update btn when feature is under center (regardless of same/different ID)
         btn.textContent = 'Pysäköi tähän';
@@ -5062,7 +5327,7 @@
       if (!f.length) return;
       const p = f[0].properties;
       openParkingOverlay({
-        'hel:id':            p.id || '—',
+        'hel:id':            computeAreaCodeFromFeature(f[0]),
         'hel:kesto':         p.max_hours ? `${p.max_hours}h` : null,
         'hel:paikan_asento': 'Kadunvarsipysäköinti',
         'hel:datanomistaja': 'HEL',
