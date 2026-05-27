@@ -600,6 +600,41 @@
     #free-terms-accept { background: #0C0243; color: white; }
     
     #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 16px; }
+
+    /* Three-way segmented control */
+    #free-mode-segmented { margin: 0 0 20px 0; }
+    .seg-track {
+      position: relative;
+      display: flex;
+      background: #f0f0f0;
+      border-radius: 10px;
+      padding: 3px;
+    }
+    .seg-thumb {
+      position: absolute;
+      top: 3px; bottom: 3px; left: 3px;
+      width: calc((100% - 6px) / 3);
+      background: #7F1F89;
+      border-radius: 8px;
+      transition: transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94);
+      z-index: 0;
+    }
+    .seg-option {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+      border: none;
+      background: transparent;
+      padding: 9px 4px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+      color: #555;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    .seg-option.active { color: white; }
+
     #slider-label { font-size: 15px; color: #222; margin-bottom: 16px; text-align: center; }
     #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
     .range-container { position: relative; height: 40px; display: flex; align-items: center; margin-bottom: 8px; }
@@ -1406,6 +1441,16 @@
           <input type="checkbox" id="toggle-free-parking" onchange="toggleFreeParkingAreas()">
           <span class="toggle-slider"></span>
         </label>
+      </div>
+
+      <!-- Three-way segmented control (shown when free toggle is on) -->
+      <div id="free-mode-segmented" style="display:none;">
+        <div class="seg-track">
+          <div class="seg-thumb" id="seg-thumb"></div>
+          <button class="seg-option" data-mode="paid" onclick="setFreeFilterMode('paid')">Maksulliset</button>
+          <button class="seg-option" data-mode="all" onclick="setFreeFilterMode('all')">Kaikki</button>
+          <button class="seg-option" data-mode="free" onclick="setFreeFilterMode('free')">Ilmaiset</button>
+        </div>
       </div>
       
       <div id="filter-subtitle">Näytä alueet, joilla sallittu max. pysäköintiaika on valitulla välillä</div>
@@ -2983,6 +3028,7 @@
     }
 
     function checkCenterHighlight() {
+      if (filterMode) return; // No P-marker detection / badge in filter view
       if (!map.getLayer('master-poly-fill')) { updateButtonText(); return; }
       const cpt = map.project(map.getCenter());
       // Create detection area: 5px radius circle around center (easier targeting)
@@ -4129,10 +4175,18 @@
     function applyRangeFilter(){
       if (!map.getLayer('master-poly-fill')) return;
       const parts = ['all'];
-      // Free-area visibility (hide free sources when toggle is off)
+      const FREE_SOURCES = ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella'];
+      // Source visibility
+      let srcFilter = null;
       if (!showFreeParking) {
-        parts.push(['!', ['in', ['get','source'], ['literal', ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella']]]]);
-      }
+        // Free disabled → show paid only (hide free)
+        srcFilter = ['!', ['in', ['get','source'], ['literal', FREE_SOURCES]]];
+      } else if (freeFilterMode === 'paid') {
+        srcFilter = ['!', ['in', ['get','source'], ['literal', FREE_SOURCES]]];
+      } else if (freeFilterMode === 'free') {
+        srcFilter = ['in', ['get','source'], ['literal', FREE_SOURCES]];
+      } // 'all' → no source restriction
+      if (srcFilter) parts.push(srcFilter);
       // Time range
       const a = parseInt(sliderMin.value), b = parseInt(sliderMax.value);
       if (!(a === 0 && b === 26)) {
@@ -4156,6 +4210,7 @@
     let filterMode=false;
     let showFreeParking=false; // Free areas hidden until user enables + accepts terms
     let freeTermsAccepted=false; // User must accept terms before free areas are shown
+    let freeFilterMode='all'; // 'paid' | 'all' | 'free' — segmented control when free enabled
     
     // Apply free-area visibility via the combined master filter
     function applyFreeVisibility(show) {
@@ -4174,13 +4229,36 @@
       document.getElementById('free-terms-details').classList.toggle('expanded');
       document.getElementById('free-terms-arrow').classList.toggle('expanded');
     }
+    function setFreeFilterMode(mode) {
+      freeFilterMode = mode;
+      const idx = mode === 'paid' ? 0 : mode === 'free' ? 2 : 1;
+      const thumb = document.getElementById('seg-thumb');
+      if (thumb) thumb.style.transform = `translateX(${idx * 100}%)`;
+      document.querySelectorAll('#free-mode-segmented .seg-option').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+      });
+      applyRangeFilter();
+      requestAnimationFrame(checkParking);
+    }
+    function showFreeSegmented() {
+      const seg = document.getElementById('free-mode-segmented');
+      if (seg) seg.style.display = 'block';
+      setFreeFilterMode('all'); // default to all
+    }
+    function hideFreeSegmented() {
+      const seg = document.getElementById('free-mode-segmented');
+      if (seg) seg.style.display = 'none';
+    }
+
     function acceptFreeTerms() {
       freeTermsAccepted = true;
       hideFreeTermsBox();
       applyFreeVisibility(true);
+      showFreeSegmented();
     }
     function rejectFreeTerms() {
       hideFreeTermsBox();
+      hideFreeSegmented();
       const cb = document.getElementById('toggle-free-parking');
       if (cb) cb.checked = false;
       showFreeParking = false;
@@ -4197,9 +4275,11 @@
           return;
         }
         applyFreeVisibility(true);
+        showFreeSegmented();
       } else {
         // Turning OFF
         hideFreeTermsBox();
+        hideFreeSegmented();
         applyFreeVisibility(false);
       }
     }
@@ -4211,6 +4291,7 @@
       // Hide GPS warning + zoom indicator in filter view
       const gw = document.getElementById('gps-warning'); if (gw) gw.style.display = 'none';
       const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = 'none';
+      const acb = document.getElementById('area-code-badge'); if (acb) acb.style.display = 'none';
       sheetNormal.style.display='none';
       sheetFilter.classList.add('visible');
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
