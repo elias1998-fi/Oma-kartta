@@ -880,12 +880,15 @@
     .option-name { font-size: 15px; color: #222; }
     .option-reg { font-size: 13px; color: #888; }
     .add-option {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 20px;
+      display: flex !important;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
       cursor: pointer;
       font-family: Arial, sans-serif;
       color: #0C0243;
       font-size: 15px;
+      font-weight: 500;
     }
     .add-option:active { background: #f5f5f5; }
     .sheet-divider { border: none; border-top: 1px solid #eee; margin: 4px 0; }
@@ -1577,8 +1580,11 @@
       <div class="p-card">
         <div class="p-card-title">Valittu alue</div>
         <div class="area-select-row" onclick="goBackToMap()">
-          <div class="area-code-badge" id="p-code">—</div>
-          <div style="flex: 1;"><div class="area-name" id="p-owner">—</div><div class="area-meta" id="p-meta">—</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+            <div><div class="area-code-badge" id="p-code">—</div></div>
+            <div class="area-name" id="p-owner">—</div>
+            <div class="area-meta" id="p-type">—</div>
+          </div>
           <div class="area-chevron">⌄</div>
         </div>
       </div>
@@ -4843,8 +4849,20 @@
       document.getElementById('max-label').classList.remove('visible');
       drumPhase=0;
       document.getElementById('p-code').textContent=areaCode;
-      document.getElementById('p-owner').textContent=getOwnerName(p['hel:datanomistaja']);
-      document.getElementById('p-meta').textContent=`${tyyppi} · ${kestoText}`;
+      // Row 2: "Helsinki, Vyöhyke 2, Max. 2h" — owner with a comma between
+      // "Helsinki" and "Vyöhyke 2", plus the max-duration if known.
+      const ownerRaw   = getOwnerName(p['hel:datanomistaja']);
+      const ownerComma = ownerRaw.replace(/^Helsinki Vyöhyke /, 'Helsinki, Vyöhyke ');
+      const row2 = kestoText && kestoText !== 'Rajoittamaton'
+        ? `${ownerComma}, ${kestoText}`
+        : ownerComma;
+      document.getElementById('p-owner').textContent = row2;
+      // Row 3: parking type (e.g. "Kadunvarsipysäköinti")
+      document.getElementById('p-type').textContent = tyyppi;
+      // Reset start button to its disabled "Lisää pysäköintiaika" state
+      const startBtn0 = document.getElementById('start-btn');
+      startBtn0.classList.add('disabled');
+      startBtn0.textContent = 'Lisää pysäköintiaika';
       renderVehicleDisplay();
       renderPaymentDisplay();
       updateDisplay();
