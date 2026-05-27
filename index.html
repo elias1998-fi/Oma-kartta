@@ -1403,7 +1403,7 @@
       <div class="filter-toggle-row">
         <span class="filter-toggle-label">Näytä ilmaiset pysäköintialueet</span>
         <label class="toggle-switch">
-          <input type="checkbox" id="toggle-free-parking" checked onchange="toggleFreeParkingAreas()">
+          <input type="checkbox" id="toggle-free-parking" onchange="toggleFreeParkingAreas()">
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -2769,6 +2769,9 @@
           },
           filter:['==', ['get','id'], '__none__']
         }, 'master-poly-group-line');
+
+        // Apply current filter state (free areas hidden by default until enabled)
+        applyRangeFilter();
 
         // Helper: centroid for polygon/multipolygon
         function getCentroid(geom) {
@@ -4151,7 +4154,7 @@
     updateSliderUI();
 
     let filterMode=false;
-    let showFreeParking=true; // Toggle for free parking areas
+    let showFreeParking=false; // Free areas hidden until user enables + accepts terms
     let freeTermsAccepted=false; // User must accept terms before free areas are shown
     
     // Apply free-area visibility via the combined master filter
