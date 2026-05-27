@@ -504,7 +504,7 @@
     .price-value { font-size: 14px; color: #333; }
     #sheet-filter { display: none; flex-direction: column; padding: 4px 24px 24px 24px; flex: 1; font-family: Arial, sans-serif; }
     #sheet-filter.visible { display: flex; }
-    #filter-title { font-size: 16px; font-weight: bold; color: #222; margin-bottom: 16px; }
+    #filter-title { font-size: 16px; font-weight: bold; color: #222; margin-top: 8px; margin-bottom: 16px; }
     
     .filter-toggle-row {
       display: flex;
@@ -553,11 +553,51 @@
       border-radius: 50%;
     }
     input:checked + .toggle-slider {
-      background-color: #27ae60;
+      background-color: #7F1F89;
     }
     input:checked + .toggle-slider:before {
       transform: translateX(20px);
     }
+
+    /* Free parking terms acceptance box */
+    #free-terms-box {
+      position: fixed;
+      top: max(12px, env(safe-area-inset-top));
+      left: 12px; right: 12px;
+      z-index: 300;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.28);
+      padding: 14px 16px;
+      font-family: Arial, sans-serif;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #free-terms-box.visible { display: flex; }
+    #free-terms-row { display: flex; align-items: flex-start; gap: 10px; }
+    #free-terms-text { flex: 1; font-size: 14px; font-weight: 600; color: #222; line-height: 1.4; }
+    #free-terms-arrow {
+      flex-shrink: 0; width: 28px; height: 28px; border: none; background: #f0f0f0;
+      border-radius: 50%; cursor: pointer; font-size: 16px; color: #555; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.25s ease;
+    }
+    #free-terms-arrow.expanded { transform: rotate(180deg); }
+    #free-terms-details {
+      display: none; font-size: 13px; color: #555; line-height: 1.5;
+      max-height: 40vh; overflow-y: auto;
+      border-top: 1px solid #eee; padding-top: 10px;
+    }
+    #free-terms-details.expanded { display: block; }
+    #free-terms-details p { margin-bottom: 8px; }
+    #free-terms-buttons { display: flex; gap: 10px; }
+    #free-terms-buttons button {
+      flex: 1; height: 44px; border: none; border-radius: 12px;
+      font-size: 15px; font-weight: bold; font-family: Arial, sans-serif; cursor: pointer;
+    }
+    #free-terms-reject { background: #f0f0f0; color: #555; }
+    #free-terms-accept { background: #0C0243; color: white; }
     
     #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 16px; }
     #slider-label { font-size: 15px; color: #222; margin-bottom: 16px; text-align: center; }
@@ -1322,6 +1362,23 @@
   <!-- Backdrop for bottom sheet -->
   <div id="sheet-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:19;opacity:0;pointer-events:none;transition:opacity 0.3s ease;"></div>
   
+  <!-- Free parking terms acceptance box -->
+  <div id="free-terms-box">
+    <div id="free-terms-row">
+      <div id="free-terms-text">Näytä ilmaiset paikat kartalla hyväksymällä käyttöehdot</div>
+      <button id="free-terms-arrow" onclick="toggleFreeTermsExpand()" aria-label="Laajenna">⌄</button>
+    </div>
+    <div id="free-terms-details">
+      <p>Ilmaiseksi merkityt pysäköintialueet perustuvat yhteisön ilmoituksiin ja julkisiin lähteisiin. Tietojen oikeellisuutta ei voida taata.</p>
+      <p>Tarkista aina paikan opasteet ja liikennemerkit ennen pysäköintiä. Sovellus ei vastaa mahdollisista virheellisistä tiedoista tai pysäköintivirhemaksuista.</p>
+      <p>Hyväksymällä käyttöehdot vahvistat ymmärtäväsi, että tiedot ovat suuntaa antavia.</p>
+    </div>
+    <div id="free-terms-buttons">
+      <button id="free-terms-reject" onclick="rejectFreeTerms()">Hylkää</button>
+      <button id="free-terms-accept" onclick="acceptFreeTerms()">Hyväksy</button>
+    </div>
+  </div>
+
   <div id="bottom-sheet">
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
     <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
@@ -4093,42 +4150,66 @@
 
     let filterMode=false;
     let showFreeParking=true; // Toggle for free parking areas
+    let freeTermsAccepted=false; // User must accept terms before free areas are shown
     
+    // Apply free-area visibility to all master-poly layers
+    function applyFreeVisibility(show) {
+      const freeSourcesFilter = show
+        ? ['all']
+        : ['!in', ['get', 'source'], ['literal', ['community', 'hel_ilmainen_pitka', 'hel_ilmainen_lyhyt', 'hel_sallittu_kiellon_ulkopuolella']]];
+      ['master-poly-fill','master-poly-line','master-poly-hover-fill','master-poly-hover-line','master-poly-group-fill','master-poly-group-line'].forEach(id => {
+        if (map.getLayer(id)) map.setFilter(id, freeSourcesFilter);
+      });
+      requestAnimationFrame(checkParking);
+    }
+
+    function showFreeTermsBox() { document.getElementById('free-terms-box').classList.add('visible'); }
+    function hideFreeTermsBox() {
+      document.getElementById('free-terms-box').classList.remove('visible');
+      document.getElementById('free-terms-details').classList.remove('expanded');
+      document.getElementById('free-terms-arrow').classList.remove('expanded');
+    }
+    function toggleFreeTermsExpand() {
+      document.getElementById('free-terms-details').classList.toggle('expanded');
+      document.getElementById('free-terms-arrow').classList.toggle('expanded');
+    }
+    function acceptFreeTerms() {
+      freeTermsAccepted = true;
+      hideFreeTermsBox();
+      applyFreeVisibility(true);
+    }
+    function rejectFreeTerms() {
+      hideFreeTermsBox();
+      const cb = document.getElementById('toggle-free-parking');
+      if (cb) cb.checked = false;
+      showFreeParking = false;
+      applyFreeVisibility(false);
+    }
+
     function toggleFreeParkingAreas() {
       showFreeParking = document.getElementById('toggle-free-parking').checked;
-      
-      // Update filters on master-poly layers
-      const freeSourcesFilter = showFreeParking 
-        ? ['all'] // Show all
-        : ['!in', ['get', 'source'], ['literal', ['community', 'hel_ilmainen_pitka', 'hel_ilmainen_lyhyt', 'hel_sallittu_kiellon_ulkopuolella']]];
-      
-      if (map.getLayer('master-poly-fill')) {
-        map.setFilter('master-poly-fill', freeSourcesFilter);
+      if (showFreeParking) {
+        // Turning ON — require terms acceptance before revealing free areas
+        if (!freeTermsAccepted) {
+          showFreeTermsBox();
+          applyFreeVisibility(false); // keep hidden until accepted
+          return;
+        }
+        applyFreeVisibility(true);
+      } else {
+        // Turning OFF
+        hideFreeTermsBox();
+        applyFreeVisibility(false);
       }
-      if (map.getLayer('master-poly-line')) {
-        map.setFilter('master-poly-line', freeSourcesFilter);
-      }
-      if (map.getLayer('master-poly-hover-fill')) {
-        map.setFilter('master-poly-hover-fill', freeSourcesFilter);
-      }
-      if (map.getLayer('master-poly-hover-line')) {
-        map.setFilter('master-poly-hover-line', freeSourcesFilter);
-      }
-      if (map.getLayer('master-poly-group-fill')) {
-        map.setFilter('master-poly-group-fill', freeSourcesFilter);
-      }
-      if (map.getLayer('master-poly-group-line')) {
-        map.setFilter('master-poly-group-line', freeSourcesFilter);
-      }
-      
-      // Re-check parking after filter change
-      requestAnimationFrame(checkParking);
     }
     
     const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
     function openFilter(){
       filterMode=true;
       filterCloseBtn.classList.add('visible');
+      // Hide GPS warning + zoom indicator in filter view
+      const gw = document.getElementById('gps-warning'); if (gw) gw.style.display = 'none';
+      const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = 'none';
       sheetNormal.style.display='none';
       sheetFilter.classList.add('visible');
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
@@ -4141,6 +4222,9 @@
       filterBtn.classList.remove('active');
       filterBtn.classList.remove('filter-on');
       filterCloseBtn.classList.remove('visible');
+      // Restore zoom indicator (GPS warning visibility managed by checkParking)
+      const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = '';
+      const gw = document.getElementById('gps-warning'); if (gw) gw.style.display = '';
       sheetNormal.style.display='flex';
       sheetFilter.classList.remove('visible');
       sliderMin.value=0;
