@@ -14,22 +14,39 @@
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
     #map { width: 100%; height: 100%; height: -webkit-fill-available; }
 
-    /* ── Portrait-lock fallback for in-browser use ─────────────────────
-       When the device is in landscape, rotate the whole body so the
-       content keeps appearing as portrait. screen.orientation.lock()
-       handles this natively in PWA / standalone mode; this CSS hack
-       covers regular browser tabs where the API is restricted. */
+    /* ── Portrait-lock for in-browser use ─────────────────────────────
+       When the device is in landscape, rotate the whole body 90° so the
+       content keeps appearing as portrait. The body is positioned with
+       its left edge at the viewport's right edge, then rotated clockwise
+       around its top-left corner — this fills the viewport exactly.
+       Using viewport units (vw/vh) avoids the ambiguity of percentages.
+       screen.orientation.lock() handles this natively in PWA / standalone
+       mode; this CSS covers regular browser tabs where the API is restricted. */
     @media screen and (orientation: landscape) {
+      html { overflow: hidden !important; }
       body {
-        transform: rotate(-90deg);
-        transform-origin: left top;
-        width: 100vh;
-        height: 100vw;
-        overflow: hidden;
-        position: absolute;
-        top: 100%;
-        left: 0;
+        position: fixed !important;
+        top: 0 !important;
+        left: 100vw !important;
+        width: 100vh !important;
+        height: 100vw !important;
+        overflow: hidden !important;
+        transform: rotate(90deg) !important;
+        transform-origin: top left !important;
       }
+    }
+    /* Same rule applied via class — used as a JS fallback when the
+       media query alone isn't matched (e.g. some embedded WebViews). */
+    html.force-portrait { overflow: hidden !important; }
+    body.force-portrait {
+      position: fixed !important;
+      top: 0 !important;
+      left: 100vw !important;
+      width: 100vh !important;
+      height: 100vw !important;
+      overflow: hidden !important;
+      transform: rotate(90deg) !important;
+      transform-origin: top left !important;
     }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
@@ -1541,8 +1558,6 @@
         <button class="sheet-close-btn" onclick="closeVehicleSheet()">✕</button>
       </div>
       <div id="vehicle-options"></div>
-      <div class="sheet-divider"></div>
-      <div class="add-option" onclick="addVehicle()">＋ Lisää uusi ajoneuvo...</div>
     </div>
   </div>
 
@@ -1554,8 +1569,6 @@
         <button class="sheet-close-btn" onclick="closePaymentSheet()">✕</button>
       </div>
       <div id="payment-options"></div>
-      <div class="sheet-divider"></div>
-      <div class="add-option" onclick="addPaymentMethod()">＋ Lisää uusi maksutapa...</div>
     </div>
   </div>
 
@@ -1653,7 +1666,7 @@
       </div>
     </div>
 
-    <div id="start-btn-container"><button id="start-btn" class="disabled">Lisää pysäköintiaika</button></div>
+    <div id="start-btn-container"><button id="start-btn" class="disabled">Aseta pysäköintiaika</button></div>
   </div>
 
   <div id="btn-container"><button id="action-btn">Siirrä kursori pysäköintialueelle</button></div>
@@ -1674,14 +1687,28 @@
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) lockPortrait();
     });
-    // When the device rotates, the CSS rotation fallback changes the body's
-    // effective dimensions. Tell the map to recalculate its canvas size.
+
+    // ── Belt-and-suspenders portrait enforcement ─────────────────────
+    // Some WebViews and browsers don't fire the @media orientation rule
+    // reliably; detect landscape via window dimensions and toggle the
+    // .force-portrait class on <html>/<body> so the rotation kicks in.
+    function enforcePortrait() {
+      const landscape = window.innerWidth > window.innerHeight;
+      document.documentElement.classList.toggle('force-portrait', landscape);
+      document.body.classList.toggle('force-portrait', landscape);
+      // After the layout changes, tell the map to recalculate its canvas.
+      if (typeof map !== 'undefined' && map.resize) {
+        setTimeout(() => map.resize(), 50);
+        setTimeout(() => map.resize(), 350);
+      }
+    }
+    enforcePortrait();
     window.addEventListener('orientationchange', () => {
-      setTimeout(() => { if (typeof map !== 'undefined' && map.resize) map.resize(); }, 250);
+      // iOS reports the new dimensions after a short delay
+      setTimeout(enforcePortrait, 50);
+      setTimeout(enforcePortrait, 300);
     });
-    window.addEventListener('resize', () => {
-      if (typeof map !== 'undefined' && map.resize) map.resize();
-    });
+    window.addEventListener('resize', enforcePortrait);
 
     const splashScreen = document.getElementById('splash-screen');
     
@@ -4725,7 +4752,7 @@
         const startBtn = document.getElementById('start-btn');
         if (rounded === 0) {
           startBtn.classList.add('disabled');
-          startBtn.textContent = 'Lisää pysäköintiaika';
+          startBtn.textContent = 'Aseta pysäköintiaika';
         } else {
           startBtn.classList.remove('disabled');
           startBtn.textContent = 'Aloita pysäköinti';
@@ -4793,6 +4820,16 @@
         row.addEventListener('click', () => { selectedVehicleIdx=i; renderVehicleDisplay(); closeVehicleSheet(); });
         container.appendChild(row);
       });
+      // Divider before "add new" entry
+      const divider = document.createElement('div');
+      divider.className = 'sheet-divider';
+      container.appendChild(divider);
+      // "Add new vehicle" entry — rendered as part of the list so it can never be lost
+      const addRow = document.createElement('div');
+      addRow.className = 'add-option';
+      addRow.textContent = '＋ Lisää uusi ajoneuvo...';
+      addRow.addEventListener('click', addVehicle);
+      container.appendChild(addRow);
     }
 
     function openVehicleSheet() { renderVehicleOptions(); document.getElementById('vehicle-sheet').classList.add('open'); }
@@ -4848,6 +4885,16 @@
         row.addEventListener('click', () => { selectedPaymentIdx=i; renderPaymentDisplay(); closePaymentSheet(); });
         container.appendChild(row);
       });
+      // Divider before "add new" entry
+      const divider = document.createElement('div');
+      divider.className = 'sheet-divider';
+      container.appendChild(divider);
+      // "Add new payment method" entry — rendered as part of the list
+      const addRow = document.createElement('div');
+      addRow.className = 'add-option';
+      addRow.textContent = '＋ Lisää uusi maksutapa...';
+      addRow.addEventListener('click', addPaymentMethod);
+      container.appendChild(addRow);
     }
 
     function openPaymentSheet() { renderPaymentOptions(); document.getElementById('payment-sheet').classList.add('open'); }
@@ -4884,10 +4931,10 @@
       document.getElementById('p-owner').textContent = row2;
       // Row 3: parking type (e.g. "Kadunvarsipysäköinti")
       document.getElementById('p-type').textContent = tyyppi;
-      // Reset start button to its disabled "Lisää pysäköintiaika" state
+      // Reset start button to its disabled "Aseta pysäköintiaika" state
       const startBtn0 = document.getElementById('start-btn');
       startBtn0.classList.add('disabled');
-      startBtn0.textContent = 'Lisää pysäköintiaika';
+      startBtn0.textContent = 'Aseta pysäköintiaika';
       renderVehicleDisplay();
       renderPaymentDisplay();
       updateDisplay();
