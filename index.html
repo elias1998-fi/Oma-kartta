@@ -560,6 +560,20 @@
     }
 
     /* Free parking terms acceptance box */
+    /* Modal backdrop behind the terms box — blocks all interaction */
+    #free-terms-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 299;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #free-terms-backdrop.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
     #free-terms-box {
       position: fixed;
       top: max(12px, env(safe-area-inset-top));
@@ -573,8 +587,12 @@
       display: none;
       flex-direction: column;
       gap: 12px;
+      opacity: 0;
+      transform: translateY(-12px);
+      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.22,1,0.36,1);
     }
     #free-terms-box.visible { display: flex; }
+    #free-terms-box.shown { opacity: 1; transform: translateY(0); }
     #free-terms-row { display: flex; align-items: flex-start; gap: 10px; }
     #free-terms-text { flex: 1; font-size: 14px; font-weight: 600; color: #222; line-height: 1.4; }
     #free-terms-arrow {
@@ -1398,6 +1416,7 @@
   <div id="sheet-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:19;opacity:0;pointer-events:none;transition:opacity 0.3s ease;"></div>
   
   <!-- Free parking terms acceptance box -->
+  <div id="free-terms-backdrop"></div>
   <div id="free-terms-box">
     <div id="free-terms-row">
       <div id="free-terms-text">Näytä ilmaiset paikat kartalla hyväksymällä käyttöehdot</div>
@@ -4219,11 +4238,23 @@
       requestAnimationFrame(checkParking);
     }
 
-    function showFreeTermsBox() { document.getElementById('free-terms-box').classList.add('visible'); }
+    function showFreeTermsBox() {
+      const box = document.getElementById('free-terms-box');
+      const bd  = document.getElementById('free-terms-backdrop');
+      bd.classList.add('visible');
+      box.classList.add('visible');
+      // Trigger fade-in on next frame so the transition runs
+      requestAnimationFrame(() => { box.classList.add('shown'); });
+    }
     function hideFreeTermsBox() {
-      document.getElementById('free-terms-box').classList.remove('visible');
+      const box = document.getElementById('free-terms-box');
+      const bd  = document.getElementById('free-terms-backdrop');
+      box.classList.remove('shown');
+      bd.classList.remove('visible');
       document.getElementById('free-terms-details').classList.remove('expanded');
       document.getElementById('free-terms-arrow').classList.remove('expanded');
+      // Remove from layout after fade-out completes
+      setTimeout(() => { box.classList.remove('visible'); }, 300);
     }
     function toggleFreeTermsExpand() {
       document.getElementById('free-terms-details').classList.toggle('expanded');
@@ -4292,6 +4323,8 @@
       const gw = document.getElementById('gps-warning'); if (gw) gw.style.display = 'none';
       const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = 'none';
       const acb = document.getElementById('area-code-badge'); if (acb) acb.style.display = 'none';
+      // Hide P-marker (center pointer) in filter view
+      centerPointerEl.classList.add('hidden');
       sheetNormal.style.display='none';
       sheetFilter.classList.add('visible');
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
@@ -4307,6 +4340,8 @@
       // Restore zoom indicator (GPS warning visibility managed by checkParking)
       const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = '';
       const gw = document.getElementById('gps-warning'); if (gw) gw.style.display = '';
+      // Restore P-marker — checkParking() below re-applies zoom-based visibility
+      centerPointerEl.classList.remove('hidden');
       sheetNormal.style.display='flex';
       sheetFilter.classList.remove('visible');
       sliderMin.value=0;
