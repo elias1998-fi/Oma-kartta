@@ -556,7 +556,7 @@
       border-radius: 50%;
     }
     input:checked + .toggle-slider {
-      background-color: #7F1F89;
+      background-color: #0C0243;
     }
     input:checked + .toggle-slider:before {
       transform: translateX(20px);
@@ -655,6 +655,13 @@
       transition: color 0.2s ease;
     }
     .seg-option.active { color: white; }
+    #free-mode-info {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      line-height: 1.4;
+    }
 
     #slider-label { font-size: 15px; color: #222; margin-bottom: 16px; text-align: center; }
     #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
@@ -1474,6 +1481,7 @@
             <button class="seg-option" data-mode="all" onclick="setFreeFilterMode('all')">Kaikki</button>
             <button class="seg-option" data-mode="free" onclick="setFreeFilterMode('free')">Ilmaiset</button>
           </div>
+          <div id="free-mode-info">Näytetään kaikki pysäköintialueet kartalla</div>
         </div>
       </div>
 
@@ -1627,6 +1635,22 @@
   <div id="btn-container"><button id="action-btn">Siirrä kursori pysäköintialueelle</button></div>
 
   <script>
+    // ── Lock screen orientation to portrait ────────────────────────────
+    // Works reliably in PWA/standalone mode (when app is added to home screen).
+    // Inside a regular browser tab, browsers restrict orientation lock — the
+    // call will simply throw silently and we accept the limitation there.
+    function lockPortrait() {
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock('portrait').catch(() => {});
+        }
+      } catch (_) { /* unsupported — ignore */ }
+    }
+    lockPortrait();
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) lockPortrait();
+    });
+
     const splashScreen = document.getElementById('splash-screen');
     
     setTimeout(() => {
@@ -3200,7 +3224,10 @@
       if (ring && ring.length) {
         const lng = ring.reduce((s,c)=>s+c[0],0)/ring.length;
         const lat = ring.reduce((s,c)=>s+c[1],0)/ring.length;
-        map.flyTo({ center:[lng,lat], zoom:16, duration:800 });
+        // In filter view, close it first so the user returns to the normal map
+        // with the P-marker landing on the selected area.
+        if (filterMode) closeFilter();
+        map.flyTo({ center:[lng,lat], zoom: Math.max(map.getZoom(), 16), duration: 800 });
       }
     });
 
@@ -4294,6 +4321,13 @@
       document.querySelectorAll('#free-mode-segmented .seg-option').forEach(b => {
         b.classList.toggle('active', b.dataset.mode === mode);
       });
+      // Update explanatory text under the segmented control
+      const info = document.getElementById('free-mode-info');
+      if (info) {
+        if      (mode === 'paid') info.textContent = 'Näytetään maksulliset pysäköintialueet kartalla';
+        else if (mode === 'free') info.textContent = 'Näytetään tällä hetkellä ilmaiset pysäköintialueet kartalla';
+        else                      info.textContent = 'Näytetään kaikki pysäköintialueet kartalla';
+      }
       applyRangeFilter();
       requestAnimationFrame(checkParking);
     }
