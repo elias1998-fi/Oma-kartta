@@ -151,6 +151,9 @@
     .pill-btn svg { width: 18px; height: 18px; transition: stroke 0.2s ease; }
     .pill-btn#profile-btn svg { width: 20px; height: 20px; }
     
+    /* Quick light-gray flash when a pill button is pressed */
+    .pill-btn.pill-flash { background: #e8e8e8; border-radius: 50%; }
+    
     #menu-btn svg { width: 16px; height: 16px; }
     #menu-btn.active { background: #0C0243; border-radius: 50%; }
     #menu-btn.active svg line { stroke: white; }
@@ -1673,16 +1676,11 @@
       menuExpanded = true;
       menuPill.classList.add('expanded');
       menuBtn.classList.add('active');
-      if (filterMode) {
-        // Ball at filter position (idx=2), no ball at X
-        pillBall.style.transition = 'none';
-        pillBall.style.transform = `translateY(${BALL_POS[2]}px)`;
-        requestAnimationFrame(() => { pillBall.style.transition = ''; });
-        setBallHere(2);
-      } else {
-        moveBallTo(0);
-        setBallHere(0);
-      }
+      // Ball stays at X (idx 0) — it never moves to other buttons
+      pillBall.style.transition = 'none';
+      pillBall.style.transform = `translateY(0px)`;
+      requestAnimationFrame(() => { pillBall.style.transition = ''; });
+      setBallHere(0);
     }
 
     function closeMenu() {
@@ -1713,11 +1711,14 @@
         updateSliderUI(); applyRangeFilter();
         btnContainer.classList.remove('hidden');
       }
-      // Ball moves from wherever it is → target button
-      moveBallTo(idx, () => {
+      // Ball stays put at X — pressed button briefly flashes light gray instead
+      const btn = PILL_BTNS[idx];
+      if (btn) btn.classList.add('pill-flash');
+      setTimeout(() => {
+        if (btn) btn.classList.remove('pill-flash');
         closeMenu();
-        setTimeout(action, 50);
-      });
+        setTimeout(action, 60);
+      }, 180);
     }
 
     profileBtn.addEventListener('click', () => {
@@ -4149,9 +4150,8 @@
       applyRangeFilter();
       btnContainer.classList.remove('hidden');
       if (menuExpanded) {
-        // Move ball from filter (idx=2) to X (idx=0), then close menu + hide ball
-        setBallHere(0);
-        moveBallTo(0, () => { closeMenu(); });
+        // Ball stays at X — just close the menu
+        closeMenu();
       } else {
         pillBall.style.transform = 'translateY(0px)';
         PILL_BTNS.forEach(b => b.classList.remove('ball-here'));
