@@ -33,51 +33,92 @@
     }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
-    #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, calc(-100% + 6.5px)); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
-    #center-pointer.hidden { display: none; }
-
-    /* Expanded badge: pin + area code, speech-bubble with rounded centered tail */
-    #center-badge {
+    /* ── Unified center marker ────────────────────────────────────────
+       One element that morphs between two states:
+       - Collapsed (default): just the P pin
+       - Expanded (.expanded): pin shrinks, white pill grows around it
+         with the area code text + a downward speech-bubble tail.
+       All transitions are CSS so the swap looks like a natural expansion. */
+    #center-marker {
       position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, calc(-100% + 6.5px));
-      pointer-events: none; z-index: 11;
-      display: none;
-      flex-direction: column; align-items: center;
+      pointer-events: none; z-index: 10;
+      display: flex; flex-direction: column; align-items: center;
     }
-    #center-badge.visible { display: flex; }
-    #center-badge-body {
-      display: flex; align-items: center; gap: 3px;
-      background: white;
-      border: 2px solid #0C0243;
+    #center-marker.hidden { display: none; }
+
+    #cm-body {
+      display: flex; align-items: center;
+      gap: 0;
+      background: transparent;
+      border: 2px solid transparent;
       border-radius: 9px;
-      padding: 2px 8px 2px 4px;
-      box-shadow: 0 2px 7px rgba(0,0,0,0.22);
+      padding: 0;
+      box-shadow: none;
       white-space: nowrap;
+      transition:
+        background  0.28s ease,
+        border-color 0.28s ease,
+        padding     0.28s cubic-bezier(0.34,1.2,0.64,1),
+        gap         0.28s ease,
+        box-shadow  0.28s ease;
     }
-    #center-badge-pin { width: 18px; height: 18px; flex-shrink: 0; display: block; }
-    #center-badge-code {
+
+    #cm-pin {
+      display: block;
+      width: 48px; height: 48px;
+      flex-shrink: 0;
+      transition:
+        width  0.28s cubic-bezier(0.34,1.2,0.64,1),
+        height 0.28s cubic-bezier(0.34,1.2,0.64,1);
+    }
+
+    #cm-code {
       font-family: Arial, sans-serif;
       font-size: 16px; font-weight: 800;
       color: #111; letter-spacing: 0.3px;
       line-height: 1;
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition:
+        max-width 0.28s cubic-bezier(0.34,1.2,0.64,1),
+        opacity   0.18s ease 0.06s;
     }
-    /* Rounded downward speech-bubble tail (SVG) */
-    #center-badge-tail {
-      width: 34px; height: 13px; margin-top: -4px;
+
+    #cm-tail {
+      width: 34px; height: 13px;
+      margin-top: -13px;
       display: block;
+      opacity: 0;
+      transform: scaleY(0);
+      transform-origin: top;
+      transition:
+        opacity    0.2s  ease,
+        margin-top 0.28s cubic-bezier(0.34,1.2,0.64,1),
+        transform  0.28s cubic-bezier(0.34,1.2,0.64,1);
       position: relative; z-index: 1;
     }
-    #center-badge-tail #tail-fill {
-      fill: white;
-      stroke: none;
-    }
-    #center-badge-tail #tail-stroke {
+    #cm-tail #cm-tail-fill   { fill: white; stroke: none; }
+    #cm-tail #cm-tail-stroke {
       fill: none;
       stroke: #0C0243;
       stroke-width: 2;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
+
+    /* Expanded state — applied when the marker sits on a parking area */
+    #center-marker.expanded #cm-body {
+      background: white;
+      border-color: #0C0243;
+      padding: 2px 8px 2px 4px;
+      gap: 3px;
+      box-shadow: 0 2px 7px rgba(0,0,0,0.22);
+    }
+    #center-marker.expanded #cm-pin { width: 26px; height: 26px; }
+    #center-marker.expanded #cm-code { max-width: 240px; opacity: 1; }
+    #center-marker.expanded #cm-tail { opacity: 1; transform: scaleY(1); margin-top: -4px; }
     
     /* Splash Screen */
     #splash-screen {
@@ -1015,19 +1056,18 @@
 
   <div id="map"></div>
 
-  <svg id="center-pointer" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
-    <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
-  </svg>
-
-  <div id="center-badge">
-    <div id="center-badge-body">
-      <img id="center-badge-pin" src="data:image/png;base64,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" alt="P" />
-      <span id="center-badge-code">—</span>
+  <!-- Unified center marker — morphs between standalone P pin and full badge -->
+  <div id="center-marker">
+    <div id="cm-body">
+      <svg id="cm-pin" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
+        <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
+      </svg>
+      <span id="cm-code"></span>
     </div>
-    <svg id="center-badge-tail" viewBox="0 0 60 26" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-      <path id="tail-fill" d="M0 0 L60 0 L60 4 Q 42 4 36 13 Q 30 22 24 13 Q 18 4 0 4 Z"/>
-      <path id="tail-stroke" d="M3 2.5 Q 23 3 28 12 Q 30 17 32 12 Q 37 3 57 2.5"/>
+    <svg id="cm-tail" viewBox="0 0 60 26" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <path id="cm-tail-fill" d="M0 0 L60 0 L60 4 Q 42 4 36 13 Q 30 22 24 13 Q 18 4 0 4 Z"/>
+      <path id="cm-tail-stroke" d="M3 2.5 Q 23 3 28 12 Q 30 17 32 12 Q 37 3 57 2.5"/>
     </svg>
   </div>
 
@@ -2760,8 +2800,11 @@
       if (areaCode) {
         badge.textContent = areaCode;
         badge.style.display = 'inline-block';
+        // Also expand the on-map P-marker into its full badge form with the code
+        showCenterBadge(areaCode);
       } else {
         badge.style.display = 'none';
+        hideCenterBadge();
       }
       document.getElementById('summary-type').textContent     = type;
       document.getElementById('summary-operator').textContent = operator;
@@ -2784,6 +2827,8 @@
     function collapseCenterSheet() {
       const badge = document.getElementById('area-code-badge');
       if (badge) { badge.style.display = 'none'; }
+      // Collapse the on-map P-marker back to its plain pin form
+      hideCenterBadge();
       const bs = document.getElementById('bottom-sheet');
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = 'translateY(calc(100% - 90px))';
@@ -3103,18 +3148,18 @@
     }
 
     // Real-time center P-marker detection (no lock, immediate response)
-    const centerPointerEl = document.getElementById('center-pointer');
-    const centerBadgeEl   = document.getElementById('center-badge');
-    const centerBadgeCode = document.getElementById('center-badge-code');
+    // After the merge of #center-pointer and #center-badge into a single
+    // morphing element, centerPointerEl now points to that one element.
+    const centerPointerEl = document.getElementById('center-marker');
+    const centerBadgeCode = document.getElementById('cm-code');
 
     function showCenterBadge(code) {
       if (code) centerBadgeCode.textContent = code;
-      centerBadgeEl.classList.add('visible');
-      centerPointerEl.classList.add('hidden');
+      // Add .expanded — CSS transitions animate the morph
+      centerPointerEl.classList.add('expanded');
     }
     function hideCenterBadge() {
-      centerBadgeEl.classList.remove('visible');
-      centerPointerEl.classList.remove('hidden');
+      centerPointerEl.classList.remove('expanded');
     }
 
     function checkCenterHighlight() {
@@ -4417,8 +4462,10 @@
       const gw = document.getElementById('gps-warning'); if (gw) gw.style.display = 'none';
       const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = 'none';
       const acb = document.getElementById('area-code-badge'); if (acb) acb.style.display = 'none';
-      // Hide P-marker (center pointer) in filter view
+      // Hide P-marker (center pointer) in filter view, and make sure it's
+      // collapsed so it doesn't reappear expanded when the filter is closed.
       centerPointerEl.classList.add('hidden');
+      hideCenterBadge();
       // Clear any active area highlight + reset state, so the red overlay doesn't linger
       clearHoverHighlight();
       hoveredPolyId = null;
@@ -4556,6 +4603,7 @@
           if(hoveredPolyId){
             clearHoverHighlight();
             hoveredPolyId=null;
+            hideCenterBadge();
             if(!masterFeatureLocked){
               summaryHeader.textContent=''; summaryType.textContent='';
               summaryOperator.textContent=''; details.innerHTML='';
