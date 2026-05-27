@@ -13,6 +13,24 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
     #map { width: 100%; height: 100%; height: -webkit-fill-available; }
+
+    /* ── Portrait-lock fallback for in-browser use ─────────────────────
+       When the device is in landscape, rotate the whole body so the
+       content keeps appearing as portrait. screen.orientation.lock()
+       handles this natively in PWA / standalone mode; this CSS hack
+       covers regular browser tabs where the API is restricted. */
+    @media screen and (orientation: landscape) {
+      body {
+        transform: rotate(-90deg);
+        transform-origin: left top;
+        width: 100vh;
+        height: 100vw;
+        overflow: hidden;
+        position: absolute;
+        top: 100%;
+        left: 0;
+      }
+    }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
     #center-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, calc(-100% + 6.5px)); width: 48px; height: 48px; pointer-events: none; z-index: 10; }
@@ -1656,6 +1674,14 @@
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) lockPortrait();
     });
+    // When the device rotates, the CSS rotation fallback changes the body's
+    // effective dimensions. Tell the map to recalculate its canvas size.
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => { if (typeof map !== 'undefined' && map.resize) map.resize(); }, 250);
+    });
+    window.addEventListener('resize', () => {
+      if (typeof map !== 'undefined' && map.resize) map.resize();
+    });
 
     const splashScreen = document.getElementById('splash-screen');
     
@@ -1777,31 +1803,30 @@
       }, 800);
     });
 
-    const geolocate = new maplibregl.GeolocateControl({ positionOptions:{enableHighAccuracy:true}, trackUserLocation:true, showUserHeading:true });
+    // Geolocate control — manual only.
+    // trackUserLocation:false → does not continuously follow the device.
+    // We also do NOT auto-trigger on map load; the user must press the
+    // location button (top-right) to fetch their current position.
+    const geolocate = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: false,
+      showUserHeading: true
+    });
     map.addControl(geolocate);
-    
+
     geolocate.on('geolocate', (e) => {
       userLocation = {
         lat: e.coords.latitude,
         lon: e.coords.longitude
       };
-      
-      if (!map.hasFlownToLocation) {
-        map.flyTo({
-          center: [e.coords.longitude, e.coords.latitude],
-          zoom: 15,
-          duration: 2000
-        });
-        map.hasFlownToLocation = true;
-      }
+      // Fly to user's location every time the locate button is pressed.
+      map.flyTo({
+        center: [e.coords.longitude, e.coords.latitude],
+        zoom: 15,
+        duration: 2000
+      });
     });
-    
-    map.on('load', () => {
-      setTimeout(() => {
-        geolocate.trigger();
-      }, 800);
-    });
-    
+
     const locationBtn = document.getElementById('location-btn');
     const sheet = document.getElementById('bottom-sheet');
     const sheetBackdrop = document.getElementById('sheet-backdrop');
@@ -4872,12 +4897,12 @@
     function goBackToMap() {
       stopInertia();
       overlay.classList.remove('open');
-      // Avaa bottom sheet puoleen väliin näyttöä
-      setTimeout(()=>{
-        const mid = window.innerHeight * 0.5;
-        sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
-        sheet.style.transform=`translateY(${mid}px)`;
-        currentY=mid;
+      // Open the bottom sheet to the 153px mid-level used when a P-marker is
+      // on a parking area, so the user can immediately drag it up or down.
+      setTimeout(() => {
+        sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+        sheet.style.transform  = 'translateY(calc(100% - 153px))';
+        currentY = sheet.offsetHeight - 153;
       }, 50);
     }
 
