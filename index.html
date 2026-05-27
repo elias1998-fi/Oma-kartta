@@ -4871,8 +4871,8 @@
       lastTime=now;
       let maxY, minY;
       if(filterMode){
-        // Filter view: free drag between 125px (min) and 80% of viewport (max) from phone bottom
-        maxY = sheet.clientHeight - 125;
+        // Filter view: free drag between 90px (min) and 80% of viewport (max) from phone bottom
+        maxY = sheet.clientHeight - 90;
         minY = sheet.clientHeight - window.innerHeight * 0.8;
       } else {
         maxY = sheet.clientHeight - 60;
@@ -4892,16 +4892,26 @@
       if(!isDragging)return;
       isDragging=false;
       if(filterMode){
-        const maxY = sheet.clientHeight - 125;                    // min size (125px from bottom)
-        const minY = sheet.clientHeight - window.innerHeight * 0.8; // max size (80% of viewport)
+        const maxY = sheet.clientHeight - 90;                       // min size (90px from bottom)
+        const minY = sheet.clientHeight - window.innerHeight * 0.8;  // max size (80% of viewport)
+        const midY = sheet.clientHeight - window.innerHeight * 0.6;  // mid level (60% of viewport)
         if(dragFromHandle){
           // Free positioning when dragged from the handle — stay where dropped
           snapTo(Math.max(minY, Math.min(maxY, currentY)));
+        } else if(velocity>0.7){
+          // Fast swipe down → straight to min, skip mid level
+          snapTo(maxY);
+        } else if(velocity<-0.7){
+          // Fast swipe up → straight to max, skip mid level
+          snapTo(minY);
         } else {
-          // Swipe anywhere else → snap to max or min based on direction/velocity
-          if(velocity>0.5) snapTo(maxY);
-          else if(velocity<-0.5) snapTo(minY);
-          else snapTo(currentY < (minY+maxY)/2 ? minY : maxY);
+          // Gentle move → snap to nearest of the three levels (max / mid / min)
+          const levels = [minY, midY, maxY];
+          let nearest = levels[0];
+          for(const lvl of levels){
+            if(Math.abs(currentY - lvl) < Math.abs(currentY - nearest)) nearest = lvl;
+          }
+          snapTo(nearest);
         }
         return;
       }
