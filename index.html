@@ -4357,6 +4357,10 @@
       const acb = document.getElementById('area-code-badge'); if (acb) acb.style.display = 'none';
       // Hide P-marker (center pointer) in filter view
       centerPointerEl.classList.add('hidden');
+      // Clear any active area highlight + reset state, so the red overlay doesn't linger
+      clearHoverHighlight();
+      hoveredPolyId = null;
+      releaseMasterLock();
       sheetNormal.style.display='none';
       sheetFilter.classList.add('visible');
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
