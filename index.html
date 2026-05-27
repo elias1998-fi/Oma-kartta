@@ -4871,9 +4871,9 @@
       lastTime=now;
       let maxY, minY;
       if(filterMode){
-        // Filter view: free drag between 90px (min) and 80% of viewport (max) from phone bottom
-        maxY = sheet.clientHeight - 90;
+        // Filter view: translateY between 80% (max size, highest) and 90px-from-bottom (min size, lowest)
         minY = sheet.clientHeight - window.innerHeight * 0.8;
+        maxY = sheet.clientHeight - 70;
       } else {
         maxY = sheet.clientHeight - 60;
         const btnH = btnContainer.offsetHeight || 90;
@@ -4892,26 +4892,32 @@
       if(!isDragging)return;
       isDragging=false;
       if(filterMode){
-        const maxY = sheet.clientHeight - 90;                       // min size (90px from bottom)
-        const minY = sheet.clientHeight - window.innerHeight * 0.8;  // max size (80% of viewport)
-        const midY = sheet.clientHeight - window.innerHeight * 0.6;  // mid level (60% of viewport)
+        const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // max size (80% of viewport)
+        const midY = window.innerHeight * 0.6;                       // mid level = filter open height
+        const minY = sheet.clientHeight - 70;                        // min size (70px from bottom)
         if(dragFromHandle){
           // Free positioning when dragged from the handle — stay where dropped
-          snapTo(Math.max(minY, Math.min(maxY, currentY)));
-        } else if(velocity>0.7){
-          // Fast swipe down → straight to min, skip mid level
-          snapTo(maxY);
-        } else if(velocity<-0.7){
-          // Fast swipe up → straight to max, skip mid level
-          snapTo(minY);
+          snapTo(Math.max(maxY, Math.min(minY, currentY)));
         } else {
-          // Gentle move → snap to nearest of the three levels (max / mid / min)
-          const levels = [minY, midY, maxY];
-          let nearest = levels[0];
-          for(const lvl of levels){
-            if(Math.abs(currentY - lvl) < Math.abs(currentY - nearest)) nearest = lvl;
+          // Levels ordered top→bottom: max (highest), mid, min (lowest)
+          const levels = [maxY, midY, minY];
+          // Find nearest level to where the drag started
+          let si = 0;
+          for(let i=1;i<levels.length;i++){
+            if(Math.abs(startTranslate - levels[i]) < Math.abs(startTranslate - levels[si])) si = i;
           }
-          snapTo(nearest);
+          // Any swipe steps exactly one level toward swipe direction (always via mid)
+          let ti = si;
+          if(velocity < -0.2) ti = Math.max(0, si - 1);       // swipe up → one level up
+          else if(velocity > 0.2) ti = Math.min(levels.length - 1, si + 1); // swipe down → one level down
+          else {
+            // Gentle move with no clear velocity → snap to nearest level to current position
+            ti = 0;
+            for(let i=1;i<levels.length;i++){
+              if(Math.abs(currentY - levels[i]) < Math.abs(currentY - levels[ti])) ti = i;
+            }
+          }
+          snapTo(levels[ti]);
         }
         return;
       }
