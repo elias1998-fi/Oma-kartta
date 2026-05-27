@@ -441,7 +441,7 @@
     
     #bottom-sheet { 
       position: absolute; left: 0; right: 0; bottom: 0; 
-      height: 80vh; 
+      height: 100vh; 
       background: white; 
       border-radius: 20px 20px 0 0; 
       box-shadow: 0 -2px 24px rgba(0,0,0,0.25); 
@@ -4871,9 +4871,9 @@
       lastTime=now;
       let maxY, minY;
       if(filterMode){
-        // Filter view: free drag between 125px (min) and 700px (max) from phone bottom
+        // Filter view: free drag between 125px (min) and 80% of viewport (max) from phone bottom
         maxY = sheet.clientHeight - 125;
-        minY = sheet.clientHeight - 700;
+        minY = sheet.clientHeight - window.innerHeight * 0.8;
       } else {
         maxY = sheet.clientHeight - 60;
         const btnH = btnContainer.offsetHeight || 90;
@@ -4892,8 +4892,8 @@
       if(!isDragging)return;
       isDragging=false;
       if(filterMode){
-        const maxY = sheet.clientHeight - 125;  // min size (125px from bottom)
-        const minY = sheet.clientHeight - 700;  // max size (700px from bottom)
+        const maxY = sheet.clientHeight - 125;                    // min size (125px from bottom)
+        const minY = sheet.clientHeight - window.innerHeight * 0.8; // max size (80% of viewport)
         if(dragFromHandle){
           // Free positioning when dragged from the handle — stay where dropped
           snapTo(Math.max(minY, Math.min(maxY, currentY)));
