@@ -2686,7 +2686,7 @@
       document.getElementById('action-btn').textContent       = header;
       document.getElementById('action-btn').classList.add('active');
       // Open at 153px from bottom (mid step). Bounds match the three-level snap below
-      // when the user drags: max = 80% of viewport, mid = 153px, min = 120px from bottom.
+      // when the user drags: max = 80% of viewport, mid = 153px, min = 75px from bottom.
       const bs = document.getElementById('bottom-sheet');
       bs.style.transition = 'transform 0.2s ease';
       bs.style.transform  = 'translateY(calc(100% - 153px))';
@@ -4831,23 +4831,26 @@
 
     document.getElementById('back-btn').addEventListener('click',goBackToMap);
     btn.addEventListener('click', () => {
-      if (hoveredPolyId && !currentParkingProps) {
-        // Center-based hover: build parking props from feature info
-        const f = map.queryRenderedFeatures(map.project(map.getCenter()), { layers: ['master-poly-fill'] });
-        if (f.length) {
-          const p = f[0].properties;
-          openParkingOverlay({
-            'hel:id': p.id || '—',
-            'hel:kesto': p.max_hours ? `${p.max_hours}h` : null,
-            'hel:paikan_asento': 'Kadunvarsipysäköinti',
-            'hel:datanomistaja': 'HEL',
-            'hel:luokka_nimi': p.source || '',
-            'hel:voimassaolo': p.valid || ''
-          });
-        }
-      } else if (currentParkingProps) {
-        openParkingOverlay(currentParkingProps);
-      }
+      // If the button is in "Pysäköi tähän" state (active), find the area under the
+      // P-marker right now and open the overlay. Don't rely on cached state — it can
+      // be out of sync after fast pans, and a single-pixel query can miss the area
+      // by a hair. Use the same 5px detection radius as the highlight logic.
+      if (!btn.classList.contains('active')) return;
+      if (!map.getLayer('master-poly-fill')) return;
+      const cpt = map.project(map.getCenter());
+      const r = 5;
+      const bbox = [[cpt.x - r, cpt.y - r], [cpt.x + r, cpt.y + r]];
+      const f = map.queryRenderedFeatures(bbox, { layers: ['master-poly-fill'] });
+      if (!f.length) return;
+      const p = f[0].properties;
+      openParkingOverlay({
+        'hel:id':            p.id || '—',
+        'hel:kesto':         p.max_hours ? `${p.max_hours}h` : null,
+        'hel:paikan_asento': 'Kadunvarsipysäköinti',
+        'hel:datanomistaja': 'HEL',
+        'hel:luokka_nimi':   p.source || '',
+        'hel:voimassaolo':   p.valid || ''
+      });
     });
 
     document.getElementById('start-btn').addEventListener('click',()=>{
@@ -4912,9 +4915,9 @@
         minY = sheet.clientHeight - window.innerHeight * 0.8;
         maxY = sheet.clientHeight - 70;
       } else if(currentParkingProps || hoveredPolyId){
-        // P-marker on a parking area: max 80% from bottom, min 120px from bottom
+        // P-marker on a parking area: max 80% from bottom, min 75px from bottom
         minY = sheet.clientHeight - window.innerHeight * 0.8;
-        maxY = sheet.clientHeight - 120;
+        maxY = sheet.clientHeight - 75;
       } else {
         maxY = sheet.clientHeight - 60;
         const btnH = btnContainer.offsetHeight || 90;
@@ -4963,10 +4966,10 @@
         return;
       }
       if(currentParkingProps || hoveredPolyId){
-        // P-marker on a parking area: 3-level snap (max 80% / mid 153px / min 120px)
+        // P-marker on a parking area: 3-level snap (max 80% / mid 153px / min 75px)
         const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // top (highest)
         const midY = sheet.clientHeight - 153;                       // mid step
-        const minY = sheet.clientHeight - 120;                       // min (lowest)
+        const minY = sheet.clientHeight - 75;                        // min (lowest)
         if(dragFromHandle){
           snapTo(Math.max(maxY, Math.min(minY, currentY)));
         } else {
