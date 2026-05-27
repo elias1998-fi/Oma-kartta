@@ -1982,10 +1982,18 @@
 
     // Generate the area code shown in the badge: "{zone}{encodedHours}"
     // e.g. Vyöhyke 1 with max 4h → "14"; Vyöhyke 2 with 24h → "20".
+    // Prefers the zone stored in DB; falls back to live computation from
+    // the geometry centroid if the field isn't populated yet.
     function computeAreaCodeFromFeature(feature) {
       if (!feature) return '—';
-      const zone = getZoneForGeometry(feature.geometry);
-      const hours = encodeMaxHours(feature.properties && feature.properties.max_hours);
+      const p = feature.properties || {};
+      let zone;
+      if (p.zone != null && p.zone !== '') {
+        zone = Number(p.zone);
+      } else {
+        zone = getZoneForGeometry(feature.geometry);
+      }
+      const hours = encodeMaxHours(p.max_hours);
       return `${zone}${hours}`;
     }
 
@@ -3020,6 +3028,93 @@
       loadPendingSubmissions();
     }
 
+    // ── Zone migration: compute and persist the parking zone for every
+    // row in parking_master. Run once (idempotent — safe to re-run).
+    // Requires the `zone` column to exist in the table:
+    //   ALTER TABLE parking_master ADD COLUMN zone smallint;
+    let zoneMigrationRunning = false;
+    async function runZoneMigration() {
+      if (zoneMigrationRunning) return;
+      zoneMigrationRunning = true;
+      const btn = document.getElementById('zone-migration-btn');
+      const status = document.getElementById('zone-migration-status');
+      btn.disabled = true;
+      btn.style.opacity = '0.55';
+      btn.style.cursor = 'wait';
+      status.style.color = '#888';
+      status.textContent = 'Haetaan rivit Supabasesta…';
+
+      try {
+        // Pull every parking_master row except the halli points (they're single points,
+        // not areas). We only need id + polygon_coords for the zone computation.
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,polygon_coords&source=neq.hel_halli&limit=20000`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        if (!res.ok) throw new Error(`Haku epäonnistui (HTTP ${res.status})`);
+        const rows = await res.json();
+        status.textContent = `Löytyi ${rows.length} riviä — lasketaan vyöhykkeet…`;
+
+        // Compute zone for each row from its polygon centroid
+        const updates = rows.map(r => ({ id: r.id, zone: getZoneForGeometry(r.polygon_coords) }));
+        const zoneCounts = { 1: 0, 2: 0, 3: 0 };
+        updates.forEach(u => { zoneCounts[u.zone] = (zoneCounts[u.zone] || 0) + 1; });
+
+        // PATCH in parallel batches so we don't hammer the API too hard
+        const BATCH = 12;
+        const t0 = Date.now();
+        let done = 0;
+        let firstError = null;
+
+        for (let i = 0; i < updates.length; i += BATCH) {
+          const slice = updates.slice(i, i + BATCH);
+          await Promise.all(slice.map(async u => {
+            try {
+              const r = await fetch(
+                `${SUPABASE_URL}/rest/v1/parking_master?id=eq.${u.id}`,
+                {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type':  'application/json',
+                    'apikey':        SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Prefer':        'return=minimal'
+                  },
+                  body: JSON.stringify({ zone: u.zone })
+                }
+              );
+              if (!r.ok && !firstError) firstError = `HTTP ${r.status}: ${await r.text()}`;
+            } catch (err) {
+              if (!firstError) firstError = err.message;
+            }
+          }));
+          done += slice.length;
+          status.textContent = `Päivitetty ${done}/${updates.length}…`;
+        }
+
+        if (firstError) throw new Error(firstError);
+
+        const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+        status.innerHTML = `✓ Valmis ${elapsed}s — V1: <b>${zoneCounts[1]}</b>, V2: <b>${zoneCounts[2]}</b>, V3: <b>${zoneCounts[3]}</b>`;
+        status.style.color = '#27ae60';
+
+        // Invalidate the in-memory cache so the next pan reloads with the new zone field
+        masterDataLoaded = false;
+      } catch (e) {
+        status.textContent = `Virhe: ${e.message}`;
+        status.style.color = '#e53935';
+        // Hint about the most likely cause
+        if (/zone/i.test(e.message) && /column|sarake/i.test(e.message)) {
+          status.innerHTML += `<br><span style="color:#888;">Aja ensin SQL Editorissa:<br><code>ALTER TABLE parking_master ADD COLUMN zone smallint;</code></span>`;
+        }
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        zoneMigrationRunning = false;
+      }
+    }
+
     // ── Parking garage icon (data URL) ────────────────────────────────
     const HALLI_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+CiAgPCEtLSBTaGFkb3cvZGVwdGggLS0+CiAgPHJlY3QgeD0iNCIgeT0iNSIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSJyZ2JhKDAsMCwwLDAuMTgpIi8+CiAgPCEtLSBCbHVlIGJhY2tncm91bmQgLS0+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSIjMTU2NUMwIi8+CiAgPCEtLSBTdWJ0bGUgaW5uZXIgaGlnaGxpZ2h0IC0tPgogIDxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSIxMjAiIGhlaWdodD0iNjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDcpIi8+CiAgPCEtLSBXaGl0ZSBib3JkZXIgLS0+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgcnk9IjIwIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjQiLz4KICA8IS0tIFJvb2Ygb3V0bGluZSAtLT4KICA8cG9seWxpbmUgcG9pbnRzPSIyNCw0NCA2NCwxOCAxMDAsNDQiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iNyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPCEtLSBQIGxldHRlciAtIGJvbGQgYW5kIGNlbnRlcmVkIC0tPgogIDx0ZXh0IHg9IjY0IiB5PSIxMDgiIAogICAgICAgIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjaywgQXJpYWwsIEhlbHZldGljYSwgc2Fucy1zZXJpZiIgCiAgICAgICAgZm9udC1zaXplPSI3MiIgZm9udC13ZWlnaHQ9IjkwMCIKICAgICAgICBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImF1dG8iCiAgICAgICAgc3R5bGU9ImxldHRlci1zcGFjaW5nOi0ycHgiPlA8L3RleHQ+Cjwvc3ZnPg==';
 
@@ -3033,7 +3128,7 @@
 
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coords&source=neq.hel_halli&limit=10000`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,zone,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coords&source=neq.hel_halli&limit=10000`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -3148,6 +3243,7 @@
             properties: {
               id: r.id, source: r.source, area_type: r.area_type,
               extra_info: r.extra_info || '', max_hours: r.max_hours,
+              zone: r.zone,
               valid: r.valid_mape_from || '',
               valid_mape_to: r.valid_mape_to || '',
               valid_la_from: r.valid_la_from || '',
@@ -5495,6 +5591,12 @@
         <div class="overlay-title">Hallinto</div>
       </div>
       <button onclick="loadPendingSubmissions()" style="width:34px;height:34px;background:#f0f0f0;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;margin-right:4px;" title="Päivitä">↻</button>
+    </div>
+    <!-- One-shot maintenance actions (separate from the live-refreshed list below) -->
+    <div id="admin-actions" style="background:white;padding:14px 16px;border-bottom:1px solid #eee;font-family:Arial,sans-serif;flex-shrink:0;">
+      <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Kertaluonteiset tehtävät</div>
+      <button id="zone-migration-btn" onclick="runZoneMigration()" style="height:42px;padding:0 16px;background:#0C0243;border:none;border-radius:10px;color:white;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;transition:opacity 0.2s;">Päivitä vyöhykkeet</button>
+      <div id="zone-migration-status" style="font-size:12px;color:#888;margin-top:8px;min-height:16px;"></div>
     </div>
     <div id="admin-list-content" style="flex:1;overflow-y:auto;font-family:Arial,sans-serif;">
       <div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">Ladataan...</div>
