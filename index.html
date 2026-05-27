@@ -14,39 +14,22 @@
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
     #map { width: 100%; height: 100%; height: -webkit-fill-available; }
 
-    /* ── Portrait-lock for in-browser use ─────────────────────────────
-       When the device is in landscape, rotate the whole body 90° so the
-       content keeps appearing as portrait. The body is positioned with
-       its left edge at the viewport's right edge, then rotated clockwise
-       around its top-left corner — this fills the viewport exactly.
-       Using viewport units (vw/vh) avoids the ambiguity of percentages.
-       screen.orientation.lock() handles this natively in PWA / standalone
-       mode; this CSS covers regular browser tabs where the API is restricted. */
+    /* ── Portrait-lock fallback for in-browser use ─────────────────────
+       When the device is in landscape, rotate the whole body so the
+       content keeps appearing as portrait. screen.orientation.lock()
+       handles this natively in PWA / standalone mode; this CSS hack
+       covers regular browser tabs where the API is restricted. */
     @media screen and (orientation: landscape) {
-      html { overflow: hidden !important; }
       body {
-        position: fixed !important;
-        top: 0 !important;
-        left: 100vw !important;
-        width: 100vh !important;
-        height: 100vw !important;
-        overflow: hidden !important;
-        transform: rotate(90deg) !important;
-        transform-origin: top left !important;
+        transform: rotate(-90deg);
+        transform-origin: left top;
+        width: 100vh;
+        height: 100vw;
+        overflow: hidden;
+        position: absolute;
+        top: 100%;
+        left: 0;
       }
-    }
-    /* Same rule applied via class — used as a JS fallback when the
-       media query alone isn't matched (e.g. some embedded WebViews). */
-    html.force-portrait { overflow: hidden !important; }
-    body.force-portrait {
-      position: fixed !important;
-      top: 0 !important;
-      left: 100vw !important;
-      width: 100vh !important;
-      height: 100vw !important;
-      overflow: hidden !important;
-      transform: rotate(90deg) !important;
-      transform-origin: top left !important;
     }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
@@ -1687,28 +1670,14 @@
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) lockPortrait();
     });
-
-    // ── Belt-and-suspenders portrait enforcement ─────────────────────
-    // Some WebViews and browsers don't fire the @media orientation rule
-    // reliably; detect landscape via window dimensions and toggle the
-    // .force-portrait class on <html>/<body> so the rotation kicks in.
-    function enforcePortrait() {
-      const landscape = window.innerWidth > window.innerHeight;
-      document.documentElement.classList.toggle('force-portrait', landscape);
-      document.body.classList.toggle('force-portrait', landscape);
-      // After the layout changes, tell the map to recalculate its canvas.
-      if (typeof map !== 'undefined' && map.resize) {
-        setTimeout(() => map.resize(), 50);
-        setTimeout(() => map.resize(), 350);
-      }
-    }
-    enforcePortrait();
+    // When the device rotates, the CSS rotation fallback changes the body's
+    // effective dimensions. Tell the map to recalculate its canvas size.
     window.addEventListener('orientationchange', () => {
-      // iOS reports the new dimensions after a short delay
-      setTimeout(enforcePortrait, 50);
-      setTimeout(enforcePortrait, 300);
+      setTimeout(() => { if (typeof map !== 'undefined' && map.resize) map.resize(); }, 250);
     });
-    window.addEventListener('resize', enforcePortrait);
+    window.addEventListener('resize', () => {
+      if (typeof map !== 'undefined' && map.resize) map.resize();
+    });
 
     const splashScreen = document.getElementById('splash-screen');
     
