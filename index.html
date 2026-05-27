@@ -2685,11 +2685,12 @@
       document.getElementById('sheet-divider').style.display  = 'block';
       document.getElementById('action-btn').textContent       = header;
       document.getElementById('action-btn').classList.add('active');
-      const snap = window.innerHeight * 0.42;
+      // Open at 153px from bottom (mid step). Bounds match the three-level snap below
+      // when the user drags: max = 80% of viewport, mid = 153px, min = 120px from bottom.
       const bs = document.getElementById('bottom-sheet');
       bs.style.transition = 'transform 0.2s ease';
-      bs.style.transform  = `translateY(${snap}px)`;
-      currentY = snap;
+      bs.style.transform  = 'translateY(calc(100% - 153px))';
+      currentY = bs.offsetHeight - 153;
       masterFeatureLocked = true;
       clearTimeout(masterFeatureUnlockTimer);
       masterFeatureUnlockTimer = setTimeout(() => { masterFeatureLocked = false; }, 4000);
@@ -4907,9 +4908,13 @@
       lastTime=now;
       let maxY, minY;
       if(filterMode){
-        // Filter view: translateY between 80% (max size, highest) and 90px-from-bottom (min size, lowest)
+        // Filter view: translateY between 80% (max size, highest) and 70px-from-bottom (min size, lowest)
         minY = sheet.clientHeight - window.innerHeight * 0.8;
         maxY = sheet.clientHeight - 70;
+      } else if(currentParkingProps || hoveredPolyId){
+        // P-marker on a parking area: max 80% from bottom, min 120px from bottom
+        minY = sheet.clientHeight - window.innerHeight * 0.8;
+        maxY = sheet.clientHeight - 120;
       } else {
         maxY = sheet.clientHeight - 60;
         const btnH = btnContainer.offsetHeight || 90;
@@ -4948,6 +4953,32 @@
           else if(velocity > 0.2) ti = Math.min(levels.length - 1, si + 1); // swipe down → one level down
           else {
             // Gentle move with no clear velocity → snap to nearest level to current position
+            ti = 0;
+            for(let i=1;i<levels.length;i++){
+              if(Math.abs(currentY - levels[i]) < Math.abs(currentY - levels[ti])) ti = i;
+            }
+          }
+          snapTo(levels[ti]);
+        }
+        return;
+      }
+      if(currentParkingProps || hoveredPolyId){
+        // P-marker on a parking area: 3-level snap (max 80% / mid 153px / min 120px)
+        const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // top (highest)
+        const midY = sheet.clientHeight - 153;                       // mid step
+        const minY = sheet.clientHeight - 120;                       // min (lowest)
+        if(dragFromHandle){
+          snapTo(Math.max(maxY, Math.min(minY, currentY)));
+        } else {
+          const levels = [maxY, midY, minY];
+          let si = 0;
+          for(let i=1;i<levels.length;i++){
+            if(Math.abs(startTranslate - levels[i]) < Math.abs(startTranslate - levels[si])) si = i;
+          }
+          let ti = si;
+          if(velocity < -0.2)      ti = Math.max(0, si - 1);
+          else if(velocity > 0.2)  ti = Math.min(levels.length - 1, si + 1);
+          else {
             ti = 0;
             for(let i=1;i<levels.length;i++){
               if(Math.abs(currentY - levels[i]) < Math.abs(currentY - levels[ti])) ti = i;
