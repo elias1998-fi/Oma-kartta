@@ -2606,15 +2606,15 @@
     }
 
     const SOURCE_STYLE = {
-      'community':           { fill:'#27ae60', line:'#1e8449', label:'Yhteisön lisäämä alue' },
-      'hel_ilmainen_pitka':  { fill:'#27ae60', line:'#1e8449', label:'Ilmainen pitkäaikainen pysäköinti' },
-      'hel_ilmainen_lyhyt':  { fill:'#27ae60', line:'#1e8449', label:'Ilmainen lyhytaikainen pysäköinti' },
+      'community':           { fill:'#7F1F89', line:'#611868', label:'Yhteisön lisäämä alue' },
+      'hel_ilmainen_pitka':  { fill:'#7F1F89', line:'#611868', label:'Ilmainen pitkäaikainen pysäköinti' },
+      'hel_ilmainen_lyhyt':  { fill:'#7F1F89', line:'#611868', label:'Ilmainen lyhytaikainen pysäköinti' },
       'hel_kertamaksu_1h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 1h)' },
       'hel_kertamaksu_2h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 2h)' },
       'hel_kertamaksu_4h':            { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 4h)' },
       'hel_maksullinen_ei_tunnusta':      { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (ilman tunnusta)' },
       'hel_kertamaksu_1h_ei_tunnusta':          { fill:'#4A90D9', line:'#2B6CB0', label:'Kertamaksu max. 1h (ilman tunnusta)' },
-      'hel_sallittu_kiellon_ulkopuolella': { fill:'#27ae60', line:'#1e8449', label:'Sallittu pysäköintikieltoajan ulkopuolella' },
+      'hel_sallittu_kiellon_ulkopuolella': { fill:'#7F1F89', line:'#611868', label:'Sallittu pysäköintikieltoajan ulkopuolella' },
     };
 
     async function renderMasterRows(rows) {
@@ -2653,10 +2653,10 @@
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:14.3,
           paint:{ 'fill-opacity': 0.30,
             'fill-color': ['match', ['get','source'],
-              'community',          '#27ae60',
-              'hel_ilmainen_pitka', '#27ae60',
-              'hel_ilmainen_lyhyt', '#27ae60',
-              'hel_sallittu_kiellon_ulkopuolella', '#27ae60',
+              'community',          '#7F1F89',
+              'hel_ilmainen_pitka', '#7F1F89',
+              'hel_ilmainen_lyhyt', '#7F1F89',
+              'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
               'hel_kertamaksu_1h',  '#4A90D9',
               'hel_kertamaksu_2h',  '#4A90D9',
               'hel_kertamaksu_4h',  '#4A90D9',
@@ -2670,10 +2670,10 @@
         map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:14.3,
           paint:{ 'line-width': 1.5, 'line-opacity': 0.30,
             'line-color': ['match', ['get','source'],
-              'community',          '#1e8449',
-              'hel_ilmainen_pitka', '#1e8449',
-              'hel_ilmainen_lyhyt', '#1e8449',
-              'hel_sallittu_kiellon_ulkopuolella', '#1e8449',
+              'community',          '#611868',
+              'hel_ilmainen_pitka', '#611868',
+              'hel_ilmainen_lyhyt', '#611868',
+              'hel_sallittu_kiellon_ulkopuolella', '#611868',
               '#2B6CB0'
             ]
           }
@@ -2697,10 +2697,10 @@
         map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:14.3,
           paint:{ 'fill-opacity': 0.50,
             'fill-color': ['match', ['get','source'],
-              'community',          '#27ae60',
-              'hel_ilmainen_pitka', '#27ae60',
-              'hel_ilmainen_lyhyt', '#27ae60',
-              'hel_sallittu_kiellon_ulkopuolella', '#27ae60',
+              'community',          '#7F1F89',
+              'hel_ilmainen_pitka', '#7F1F89',
+              'hel_ilmainen_lyhyt', '#7F1F89',
+              'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
               'hel_kertamaksu_1h',  '#4A90D9',
               'hel_kertamaksu_2h',  '#4A90D9',
               'hel_kertamaksu_4h',  '#4A90D9',
@@ -3314,10 +3314,10 @@
         editorMap.addLayer({ id:'editor-fill', type:'fill', source:'editor-all', minzoom:13,
           paint:{ 'fill-opacity':0.35,
             'fill-color': ['match', ['get','source'],
-              'community',          '#27ae60',
-              'hel_ilmainen_pitka', '#27ae60',
-              'hel_ilmainen_lyhyt', '#27ae60',
-              'hel_sallittu_kiellon_ulkopuolella', '#27ae60',
+              'community',          '#7F1F89',
+              'hel_ilmainen_pitka', '#7F1F89',
+              'hel_ilmainen_lyhyt', '#7F1F89',
+              'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
               '#4A90D9'
             ]
           }
@@ -3325,10 +3325,10 @@
         editorMap.addLayer({ id:'editor-line', type:'line', source:'editor-all', minzoom:13,
           paint:{ 'line-width':1,
             'line-color': ['match', ['get','source'],
-              'community',          '#1e8449',
-              'hel_ilmainen_pitka', '#1e8449',
-              'hel_ilmainen_lyhyt', '#1e8449',
-              'hel_sallittu_kiellon_ulkopuolella', '#1e8449',
+              'community',          '#611868',
+              'hel_ilmainen_pitka', '#611868',
+              'hel_ilmainen_lyhyt', '#611868',
+              'hel_sallittu_kiellon_ulkopuolella', '#611868',
               '#2B6CB0'
             ]
           }
