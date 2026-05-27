@@ -506,13 +506,16 @@
     #sheet-filter.visible { display: flex; }
     #filter-title { font-size: 16px; font-weight: bold; color: #222; margin-top: 8px; margin-bottom: 16px; }
     
+    .filter-group {
+      background: #f5f5f5;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
     .filter-toggle-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
-      margin-bottom: 20px;
-      border-bottom: 1px solid #eee;
     }
     .filter-toggle-label {
       font-size: 14px;
@@ -620,7 +623,7 @@
     #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 16px; }
 
     /* Three-way segmented control */
-    #free-mode-segmented { margin: 0 0 20px 0; }
+    #free-mode-segmented { margin: 14px 0 0 0; }
     .seg-track {
       position: relative;
       display: flex;
@@ -1453,34 +1456,50 @@
     <div id="sheet-filter">
       <div id="filter-title">Suodata karttanäkymää</div>
       
-      <!-- Toggle for free parking areas -->
-      <div class="filter-toggle-row">
-        <span class="filter-toggle-label">Näytä ilmaiset pysäköintialueet</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-free-parking" onchange="toggleFreeParkingAreas()">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
+      <!-- Group 1: free parking visibility + segmented control -->
+      <div class="filter-group">
+        <div class="filter-toggle-row">
+          <span class="filter-toggle-label">Näytä ilmaiset pysäköintialueet</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-free-parking" onchange="toggleFreeParkingAreas()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
 
-      <!-- Three-way segmented control (shown when free toggle is on) -->
-      <div id="free-mode-segmented" style="display:none;">
-        <div class="seg-track">
-          <div class="seg-thumb" id="seg-thumb"></div>
-          <button class="seg-option" data-mode="paid" onclick="setFreeFilterMode('paid')">Maksulliset</button>
-          <button class="seg-option" data-mode="all" onclick="setFreeFilterMode('all')">Kaikki</button>
-          <button class="seg-option" data-mode="free" onclick="setFreeFilterMode('free')">Ilmaiset</button>
+        <!-- Three-way segmented control (shown when free toggle is on) -->
+        <div id="free-mode-segmented" style="display:none;">
+          <div class="seg-track">
+            <div class="seg-thumb" id="seg-thumb"></div>
+            <button class="seg-option" data-mode="paid" onclick="setFreeFilterMode('paid')">Maksulliset</button>
+            <button class="seg-option" data-mode="all" onclick="setFreeFilterMode('all')">Kaikki</button>
+            <button class="seg-option" data-mode="free" onclick="setFreeFilterMode('free')">Ilmaiset</button>
+          </div>
         </div>
       </div>
-      
-      <div id="filter-subtitle">Näytä alueet, joilla sallittu max. pysäköintiaika on valitulla välillä</div>
-      <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
-      <div class="range-container">
-        <div class="range-track"></div><div class="range-fill" id="range-fill"></div>
-        <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0"/>
-        <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26"/>
+
+      <!-- Group 2: max parking time range -->
+      <div class="filter-group">
+        <div id="filter-subtitle">Näytä alueet, joilla sallittu max. pysäköintiaika on valitulla välillä</div>
+        <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
+        <div class="range-container">
+          <div class="range-track"></div><div class="range-fill" id="range-fill"></div>
+          <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0"/>
+          <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26"/>
+        </div>
+        <div class="slider-ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span></div>
+        <div id="filter-result"></div>
       </div>
-      <div class="slider-ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span></div>
-      <div id="filter-result"></div>
+
+      <!-- Group 3: public EV charging points -->
+      <div class="filter-group">
+        <div class="filter-toggle-row">
+          <span class="filter-toggle-label">Näytä julkiset sähkölatauspisteet</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-ev-charging" onchange="toggleEvCharging()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4264,7 +4283,13 @@
       freeFilterMode = mode;
       const idx = mode === 'paid' ? 0 : mode === 'free' ? 2 : 1;
       const thumb = document.getElementById('seg-thumb');
-      if (thumb) thumb.style.transform = `translateX(${idx * 100}%)`;
+      if (thumb) {
+        thumb.style.transform = `translateX(${idx * 100}%)`;
+        // Color reflects the segment: paid=blue, free=purple, all=split (blue→purple)
+        if (mode === 'paid')      thumb.style.background = '#4A90D9';
+        else if (mode === 'free') thumb.style.background = '#7F1F89';
+        else                      thumb.style.background = 'linear-gradient(to right, #4A90D9 50%, #7F1F89 50%)';
+      }
       document.querySelectorAll('#free-mode-segmented .seg-option').forEach(b => {
         b.classList.toggle('active', b.dataset.mode === mode);
       });
@@ -4279,6 +4304,14 @@
     function hideFreeSegmented() {
       const seg = document.getElementById('free-mode-segmented');
       if (seg) seg.style.display = 'none';
+    }
+
+    // Public EV charging points toggle (placeholder — data layer to be added later)
+    let showEvCharging = false;
+    function toggleEvCharging() {
+      showEvCharging = document.getElementById('toggle-ev-charging').checked;
+      // TODO: when an EV-charging data source/layer exists, toggle its visibility here.
+      // e.g. if (map.getLayer('ev-charging')) map.setLayoutProperty('ev-charging','visibility', showEvCharging ? 'visible' : 'none');
     }
 
     function acceptFreeTerms() {
@@ -4296,8 +4329,7 @@
       applyFreeVisibility(false);
     }
 
-    function toggleFreeParkingAreas() {
-      showFreeParking = document.getElementById('toggle-free-parking').checked;
+    function toggleFreeParkingAreas() {      showFreeParking = document.getElementById('toggle-free-parking').checked;
       if (showFreeParking) {
         // Turning ON — require terms acceptance before revealing free areas
         if (!freeTermsAccepted) {
