@@ -860,6 +860,21 @@
     .apb-buttons button:active { opacity: 0.7; }
     .apb-stop   { background: #f0f0f0; color: #555; }
     .apb-extend { background: #0C0243; color: white; }
+
+    /* ── Extending-mode: dim & lock the cards above "Pysäköintiaika" ──
+       When the user enters extend mode from the active-parking banner, only
+       the time picker should be editable. The first three p-cards (Valittu
+       alue, Ajoneuvo, Maksutapa) are visually dimmed and made non-clickable. */
+    #parking-overlay.extending-mode .p-cards-container > .p-card:nth-child(-n+3) {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    /* In extend mode the big action button is never visually disabled — the
+       0-min state becomes "Keskeytä pysäköinti", not a dimmed placeholder. */
+    #parking-overlay.extending-mode #start-btn.disabled {
+      opacity: 1;
+      cursor: pointer;
+    }
     .area-name { font-size: 14px; font-weight: bold; color: #222; }
     .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
     .area-select-row { 
@@ -1486,7 +1501,7 @@
     </div>
     <div class="apb-buttons">
       <button class="apb-stop"   onclick="stopActiveParking()">Keskeytä pysäköinti</button>
-      <button class="apb-extend" onclick="extendActiveParking()">Lisää pysäköintiaikaa</button>
+      <button class="apb-extend" onclick="extendActiveParking()">Muuta pysäköinnin kestoa</button>
     </div>
   </div>
 
@@ -1701,6 +1716,7 @@
             <div><div class="area-code-badge" id="p-code">—</div></div>
             <div class="area-name" id="p-owner">—</div>
             <div class="area-meta" id="p-type">—</div>
+            <div class="area-meta" id="p-operator">—</div>
           </div>
           <div class="area-chevron">⌄</div>
         </div>
@@ -5239,7 +5255,14 @@
         const price = calculatePrice(rounded);
         document.getElementById('p-price').textContent = formatPrice(price.total);
         const startBtn = document.getElementById('start-btn');
-        if (rounded === 0) {
+        if (isExtendingSession) {
+          // Extend mode: button is always enabled. At 0 mins it becomes the
+          // cancel action; otherwise it confirms the new duration.
+          startBtn.classList.remove('disabled');
+          startBtn.textContent = (rounded === 0)
+            ? 'Keskeytä pysäköinti'
+            : 'Vahvista uusi pysäköintiaika';
+        } else if (rounded === 0) {
           startBtn.classList.add('disabled');
           startBtn.textContent = 'Aseta pysäköintiaika';
         } else {
@@ -5311,11 +5334,11 @@
 
     const drumZone=document.getElementById('drum-scroll-zone');
     let tStartY=null,tStartMins,tStartPhase,tLastY,tLastT,tVel;
-    drumZone.addEventListener('touchstart',e=>{stopInertia();tStartY=e.touches[0].clientY;tStartMins=parkingMinutes;tStartPhase=drumPhase;tLastY=tStartY;tLastT=Date.now();tVel=0;},{passive:true});
+    drumZone.addEventListener('touchstart',e=>{stopInertia();if(isExtendingSession){extendDrumUserTouched=true;stopExtendTicker();parkingStartTime=new Date();}tStartY=e.touches[0].clientY;tStartMins=parkingMinutes;tStartPhase=drumPhase;tLastY=tStartY;tLastT=Date.now();tVel=0;},{passive:true});
     drumZone.addEventListener('touchmove',e=>{if(tStartY===null)return;const y=e.touches[0].clientY;const now=Date.now(),dt=now-tLastT;if(dt>0)tVel=(y-tLastY)/dt;tLastY=y;tLastT=now;const fd=y-tStartY;drumPhase=tStartPhase+fd*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(tStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();},{passive:true});
     drumZone.addEventListener('touchend',()=>{tStartY=null;inertiaVel=tVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);},{passive:true});
     let mStartY=null,mStartMins,mStartPhase,mLastY,mLastT,mVel;
-    drumZone.addEventListener('mousedown',e=>{stopInertia();mStartY=e.clientY;mStartMins=parkingMinutes;mStartPhase=drumPhase;mLastY=e.clientY;mLastT=Date.now();mVel=0;});
+    drumZone.addEventListener('mousedown',e=>{stopInertia();if(isExtendingSession){extendDrumUserTouched=true;stopExtendTicker();parkingStartTime=new Date();}mStartY=e.clientY;mStartMins=parkingMinutes;mStartPhase=drumPhase;mLastY=e.clientY;mLastT=Date.now();mVel=0;});
     window.addEventListener('mousemove',e=>{if(mStartY===null)return;const dt=Date.now()-mLastT;if(dt>0)mVel=(e.clientY-mLastY)/dt;mLastY=e.clientY;mLastT=Date.now();const fd=e.clientY-mStartY;drumPhase=mStartPhase+fd*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(mStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();});
     window.addEventListener('mouseup',()=>{if(mStartY===null)return;mStartY=null;inertiaVel=mVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);});
     drawDrum();
@@ -5452,28 +5475,34 @@
       const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';
       isIlmainen=luokka.toLowerCase().includes('ilmainen');
       parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;
-      parkingMinutes=0;
+      // In extend mode, parkingMinutes/drumPhase are set by extendActiveParking()
+      // immediately after this call. Don't zero them here or the button text
+      // flickers from "Keskeytä pysäköinti" to "Vahvista uusi pysäköintiaika".
+      if (!isExtendingSession) {
+        parkingMinutes=0;
+        drumPhase=0;
+      }
       parkingStartTime=new Date();
       lastDisplayedMinutes=-1;
       lastVibrateMinute=-1;
       wasAtMax=false;
       clearTimeout(maxLabelTimer);
       document.getElementById('max-label').classList.remove('visible');
-      drumPhase=0;
       document.getElementById('p-code').textContent=areaCode;
-      // Row 2: "Helsinki, Vyöhyke N, Max. 2h" — N = actual zone, derived
-      // from the area code's first character (which IS the zone digit).
+      // Row 2: "Helsinki, Vyöhyke N | Max. 2h" — N = actual zone (derived
+      // from the area code's first character). Vertical bar separator
+      // matches the bottom-sheet's preview format.
       const zoneFromCode = String(areaCode).match(/^(\d)/)?.[1] || '2';
       const ownerRaw     = getOwnerName(p['hel:datanomistaja']).replace(
                              /Vyöhyke\s*\d+/, `Vyöhyke ${zoneFromCode}`);
       const ownerComma   = ownerRaw.replace(/^Helsinki Vyöhyke /, 'Helsinki, Vyöhyke ');
       const row2 = kestoText && kestoText !== 'Rajoittamaton'
-        ? `${ownerComma}, ${kestoText}`
+        ? `${ownerComma}  |  ${kestoText}`
         : ownerComma;
       document.getElementById('p-owner').textContent = row2;
-      // Row 3: parking type + operator (e.g. "Kadunvarsipysäköinti · Helsingin kaupunki Oy")
-      const operator = getParkingOperator(p['hel:luokka_nimi']);
-      document.getElementById('p-type').textContent = `${tyyppi} · ${operator}`;
+      // Row 3 (type) and Row 4 (operator) on separate lines for readability
+      document.getElementById('p-type').textContent     = tyyppi;
+      document.getElementById('p-operator').textContent = getParkingOperator(p['hel:luokka_nimi']);
       // Reset start button to its disabled "Aseta pysäköintiaika" state
       const startBtn0 = document.getElementById('start-btn');
       startBtn0.classList.add('disabled');
@@ -5491,12 +5520,15 @@
     function goBackToMap() {
       stopInertia();
       overlay.classList.remove('open');
+      overlay.classList.remove('extending-mode');
       // Restore the map's floating action button now that we're back on the map
       btnContainer.classList.remove('hidden');
       // If the user was extending an active session and backed out, cancel
       // the extension mode but keep the session running.
       if (isExtendingSession) {
         isExtendingSession = false;
+        extendDrumUserTouched = false;
+        stopExtendTicker();
         if (activeParkingSession) showActiveParkingBanner();
       }
       // Open the bottom sheet to the 153px mid-level used when a P-marker is
@@ -5635,18 +5667,53 @@
     }
 
     // ── Start / extend / stop session ──────────────────────────────────
+    // ── Extra state for extend mode ────────────────────────────────────
+    let extendDrumUserTouched = false;     // true once user touches drum
+    let extendTickerInterval  = null;      // live remaining-time ticker
+
+    function startExtendTicker() {
+      stopExtendTicker();
+      extendTickerInterval = setInterval(tickExtendDrum, 1000);
+    }
+    function stopExtendTicker() {
+      if (extendTickerInterval) {
+        clearInterval(extendTickerInterval);
+        extendTickerInterval = null;
+      }
+    }
+    // Drives the drum live in extend mode: parkingMinutes mirrors the
+    // session's remaining time until the user manually touches the drum.
+    function tickExtendDrum() {
+      if (!isExtendingSession || !activeParkingSession || extendDrumUserTouched) return;
+      const endMs = new Date(activeParkingSession.endTime).getTime();
+      const remainingMin = Math.max(0, Math.floor((endMs - Date.now()) / 60000));
+      // Anchor parkingStartTime to "now" so the end-time text stays accurate
+      parkingStartTime = new Date();
+      if (remainingMin === parkingMinutes) return; // same minute → only update on the boundary
+      const delta = remainingMin - parkingMinutes;
+      drumPhase += delta * PIXELS_PER_MINUTE * RADIANS_PER_PX;
+      parkingMinutes = remainingMin;
+      lastDisplayedMinutes = -1; // force button + text refresh
+      updateDisplay();
+    }
+
     async function startNewParkingSession() {
       const v   = vehicles[selectedVehicleIdx];
       const pm  = paymentMethods[selectedPaymentIdx];
       const areaCode = document.getElementById('p-code').textContent;
       const startTime = new Date();
-      const endTime   = new Date(startTime.getTime() + parkingMinutes * 60000);
+      // Planned end time is held in app state only; the DB's end_time stays
+      // null until the session is actually stopped.
+      const plannedEnd = new Date(startTime.getTime() + parkingMinutes * 60000);
+      // Capture the P-marker's current position (= map center) at the moment
+      // parking was started — stored as JSON {lat,lng} in the location column.
+      const center = map.getCenter();
 
       const payload = {
         start_time:     startTime.toISOString(),
-        end_time:       endTime.toISOString(),
         license_plate:  v.reg,
         area_code:      areaCode,
+        location:       { lat: center.lat, lng: center.lng },
         payment_method: pm.name,
         locality:       'Helsinki'
       };
@@ -5655,21 +5722,21 @@
       activeParkingSession = {
         id:            id,
         startTime:     startTime.toISOString(),
-        endTime:       endTime.toISOString(),
+        endTime:       plannedEnd.toISOString(),
         plate:         v.reg,
         nickname:      v.name,
         areaCode:      areaCode,
-        paymentMethod: pm.name
+        paymentMethod: pm.name,
+        maxHours:      parkingMaxMinutes / 60,
+        location:      { lat: center.lat, lng: center.lng }
       };
 
       // Show 4-second toast, then return to map with active banner visible
       showCustomToast('Pysäköinti aloitettu!', 4000);
       setTimeout(() => {
-        // Close the parking overlay & restore the map's bottom button
         const overlay = document.getElementById('parking-overlay');
         overlay.classList.remove('open');
         btnContainer.classList.remove('hidden');
-        // Slide the bottom sheet down to its minimal state
         sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
         sheet.style.transform  = 'translateY(calc(100% - 60px))';
         currentY = sheet.offsetHeight - 60;
@@ -5677,26 +5744,27 @@
       }, 4000);
     }
 
-    async function extendExistingSession() {
+    // Confirm a new total parking duration: new end_time = now + parkingMinutes.
+    async function confirmExtendedTime() {
       if (!activeParkingSession) return;
-      const addedMs = parkingMinutes * 60000;
-      const newEnd  = new Date(new Date(activeParkingSession.endTime).getTime() + addedMs);
-      if (activeParkingSession.id) {
-        await parkkihubiUpdate(activeParkingSession.id, { end_time: newEnd.toISOString() });
-      }
+      const newEnd = new Date(Date.now() + parkingMinutes * 60000);
+      // Note: DB's end_time stays null until the session is actually stopped.
+      // The new planned end is only persisted in app state.
       activeParkingSession.endTime = newEnd.toISOString();
       isExtendingSession = false;
+      extendDrumUserTouched = false;
+      stopExtendTicker();
 
-      showCustomToast(`Pysäköintiaikaa lisätty +${formatTimeDisplay(parkingMinutes)}`, 3000);
-      setTimeout(() => {
-        const overlay = document.getElementById('parking-overlay');
-        overlay.classList.remove('open');
-        btnContainer.classList.remove('hidden');
-        sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
-        sheet.style.transform  = 'translateY(calc(100% - 60px))';
-        currentY = sheet.offsetHeight - 60;
-        showActiveParkingBanner();
-      }, 1800);
+      const overlay = document.getElementById('parking-overlay');
+      overlay.classList.remove('open');
+      overlay.classList.remove('extending-mode');
+      btnContainer.classList.remove('hidden');
+      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+      sheet.style.transform  = 'translateY(calc(100% - 60px))';
+      currentY = sheet.offsetHeight - 60;
+
+      showCustomToast('Pysäköinnin kesto päivitetty', 2500);
+      setTimeout(showActiveParkingBanner, 1800);
     }
 
     async function stopActiveParking() {
@@ -5710,35 +5778,57 @@
       showCustomToast('Pysäköinti päättynyt', 2500);
     }
 
+    // Called from the in-overlay button when parkingMinutes === 0 in extend mode
+    async function cancelFromExtendMode() {
+      const overlay = document.getElementById('parking-overlay');
+      overlay.classList.remove('open');
+      overlay.classList.remove('extending-mode');
+      btnContainer.classList.remove('hidden');
+      isExtendingSession = false;
+      extendDrumUserTouched = false;
+      stopExtendTicker();
+      await stopActiveParking();
+    }
+
     function extendActiveParking() {
       if (!activeParkingSession) return;
-      isExtendingSession = true;
-      // Hide the banner while the parking overlay is open — overlay covers
-      // the screen anyway, and we re-show it after the extension completes
-      // (or in goBackToMap if the user backs out).
+      isExtendingSession    = true;
+      extendDrumUserTouched = false;
       hideActiveParkingBanner();
-      // Re-open the parking overlay with the same area code shown.
-      // We rebuild a minimal props object that openParkingOverlay accepts.
+      // Add the extending-mode class first so the dim is in place from the
+      // moment the overlay slides open (avoids any visual flash).
+      document.getElementById('parking-overlay').classList.add('extending-mode');
       openParkingOverlay({
         'hel:id':            activeParkingSession.areaCode,
-        'hel:kesto':         null,
+        'hel:kesto':         activeParkingSession.maxHours ? `${activeParkingSession.maxHours}h` : '24h',
         'hel:paikan_asento': 'Kadunvarsipysäköinti',
         'hel:datanomistaja': 'HEL',
         'hel:luokka_nimi':   '',
         'hel:voimassaolo':   ''
       });
-      // Tweak the action button text so it's clear we're extending
-      const startBtn0 = document.getElementById('start-btn');
-      startBtn0.textContent = 'Aseta lisäaika';
+      // Initialize the drum to the session's current remaining time
+      const endMs = new Date(activeParkingSession.endTime).getTime();
+      const remMin = Math.max(0, Math.min(parkingMaxMinutes,
+                       Math.floor((endMs - Date.now()) / 60000)));
+      parkingMinutes = remMin;
+      drumPhase = 0;
+      lastDisplayedMinutes = -1;
+      updateDisplay();
+      startExtendTicker();
     }
 
     document.getElementById('start-btn').addEventListener('click', () => {
-      if (parkingMinutes === 0) { jiggleDrum(); return; }
       if (isExtendingSession) {
-        extendExistingSession();
-      } else {
-        startNewParkingSession();
+        if (parkingMinutes === 0) {
+          cancelFromExtendMode();
+        } else {
+          confirmExtendedTime();
+        }
+        return;
       }
+      // Normal (non-extending) flow
+      if (parkingMinutes === 0) { jiggleDrum(); return; }
+      startNewParkingSession();
     });
 
 
