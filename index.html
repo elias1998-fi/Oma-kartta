@@ -864,10 +864,11 @@
     /* ── Extending-mode: dim & lock the cards above "Pysäköintiaika" ──
        When the user enters extend mode from the active-parking banner, only
        the time picker should be editable. The first three p-cards (Valittu
-       alue, Ajoneuvo, Maksutapa) are visually dimmed and made non-clickable. */
+       alue, Ajoneuvo, Maksutapa) are visually dimmed. They stay clickable so
+       a capture-phase handler can show a warning toast on tap — the inner
+       onclick handlers are blocked there via stopPropagation. */
     #parking-overlay.extending-mode .p-cards-container > .p-card:nth-child(-n+3) {
       opacity: 0.45;
-      pointer-events: none;
     }
     /* In extend mode the big action button is never visually disabled — the
        0-min state becomes "Keskeytä pysäköinti", not a dimmed placeholder. */
@@ -5334,11 +5335,11 @@
 
     const drumZone=document.getElementById('drum-scroll-zone');
     let tStartY=null,tStartMins,tStartPhase,tLastY,tLastT,tVel;
-    drumZone.addEventListener('touchstart',e=>{stopInertia();if(isExtendingSession){extendDrumUserTouched=true;stopExtendTicker();parkingStartTime=new Date();}tStartY=e.touches[0].clientY;tStartMins=parkingMinutes;tStartPhase=drumPhase;tLastY=tStartY;tLastT=Date.now();tVel=0;},{passive:true});
+    drumZone.addEventListener('touchstart',e=>{stopInertia();if(isExtendingSession){extendDrumUserTouched=true;stopExtendTicker();parkingStartTime=new Date();lastDisplayedMinutes=-1;updateDisplay();}tStartY=e.touches[0].clientY;tStartMins=parkingMinutes;tStartPhase=drumPhase;tLastY=tStartY;tLastT=Date.now();tVel=0;},{passive:true});
     drumZone.addEventListener('touchmove',e=>{if(tStartY===null)return;const y=e.touches[0].clientY;const now=Date.now(),dt=now-tLastT;if(dt>0)tVel=(y-tLastY)/dt;tLastY=y;tLastT=now;const fd=y-tStartY;drumPhase=tStartPhase+fd*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(tStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();},{passive:true});
     drumZone.addEventListener('touchend',()=>{tStartY=null;inertiaVel=tVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);},{passive:true});
     let mStartY=null,mStartMins,mStartPhase,mLastY,mLastT,mVel;
-    drumZone.addEventListener('mousedown',e=>{stopInertia();if(isExtendingSession){extendDrumUserTouched=true;stopExtendTicker();parkingStartTime=new Date();}mStartY=e.clientY;mStartMins=parkingMinutes;mStartPhase=drumPhase;mLastY=e.clientY;mLastT=Date.now();mVel=0;});
+    drumZone.addEventListener('mousedown',e=>{stopInertia();if(isExtendingSession){extendDrumUserTouched=true;stopExtendTicker();parkingStartTime=new Date();lastDisplayedMinutes=-1;updateDisplay();}mStartY=e.clientY;mStartMins=parkingMinutes;mStartPhase=drumPhase;mLastY=e.clientY;mLastT=Date.now();mVel=0;});
     window.addEventListener('mousemove',e=>{if(mStartY===null)return;const dt=Date.now()-mLastT;if(dt>0)mVel=(e.clientY-mLastY)/dt;mLastY=e.clientY;mLastT=Date.now();const fd=e.clientY-mStartY;drumPhase=mStartPhase+fd*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(mStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();});
     window.addEventListener('mouseup',()=>{if(mStartY===null)return;mStartY=null;inertiaVel=mVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);});
     drawDrum();
@@ -5671,6 +5672,26 @@
     let extendDrumUserTouched = false;     // true once user touches drum
     let extendTickerInterval  = null;      // live remaining-time ticker
 
+    // Capture-phase click interceptor on the parking overlay. When we're in
+    // extending-mode and the user taps one of the dimmed top three cards,
+    // show a warning toast and stop the inner onclick handler from firing.
+    // Capture phase runs before the event reaches the target, so calling
+    // stopPropagation here prevents goBackToMap/openVehicleSheet/etc.
+    document.getElementById('parking-overlay').addEventListener('click', (e) => {
+      const overlay = document.getElementById('parking-overlay');
+      if (!overlay.classList.contains('extending-mode')) return;
+      const card = e.target.closest('.p-card');
+      if (!card || !card.parentElement) return;
+      const cards = card.parentElement.querySelectorAll('.p-card');
+      const idx = Array.from(cards).indexOf(card);
+      if (idx >= 0 && idx < 3) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        showCustomToast('Tietoja ei voi muokata aktiivisen pysäköinnin ollessa käynnissä', 4000);
+      }
+    }, true); // capture phase
+
     function startExtendTicker() {
       stopExtendTicker();
       extendTickerInterval = setInterval(tickExtendDrum, 1000);
@@ -5683,18 +5704,50 @@
     }
     // Drives the drum live in extend mode: parkingMinutes mirrors the
     // session's remaining time until the user manually touches the drum.
+    // The big number shows second-level precision while live; on user touch
+    // we switch back to minute precision via updateDisplay().
     function tickExtendDrum() {
       if (!isExtendingSession || !activeParkingSession || extendDrumUserTouched) return;
       const endMs = new Date(activeParkingSession.endTime).getTime();
-      const remainingMin = Math.max(0, Math.floor((endMs - Date.now()) / 60000));
+      const remainingSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+      const remainingMin = Math.floor(remainingSec / 60);
       // Anchor parkingStartTime to "now" so the end-time text stays accurate
       parkingStartTime = new Date();
-      if (remainingMin === parkingMinutes) return; // same minute → only update on the boundary
-      const delta = remainingMin - parkingMinutes;
-      drumPhase += delta * PIXELS_PER_MINUTE * RADIANS_PER_PX;
-      parkingMinutes = remainingMin;
-      lastDisplayedMinutes = -1; // force button + text refresh
-      updateDisplay();
+
+      // On minute boundary: rotate the drum + refresh button text via updateDisplay
+      if (remainingMin !== parkingMinutes) {
+        const delta = remainingMin - parkingMinutes;
+        drumPhase += delta * PIXELS_PER_MINUTE * RADIANS_PER_PX;
+        parkingMinutes = remainingMin;
+        lastDisplayedMinutes = -1;
+        updateDisplay(); // sets time-big to "X min" formatting + button text
+      }
+
+      // Override the big number to show seconds-level precision (1 Hz update)
+      document.getElementById('time-big').textContent = formatExtendLive(remainingSec);
+      // Override the end-time text with the session's actual endTime
+      const ed = new Date(activeParkingSession.endTime);
+      document.getElementById('time-end-text').textContent =
+        `Pysäköinti päättyy klo ${ed.getHours()}:${String(ed.getMinutes()).padStart(2,'0')}`;
+    }
+    // Like formatTimeDisplay but with second precision — used only in
+    // extend mode while the drum is on autopilot.
+    function formatExtendLive(totalSec) {
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      if (h > 0) return `${h} h ${m} min ${s} s`;
+      if (m > 0) return `${m} min ${s} s`;
+      return `${s} s`;
+    }
+    // Used for the extend-confirm toast — handles any non-negative minute count
+    // without the clamp that formatTimeDisplay applies.
+    function formatDuration(mins) {
+      if (mins === 0) return '0 min';
+      if (mins < 60) return `${mins} min`;
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return m > 0 ? `${h} h ${m} min` : `${h} h`;
     }
 
     async function startNewParkingSession() {
@@ -5747,6 +5800,12 @@
     // Confirm a new total parking duration: new end_time = now + parkingMinutes.
     async function confirmExtendedTime() {
       if (!activeParkingSession) return;
+      // Compare new total (parkingMinutes) against the old remaining (in mins)
+      // to figure out whether the user added or shortened time.
+      const oldEndMs = new Date(activeParkingSession.endTime).getTime();
+      const oldRemainingMin = Math.max(0, Math.floor((oldEndMs - Date.now()) / 60000));
+      const delta = parkingMinutes - oldRemainingMin;
+
       const newEnd = new Date(Date.now() + parkingMinutes * 60000);
       // Note: DB's end_time stays null until the session is actually stopped.
       // The new planned end is only persisted in app state.
@@ -5763,7 +5822,12 @@
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
 
-      showCustomToast('Pysäköinnin kesto päivitetty', 2500);
+      // Direction-aware toast — "lisätty / vähennetty / päivitetty"
+      let toastMsg;
+      if      (delta > 0) toastMsg = `Pysäköintiaikaa lisätty ${formatDuration(delta)}`;
+      else if (delta < 0) toastMsg = `Pysäköintiaikaa vähennetty ${formatDuration(-delta)}`;
+      else                toastMsg = 'Pysäköinnin kesto päivitetty';
+      showCustomToast(toastMsg, 2500);
       setTimeout(showActiveParkingBanner, 1800);
     }
 
