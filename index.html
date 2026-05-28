@@ -500,13 +500,13 @@
     }
     #drag-handle-area { width: 100%; padding: 8px 0 6px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
 
-    /* ── Sheet "Open directions" button (top-left of the sheet) ────────
+    /* ── Sheet "Open directions" button (top-RIGHT of the sheet) ───────
        Fades in/out continuously as the sheet crosses ~60% of viewport.
        Only ever visible when a parking area is currently selected. */
     #sheet-nav-btn {
       position: absolute;
       top: 14px;
-      left: 14px;
+      right: 14px;
       width: 44px;
       height: 44px;
       background: #f3f4f6;
@@ -4121,6 +4121,9 @@
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = 'translateY(calc(100% - 153px))';
       currentY = bs.offsetHeight - 153;
+      // The nav button uses hoveredPolyId/currentParkingProps to know an
+      // area is selected — refresh visibility now that the sheet has moved.
+      if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
 
     function collapseCenterSheet() {
@@ -4140,6 +4143,8 @@
       document.getElementById('action-btn').textContent = 'Siirrä kursori pysäköintialueelle';
       document.getElementById('action-btn').classList.remove('active');
       document.getElementById('gps-warning').classList.add('visible');
+      // Hide the nav button immediately since no area is selected
+      if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
 
     const SOURCE_STYLE = {
@@ -6992,8 +6997,11 @@
     function updateNavBtnVisibility() {
       const btn = document.getElementById('sheet-nav-btn');
       if (!btn) return;
-      // Hide entirely if no parking area selected
-      if (!currentParkingProps) {
+      // The button is meaningful only when a parking area is currently
+      // selected. Both currentParkingProps and hoveredPolyId can signal
+      // that, depending on which detection path fired; check either.
+      const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
+      if (!hasArea) {
         btn.style.opacity = '0';
         btn.style.pointerEvents = 'none';
         return;
@@ -7002,8 +7010,10 @@
       const viewportH = window.innerHeight || 1;
       const visibleH  = sheet.offsetHeight - currentY;
       const ratio     = Math.max(0, Math.min(1, visibleH / viewportH));
-      // Fade in between 55% and 70% expansion (button fully on at ≥70%)
-      const opacity = Math.max(0, Math.min(1, (ratio - 0.55) / 0.15));
+      // Fade in between 55% and 65% expansion: at 60% the button is half-
+      // visible, at ≥65% it's fully visible. (The 60% midpoint matches the
+      // spec's "yli näytön 60% rajan" threshold.)
+      const opacity = Math.max(0, Math.min(1, (ratio - 0.55) / 0.10));
       btn.style.opacity = opacity;
       btn.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
     }
@@ -7039,7 +7049,8 @@
     // its 153px resting position, drop a red pin at the P-marker's current
     // location, then open the maps app picker.
     function onSheetNavBtnClick() {
-      if (!currentParkingProps) return;
+      const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
+      if (!hasArea) return;
       // Capture the P-marker's current location (= map center, since the
       // P-marker is anchored to it)
       const c = map.getCenter();
