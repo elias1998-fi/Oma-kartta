@@ -2500,7 +2500,7 @@
         // Load hallis always — they're just 113 points, lightweight
         if (!halliLoaded) { halliLoaded = true; loadHalliMarkers(); }
         // Load master polygons if zoomed in, else wait for onMapIdle
-        if (map.getZoom() >= 14.3) {
+        if (map.getZoom() >= 13) {
           loadViewportTiles(null);
         }
       }, 800);
@@ -3643,7 +3643,7 @@
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
 
         // Base fill layer
-        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:14.3,
+        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
           paint:{ 'fill-opacity': 0.30,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -3660,7 +3660,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:14.3,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
           paint:{ 'line-width': 1.5, 'line-opacity': 0.30,
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
@@ -3672,22 +3672,22 @@
           }
         });
         // Hover fill — red, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:14.3,
+        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13,
           paint:{ 'fill-color':'#ff1744', 'fill-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Hover outline — on the red hovered area, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:14.3,
+        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13,
           paint:{ 'line-color':'#ff1744', 'line-width': 1.5, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:14.3,
+        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13,
           paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:14.3,
+        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13,
           paint:{ 'fill-opacity': 0.50,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -3769,21 +3769,31 @@
       const hovId = String(props.id || '');
       const groupIds = getSameGroupIds(props).map(String);
       const groupMinusHov = groupIds.filter(id => id !== hovId);
-      
-      // Solid bright red fill (100%) on hovered area
+
+      // Bright red pulsing fill on the hovered area — this is the ONLY visible
+      // marker for the hovered area now. Both the base border (master-poly-line)
+      // and the red hover-line are suppressed so the user sees a single pulsing
+      // object instead of fill+border pulsing separately.
       map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
-      // Solid bright red border (100%, same as fill) - will pulse to create growth
-      if (map.getLayer('master-poly-hover-line')) {
-        map.setPaintProperty('master-poly-hover-line', 'line-color', '#ff1744');
-        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 1.0);
-        map.setFilter('master-poly-hover-line',
-          hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
+
+      // Hide the BASE border for the hovered area only. Case expression
+      // returns 0 opacity for the matching id, 0.30 for everything else.
+      if (map.getLayer('master-poly-line')) {
+        map.setPaintProperty('master-poly-line', 'line-opacity',
+          hovId
+            ? ['case', ['==', ['get','id'], hovId], 0, 0.30]
+            : 0.30
         );
       }
-      
+      // Keep the red hover-line layer permanently hidden — no separate
+      // border pulse anymore.
+      if (map.getLayer('master-poly-hover-line')) {
+        map.setFilter('master-poly-hover-line', ['==','id','__none__']);
+      }
+
       // Dark blue fill (100%) on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
         map.setPaintProperty('master-poly-group-fill', 'fill-color', '#0C0243');
@@ -3798,46 +3808,34 @@
       map.setFilter('master-poly-group-line',
         groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
-      
-      // Start size change animation
+
+      // Start the pulse (fill-opacity only — there's no border to animate)
       startSizeAnimation();
     }
-    
+
     let sizeAnimationId = null;
     function startSizeAnimation() {
       stopSizeAnimation();
       const startTime = Date.now();
-      const cycleDuration = 2000; // 2 seconds per cycle
-      
+      const cycleDuration = 2000; // 2 seconds per pulse cycle
+
       function animate() {
-        if (!map.getLayer('master-poly-hover-line')) return;
+        if (!map.getLayer('master-poly-hover-fill')) return;
         const elapsed = Date.now() - startTime;
         const progress = (elapsed % cycleDuration) / cycleDuration;
-        
-        // Pulse border width: area grows when border is thick, shrinks when thin
-        // Border extends outward, making the red area appear larger/smaller
         const sineValue = 0.5 + 0.5 * Math.sin(progress * Math.PI * 2);
-        const lineWidth = 1 + 6 * sineValue;
-        
-        // Sync opacity inversely with size: small area (thin border) = 100%, large area (thick border) = 70%
+        // Pulse opacity between 1.0 (full) and 0.7 (subtle dim)
         const opacity = 1.0 - 0.3 * sineValue;
-        
-        map.setPaintProperty('master-poly-hover-line', 'line-width', lineWidth);
-        map.setPaintProperty('master-poly-hover-line', 'line-opacity', opacity);
         map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', opacity);
         sizeAnimationId = requestAnimationFrame(animate);
       }
       animate();
     }
-    
+
     function stopSizeAnimation() {
       if (sizeAnimationId !== null) {
         cancelAnimationFrame(sizeAnimationId);
         sizeAnimationId = null;
-      }
-      if (map.getLayer('master-poly-hover-line')) {
-        map.setPaintProperty('master-poly-hover-line', 'line-width', 1.5);
-        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 1.0);
       }
       if (map.getLayer('master-poly-hover-fill')) {
         map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
@@ -3900,6 +3898,11 @@
         map.setFilter('master-poly-group-fill', ['==','id','__none__']);
       if (map.getLayer('master-poly-hover-line'))
         map.setFilter('master-poly-hover-line', ['==','id','__none__']);
+      // Restore the base border opacity for every area (we hid one with a
+      // case expression while hovering — reset that back to the flat value).
+      if (map.getLayer('master-poly-line')) {
+        map.setPaintProperty('master-poly-line', 'line-opacity', 0.30);
+      }
     }
 
     // Real-time center P-marker detection (no lock, immediate response)
@@ -3997,14 +4000,14 @@
     function updateButtonText() {
       // Always show "Lähennä karttaa" when zoomed out, regardless of lock or hoveredPolyId
       const zoom = map.getZoom();
-      if (zoom < 14.3) {
+      if (zoom < 13) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
         return;
       }
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
-      if (zoom < 14.3) {
+      if (zoom < 13) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
         return;
@@ -4142,7 +4145,7 @@
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
       map.addLayer({
-        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 14.3,
+        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
         layout: {
           'icon-image': 'halli-icon', 'icon-size': 0.52,
           'icon-allow-overlap': true, 'icon-anchor': 'center'
@@ -5332,14 +5335,14 @@
       const zoom=map.getZoom();
 
       // Hide P-marker when zoomed out
-      if(zoom < 14.3) {
+      if(zoom < 13) {
         centerPointerEl.classList.add('hidden');
       } else {
         centerPointerEl.classList.remove('hidden');
       }
 
       // Highlight parking area under map center (works on mobile & desktop)
-      if(zoom>=14.3 && map.getLayer('master-poly-fill')){
+      if(zoom>=13 && map.getLayer('master-poly-fill')){
         const cpt = map.project(map.getCenter());
         // Create detection area: 5px radius circle around center (easier targeting)
         const radius = 5;
@@ -5389,7 +5392,7 @@
         }
       }
       
-      if(zoom<14.3){
+      if(zoom<13){
         summaryHeader.textContent=''; summaryType.textContent='';
         summaryOperator.textContent=''; details.innerHTML='';
         divider.style.display='none';
@@ -5895,9 +5898,10 @@
       const h = Math.floor(remaining / 3600);
       const m = Math.floor((remaining % 3600) / 60);
       const s = remaining % 60;
+      const ss = s.toString().padStart(2,'0');
       const txt = h > 0
-        ? `${h} h ${m} min`
-        : (m > 0 ? `${m} min ${s.toString().padStart(2,'0')} s` : `${s} s`);
+        ? `${h} h ${m} min ${ss} s`
+        : (m > 0 ? `${m} min ${ss} s` : `${s} s`);
       document.getElementById('apb-countdown').textContent = txt;
       document.getElementById('apb-badge').textContent = activeParkingSession.areaCode;
       const ed = new Date(activeParkingSession.endTime);
