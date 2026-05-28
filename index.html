@@ -1054,7 +1054,8 @@
     }
     #summary-back-btn {
       width: 100%;
-      height: 54px;
+      min-height: 54px;
+      padding: 10px 12px;
       background: #0C0243;
       color: white;
       border: none;
@@ -1063,9 +1064,30 @@
       font-weight: bold;
       font-family: Arial, sans-serif;
       cursor: pointer;
+      line-height: 1.2;
       transition: opacity 0.15s ease;
     }
     #summary-back-btn:active { opacity: 0.85; }
+
+    /* Secondary action — send the receipt by email.
+       Lives in the scrollable content area (below the notes section, above
+       the sticky footer). Gray styling keeps it visually subordinate to
+       the primary "Palaa karttanäkymään" button. */
+    #send-receipt-btn {
+      width: 100%;
+      height: 46px;
+      margin-top: 14px;
+      background: #f0f0f0;
+      color: #555;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    #send-receipt-btn:active { opacity: 0.7; }
 
     /* ── Parking history list ─────────────────────────────────────────
        Month headers separate events into year/month groups; each event
@@ -1124,6 +1146,35 @@
       color: #0C0243;
       white-space: nowrap;
       padding-top: 1px;
+    }
+    /* Card is now clickable — opens the event detail overlay. */
+    .parking-event-card {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .parking-event-card:active { background: #fafafa; }
+
+    /* Inline comment row below "Henkilökohtainen". Single line; long text
+       gets clipped with an ellipsis. Full text shown in the detail view. */
+    .event-comment-line {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .event-comment-line .comment-text { font-style: italic; }
+
+    /* Disclosure indicator on the right side of each event card */
+    .event-chevron {
+      align-self: center;
+      font-size: 24px;
+      color: #c0c0c0;
+      font-weight: 300;
+      margin-left: 4px;
+      flex-shrink: 0;
+      line-height: 1;
     }
     .history-loading, .history-empty {
       padding: 60px 20px;
@@ -1567,6 +1618,61 @@
     </div>
   </div>
 
+  <!-- Detail view for a single completed parking event. Reuses summary-* CSS
+       for visual consistency with the "Pysäköinti päättynyt" page. -->
+  <div id="parking-event-detail" class="settings-detail-overlay">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeEventDetail()">←</button>
+      <div class="overlay-title">Pysäköintitapahtuma</div>
+    </div>
+    <div class="overlay-content" style="background:#f2f3f5;">
+      <div style="padding:20px 16px;font-family:Arial,sans-serif;">
+        <div class="summary-card">
+          <div class="summary-row">
+            <span class="summary-label">Alue</span>
+            <span class="summary-value"><span class="confirm-badge" id="ed-code">—</span></span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Pysäköintialueen omistaja</span>
+            <span class="summary-value" id="ed-operator">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Ajoneuvo</span>
+            <span class="summary-value" id="ed-plate">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Pysäköinti alkoi</span>
+            <span class="summary-value" id="ed-start">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Pysäköinti päättyi</span>
+            <span class="summary-value" id="ed-end">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Kesto</span>
+            <span class="summary-value" id="ed-duration">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Maksutapa</span>
+            <span class="summary-value" id="ed-payment">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Maksun tyyppi</span>
+            <span class="summary-value" id="ed-payment-type">—</span>
+          </div>
+          <div class="summary-row summary-total-row">
+            <span class="summary-label">Hinta</span>
+            <span class="summary-value summary-price" id="ed-price">—</span>
+          </div>
+        </div>
+        <div class="summary-notes-section" id="ed-notes-section" style="display:none;">
+          <label>Kommentti</label>
+          <div id="ed-notes-text" style="font-size:14px;color:#222;line-height:1.5;white-space:pre-wrap;word-break:break-word;padding:8px 0 0 0;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="account-detail" class="settings-detail-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAccountSettings()">←</button>
@@ -1867,11 +1973,12 @@
 
       <div class="summary-notes-section">
         <label for="summary-notes-input">Kommentti (valinnainen)</label>
-        <textarea id="summary-notes-input" placeholder="Lisää muistiinpano tähän pysäköintiin liittyen..."></textarea>
+        <textarea id="summary-notes-input" placeholder="Esimerkiksi: Työmatka Helsinkiin"></textarea>
       </div>
+      <button id="send-receipt-btn" onclick="sendReceiptAndReturn()">Lähetä kuitti sähköpostiin</button>
     </div>
     <div class="summary-footer">
-      <button id="summary-back-btn" onclick="closeParkingSummary()">Palaa takaisin karttanäkymään</button>
+      <button id="summary-back-btn" onclick="closeParkingSummary()">Palaa karttanäkymään</button>
     </div>
   </div>
 
@@ -2707,7 +2814,12 @@
     }
 
     profileBtn.addEventListener('click', () => {
-      menuItemClick(1, () => document.getElementById('profile-overlay').classList.add('open'));
+      menuItemClick(1, () => {
+        document.getElementById('profile-overlay').classList.add('open');
+        // Hide the floating action button while the profile (and any nested
+        // sub-overlays like Pysäköintitapahtumat) is shown.
+        btnContainer.classList.add('hidden');
+      });
     });
 
     filterBtn.addEventListener('click', () => {
@@ -2732,6 +2844,9 @@
     
     function closeProfileOverlay() {
       document.getElementById('profile-overlay').classList.remove('open');
+      // Restore the floating action button now that the profile (and any
+      // nested sub-overlays underneath) are no longer covering the map.
+      btnContainer.classList.remove('hidden');
       if (filterMode) closeFilter();
     }
     
@@ -6294,18 +6409,22 @@
       const ta = document.getElementById('summary-notes-input');
       ta.value = '';
       ta.dataset.sessionId = session.id || '';
+      // Reset the main action button to its empty-state label
+      document.getElementById('summary-back-btn').textContent = 'Palaa karttanäkymään';
 
       // Hide the map's floating action button while the summary is shown
       btnContainer.classList.add('hidden');
       document.getElementById('parking-summary-overlay').classList.add('open');
     }
-    async function closeParkingSummary() {
-      // Save notes to the DB if the user wrote anything
-      const ta = document.getElementById('summary-notes-input');
-      const notes = (ta.value || '').trim();
-      const sid   = ta.dataset.sessionId;
-      if (notes && sid) {
-        await parkkihubiUpdate(sid, { notes });
+    async function closeParkingSummary(skipSave) {
+      if (!skipSave) {
+        // Save notes to the DB if the user wrote anything
+        const ta = document.getElementById('summary-notes-input');
+        const notes = (ta.value || '').trim();
+        const sid   = ta.dataset.sessionId;
+        if (notes && sid) {
+          await parkkihubiUpdate(sid, { notes });
+        }
       }
       // Close overlay and restore the map view
       document.getElementById('parking-summary-overlay').classList.remove('open');
@@ -6315,6 +6434,34 @@
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
     }
+
+    // "Lähetä kuitti sähköpostiin": save notes first (so they make it to the
+    // history list), show the 4s confirmation toast, then auto-navigate to
+    // the map. skipSave=true on the close call prevents double-PATCHing.
+    async function sendReceiptAndReturn() {
+      const ta = document.getElementById('summary-notes-input');
+      const notes = (ta.value || '').trim();
+      const sid   = ta.dataset.sessionId;
+      if (notes && sid) {
+        await parkkihubiUpdate(sid, { notes });
+      }
+      showCustomToast('Kuitti lähetetty sähköpostiin', 4000);
+      setTimeout(() => closeParkingSummary(true), 4000);
+    }
+
+    // Live update of the summary action button: empty comment → "Palaa
+    // karttanäkymään"; any text → "Tallenna ja palaa takaisin karttanäkymään".
+    (function attachSummaryNotesListener() {
+      const ta = document.getElementById('summary-notes-input');
+      if (!ta) return;
+      ta.addEventListener('input', () => {
+        const btn = document.getElementById('summary-back-btn');
+        if (!btn) return;
+        btn.textContent = ta.value.trim()
+          ? 'Tallenna ja palaa takaisin karttanäkymään'
+          : 'Palaa karttanäkymään';
+      });
+    })();
 
     // ── Parking history list ───────────────────────────────────────────
     const MONTH_NAMES_FI = [
@@ -6340,6 +6487,9 @@
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const events = await res.json();
+        // Cache by id so the detail overlay can look events up by their UUID
+        _eventsById = new Map();
+        events.forEach(ev => { if (ev.id) _eventsById.set(ev.id, ev); });
         if (!events.length) {
           container.innerHTML = '<div class="history-empty">Ei vielä pysäköintitapahtumia</div>';
           return;
@@ -6348,6 +6498,57 @@
       } catch (e) {
         container.innerHTML = `<div class="history-empty">Virhe historian haussa: ${e.message}</div>`;
       }
+    }
+
+    // ── Single-event detail view ───────────────────────────────────────
+    let _eventsById = new Map();
+
+    function formatFullDateTime(d) {
+      const day  = d.getDate();
+      const mon  = d.getMonth() + 1;
+      const year = d.getFullYear();
+      const hh   = d.getHours();
+      const mm   = String(d.getMinutes()).padStart(2, '0');
+      return `${day}.${mon}.${year} klo ${hh}:${mm}`;
+    }
+
+    function showEventDetail(id) {
+      const ev = _eventsById.get(id);
+      if (!ev) return;
+      const start = new Date(ev.start_time);
+      const end   = new Date(ev.end_time);
+      const durMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+      const price  = calculatePrice(durMin);
+      const zone   = String(ev.area_code || '').match(/^(\d)/);
+      const operator = zone
+        ? `Helsingin kaupunki, Vyöhyke ${zone[1]}`
+        : 'Helsingin kaupunki';
+
+      document.getElementById('ed-code').textContent         = ev.area_code || '—';
+      document.getElementById('ed-operator').textContent     = operator;
+      document.getElementById('ed-plate').textContent        = ev.license_plate || '—';
+      document.getElementById('ed-start').textContent        = formatFullDateTime(start);
+      document.getElementById('ed-end').textContent          = formatFullDateTime(end);
+      document.getElementById('ed-duration').textContent     = formatDuration(durMin);
+      document.getElementById('ed-payment').textContent      = ev.payment_method || '—';
+      document.getElementById('ed-payment-type').textContent = 'Henkilökohtainen';
+      document.getElementById('ed-price').textContent        = formatPrice(price.total);
+
+      // Notes section is hidden if empty, shown with full (untruncated) text otherwise
+      const notesSection = document.getElementById('ed-notes-section');
+      const notesText    = document.getElementById('ed-notes-text');
+      if (ev.notes && ev.notes.trim()) {
+        notesText.textContent  = ev.notes;
+        notesSection.style.display = '';
+      } else {
+        notesSection.style.display = 'none';
+      }
+
+      document.getElementById('parking-event-detail').classList.add('open');
+    }
+
+    function closeEventDetail() {
+      document.getElementById('parking-event-detail').classList.remove('open');
     }
     function groupEventsByMonth(events) {
       // Events come pre-sorted by start_time DESC; produce contiguous groups.
@@ -6395,15 +6596,20 @@
         ? `Helsingin kaupunki, Vyöhyke ${zone[1]}`
         : 'Helsingin kaupunki';
       const paymentType = 'Henkilökohtainen';
+      const commentLine = ev.notes
+        ? `<div class="event-comment-line">Kommentti: <span class="comment-text">${escapeHtml(ev.notes)}</span></div>`
+        : '';
       return `
-        <div class="parking-event-card">
+        <div class="parking-event-card" onclick="showEventDetail('${escapeHtml(ev.id || '')}')">
           <div class="event-date">${escapeHtml(dateStr)}</div>
           <div class="event-main">
             <div class="event-operator">${escapeHtml(operatorLine)}</div>
             <div class="event-time">${startTm} – ${endTm} (${escapeHtml(durStr)})</div>
             <div class="event-payment-type">${paymentType}</div>
+            ${commentLine}
           </div>
           <div class="event-price">${escapeHtml(priceStr)}</div>
+          <div class="event-chevron">›</div>
         </div>
       `;
     }
