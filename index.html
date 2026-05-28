@@ -499,6 +499,110 @@
       flex-direction: column;
     }
     #drag-handle-area { width: 100%; padding: 8px 0 6px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
+
+    /* ── Sheet "Open directions" button (top-left of the sheet) ────────
+       Fades in/out continuously as the sheet crosses ~60% of viewport.
+       Only ever visible when a parking area is currently selected. */
+    #sheet-nav-btn {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      width: 44px;
+      height: 44px;
+      background: #f3f4f6;
+      border: 2px solid #0C0243;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 6;
+      color: #0C0243;
+    }
+    #sheet-nav-btn svg { width: 22px; height: 22px; }
+    #sheet-nav-btn:active { background: #e7e8ed; }
+
+    /* Red destination pin dropped on the map when the nav button is tapped. */
+    .destination-pin {
+      width: 32px;
+      height: 40px;
+      transform-origin: 50% 100%;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+    }
+
+    /* ── Maps app picker modal ──────────────────────────────────────── */
+    #navigate-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9994;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+    }
+    #navigate-modal.visible { display: flex; }
+    .navigate-box {
+      position: relative;
+      background: white;
+      border-radius: 16px;
+      width: min(86vw, 340px);
+      padding: 20px;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.35);
+    }
+    .navigate-title {
+      font-size: 17px;
+      font-weight: bold;
+      color: #0C0243;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .navigate-subtitle {
+      font-size: 12px;
+      color: #777;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .navigate-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 14px;
+      background: #f7f7f7;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #222;
+      cursor: pointer;
+      margin-bottom: 8px;
+      font-family: Arial, sans-serif;
+      transition: background 0.15s ease;
+    }
+    .navigate-option:active { background: #ececec; }
+    .navigate-icon { font-size: 22px; flex-shrink: 0; line-height: 1; }
+    .navigate-name { flex: 1; text-align: left; }
+    .navigate-chevron { font-size: 18px; color: #c0c0c0; line-height: 1; }
+    .navigate-cancel {
+      width: 100%;
+      height: 44px;
+      background: #f0f0f0;
+      color: #555;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+      font-family: Arial, sans-serif;
+      transition: opacity 0.15s ease;
+    }
+    .navigate-cancel:active { opacity: 0.7; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
     #gps-warning {
       font-family: Arial, sans-serif;
@@ -1823,6 +1927,32 @@
     </div>
   </div>
 
+  <!-- Open-in-maps app picker. Opens when the user taps the sheet's nav
+       button; shown after the red destination pin is dropped on the map. -->
+  <div id="navigate-modal">
+    <div class="confirm-backdrop" onclick="closeNavigateModal()"></div>
+    <div class="navigate-box">
+      <div class="navigate-title">Avaa reittiohjeet</div>
+      <div class="navigate-subtitle">Valitse sovellus, johon reittiohjeet avataan</div>
+      <button class="navigate-option" onclick="openInMapsApp('apple')">
+        <span class="navigate-icon">🗺️</span>
+        <span class="navigate-name">Apple Maps</span>
+        <span class="navigate-chevron">›</span>
+      </button>
+      <button class="navigate-option" onclick="openInMapsApp('google')">
+        <span class="navigate-icon">🌐</span>
+        <span class="navigate-name">Google Maps</span>
+        <span class="navigate-chevron">›</span>
+      </button>
+      <button class="navigate-option" onclick="openInMapsApp('waze')">
+        <span class="navigate-icon">🚗</span>
+        <span class="navigate-name">Waze</span>
+        <span class="navigate-chevron">›</span>
+      </button>
+      <button class="navigate-cancel" onclick="closeNavigateModal()">Peruuta</button>
+    </div>
+  </div>
+
   <!-- Detail view for a single completed parking event. Reuses summary-* CSS
        for visual consistency with the "Pysäköinti päättynyt" page. -->
   <div id="parking-event-detail" class="settings-detail-overlay">
@@ -2266,6 +2396,14 @@
 
   <div id="bottom-sheet">
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
+    <!-- "Open directions" button — appears top-left when sheet is expanded
+         past ~60% of viewport AND a parking area is currently selected. -->
+    <button id="sheet-nav-btn" onclick="onSheetNavBtnClick()" aria-label="Avaa reittiohjeet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+    </button>
     <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
     <div id="gps-warning">
@@ -5836,6 +5974,7 @@
         sheet.style.transition = 'transform 0.2s ease';
         sheet.style.transform = 'translateY(calc(100% - 150px))';
         currentY = sheet.offsetHeight - 150;
+        updateNavBtnVisibility();
       } else if (!masterFeatureLocked) {
         currentParkingProps = null;
         summaryHeader.textContent = '';
@@ -5849,6 +5988,7 @@
         sheet.style.transition = 'transform 0.2s ease';
         sheet.style.transform = 'translateY(calc(100% - 90px))';
         currentY = sheet.offsetHeight - 90;
+        updateNavBtnVisibility();
       }
     }
 
@@ -6846,6 +6986,106 @@
       else                            footer.classList.remove('visible');
     }
     // Action button at bottom — shows confirmation toast, then exits select mode.
+    // ── Sheet "Open directions" button + maps app picker ──────────────
+    // Visibility: fades in continuously as the sheet crosses ~60% of viewport,
+    // but only when a parking area is currently selected (currentParkingProps).
+    function updateNavBtnVisibility() {
+      const btn = document.getElementById('sheet-nav-btn');
+      if (!btn) return;
+      // Hide entirely if no parking area selected
+      if (!currentParkingProps) {
+        btn.style.opacity = '0';
+        btn.style.pointerEvents = 'none';
+        return;
+      }
+      // Sheet expansion ratio: 0 = collapsed, 1 = full screen
+      const viewportH = window.innerHeight || 1;
+      const visibleH  = sheet.offsetHeight - currentY;
+      const ratio     = Math.max(0, Math.min(1, visibleH / viewportH));
+      // Fade in between 55% and 70% expansion (button fully on at ≥70%)
+      const opacity = Math.max(0, Math.min(1, (ratio - 0.55) / 0.15));
+      btn.style.opacity = opacity;
+      btn.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
+    }
+
+    // Destination pin marker — a red pin dropped on the parking area
+    // at the P-marker's current location when the nav button is tapped.
+    let _destinationPinMarker = null;
+    let _destinationCoords    = null; // { lat, lng }
+
+    function showDestinationPin(lat, lng) {
+      removeDestinationPin();
+      const el = document.createElement('div');
+      el.className = 'destination-pin';
+      el.innerHTML = `
+        <svg viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 0 C7 0 0 7 0 16 C0 26 16 40 16 40 C16 40 32 26 32 16 C32 7 25 0 16 0 Z" fill="#e53935"/>
+          <circle cx="16" cy="14" r="5" fill="white"/>
+        </svg>`;
+      _destinationPinMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([lng, lat])
+        .addTo(map);
+      _destinationCoords = { lat, lng };
+    }
+    function removeDestinationPin() {
+      if (_destinationPinMarker) {
+        _destinationPinMarker.remove();
+        _destinationPinMarker = null;
+      }
+      _destinationCoords = null;
+    }
+
+    // Click handler for the sheet's top-left button: collapse the sheet to
+    // its 153px resting position, drop a red pin at the P-marker's current
+    // location, then open the maps app picker.
+    function onSheetNavBtnClick() {
+      if (!currentParkingProps) return;
+      // Capture the P-marker's current location (= map center, since the
+      // P-marker is anchored to it)
+      const c = map.getCenter();
+      // Collapse the sheet to the 153px resting position
+      snapTo(sheet.offsetHeight - 153);
+      // Drop the destination pin once the sheet animation begins
+      showDestinationPin(c.lat, c.lng);
+      // Open the app picker
+      document.getElementById('navigate-modal').classList.add('visible');
+    }
+
+    function closeNavigateModal() {
+      document.getElementById('navigate-modal').classList.remove('visible');
+      // Pin disappears when the user dismisses the modal without picking
+      removeDestinationPin();
+    }
+    function openInMapsApp(app) {
+      if (!_destinationCoords) {
+        closeNavigateModal();
+        return;
+      }
+      const { lat, lng } = _destinationCoords;
+      let url;
+      switch (app) {
+        case 'apple':
+          // Origin omitted ⇒ Apple Maps uses current device location by default
+          url = `http://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+          break;
+        case 'google':
+          // Origin omitted ⇒ Google Maps uses current location by default
+          url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+          break;
+        case 'waze':
+          // Waze deep link with navigate=yes ⇒ starts navigation immediately
+          url = `https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+          break;
+      }
+      if (url) {
+        window.open(url, '_blank');
+      }
+      document.getElementById('navigate-modal').classList.remove('visible');
+      // Keep the pin visible after picking an app so the user sees where
+      // they're navigating to on the underlying map. It clears next time
+      // the picker is opened (showDestinationPin removes any prior pin).
+    }
+
     function sendReceiptsAndExitSelectMode() {
       if (_selectedEventIds.size === 0) return;
       showCustomToast('Kuitit pysäköinneistä lähetetty sähköpostilla', 4000);
@@ -7024,11 +7264,12 @@
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
-      
+
       // Update backdrop (fade starts at 50% open)
       const maxY = sheet.clientHeight - 60;
       const openProgress = 1 - (t / maxY);
       sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
+      updateNavBtnVisibility();
     }
     
     let dragFromHandle=false;
@@ -7085,6 +7326,7 @@
       // Update backdrop opacity based on sheet position (fade starts at 50% open)
       const openProgress = 1 - (currentY / (sheet.clientHeight - 60)); // 0 = closed, 1 = fully open
       sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
+      updateNavBtnVisibility();
     },{passive:true});
     
     sheet.addEventListener('touchend',()=>{
