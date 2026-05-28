@@ -805,7 +805,61 @@
     .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
     .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .area-row { display: flex; align-items: center; gap: 10px; }
-    .area-code-badge { background: #0C0243; color: white; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; font-family: Arial, sans-serif; }
+    .area-code-badge { display: inline-block; background: #0C0243; color: white; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; font-family: Arial, sans-serif; }
+
+    /* ── Active parking banner ────────────────────────────────────────
+       Floating card shown over the map while a parking session is running.
+       Positioned below the pill menu / location button so they don't overlap.
+       z-index 23 sits below the pill (25) so an open menu wins; the user
+       just closes the menu to access the banner buttons again. */
+    #active-parking-banner {
+      position: fixed;
+      top: calc(max(16px, env(safe-area-inset-top, 0px)) + 60px);
+      left: 12px;
+      right: 12px;
+      z-index: 23;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.20);
+      font-family: Arial, sans-serif;
+      display: none;
+      flex-direction: column;
+      padding: 14px 16px;
+      gap: 12px;
+    }
+    #active-parking-banner.visible { display: flex; }
+    .apb-row { display: flex; align-items: center; gap: 12px; }
+    .apb-badge {
+      background: #0C0243; color: white;
+      font-size: 14px; font-weight: bold;
+      padding: 5px 10px; border-radius: 7px;
+      display: inline-block;
+      flex-shrink: 0;
+      letter-spacing: 0.3px;
+    }
+    .apb-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .apb-title {
+      font-size: 11px; font-weight: bold; color: #888;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .apb-countdown {
+      font-size: 18px; font-weight: bold; color: #0C0243;
+      line-height: 1.2;
+    }
+    .apb-meta {
+      font-size: 12px; color: #777;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .apb-buttons { display: flex; gap: 8px; }
+    .apb-buttons button {
+      flex: 1; height: 42px; border: none; border-radius: 11px;
+      font-size: 13px; font-weight: bold; font-family: Arial, sans-serif;
+      cursor: pointer; transition: opacity 0.15s ease;
+      padding: 0 8px;
+    }
+    .apb-buttons button:active { opacity: 0.7; }
+    .apb-stop   { background: #f0f0f0; color: #555; }
+    .apb-extend { background: #0C0243; color: white; }
     .area-name { font-size: 14px; font-weight: bold; color: #222; }
     .area-meta { font-size: 12px; color: #777; margin-top: 3px; }
     .area-select-row { 
@@ -1413,6 +1467,27 @@
   <div id="submit-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:36px 36px 32px 36px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1);">
     <button onclick="closeToast()" style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:rgba(255,255,255,0.6);font-size:22px;cursor:pointer;line-height:1;padding:0;">✕</button>
     <div style="font-size:18px;line-height:1.6;font-weight:500;">Kiitos ilmoituksestasi. Tiimimme varmentaa paikan tiedot sekä lisää uuden alueen kartalle.</div>
+  </div>
+
+  <!-- Generic toast — message is set at runtime via showCustomToast(text, ms) -->
+  <div id="custom-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:36px 36px 32px 36px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1);text-align:center;">
+    <div id="custom-toast-msg" style="font-size:20px;line-height:1.5;font-weight:600;"></div>
+  </div>
+
+  <!-- Active parking banner — shown on the map view while a session is running -->
+  <div id="active-parking-banner">
+    <div class="apb-row">
+      <div class="apb-badge" id="apb-badge">—</div>
+      <div class="apb-info">
+        <div class="apb-title">Pysäköinti käynnissä</div>
+        <div class="apb-countdown" id="apb-countdown">—</div>
+        <div class="apb-meta" id="apb-meta">—</div>
+      </div>
+    </div>
+    <div class="apb-buttons">
+      <button class="apb-stop"   onclick="stopActiveParking()">Keskeytä pysäköinti</button>
+      <button class="apb-extend" onclick="extendActiveParking()">Lisää pysäköintiaikaa</button>
+    </div>
   </div>
 
   <!-- Sub-overlay: Kommentoi nykyisiä alueita -->
@@ -4938,6 +5013,15 @@
 
     function highlightParking(){} // removed with helsinki_parkit.geojson
     function getOwnerName(r){if(!r)return'Tuntematon';if(r.includes('KYMP')||r.includes('HEL')||r.includes('Helsinki'))return'Helsinki Vyöhyke 2';return r;}
+    // Map a parking area's source/source-class to an operator company name.
+    // Best-effort default: city-owned street parking → "Helsingin kaupunki Oy",
+    // garages → "EuroPark Suomi Oy", community submissions → "Yhteisön ilmoittama".
+    function getParkingOperator(source) {
+      if (!source) return 'Helsingin kaupunki Oy';
+      if (source === 'community')  return 'Yhteisön ilmoittama';
+      if (source === 'hel_halli')  return 'EuroPark Suomi Oy';
+      return 'Helsingin kaupunki Oy';
+    }
     function getTypeName(r){if(!r)return'-';const l=r.toLowerCase();if(l.includes('kadunvarsi')||l.includes('kadunsuuntainen'))return'Kadunvarsipysäköinti';if(l.includes('halli'))return'Pysäköintihalli';if(l.includes('tori')||l.includes('kenttä'))return'Pysäköintikenttä';return r;}
     function getPriceText(l){if(!l)return'-';const s=l.toLowerCase();if(s.includes('ilmainen'))return'Ilmainen pysäköintikiekolla';if(s.includes('maksullinen'))return'Maksullinen';if(s.includes('asukas'))return'Asukaspysäköinti';return l;}
     function formatHours(v){if(!v)return`<div class="hours-row"><span class="hours-day">Ma – Su</span><span class="hours-time">24 h</span></div>`;return`<div class="hours-row"><span class="hours-day">Ma – Pe</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">La</span><span class="hours-time">${v}</span></div><div class="hours-row"><span class="hours-day">Su</span><span class="hours-time">–</span></div>`;}
@@ -5387,8 +5471,9 @@
         ? `${ownerComma}, ${kestoText}`
         : ownerComma;
       document.getElementById('p-owner').textContent = row2;
-      // Row 3: parking type (e.g. "Kadunvarsipysäköinti")
-      document.getElementById('p-type').textContent = tyyppi;
+      // Row 3: parking type + operator (e.g. "Kadunvarsipysäköinti · Helsingin kaupunki Oy")
+      const operator = getParkingOperator(p['hel:luokka_nimi']);
+      document.getElementById('p-type').textContent = `${tyyppi} · ${operator}`;
       // Reset start button to its disabled "Aseta pysäköintiaika" state
       const startBtn0 = document.getElementById('start-btn');
       startBtn0.classList.add('disabled');
@@ -5408,6 +5493,12 @@
       overlay.classList.remove('open');
       // Restore the map's floating action button now that we're back on the map
       btnContainer.classList.remove('hidden');
+      // If the user was extending an active session and backed out, cancel
+      // the extension mode but keep the session running.
+      if (isExtendingSession) {
+        isExtendingSession = false;
+        if (activeParkingSession) showActiveParkingBanner();
+      }
       // Open the bottom sheet to the 153px mid-level used when a P-marker is
       // on a parking area, so the user can immediately drag it up or down.
       setTimeout(() => {
@@ -5441,12 +5532,213 @@
       });
     });
 
-    document.getElementById('start-btn').addEventListener('click',()=>{
-      if(parkingMinutes===0){ jiggleDrum(); return; }
-      const v=vehicles[selectedVehicleIdx];
-      const p=paymentMethods[selectedPaymentIdx];
-      const price = calculatePrice(parkingMinutes);
-      alert(`✅ Pysäköinti aloitettu!\n\nAjoneuvo: ${v.name} (${v.reg})\nAika: ${formatTimeDisplay(parkingMinutes)}\nMaksutapa: ${p.name}\nAlue: ${document.getElementById('p-code').textContent}\nHinta: ${formatPrice(price.total)}`);
+    // ── Active parking session ─────────────────────────────────────────
+    // Holds the currently running session locally; the DB row is the
+    // persistent copy in the parkkihubi table.
+    let activeParkingSession = null;
+    let activeBannerInterval = null;
+    let isExtendingSession   = false;
+
+    // Generic centered toast — used for "Pysäköinti aloitettu!" etc.
+    let customToastTimer = null;
+    function showCustomToast(message, duration) {
+      duration = duration || 4000;
+      const t = document.getElementById('custom-toast');
+      document.getElementById('custom-toast-msg').textContent = message;
+      t.style.display = 'block';
+      requestAnimationFrame(() => {
+        t.style.opacity = '1';
+        t.style.transform = 'translate(-50%,-50%) scale(1)';
+      });
+      clearTimeout(customToastTimer);
+      customToastTimer = setTimeout(closeCustomToast, duration);
+    }
+    function closeCustomToast() {
+      const t = document.getElementById('custom-toast');
+      t.style.opacity = '0';
+      t.style.transform = 'translate(-50%,-50%) scale(0.92)';
+      clearTimeout(customToastTimer);
+      setTimeout(() => { t.style.display = 'none'; }, 350);
+    }
+
+    // ── Active parking banner UI ───────────────────────────────────────
+    function showActiveParkingBanner() {
+      document.getElementById('active-parking-banner').classList.add('visible');
+      updateActiveBannerCountdown();
+      clearInterval(activeBannerInterval);
+      activeBannerInterval = setInterval(updateActiveBannerCountdown, 1000);
+    }
+    function hideActiveParkingBanner() {
+      document.getElementById('active-parking-banner').classList.remove('visible');
+      clearInterval(activeBannerInterval);
+      activeBannerInterval = null;
+    }
+    function updateActiveBannerCountdown() {
+      if (!activeParkingSession) return;
+      const endMs = new Date(activeParkingSession.endTime).getTime();
+      const remaining = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+      const h = Math.floor(remaining / 3600);
+      const m = Math.floor((remaining % 3600) / 60);
+      const s = remaining % 60;
+      const txt = h > 0
+        ? `${h} h ${m} min`
+        : (m > 0 ? `${m} min ${s.toString().padStart(2,'0')} s` : `${s} s`);
+      document.getElementById('apb-countdown').textContent = txt;
+      document.getElementById('apb-badge').textContent = activeParkingSession.areaCode;
+      const ed = new Date(activeParkingSession.endTime);
+      const endStr = `${ed.getHours()}:${String(ed.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('apb-meta').textContent =
+        `${activeParkingSession.plate} · Päättyy ${endStr}`;
+      if (remaining === 0) {
+        clearInterval(activeBannerInterval);
+        activeBannerInterval = null;
+      }
+    }
+
+    // ── Parkkihubi DB calls ────────────────────────────────────────────
+    async function parkkihubiInsert(row) {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/parkkihubi`, {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'apikey':        SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer':        'return=representation'
+          },
+          body: JSON.stringify(row)
+        });
+        if (!res.ok) {
+          console.error('parkkihubi insert failed:', res.status, await res.text());
+          return null;
+        }
+        const rows = await res.json();
+        return rows && rows[0] ? rows[0].id : null;
+      } catch (e) {
+        console.error('parkkihubi insert error:', e);
+        return null;
+      }
+    }
+    async function parkkihubiUpdate(id, fields) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/parkkihubi?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type':  'application/json',
+            'apikey':        SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer':        'return=minimal'
+          },
+          body: JSON.stringify(fields)
+        });
+      } catch (e) { console.error('parkkihubi update error:', e); }
+    }
+
+    // ── Start / extend / stop session ──────────────────────────────────
+    async function startNewParkingSession() {
+      const v   = vehicles[selectedVehicleIdx];
+      const pm  = paymentMethods[selectedPaymentIdx];
+      const areaCode = document.getElementById('p-code').textContent;
+      const startTime = new Date();
+      const endTime   = new Date(startTime.getTime() + parkingMinutes * 60000);
+
+      const payload = {
+        start_time:     startTime.toISOString(),
+        end_time:       endTime.toISOString(),
+        license_plate:  v.reg,
+        area_code:      areaCode,
+        payment_method: pm.name,
+        locality:       'Helsinki'
+      };
+      const id = await parkkihubiInsert(payload);
+
+      activeParkingSession = {
+        id:            id,
+        startTime:     startTime.toISOString(),
+        endTime:       endTime.toISOString(),
+        plate:         v.reg,
+        nickname:      v.name,
+        areaCode:      areaCode,
+        paymentMethod: pm.name
+      };
+
+      // Show 4-second toast, then return to map with active banner visible
+      showCustomToast('Pysäköinti aloitettu!', 4000);
+      setTimeout(() => {
+        // Close the parking overlay & restore the map's bottom button
+        const overlay = document.getElementById('parking-overlay');
+        overlay.classList.remove('open');
+        btnContainer.classList.remove('hidden');
+        // Slide the bottom sheet down to its minimal state
+        sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+        sheet.style.transform  = 'translateY(calc(100% - 60px))';
+        currentY = sheet.offsetHeight - 60;
+        showActiveParkingBanner();
+      }, 4000);
+    }
+
+    async function extendExistingSession() {
+      if (!activeParkingSession) return;
+      const addedMs = parkingMinutes * 60000;
+      const newEnd  = new Date(new Date(activeParkingSession.endTime).getTime() + addedMs);
+      if (activeParkingSession.id) {
+        await parkkihubiUpdate(activeParkingSession.id, { end_time: newEnd.toISOString() });
+      }
+      activeParkingSession.endTime = newEnd.toISOString();
+      isExtendingSession = false;
+
+      showCustomToast(`Pysäköintiaikaa lisätty +${formatTimeDisplay(parkingMinutes)}`, 3000);
+      setTimeout(() => {
+        const overlay = document.getElementById('parking-overlay');
+        overlay.classList.remove('open');
+        btnContainer.classList.remove('hidden');
+        sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+        sheet.style.transform  = 'translateY(calc(100% - 60px))';
+        currentY = sheet.offsetHeight - 60;
+        showActiveParkingBanner();
+      }, 1800);
+    }
+
+    async function stopActiveParking() {
+      if (!activeParkingSession) return;
+      const endNow = new Date().toISOString();
+      if (activeParkingSession.id) {
+        await parkkihubiUpdate(activeParkingSession.id, { end_time: endNow });
+      }
+      activeParkingSession = null;
+      hideActiveParkingBanner();
+      showCustomToast('Pysäköinti päättynyt', 2500);
+    }
+
+    function extendActiveParking() {
+      if (!activeParkingSession) return;
+      isExtendingSession = true;
+      // Hide the banner while the parking overlay is open — overlay covers
+      // the screen anyway, and we re-show it after the extension completes
+      // (or in goBackToMap if the user backs out).
+      hideActiveParkingBanner();
+      // Re-open the parking overlay with the same area code shown.
+      // We rebuild a minimal props object that openParkingOverlay accepts.
+      openParkingOverlay({
+        'hel:id':            activeParkingSession.areaCode,
+        'hel:kesto':         null,
+        'hel:paikan_asento': 'Kadunvarsipysäköinti',
+        'hel:datanomistaja': 'HEL',
+        'hel:luokka_nimi':   '',
+        'hel:voimassaolo':   ''
+      });
+      // Tweak the action button text so it's clear we're extending
+      const startBtn0 = document.getElementById('start-btn');
+      startBtn0.textContent = 'Aseta lisäaika';
+    }
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      if (parkingMinutes === 0) { jiggleDrum(); return; }
+      if (isExtendingSession) {
+        extendExistingSession();
+      } else {
+        startNewParkingSession();
+      }
     });
 
 
