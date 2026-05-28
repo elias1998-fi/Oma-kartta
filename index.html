@@ -3567,7 +3567,14 @@
           const kesto = p.max_hours ? `Max. ${p.max_hours}h` : '';
           const valid = p.valid || '';
           const extraInfo = p.extra_info || '';
-          const zoneLabel = (p.source && p.source !== 'community') ? 'Helsinki, Vyöhyke 2' : name;
+          // Use the actual zone (1, 2, or 3) for this feature. Prefer the
+          // value stored in the DB; fall back to live computation if absent.
+          const featZone = (p.zone != null && p.zone !== '')
+            ? Number(p.zone)
+            : getZoneForGeometry(f.geometry);
+          const zoneLabel = (p.source && p.source !== 'community')
+            ? `Helsinki, Vyöhyke ${featZone}`
+            : name;
           const line1 = kesto ? `${zoneLabel}  |  ${kesto}` : zoneLabel;
           const srcType = p.source === 'hel_halli' ? 'Pysäköintihalli'
             : (p.source && p.source.includes('ilmainen')) ? 'Kadunvarsipysäköinti'
@@ -5370,10 +5377,12 @@
       document.getElementById('max-label').classList.remove('visible');
       drumPhase=0;
       document.getElementById('p-code').textContent=areaCode;
-      // Row 2: "Helsinki, Vyöhyke 2, Max. 2h" — owner with a comma between
-      // "Helsinki" and "Vyöhyke 2", plus the max-duration if known.
-      const ownerRaw   = getOwnerName(p['hel:datanomistaja']);
-      const ownerComma = ownerRaw.replace(/^Helsinki Vyöhyke /, 'Helsinki, Vyöhyke ');
+      // Row 2: "Helsinki, Vyöhyke N, Max. 2h" — N = actual zone, derived
+      // from the area code's first character (which IS the zone digit).
+      const zoneFromCode = String(areaCode).match(/^(\d)/)?.[1] || '2';
+      const ownerRaw     = getOwnerName(p['hel:datanomistaja']).replace(
+                             /Vyöhyke\s*\d+/, `Vyöhyke ${zoneFromCode}`);
+      const ownerComma   = ownerRaw.replace(/^Helsinki Vyöhyke /, 'Helsinki, Vyöhyke ');
       const row2 = kestoText && kestoText !== 'Rajoittamaton'
         ? `${ownerComma}, ${kestoText}`
         : ownerComma;
