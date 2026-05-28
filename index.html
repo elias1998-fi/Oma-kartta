@@ -1176,6 +1176,169 @@
       flex-shrink: 0;
       line-height: 1;
     }
+
+    /* ── Pysäköintihistorian otsikon oikean reunan painikkeet ───────── */
+    .header-action-btn {
+      height: 32px;
+      padding: 0 14px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #444;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .header-action-btn.active {
+      background: #0C0243;
+      color: white;
+    }
+
+    /* ── Valitse-tila: vasen ympyrä jokaiselle kortille ─────────────── */
+    .event-select-circle {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #ccc;
+      border-radius: 50%;
+      background: white;
+      flex-shrink: 0;
+      align-self: center;
+      margin-right: 4px;
+      display: none;
+      position: relative;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    /* Show the circle only when the list is in select mode */
+    #parking-history-content.select-mode .event-select-circle { display: block; }
+    /* Hide the right-side chevron in select mode — the card is a checkbox now */
+    #parking-history-content.select-mode .event-chevron { display: none; }
+    .parking-event-card.selected .event-select-circle {
+      background: #0C0243;
+      border-color: #0C0243;
+    }
+    .parking-event-card.selected .event-select-circle::after {
+      content: '✓';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 13px;
+      font-weight: bold;
+      line-height: 1;
+    }
+    .parking-event-card.selected { background: #f4f5fb; }
+
+    /* ── Alarivin toimintopainike (Lähetä kuitit sähköpostilla) ─────── */
+    #history-action-footer {
+      flex-shrink: 0;
+      background: white;
+      padding: 12px 16px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      border-top: 1px solid #eee;
+      display: none;
+    }
+    #history-action-footer.visible { display: block; }
+    #send-receipts-btn {
+      width: 100%;
+      height: 54px;
+      background: #0C0243;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    #send-receipts-btn:active { opacity: 0.85; }
+
+    /* ── Filter-modaali ─────────────────────────────────────────────── */
+    #filter-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9995;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+    }
+    #filter-modal.visible { display: flex; }
+    .filter-section-label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .filter-date-row { display: flex; gap: 10px; }
+    .filter-date-col { flex: 1; min-width: 0; }
+    .filter-date-col label {
+      font-size: 11px;
+      color: #888;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .filter-date-col input[type="date"] {
+      width: 100%;
+      height: 40px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      padding: 0 8px;
+      font-size: 13px;
+      font-family: Arial, sans-serif;
+      outline: none;
+      box-sizing: border-box;
+      background: white;
+      color: #222;
+    }
+    .filter-date-col input[type="date"]:focus { border-color: #0C0243; }
+    /* Segmented control for the payment type filter */
+    .filter-segment {
+      display: flex;
+      background: #f0f0f0;
+      border-radius: 10px;
+      padding: 3px;
+      gap: 0;
+    }
+    .filter-segment-option {
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      font-size: 11px;
+      font-weight: 500;
+      color: #555;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .filter-segment-option.selected {
+      background: white;
+      color: #0C0243;
+      font-weight: bold;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .filter-apply-btn {
+      flex: 1;
+      height: 46px;
+      background: #0C0243;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    .filter-apply-btn:active { opacity: 0.85; }
     .history-loading, .history-empty {
       padding: 60px 20px;
       text-align: center;
@@ -1609,12 +1772,54 @@
 
   <!-- Tason 2 asetussivut -->
   <div id="parking-history-overlay" class="settings-detail-overlay">
-    <div class="overlay-header">
-      <button class="overlay-back-btn" onclick="closeParkingHistory()">←</button>
-      <div class="overlay-title">Pysäköintitapahtumat</div>
+    <div class="overlay-header" style="justify-content:space-between;">
+      <div style="display:flex;align-items:center;">
+        <button class="overlay-back-btn" onclick="closeParkingHistory()">←</button>
+        <div class="overlay-title">Pysäköintitapahtumat</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="select-btn" class="header-action-btn" onclick="toggleSelectMode()">Valitse</button>
+        <button id="filter-btn" class="header-action-btn" onclick="openFilterModal()">Suodata</button>
+      </div>
     </div>
     <div class="overlay-content" id="parking-history-content">
       <div class="history-loading">Ladataan...</div>
+    </div>
+    <!-- Bottom action bar — appears only in select mode with ≥1 selection. -->
+    <div id="history-action-footer">
+      <button id="send-receipts-btn" onclick="sendReceiptsAndExitSelectMode()">Lähetä kuitit sähköpostilla</button>
+    </div>
+  </div>
+
+  <!-- Filter modal for the parking history list -->
+  <div id="filter-modal">
+    <div class="confirm-backdrop" onclick="closeFilterModal()"></div>
+    <div class="confirm-box" style="max-width:380px;">
+      <div class="confirm-title" style="margin-bottom:18px;">Suodata pysäköintitapahtumat</div>
+
+      <div class="filter-section-label">Hakujakso</div>
+      <div class="filter-date-row">
+        <div class="filter-date-col">
+          <label for="filter-start-date">Alkupäivä</label>
+          <input type="date" id="filter-start-date">
+        </div>
+        <div class="filter-date-col">
+          <label for="filter-end-date">Loppupäivä</label>
+          <input type="date" id="filter-end-date">
+        </div>
+      </div>
+
+      <div class="filter-section-label" style="margin-top:16px;">Maksun tyyppi</div>
+      <div class="filter-segment">
+        <button type="button" class="filter-segment-option" data-value="henkilo" onclick="setFilterPaymentType('henkilo')">Henkilökohtainen</button>
+        <button type="button" class="filter-segment-option selected" data-value="all" onclick="setFilterPaymentType('all')">Kaikki</button>
+        <button type="button" class="filter-segment-option" data-value="yritys" onclick="setFilterPaymentType('yritys')">Yritystili</button>
+      </div>
+
+      <div class="confirm-buttons" style="margin-top:22px;">
+        <button class="confirm-back" onclick="closeFilterModal()">Peruuta</button>
+        <button class="filter-apply-btn" onclick="applyFilters()">Jatka</button>
+      </div>
     </div>
   </div>
 
@@ -6476,28 +6681,71 @@
     function closeParkingHistory() {
       document.getElementById('parking-history-overlay').classList.remove('open');
     }
+    // ── History state ──────────────────────────────────────────────────
+    let _allHistoryEvents      = [];
+    let _historyFilters        = { startDate: null, endDate: null, paymentType: 'all' };
+    let _filterModalPaymentType = 'all'; // staged value in the modal, applied on "Jatka"
+    let _selectMode            = false;
+    let _selectedEventIds      = new Set();
+
     async function loadParkingHistory() {
       const container = document.getElementById('parking-history-content');
       container.innerHTML = '<div class="history-loading">Ladataan...</div>';
+      // Reset transient state whenever the list is freshly loaded
+      _selectMode = false;
+      _selectedEventIds.clear();
+      document.getElementById('select-btn').textContent = 'Valitse';
+      document.getElementById('select-btn').classList.remove('active');
+      document.getElementById('history-action-footer').classList.remove('visible');
+      container.classList.remove('select-mode');
       try {
-        // Only completed sessions (end_time NOT NULL), newest first
         const res = await fetch(
           `${SUPABASE_URL}/rest/v1/parkkihubi?end_time=not.is.null&order=start_time.desc&limit=500`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const events = await res.json();
+        _allHistoryEvents = events;
         // Cache by id so the detail overlay can look events up by their UUID
         _eventsById = new Map();
         events.forEach(ev => { if (ev.id) _eventsById.set(ev.id, ev); });
-        if (!events.length) {
-          container.innerHTML = '<div class="history-empty">Ei vielä pysäköintitapahtumia</div>';
-          return;
-        }
-        renderParkingHistory(events);
+        renderFilteredHistory();
       } catch (e) {
         container.innerHTML = `<div class="history-empty">Virhe historian haussa: ${e.message}</div>`;
       }
+    }
+    // Apply the active filters to _allHistoryEvents and render the result.
+    function renderFilteredHistory() {
+      const container = document.getElementById('parking-history-content');
+      const filtered  = filterHistoryEvents(_allHistoryEvents);
+      if (!_allHistoryEvents.length) {
+        container.innerHTML = '<div class="history-empty">Ei vielä pysäköintitapahtumia</div>';
+        return;
+      }
+      if (!filtered.length) {
+        container.innerHTML = '<div class="history-empty">Ei pysäköintitapahtumia valituilla suodattimilla</div>';
+        return;
+      }
+      renderParkingHistory(filtered);
+    }
+    function filterHistoryEvents(events) {
+      const f = _historyFilters;
+      return events.filter(ev => {
+        const start = new Date(ev.start_time);
+        if (f.startDate) {
+          const lo = new Date(f.startDate + 'T00:00:00');
+          if (start < lo) return false;
+        }
+        if (f.endDate) {
+          const hi = new Date(f.endDate + 'T23:59:59');
+          if (start > hi) return false;
+        }
+        // Payment-type filter: no DB column for this yet, so all events are
+        // implicitly "Henkilökohtainen". "Kaikki" and "Henkilökohtainen" both
+        // match everything; "Yritystili" matches nothing for now.
+        if (f.paymentType === 'yritys') return false;
+        return true;
+      });
     }
 
     // ── Single-event detail view ───────────────────────────────────────
@@ -6550,6 +6798,117 @@
     function closeEventDetail() {
       document.getElementById('parking-event-detail').classList.remove('open');
     }
+
+    // ── History: card click dispatcher ─────────────────────────────────
+    // Routes the click based on the current mode: in select mode, toggling
+    // the selection; otherwise opening the detail view.
+    function onEventCardClick(id) {
+      if (_selectMode) {
+        toggleEventSelection(id);
+      } else {
+        showEventDetail(id);
+      }
+    }
+
+    // ── History: select mode ───────────────────────────────────────────
+    function toggleSelectMode() {
+      _selectMode = !_selectMode;
+      const btn       = document.getElementById('select-btn');
+      const container = document.getElementById('parking-history-content');
+      const footer    = document.getElementById('history-action-footer');
+      if (_selectMode) {
+        btn.textContent = 'Valmis';
+        btn.classList.add('active');
+        container.classList.add('select-mode');
+      } else {
+        btn.textContent = 'Valitse';
+        btn.classList.remove('active');
+        container.classList.remove('select-mode');
+        // Clear selections + hide bottom action
+        _selectedEventIds.clear();
+        container.querySelectorAll('.parking-event-card.selected').forEach(c => c.classList.remove('selected'));
+        footer.classList.remove('visible');
+      }
+    }
+    function toggleEventSelection(id) {
+      const card = document.querySelector(`.parking-event-card[data-event-id="${CSS.escape(id)}"]`);
+      if (!card) return;
+      if (_selectedEventIds.has(id)) {
+        _selectedEventIds.delete(id);
+        card.classList.remove('selected');
+      } else {
+        _selectedEventIds.add(id);
+        card.classList.add('selected');
+      }
+      // Show the bottom send-receipts button whenever ≥1 events are selected
+      const footer = document.getElementById('history-action-footer');
+      if (_selectedEventIds.size > 0) footer.classList.add('visible');
+      else                            footer.classList.remove('visible');
+    }
+    // Action button at bottom — shows confirmation toast, then exits select mode.
+    function sendReceiptsAndExitSelectMode() {
+      if (_selectedEventIds.size === 0) return;
+      showCustomToast('Kuitit pysäköinneistä lähetetty sähköpostilla', 4000);
+      setTimeout(() => {
+        // Exit select mode (clears selections + hides the action footer)
+        if (_selectMode) toggleSelectMode();
+      }, 4000);
+    }
+
+    // ── History: filter modal ──────────────────────────────────────────
+    function openFilterModal() {
+      // Sync the modal inputs with the currently applied filters
+      document.getElementById('filter-start-date').value = _historyFilters.startDate || '';
+      document.getElementById('filter-end-date').value   = _historyFilters.endDate   || '';
+      _filterModalPaymentType = _historyFilters.paymentType;
+      document.querySelectorAll('.filter-segment-option').forEach(btn => {
+        if (btn.dataset.value === _filterModalPaymentType) btn.classList.add('selected');
+        else                                                btn.classList.remove('selected');
+      });
+      document.getElementById('filter-modal').classList.add('visible');
+    }
+    function closeFilterModal() {
+      document.getElementById('filter-modal').classList.remove('visible');
+    }
+    function setFilterPaymentType(value) {
+      _filterModalPaymentType = value;
+      document.querySelectorAll('.filter-segment-option').forEach(btn => {
+        if (btn.dataset.value === value) btn.classList.add('selected');
+        else                              btn.classList.remove('selected');
+      });
+    }
+    function applyFilters() {
+      _historyFilters.startDate   = document.getElementById('filter-start-date').value || null;
+      _historyFilters.endDate     = document.getElementById('filter-end-date').value   || null;
+      _historyFilters.paymentType = _filterModalPaymentType;
+      closeFilterModal();
+      // Reflect active state on the Suodata button
+      const filterBtn = document.getElementById('filter-btn');
+      if (_historyFilters.startDate || _historyFilters.endDate || _historyFilters.paymentType !== 'all') {
+        filterBtn.classList.add('active');
+      } else {
+        filterBtn.classList.remove('active');
+      }
+      // Drop selections that are no longer visible
+      const visibleIds = new Set(filterHistoryEvents(_allHistoryEvents).map(e => e.id));
+      for (const id of Array.from(_selectedEventIds)) {
+        if (!visibleIds.has(id)) _selectedEventIds.delete(id);
+      }
+      renderFilteredHistory();
+      // Re-apply selected state to remaining cards (renderParkingHistory wipes the DOM)
+      _selectedEventIds.forEach(id => {
+        const c = document.querySelector(`.parking-event-card[data-event-id="${CSS.escape(id)}"]`);
+        if (c) c.classList.add('selected');
+      });
+      // Restore select-mode class on the container if it was active
+      if (_selectMode) {
+        document.getElementById('parking-history-content').classList.add('select-mode');
+      }
+      // Show/hide footer based on remaining selection count
+      const footer = document.getElementById('history-action-footer');
+      if (_selectMode && _selectedEventIds.size > 0) footer.classList.add('visible');
+      else                                            footer.classList.remove('visible');
+    }
     function groupEventsByMonth(events) {
       // Events come pre-sorted by start_time DESC; produce contiguous groups.
       const groups = [];
@@ -6599,8 +6958,10 @@
       const commentLine = ev.notes
         ? `<div class="event-comment-line">Kommentti: <span class="comment-text">${escapeHtml(ev.notes)}</span></div>`
         : '';
+      const idAttr = escapeHtml(ev.id || '');
       return `
-        <div class="parking-event-card" onclick="showEventDetail('${escapeHtml(ev.id || '')}')">
+        <div class="parking-event-card" data-event-id="${idAttr}" onclick="onEventCardClick('${idAttr}')">
+          <div class="event-select-circle"></div>
           <div class="event-date">${escapeHtml(dateStr)}</div>
           <div class="event-main">
             <div class="event-operator">${escapeHtml(operatorLine)}</div>
