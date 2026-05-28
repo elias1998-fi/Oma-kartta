@@ -861,6 +861,212 @@
     .apb-stop   { background: #f0f0f0; color: #555; }
     .apb-extend { background: #0C0243; color: white; }
 
+    /* ── Stop confirmation modal ───────────────────────────────────────
+       Centered dialog asking the user to confirm cancellation. z-index
+       9995 sits above the floating btn-container (9990) but below toasts
+       so the backdrop properly blocks interaction with what's underneath. */
+    #stop-confirm-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9995;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+    }
+    #stop-confirm-modal.visible { display: flex; }
+    .confirm-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+    }
+    .confirm-box {
+      position: relative;
+      background: white;
+      border-radius: 16px;
+      padding: 22px 20px 18px 20px;
+      width: min(88vw, 380px);
+      box-shadow: 0 12px 48px rgba(0,0,0,0.35);
+    }
+    .confirm-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #222;
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+    .confirm-info {
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+    }
+    .confirm-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 13px;
+    }
+    .confirm-label { color: #777; }
+    .confirm-value { color: #222; font-weight: 500; text-align: right; }
+    .confirm-badge {
+      display: inline-block;
+      background: #0C0243;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.3px;
+    }
+    .confirm-buttons { display: flex; gap: 10px; }
+    .confirm-buttons button {
+      flex: 1;
+      height: 46px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    .confirm-buttons button:active { opacity: 0.75; }
+    .confirm-back { background: #f0f0f0; color: #555; }
+    .confirm-stop { background: #e53935; color: white; }
+
+    /* ── Parking summary full-screen overlay ─────────────────────────── */
+    #parking-summary-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 105;
+      background: #f2f3f5;
+      display: none;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    #parking-summary-overlay.open {
+      display: flex;
+      transform: translateX(0);
+    }
+    .summary-header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: max(14px, env(safe-area-inset-top)) 16px 12px 16px;
+      background: white;
+      border-bottom: 1px solid #eee;
+      flex-shrink: 0;
+    }
+    .summary-close-btn {
+      width: 34px;
+      height: 34px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #888;
+    }
+    .summary-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 16px 16px 16px;
+      font-family: Arial, sans-serif;
+    }
+    .summary-title {
+      font-size: 22px;
+      font-weight: bold;
+      color: #0C0243;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .summary-subtitle {
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .summary-card {
+      background: white;
+      border-radius: 14px;
+      padding: 6px 16px;
+      margin-bottom: 14px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      font-size: 14px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row.summary-total-row {
+      border-top: 2px solid #eee;
+      padding-top: 12px;
+      margin-top: 4px;
+      font-weight: bold;
+    }
+    .summary-label { color: #555; }
+    .summary-value { color: #222; font-weight: 500; text-align: right; }
+    .summary-price { font-size: 18px; color: #0C0243; }
+    .summary-notes-section {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .summary-notes-section label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .summary-notes-section textarea {
+      width: 100%;
+      min-height: 80px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .summary-notes-section textarea:focus { border-color: #0C0243; }
+    .summary-footer {
+      background: white;
+      padding: 12px 16px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      border-top: 1px solid #eee;
+      flex-shrink: 0;
+    }
+    #summary-back-btn {
+      width: 100%;
+      height: 54px;
+      background: #0C0243;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    #summary-back-btn:active { opacity: 0.85; }
+
     /* ── Extending-mode: dim & lock the cards above "Pysäköintiaika" ──
        When the user enters extend mode from the active-parking banner, only
        the time picker should be editable. The first three p-cards (Valittu
@@ -1501,8 +1707,84 @@
       </div>
     </div>
     <div class="apb-buttons">
-      <button class="apb-stop"   onclick="stopActiveParking()">Keskeytä pysäköinti</button>
+      <button class="apb-stop"   onclick="requestStopActiveParking('banner')">Keskeytä pysäköinti</button>
       <button class="apb-extend" onclick="extendActiveParking()">Muuta pysäköinnin kestoa</button>
+    </div>
+  </div>
+
+  <!-- Stop-confirmation modal — appears when user requests to stop the parking. -->
+  <div id="stop-confirm-modal">
+    <div class="confirm-backdrop" onclick="closeStopConfirmModal()"></div>
+    <div class="confirm-box">
+      <div class="confirm-title">Olet keskeyttämässä käynnissä olevaa pysäköintiä. Oletko varma?</div>
+      <div class="confirm-info">
+        <div class="confirm-row">
+          <span class="confirm-label">Alue</span>
+          <span class="confirm-value"><span class="confirm-badge" id="confirm-area-code">—</span></span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-label">Ajoneuvo</span>
+          <span class="confirm-value" id="confirm-plate">—</span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-label">Aloitettu klo</span>
+          <span class="confirm-value" id="confirm-start">—</span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-label">Kesto</span>
+          <span class="confirm-value" id="confirm-duration">—</span>
+        </div>
+      </div>
+      <div class="confirm-buttons">
+        <button class="confirm-back" onclick="closeStopConfirmModal()">Palaa takaisin</button>
+        <button class="confirm-stop" onclick="confirmStopAndShowSummary()">Keskeytä pysäköinti</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parking summary page — full-screen overlay shown after a session ends. -->
+  <div id="parking-summary-overlay">
+    <div class="summary-header">
+      <button class="summary-close-btn" onclick="closeParkingSummary()" aria-label="Sulje">✕</button>
+    </div>
+    <div class="summary-content">
+      <div class="summary-title">Pysäköinti päättynyt</div>
+      <div class="summary-subtitle" id="summary-duration-label">—</div>
+
+      <div class="summary-card">
+        <div class="summary-row">
+          <span class="summary-label">Alue</span>
+          <span class="summary-value"><span class="confirm-badge" id="summary-code">—</span></span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Ajoneuvo</span>
+          <span class="summary-value" id="summary-plate">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Pysäköinti alkoi</span>
+          <span class="summary-value" id="summary-start">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Pysäköinti päättyi</span>
+          <span class="summary-value" id="summary-end">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Maksutapa</span>
+          <span class="summary-value" id="summary-payment">—</span>
+        </div>
+        <div class="summary-row summary-total-row">
+          <span class="summary-label">Hinta</span>
+          <span class="summary-value summary-price" id="summary-price">—</span>
+        </div>
+      </div>
+
+      <div class="summary-notes-section">
+        <label for="summary-notes-input">Kommentti (valinnainen)</label>
+        <textarea id="summary-notes-input" placeholder="Lisää muistiinpano tähän pysäköintiin liittyen..."></textarea>
+      </div>
+    </div>
+    <div class="summary-footer">
+      <button id="summary-back-btn" onclick="closeParkingSummary()">Palaa takaisin karttanäkymään</button>
     </div>
   </div>
 
@@ -5831,27 +6113,116 @@
       setTimeout(showActiveParkingBanner, 1800);
     }
 
+    // Silent stop: PATCH end_time in DB, capture the session data for the
+    // summary, clear app state. Returns the captured data (or null if no
+    // session was active).
     async function stopActiveParking() {
-      if (!activeParkingSession) return;
-      const endNow = new Date().toISOString();
+      if (!activeParkingSession) return null;
+      const endNow = new Date();
       if (activeParkingSession.id) {
-        await parkkihubiUpdate(activeParkingSession.id, { end_time: endNow });
+        await parkkihubiUpdate(activeParkingSession.id, { end_time: endNow.toISOString() });
       }
+      const data = { ...activeParkingSession };
       activeParkingSession = null;
       hideActiveParkingBanner();
-      showCustomToast('Pysäköinti päättynyt', 2500);
+      return { session: data, endTime: endNow };
     }
 
-    // Called from the in-overlay button when parkingMinutes === 0 in extend mode
-    async function cancelFromExtendMode() {
-      const overlay = document.getElementById('parking-overlay');
-      overlay.classList.remove('open');
-      overlay.classList.remove('extending-mode');
+    // ── Stop-confirmation flow ─────────────────────────────────────────
+    // requestStopActiveParking(returnContext) opens the confirmation modal.
+    // returnContext = 'banner' (user clicked on the active-parking banner)
+    //                or 'extend' (user clicked the big button in extend mode
+    //                at 0 mins). We use it on confirm to decide whether to
+    //                also close the parking overlay.
+    let stopConfirmReturnContext = null;
+    function requestStopActiveParking(returnContext) {
+      if (!activeParkingSession) return;
+      stopConfirmReturnContext = returnContext;
+      // Populate modal with current session info
+      document.getElementById('confirm-area-code').textContent = activeParkingSession.areaCode;
+      document.getElementById('confirm-plate').textContent =
+        `${activeParkingSession.plate} (${activeParkingSession.nickname || ''})`.replace(' ()','');
+      const start = new Date(activeParkingSession.startTime);
+      document.getElementById('confirm-start').textContent =
+        `${start.getHours()}:${String(start.getMinutes()).padStart(2,'0')}`;
+      const elapsedMin = Math.max(0, Math.floor((Date.now() - start.getTime()) / 60000));
+      document.getElementById('confirm-duration').textContent = formatDuration(elapsedMin);
+      document.getElementById('stop-confirm-modal').classList.add('visible');
+    }
+    function closeStopConfirmModal() {
+      document.getElementById('stop-confirm-modal').classList.remove('visible');
+      stopConfirmReturnContext = null;
+    }
+    // Confirmed: actually stop the parking and open the summary page.
+    async function confirmStopAndShowSummary() {
+      document.getElementById('stop-confirm-modal').classList.remove('visible');
+      const ctx = stopConfirmReturnContext;
+      stopConfirmReturnContext = null;
+      // If we got here from extend mode, close the parking overlay first
+      if (ctx === 'extend') {
+        const overlay = document.getElementById('parking-overlay');
+        overlay.classList.remove('open');
+        overlay.classList.remove('extending-mode');
+        isExtendingSession = false;
+        extendDrumUserTouched = false;
+        stopExtendTicker();
+      }
+      const result = await stopActiveParking();
+      if (result) {
+        showParkingSummary(result.session, result.endTime);
+      } else {
+        // No session somehow — just restore map view defensively
+        btnContainer.classList.remove('hidden');
+      }
+    }
+
+    // ── Parking summary page ───────────────────────────────────────────
+    function formatDateTime(d) {
+      const day = d.getDate();
+      const mon = d.getMonth() + 1;
+      const hh  = d.getHours();
+      const mm  = String(d.getMinutes()).padStart(2, '0');
+      return `${day}.${mon}. klo ${hh}:${mm}`;
+    }
+    function showParkingSummary(session, actualEnd) {
+      const startDate = new Date(session.startTime);
+      const durationMin = Math.max(0, Math.round((actualEnd.getTime() - startDate.getTime()) / 60000));
+      const price = calculatePrice(durationMin);
+
+      document.getElementById('summary-code').textContent     = session.areaCode;
+      document.getElementById('summary-plate').textContent    =
+        `${session.plate} (${session.nickname || ''})`.replace(' ()','');
+      document.getElementById('summary-start').textContent    = formatDateTime(startDate);
+      document.getElementById('summary-end').textContent      = formatDateTime(actualEnd);
+      document.getElementById('summary-payment').textContent  = session.paymentMethod || '—';
+      document.getElementById('summary-price').textContent    = formatPrice(price.total);
+      document.getElementById('summary-duration-label').textContent =
+        `Pysäköinnin kesto: ${formatDuration(durationMin)}`;
+
+      // Clear notes from any previous session and stash the DB row id for save-on-close
+      const ta = document.getElementById('summary-notes-input');
+      ta.value = '';
+      ta.dataset.sessionId = session.id || '';
+
+      // Hide the map's floating action button while the summary is shown
+      btnContainer.classList.add('hidden');
+      document.getElementById('parking-summary-overlay').classList.add('open');
+    }
+    async function closeParkingSummary() {
+      // Save notes to the DB if the user wrote anything
+      const ta = document.getElementById('summary-notes-input');
+      const notes = (ta.value || '').trim();
+      const sid   = ta.dataset.sessionId;
+      if (notes && sid) {
+        await parkkihubiUpdate(sid, { notes });
+      }
+      // Close overlay and restore the map view
+      document.getElementById('parking-summary-overlay').classList.remove('open');
       btnContainer.classList.remove('hidden');
-      isExtendingSession = false;
-      extendDrumUserTouched = false;
-      stopExtendTicker();
-      await stopActiveParking();
+      // Sheet stays at its minimal position — no active session
+      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+      sheet.style.transform  = 'translateY(calc(100% - 60px))';
+      currentY = sheet.offsetHeight - 60;
     }
 
     function extendActiveParking() {
@@ -5884,7 +6255,7 @@
     document.getElementById('start-btn').addEventListener('click', () => {
       if (isExtendingSession) {
         if (parkingMinutes === 0) {
-          cancelFromExtendMode();
+          requestStopActiveParking('extend');
         } else {
           confirmExtendedTime();
         }
