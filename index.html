@@ -229,7 +229,57 @@
     
     #location-btn svg { width: 20px; height: 20px; }
     
-    #profile-overlay, #search-overlay, #plus-overlay {
+    /* Profile overlay slides in from the left and covers most of the screen,
+       leaving a ~20% strip on the right showing the dimmed map underneath.
+       Search and plus overlays remain full-width. */
+    #profile-overlay {
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      width: 80%;
+      background: white;
+      z-index: 100;
+      display: flex; flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.30s cubic-bezier(0.25,0.46,0.45,0.94);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+    }
+    #profile-overlay.open { transform: translateX(0); }
+    /* Dim layer covering the visible right strip while profile is open.
+       It blocks taps on the map and adds focus to the profile content. */
+    #profile-dim {
+      position: fixed;
+      top: 0; bottom: 0;
+      left: 80%;
+      right: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 99;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.30s ease;
+    }
+    #profile-dim.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    /* Brand header at the top of the profile panel — placeholder for the
+       eventual logo. Big "TotalParking" wordmark, dark blue, centered. */
+    .profile-brand {
+      padding: max(28px, env(safe-area-inset-top)) 16px 18px 16px;
+      text-align: center;
+      background: white;
+      flex-shrink: 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .profile-brand-text {
+      font-family: Arial, sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      color: #0C0243;
+      letter-spacing: -0.4px;
+      line-height: 1;
+    }
+
+    #search-overlay, #plus-overlay {
       position: fixed; inset: 0;
       background: #f2f3f5;
       z-index: 100;
@@ -237,7 +287,7 @@
       transform: translateX(-100%);
       transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
     }
-    #profile-overlay.open, #search-overlay.open, #plus-overlay.open { transform: translateX(0); }
+    #search-overlay.open, #plus-overlay.open { transform: translateX(0); }
     
     .overlay-header {
       display: flex; align-items: center;
@@ -415,10 +465,13 @@
     
     .settings-section {
       background: white;
-      margin: 10px 0;
+      margin: 12px 0 0 0;
     }
     .settings-section:first-child {
-      margin-top: 0;
+      margin-top: 12px;
+    }
+    .settings-section + .settings-section {
+      border-top: 8px solid #f5f6f8;
     }
     
     .settings-item {
@@ -436,15 +489,27 @@
     .settings-item:active {
       background: #f8f8f8;
     }
+    /* Monochrome icon container — holds an inline SVG sized 22×22. The
+       muted brand color makes the icons feel cohesive with the app's
+       header pills and badges. */
     .settings-item-icon {
-      width: 24px;
-      height: 24px;
-      margin-right: 12px;
+      width: 28px;
+      height: 28px;
+      margin-right: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #666;
-      font-size: 18px;
+      color: #0C0243;
+      flex-shrink: 0;
+    }
+    .settings-item-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     .settings-item-text {
       flex: 1;
@@ -672,6 +737,49 @@
       font-size: 14px;
       color: #222;
       font-weight: 500;
+    }
+    /* Charger type picker — label + 2×2 grid of tappable tiles. Each tile
+       is a rounded white box with the plug icon and a name, similar in
+       feel to the payment-method tiles in Profile → Maksutavat. */
+    .charger-type-label {
+      margin-top: 14px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #888;
+      font-weight: 500;
+    }
+    .charger-type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .charger-type-tile {
+      background: white;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      color: #888;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .charger-type-tile:active { background: #f0f0f0; }
+    .charger-type-tile svg { width: 28px; height: 28px; flex-shrink: 0; }
+    .charger-type-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    /* Selected state — dark blue outline + brand-color icon + filled name */
+    .charger-type-tile.selected {
+      border-color: #0C0243;
+      background: #f4f4ff;
+      color: #0C0243;
+    }
+    .charger-type-tile.selected .charger-type-name {
+      color: #0C0243;
+      font-weight: 600;
     }
     .toggle-switch {
       position: relative;
@@ -2156,15 +2264,26 @@
     </svg>
   </button>
 
+  <!-- Dim layer that covers the strip of map visible to the right of the
+       profile panel while it is open. Tapping the dim closes the profile. -->
+  <div id="profile-dim" onclick="closeProfileOverlay()"></div>
+
   <div id="profile-overlay">
-    <div class="overlay-header">
-      <button class="overlay-back-btn" onclick="closeProfileOverlay()">←</button>
-      <div class="overlay-title">Profiili</div>
+    <!-- Brand wordmark — placeholder until the logo is ready -->
+    <div class="profile-brand">
+      <div class="profile-brand-text">TotalParking</div>
     </div>
     <div class="overlay-content">
       <div class="settings-section">
         <div class="settings-item" onclick="openParkingHistory()">
-          <div class="settings-item-icon">📋</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="3" width="16" height="18" rx="2"/>
+              <line x1="8" y1="8" x2="16" y2="8"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+              <line x1="8" y1="16" x2="13" y2="16"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Pysäköintitapahtumat</div>
             <div class="settings-item-value">Aiemmat pysäköinnit ja kuitit</div>
@@ -2175,7 +2294,12 @@
 
       <div class="settings-section">
         <div class="settings-item" onclick="openAccountSettings()">
-          <div class="settings-item-icon">👤</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="8" r="3.5"/>
+              <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Tili</div>
             <div class="settings-item-value">Käyttäjätiedot ja turvallisuus</div>
@@ -2183,7 +2307,12 @@
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openNotificationSettings()">
-          <div class="settings-item-icon">🔔</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2H4.5L6 16z"/>
+              <path d="M10 20a2 2 0 0 0 4 0"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Ilmoitukset</div>
             <div class="settings-item-value">Push-ilmoitukset ja sähköposti</div>
@@ -2191,7 +2320,12 @@
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openPaymentSettings()">
-          <div class="settings-item-icon">💳</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="6" width="18" height="13" rx="2"/>
+              <line x1="3" y1="11" x2="21" y2="11"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Maksutavat</div>
             <div class="settings-item-value">Hallitse maksukortteja</div>
@@ -2202,7 +2336,12 @@
       
       <div class="settings-section">
         <div class="settings-item" onclick="openPrivacySettings()">
-          <div class="settings-item-icon">🔒</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <rect x="5" y="11" width="14" height="9" rx="1.5"/>
+              <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Yksityisyys</div>
             <div class="settings-item-value">Tietosuoja ja turvallisuus</div>
@@ -2210,7 +2349,13 @@
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openLanguageSettings()">
-          <div class="settings-item-icon">🌐</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3 12h18"/>
+              <path d="M12 3c2.5 3 4 6 4 9s-1.5 6-4 9c-2.5-3-4-6-4-9s1.5-6 4-9z"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Kieli</div>
             <div class="settings-item-value">Suomi</div>
@@ -2221,12 +2366,22 @@
       
       <div class="settings-section">
         <div class="settings-item" onclick="openAreaEditor()">
-          <div class="settings-item-icon">🗺️</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/>
+              <line x1="9" y1="4" x2="9" y2="20"/>
+              <line x1="15" y1="6" x2="15" y2="22"/>
+            </svg>
+          </div>
           <div class="settings-item-text"><div class="settings-item-label">Alueiden muokkaus</div><div class="settings-item-value">Yhdistä tai poista pysäköintialueita</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openAdminOverlay()">
-          <div class="settings-item-icon">🛡️</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Hallinto</div>
             <div class="settings-item-value">Pysäköintipaikkojen hallinta</div>
@@ -2234,7 +2389,13 @@
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openHelpSettings()">
-          <div class="settings-item-icon">❓</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 1-1 1.7"/>
+              <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Ohje ja tuki</div>
             <div class="settings-item-value">UKK ja yhteystiedot</div>
@@ -2242,7 +2403,13 @@
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openAboutSettings()">
-          <div class="settings-item-icon">ℹ️</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9"/>
+              <line x1="12" y1="11" x2="12" y2="16"/>
+              <circle cx="12" cy="7.5" r="0.8" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Tietoja</div>
             <div class="settings-item-value">Versio 1.0.0</div>
@@ -2254,7 +2421,11 @@
       <!-- Asetukset-osio -->
       <div class="settings-section">
         <div class="settings-item" style="cursor:default;" onclick="toggleRotationSetting()">
-          <div class="settings-item-icon">🔄</div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/>
+            </svg>
+          </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Näytön rotaatio</div>
             <div class="settings-item-value" id="rotation-setting-value">Pois käytöstä</div>
@@ -2910,6 +3081,72 @@
             <input type="checkbox" id="toggle-ev-charging" onchange="toggleEvCharging()">
             <span class="toggle-slider"></span>
           </label>
+        </div>
+        <!-- Charger type picker — appears below the toggle. Multi-select so
+             users can show several plug types at once. Each tile flips to
+             dark-blue (selected) on tap. -->
+        <div class="charger-type-label">Valitse latauspistokkeen malli</div>
+        <div class="charger-type-grid">
+          <div class="charger-type-tile" data-charger="schuko" onclick="toggleChargerType('schuko', this)">
+            <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- Round face -->
+              <circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- Two pin holes -->
+              <circle cx="15" cy="20" r="1.6" fill="currentColor"/>
+              <circle cx="25" cy="20" r="1.6" fill="currentColor"/>
+              <!-- Grounding strips on top and bottom -->
+              <rect x="18.5" y="7.5" width="3" height="2.2" rx="0.4" fill="currentColor"/>
+              <rect x="18.5" y="30.3" width="3" height="2.2" rx="0.4" fill="currentColor"/>
+            </svg>
+            <span class="charger-type-name">Schuko</span>
+          </div>
+          <div class="charger-type-tile" data-charger="type2" onclick="toggleChargerType('type2', this)">
+            <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- Type-2 outer shape: rounded top, flat bottom -->
+              <path d="M8 18 a12 12 0 0 1 24 0 v8 a4 4 0 0 1 -4 4 h-16 a4 4 0 0 1 -4 -4 z"
+                    fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- 7 pins -->
+              <circle cx="20" cy="14" r="1.5" fill="currentColor"/>
+              <circle cx="15" cy="17.5" r="1.5" fill="currentColor"/>
+              <circle cx="25" cy="17.5" r="1.5" fill="currentColor"/>
+              <circle cx="20" cy="20" r="1.5" fill="currentColor"/>
+              <circle cx="14" cy="24" r="2" fill="currentColor"/>
+              <circle cx="26" cy="24" r="2" fill="currentColor"/>
+              <circle cx="20" cy="26" r="1.5" fill="currentColor"/>
+            </svg>
+            <span class="charger-type-name">Type-2</span>
+          </div>
+          <div class="charger-type-tile" data-charger="ccs" onclick="toggleChargerType('ccs', this)">
+            <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- CCS = Type-2 above + two big DC pins below -->
+              <path d="M8 14 a12 12 0 0 1 24 0 v4 a3 3 0 0 1 -3 3 h-18 a3 3 0 0 1 -3 -3 z"
+                    fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- AC pins on top section -->
+              <circle cx="20" cy="10" r="1.3" fill="currentColor"/>
+              <circle cx="15.5" cy="13" r="1.3" fill="currentColor"/>
+              <circle cx="24.5" cy="13" r="1.3" fill="currentColor"/>
+              <circle cx="15" cy="17" r="1.6" fill="currentColor"/>
+              <circle cx="25" cy="17" r="1.6" fill="currentColor"/>
+              <!-- DC fast-charge pins (the two big ones below) -->
+              <circle cx="15" cy="29" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              <circle cx="25" cy="29" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            </svg>
+            <span class="charger-type-name">CCS</span>
+          </div>
+          <div class="charger-type-tile" data-charger="chademo" onclick="toggleChargerType('chademo', this)">
+            <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- Round face with 4 pins in a square around a center pin -->
+              <circle cx="20" cy="20" r="13" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="14" cy="14" r="1.6" fill="currentColor"/>
+              <circle cx="26" cy="14" r="1.6" fill="currentColor"/>
+              <circle cx="14" cy="26" r="1.6" fill="currentColor"/>
+              <circle cx="26" cy="26" r="1.6" fill="currentColor"/>
+              <circle cx="20" cy="20" r="2.4" fill="currentColor"/>
+              <!-- Small alignment notch on top -->
+              <rect x="18.5" y="5" width="3" height="2.2" rx="0.5" fill="currentColor"/>
+            </svg>
+            <span class="charger-type-name">CHAdeMO</span>
+          </div>
         </div>
       </div>
     </div>
@@ -3696,6 +3933,7 @@
     profileBtn.addEventListener('click', () => {
       menuItemClick(1, () => {
         document.getElementById('profile-overlay').classList.add('open');
+        document.getElementById('profile-dim').classList.add('visible');
         // Hide the floating action button while the profile (and any nested
         // sub-overlays like Pysäköintitapahtumat) is shown.
         btnContainer.classList.add('hidden');
@@ -3724,6 +3962,7 @@
     
     function closeProfileOverlay() {
       document.getElementById('profile-overlay').classList.remove('open');
+      document.getElementById('profile-dim').classList.remove('visible');
       // Restore the floating action button now that the profile (and any
       // nested sub-overlays underneath) are no longer covering the map.
       btnContainer.classList.remove('hidden');
@@ -6431,6 +6670,21 @@
       showEvCharging = document.getElementById('toggle-ev-charging').checked;
       // TODO: when an EV-charging data source/layer exists, toggle its visibility here.
       // e.g. if (map.getLayer('ev-charging')) map.setLayoutProperty('ev-charging','visibility', showEvCharging ? 'visible' : 'none');
+    }
+    // Tracks which plug types the user wants visible on the map. Multi-select.
+    // No data layer yet — when EV-charging features get rendered later, this
+    // set will be the filter applied to that layer.
+    const _selectedChargerTypes = new Set();
+    function toggleChargerType(kind, el) {
+      if (_selectedChargerTypes.has(kind)) {
+        _selectedChargerTypes.delete(kind);
+        el.classList.remove('selected');
+      } else {
+        _selectedChargerTypes.add(kind);
+        el.classList.add('selected');
+      }
+      // TODO: when the EV-charging map layer exists, push this selection
+      // into a Mapbox filter expression so only the chosen plug types show.
     }
 
     function acceptFreeTerms() {
