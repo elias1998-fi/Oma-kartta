@@ -642,7 +642,7 @@
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
     #filter-close-btn.visible { display: flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    #sheet-summary { padding: 9px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
+    #sheet-summary { padding: 13px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
     #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
     #summary-type { font-size: 14px; color: #555; }
     #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
@@ -5052,15 +5052,26 @@
           // If Sunday has no data we still show the row with an en-dash to
           // make it clear the area isn't valid on Sunday (rather than
           // omitting the row, which could be ambiguous).
-          const vMaPe = (p.valid_mape_from || '').trim();
-          const vLa   = (p.valid_la_from   || '').trim();
-          const vSu   = (p.valid_su_from   || '').trim();
+          // Validity hours. The raw text in valid_mape_from is split into
+          // three parts:
+          //   "9-21, (9-18), 12-15"
+          //    ^^^^         <- ma-pe (before the first parenthesis)
+          //          ^^^^   <- la    (inside parentheses)
+          //                 ^^^^^   <- su (after closing parenthesis; optional)
+          // We parse here in JS so we don't have to rely on a DB migration
+          // having succeeded, and so the rendering still works if data is
+          // refreshed from the original raw source.
+          const rawHours = (p.valid_mape_from || p.valid_la_from || p.valid_su_from || '').trim();
+          const parsed = parseScheduleString(rawHours);
+          const vMaPe = parsed.maPe;
+          const vLa   = parsed.la;
+          const vSu   = parsed.su;
           if (vMaPe || vLa || vSu) {
             detailsHTML += '<p class="price-label">Voimassaoloaika</p>';
             detailsHTML += '<table style="width:100%;font-size:14px;color:#333;border-collapse:collapse;">';
-            detailsHTML += `<tr><td style="color:#555;padding:2px 0;width:52px;">Ma–Pe</td><td style="font-weight:500;">${escapeHtml(vMaPe || '–')}</td></tr>`;
-            detailsHTML += `<tr><td style="color:#555;padding:2px 0;">La</td><td style="font-weight:500;">${escapeHtml(vLa || '–')}</td></tr>`;
-            detailsHTML += `<tr><td style="color:#e53935;padding:2px 0;">Su</td><td style="font-weight:500;color:#e53935;">${escapeHtml(vSu || '–')}</td></tr>`;
+            detailsHTML += `<tr><td style="color:#555;padding:2px 0;width:52px;">Ma–Pe</td><td style="font-weight:500;">${escapeHtml(vMaPe || '—')}</td></tr>`;
+            detailsHTML += `<tr><td style="color:#555;padding:2px 0;">La</td><td style="font-weight:500;">${escapeHtml(vLa || '—')}</td></tr>`;
+            detailsHTML += `<tr><td style="color:#555;padding:2px 0;">Su</td><td style="font-weight:500;">${escapeHtml(vSu || '—')}</td></tr>`;
             detailsHTML += '</table>';
           }
           // Pricing: zone-based for paid Helsinki streetside areas. Halls
@@ -5079,11 +5090,10 @@
             detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">${escapeHtml(priceText)}</p>`;
           }
           // Lisätiedot: filter out the duration/validity/kertamaksu boilerplate
-          // since those are already shown above. Anything else stays.
+          // since those are already shown above. Always show the row even when
+          // empty so the section structure stays consistent across areas.
           const extraInfoCleaned = cleanExtraInfoForSheet(extraInfo);
-          if (extraInfoCleaned) {
-            detailsHTML += `<p class="price-label">Lisätiedot</p><p class="price-value">${escapeHtml(extraInfoCleaned)}</p>`;
-          }
+          detailsHTML += `<p class="price-label">Lisätiedot</p><p class="price-value">${extraInfoCleaned ? escapeHtml(extraInfoCleaned) : '—'}</p>`;
           showCenterFeatureInSheet(line1, srcType, op, computeAreaCodeFromFeature(f), detailsHTML);
         }
         // ALWAYS update btn when feature is under center (regardless of same/different ID)
@@ -8003,6 +8013,27 @@
                !lo.startsWith('voimassaolo');
       });
       return kept.join(' | ');
+    }
+    // Parse a combined schedule string like "9-21, (9-18), 12-15" into its
+    // three weekday components. Returns { maPe, la, su } where each value
+    // is either the trimmed string or an empty string when missing.
+    function parseScheduleString(raw) {
+      const result = { maPe: '', la: '', su: '' };
+      if (!raw) return result;
+      const s = String(raw).trim();
+      // Ma-Pe = everything before the first '(' (commas inside are trimmed).
+      const maPeMatch = s.match(/^([^,(]+)/);
+      if (maPeMatch) result.maPe = maPeMatch[1].replace(/[,\s]+$/, '').trim();
+      // La = whatever's inside the first pair of parentheses.
+      const laMatch = s.match(/\(([^)]+)\)/);
+      if (laMatch) result.la = laMatch[1].trim();
+      // Su = whatever appears after the closing parenthesis.
+      const suMatch = s.match(/\)[, ]*(.+)$/);
+      if (suMatch) result.su = suMatch[1].replace(/^[,\s]+/, '').trim();
+      // If the raw string had no parentheses at all, treat the whole thing
+      // as ma-pe (e.g. "Maksullinen 24h").
+      if (!laMatch && !suMatch) result.maPe = s;
+      return result;
     }
     function renderParkingHistory(events) {
       const groups = groupEventsByMonth(events);
