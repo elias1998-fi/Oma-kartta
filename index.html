@@ -109,59 +109,35 @@
     .maplibregl-marker { z-index: 5; }
     
     /* Splash Screen */
-    #splash-screen {
-      position: fixed;
-      inset: 0;
-      background: white;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 1;
-      transition: opacity 0.3s ease;
+    /* (Splash screen removed — app now opens directly to the map.) */
+
+    /* ── User location indicator — direction arrow (Apple Maps style) ─
+       MapLibre's GeolocateControl puts a blue dot inside a wide pulsing
+       circle. With showUserHeading:true it also adds an inner sector arc
+       (`-heading`) which is wide and cone-shaped. Override it to show a
+       sharp arrowhead like the reference image. */
+    .maplibregl-user-location-dot {
+      background-color: #1e7cff !important;
+      width: 22px !important;
+      height: 22px !important;
+      border: 3px solid white !important;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.25) !important;
     }
-    
-    #splash-screen.fade-out {
-      opacity: 0;
-      pointer-events: none;
-    }
-    
-    .splash-content {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      animation: slideIn 0.3s ease-out;
-    }
-    
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .splash-car {
-      width: 48px;
-      height: 48px;
-      fill: #0C0243;
-    }
-    
-    .splash-p {
-      width: 40px;
-      height: 40px;
-      background: #0C0243;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: Arial, sans-serif;
-      font-size: 24px;
-      font-weight: bold;
-      color: white;
+    /* The native heading element is a sector slice — replace its background
+       with a small triangular arrowhead via clip-path. The arrow points up
+       (toward 0°/north) and MapLibre rotates the parent based on compass
+       heading, so we naturally inherit the right direction. */
+    .maplibregl-user-location-dot-heading {
+      width: 18px !important;
+      height: 22px !important;
+      background: #1e7cff !important;
+      clip-path: polygon(50% 0%, 100% 100%, 50% 75%, 0% 100%) !important;
+      opacity: 1 !important;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+      transform-origin: 50% 100% !important;
+      /* Pull the arrow up above the dot */
+      top: -18px !important;
+      left: 2px !important;
     }
     
     #left-menu-pill {
@@ -1538,7 +1514,6 @@
       margin: 18px 16px 8px 16px;
       font-family: Arial, sans-serif;
     }
-    .history-month-header:first-child { margin-top: 12px; }
     .parking-event-card {
       background: white;
       border-radius: 12px;
@@ -1631,18 +1606,25 @@
     .event-chevron-bottom { display: none; }
 
     /* ── Pysäköintihistorian otsikon oikean reunan painikkeet ───────── */
-    /* Toolbar row below the history overlay header. Lives in the same gray
-       gutter area as the list, right-aligned, aligned with the first
-       month label visually. */
+    /* Toolbar row sits absolutely on top of the content area's right side so
+       the first month label inside the list ends up at the same vertical
+       level as the toolbar buttons. */
     #history-toolbar {
+      position: absolute;
+      top: 0;
+      right: 16px;
       display: flex;
-      justify-content: flex-end;
       align-items: center;
       gap: 8px;
-      padding: 12px 16px 0 16px;
-      background: transparent;
-      flex-shrink: 0;
+      padding-top: 14px;
+      pointer-events: none; /* let buttons re-enable themselves */
+      z-index: 5;
     }
+    #history-toolbar > * { pointer-events: auto; }
+    #parking-history-overlay { position: fixed; }
+    #parking-history-overlay .overlay-header { position: relative; z-index: 6; }
+    /* Bring the first month label up to align with the toolbar buttons */
+    .history-month-header:first-child { margin-top: 18px; }
     /* "Active" state for filter — turns dark-blue like Select when active */
     #history-filter-btn.active {
       background: #0C0243;
@@ -1750,30 +1732,34 @@
     }
     .filter-date-row {
       display: flex;
-      align-items: flex-end;
-      gap: 14px;
+      align-items: stretch;
+      gap: 10px;
+      padding: 0 4px; /* small inner padding so end date doesn't touch the box edge */
     }
-    .filter-date-col { flex: 1; min-width: 0; }
-    /* Centered en-dash between the two date columns */
+    .filter-date-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    /* En-dash separator: vertically centered against the input itself (not
+       the label). The dash sits in a flex column that takes the same height
+       as the date-col, with the dash pushed to align with the input row. */
     .filter-date-sep {
-      font-size: 18px;
+      font-size: 20px;
       color: #888;
       font-weight: 500;
-      padding-bottom: 10px;
       flex-shrink: 0;
-    }
-    .filter-date-col label {
-      font-size: 11px;
-      color: #888;
-      display: block;
-      margin-bottom: 4px;
+      align-self: flex-end;
+      padding-bottom: 9px; /* match input vertical centerline */
     }
     .filter-date-col input[type="date"] {
       width: 100%;
-      height: 40px;
+      max-width: 130px;
+      height: 38px;
       border: 1.5px solid #ddd;
       border-radius: 8px;
-      padding: 0 8px;
+      padding: 0 6px;
       font-size: 13px;
       font-family: Arial, sans-serif;
       outline: none;
@@ -1781,7 +1767,24 @@
       background: white;
       color: #222;
     }
+    .filter-date-col label {
+      font-size: 11px;
+      color: #888;
+      display: block;
+      margin-bottom: 4px;
+    }
     .filter-date-col input[type="date"]:focus { border-color: #0C0243; }
+    /* Finnish-formatted date shown under each input. The native date picker
+       UI uses the OS locale and can't be styled to "29.5.2026", so we display
+       the Finnish form here for clarity. */
+    .filter-date-fi {
+      font-size: 12px;
+      color: #0C0243;
+      margin-top: 4px;
+      font-weight: 500;
+      min-height: 16px;
+      letter-spacing: 0.2px;
+    }
     /* Segmented control for the payment type filter */
     .filter-segment {
       display: flex;
@@ -2073,15 +2076,6 @@
 </head>
 <body>
   <!-- Splash Screen -->
-  <div id="splash-screen">
-    <div class="splash-content">
-      <svg class="splash-car" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-      </svg>
-      <div class="splash-p">P</div>
-    </div>
-  </div>
-
   <div id="map"></div>
 
   <!-- Unified center marker — morphs between standalone P pin and full badge -->
@@ -2341,12 +2335,14 @@
       <div class="filter-date-row">
         <div class="filter-date-col">
           <label for="filter-start-date">Alkupäivä</label>
-          <input type="date" id="filter-start-date">
+          <input type="date" id="filter-start-date" oninput="updateFilterDateLabel('start')">
+          <div class="filter-date-fi" id="filter-start-date-fi">–</div>
         </div>
         <div class="filter-date-sep">–</div>
         <div class="filter-date-col">
           <label for="filter-end-date">Loppupäivä</label>
-          <input type="date" id="filter-end-date">
+          <input type="date" id="filter-end-date" oninput="updateFilterDateLabel('end')">
+          <div class="filter-date-fi" id="filter-end-date-fi">–</div>
         </div>
       </div>
 
@@ -3059,15 +3055,6 @@
       if (typeof map !== 'undefined' && map.resize) map.resize();
     });
 
-    const splashScreen = document.getElementById('splash-screen');
-    
-    setTimeout(() => {
-      splashScreen.classList.add('fade-out');
-      setTimeout(() => {
-        splashScreen.style.display = 'none';
-      }, 300);
-    }, 500);
-
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
 
     // Supabase
@@ -3349,7 +3336,7 @@
       return `${zone}${hours}`;
     }
 
-    const map = new maplibregl.Map({ container:'map', style:'omakartta_style.json', center:[24.9354,60.1699], zoom:12, minZoom:5, maxZoom:20, transformRequest, maxTileCacheSize:50, fadeDuration:100, dragRotate:false, touchPitch:false, pitchWithRotate:false, keyboard:false, attributionControl:false });
+    const map = new maplibregl.Map({ container:'map', style:'omakartta_style.json', center:[24.932096,60.167370], zoom:16, minZoom:5, maxZoom:20, transformRequest, maxTileCacheSize:50, fadeDuration:100, dragRotate:false, touchPitch:false, pitchWithRotate:false, keyboard:false, attributionControl:false });
     map.touchZoomRotate.disableRotation();
 
     let currentMarker = null;
@@ -3388,11 +3375,11 @@
         'right:-4px',
         'width:16px',
         'height:16px',
-        'background:rgba(255,255,255,0.75)',
-        'backdrop-filter:blur(2px)',
-        '-webkit-backdrop-filter:blur(2px)',
+        'background:rgba(255,255,255,0.45)',
+        'backdrop-filter:blur(3px)',
+        '-webkit-backdrop-filter:blur(3px)',
         'border-radius:50%',
-        'color:#777',
+        'color:#666',
         'font-size:10px',
         'font-weight:bold',
         'line-height:1',
@@ -7784,12 +7771,26 @@
       // Sync the modal inputs with the currently applied filters
       document.getElementById('filter-start-date').value = _historyFilters.startDate || '';
       document.getElementById('filter-end-date').value   = _historyFilters.endDate   || '';
+      updateFilterDateLabel('start');
+      updateFilterDateLabel('end');
       _filterModalPaymentType = _historyFilters.paymentType;
       document.querySelectorAll('.filter-segment-option').forEach(btn => {
         if (btn.dataset.value === _filterModalPaymentType) btn.classList.add('selected');
         else                                                btn.classList.remove('selected');
       });
       document.getElementById('filter-modal').classList.add('visible');
+    }
+    // ISO yyyy-mm-dd → Finnish d.m.yyyy
+    function isoToFinnishDate(iso) {
+      if (!iso) return '–';
+      const [y, m, d] = iso.split('-');
+      if (!y || !m || !d) return '–';
+      return `${parseInt(d,10)}.${parseInt(m,10)}.${y}`;
+    }
+    function updateFilterDateLabel(which) {
+      const input = document.getElementById(`filter-${which}-date`);
+      const label = document.getElementById(`filter-${which}-date-fi`);
+      if (input && label) label.textContent = isoToFinnishDate(input.value);
     }
     function closeFilterModal() {
       document.getElementById('filter-modal').classList.remove('visible');
