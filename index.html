@@ -605,6 +605,34 @@
       color: #888;
       margin-left: 8px;
     }
+    /* Stacked action buttons at the bottom of the Tili overlay. Logout
+       is the primary "neutral" action; delete is destructive and shown
+       in red below it. */
+    .account-actions {
+      padding: 20px 16px 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .account-action-btn {
+      width: 100%;
+      padding: 14px 16px;
+      background: white;
+      border: 1.5px solid #ddd;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #222;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .account-action-btn:active { background: #f4f4f4; }
+    .account-action-btn.danger {
+      color: #d92626;
+      border-color: #f3c0c0;
+    }
+    .account-action-btn.danger:active { background: #fdebeb; border-color: #d92626; }
 
     .lang-quickrow {
       padding: 18px 20px 24px 20px;
@@ -847,8 +875,14 @@
     /* Charger type picker — label + 2×2 grid of tappable tiles. Each tile
        is a rounded white box with the plug icon and a name, similar in
        feel to the payment-method tiles in Profile → Maksutavat. */
-    .charger-type-label {
+    /* Charger type picker wrapper — hidden by default; revealed when the
+       "Näytä julkiset sähkölatauspisteet" toggle above is on. */
+    .charger-picker {
+      display: none;
       margin-top: 14px;
+    }
+    .charger-picker.visible { display: block; }
+    .charger-type-label {
       margin-bottom: 8px;
       font-size: 13px;
       color: #888;
@@ -2812,6 +2846,13 @@
           </div>
         </div>
       </div>
+      <!-- Logout + delete-account actions, only visible on the personal
+           tab. The delete button is intentionally red to mark the action
+           as destructive (matches iOS/Android conventions). -->
+      <div id="account-actions" class="account-actions">
+        <button class="account-action-btn"        onclick="handleLogout()">Kirjaudu ulos</button>
+        <button class="account-action-btn danger" onclick="handleDeleteAccount()">Poista tili</button>
+      </div>
     </div>
   </div>
 
@@ -3236,11 +3277,12 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <!-- Charger type picker — appears below the toggle. Multi-select so
-             users can show several plug types at once. Each tile flips to
-             dark-blue (selected) on tap. -->
-        <div class="charger-type-label">Valitse latauspistokkeen malli</div>
-        <div class="charger-type-grid">
+        <!-- Charger type picker — shown only when the EV-charging toggle
+             above is on. Multi-select so users can show several plug types
+             at once. Each tile flips to dark-blue (selected) on tap. -->
+        <div id="charger-picker" class="charger-picker">
+          <div class="charger-type-label">Valitse latauspistokkeen malli</div>
+          <div class="charger-type-grid">
           <div class="charger-type-tile" data-charger="schuko" onclick="toggleChargerType('schuko', this)">
             <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <!-- Round face -->
@@ -3301,6 +3343,7 @@
             </svg>
             <span class="charger-type-name">CHAdeMO</span>
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -5188,6 +5231,11 @@
         // Apply current filter state (free areas hidden by default until enabled)
         applyRangeFilter();
 
+        // The polygon layers were just added, which may have placed them on
+        // top of the halli-icons layer. Promote halli icons to the very top
+        // so the parking-hall pins always sit above the area polygons.
+        if (map.getLayer('halli-icons')) map.moveLayer('halli-icons');
+
         // Helper: centroid for polygon/multipolygon
         function getCentroid(geom) {
           const ring = geom.type === 'MultiPolygon' ? geom.coordinates[0][0] : geom.coordinates[0];
@@ -5645,6 +5693,9 @@
     function addHalliLayers(geojson) {
       if (map.getSource('halli-points')) {
         map.getSource('halli-points').setData(geojson);
+        // Make sure the icon layer stays on top of the polygon layers even
+        // if polygons were re-added after the halli layer was first created.
+        if (map.getLayer('halli-icons')) map.moveLayer('halli-icons');
         return;
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
@@ -5655,6 +5706,10 @@
           'icon-allow-overlap': true, 'icon-anchor': 'center'
         }
       });
+      // Promote the halli icons to the very top so they always sit on
+      // top of the parking-area polygons (otherwise the polygon fills
+      // partially cover the icons at higher zoom levels).
+      map.moveLayer('halli-icons');
 
       function showHalliInfo(e) {
         const props = e.features[0].properties;
@@ -6322,6 +6377,25 @@
       const b = document.getElementById('acct-seg-business');
       if (p) p.classList.toggle('selected', kind === 'personal');
       if (b) b.classList.toggle('selected', kind === 'business');
+      // Logout/delete actions belong to the personal account only; on the
+      // business tab they should be hidden because the business account
+      // management lives elsewhere.
+      const actions = document.getElementById('account-actions');
+      if (actions) actions.style.display = (kind === 'personal') ? '' : 'none';
+    }
+    // Placeholder handlers; real auth flow gets wired in later when a
+    // user/session store exists.
+    function handleLogout() {
+      if (confirm('Haluatko kirjautua ulos?')) {
+        showCustomToast('Kirjauduit ulos', 2200);
+        // TODO: clear session token, redirect to login.
+      }
+    }
+    function handleDeleteAccount() {
+      if (confirm('Haluatko varmasti poistaa tilisi pysyvästi?\n\nTätä toimintoa ei voi peruuttaa.')) {
+        showCustomToast('Tilin poistopyyntö lähetetty', 2500);
+        // TODO: send deletion request to the backend.
+      }
     }
 
     // Stubs for the rest of the new profile-row destinations. Replaced
@@ -6869,6 +6943,9 @@
     let showEvCharging = false;
     function toggleEvCharging() {
       showEvCharging = document.getElementById('toggle-ev-charging').checked;
+      // Show the plug-type picker only when the master toggle is on.
+      const picker = document.getElementById('charger-picker');
+      if (picker) picker.classList.toggle('visible', showEvCharging);
       // TODO: when an EV-charging data source/layer exists, toggle its visibility here.
       // e.g. if (map.getLayer('ev-charging')) map.setLayoutProperty('ev-charging','visibility', showEvCharging ? 'visible' : 'none');
     }
