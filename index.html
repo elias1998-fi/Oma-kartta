@@ -522,6 +522,11 @@
       transition: opacity 0.15s ease;
       z-index: 6;
       color: #0C0243;
+      /* The sheet sets touch-action: none for its drag handling — restore
+         the default here so the native tap → click translation works on
+         iOS Safari. Without this the onclick never fires from a finger tap. */
+      touch-action: auto;
+      -webkit-tap-highlight-color: transparent;
     }
     #sheet-nav-btn svg { width: 22px; height: 22px; }
     #sheet-nav-btn:active { background: #e7e8ed; }
@@ -2398,7 +2403,7 @@
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
     <!-- "Open directions" button — appears top-left when sheet is expanded
          past ~60% of viewport AND a parking area is currently selected. -->
-    <button id="sheet-nav-btn" onclick="onSheetNavBtnClick()" aria-label="Avaa reittiohjeet">
+    <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="19" y1="12" x2="5" y2="12"/>
         <polyline points="12 19 5 12 12 5"/>
@@ -7045,22 +7050,74 @@
       _destinationCoords = null;
     }
 
-    // Click handler for the sheet's top-left button: collapse the sheet to
+    // Click handler for the sheet's top-right button: collapse the sheet to
     // its 153px resting position, drop a red pin at the P-marker's current
     // location, then open the maps app picker.
     function onSheetNavBtnClick() {
+      console.log('[nav-btn] clicked. currentParkingProps:', currentParkingProps,
+                  'hoveredPolyId:', (typeof hoveredPolyId !== 'undefined' ? hoveredPolyId : 'undef'));
       const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
-      if (!hasArea) return;
+      if (!hasArea) {
+        console.warn('[nav-btn] no parking area selected — aborting');
+        return;
+      }
       // Capture the P-marker's current location (= map center, since the
-      // P-marker is anchored to it)
+      // P-marker is anchored to the center crosshair)
       const c = map.getCenter();
-      // Collapse the sheet to the 153px resting position
-      snapTo(sheet.offsetHeight - 153);
-      // Drop the destination pin once the sheet animation begins
-      showDestinationPin(c.lat, c.lng);
-      // Open the app picker
-      document.getElementById('navigate-modal').classList.add('visible');
+      console.log('[nav-btn] captured center:', c.lat, c.lng);
+
+      // Collapse the sheet to the 153px resting position. snapTo handles
+      // the animation + currentY update + backdrop fade.
+      const target = sheet.offsetHeight - 153;
+      console.log('[nav-btn] collapsing sheet to translateY=' + target);
+      snapTo(target);
+
+      // Drop the destination pin immediately — the sheet animation runs
+      // independently and the pin sits on the map underneath.
+      try {
+        showDestinationPin(c.lat, c.lng);
+        console.log('[nav-btn] destination pin added at', c.lat, c.lng);
+      } catch (e) {
+        console.error('[nav-btn] showDestinationPin failed:', e);
+      }
+
+      // Open the app picker after a brief delay so the user sees the pin
+      // land before the modal appears.
+      setTimeout(() => {
+        const modal = document.getElementById('navigate-modal');
+        if (!modal) { console.error('[nav-btn] #navigate-modal missing'); return; }
+        modal.classList.add('visible');
+        console.log('[nav-btn] navigate-modal visible');
+      }, 300);
     }
+
+    // Touchend fallback for iOS — the sheet's `touch-action: none` plus the
+    // touch listeners that call stopPropagation on the parent can keep the
+    // native tap → click translation from firing. We bind directly to the
+    // button's touchend so the action runs reliably on a finger tap. We
+    // also flag the touch so the duplicate `click` event that may follow
+    // is suppressed (prevents the modal from opening twice).
+    (function wireSheetNavBtnTouch() {
+      const btn = document.getElementById('sheet-nav-btn');
+      if (!btn) return;
+      let _lastTouchAt = 0;
+      btn.addEventListener('touchstart', (e) => {
+        // Prevent the sheet's touchmove handler from interpreting this as a drag
+        e.stopPropagation();
+      }, { passive: true });
+      btn.addEventListener('touchend', (e) => {
+        e.stopPropagation();
+        e.preventDefault(); // suppress synthetic click that would otherwise follow
+        _lastTouchAt = Date.now();
+        onSheetNavBtnClick();
+      }, { passive: false });
+      // Desktop / synthetic click — only run if the touch path didn't just fire
+      btn.addEventListener('click', (e) => {
+        if (Date.now() - _lastTouchAt < 600) return;
+        e.stopPropagation();
+        onSheetNavBtnClick();
+      });
+    })();
 
     function closeNavigateModal() {
       document.getElementById('navigate-modal').classList.remove('visible');
