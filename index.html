@@ -278,6 +278,20 @@
       letter-spacing: -0.4px;
       line-height: 1;
     }
+    /* Italic tagline beneath the brand wordmark. Uses a script-style
+       fallback chain (Snell Roundhand / Apple Chancery on iOS, Lucida
+       Handwriting / Brush Script on others) so it always reads as a
+       curvy hand-written accent regardless of platform. */
+    .profile-brand-tagline {
+      margin-top: 6px;
+      font-family: 'Snell Roundhand', 'Apple Chancery', 'Lucida Handwriting',
+                   'Brush Script MT', cursive;
+      font-size: 16px;
+      font-style: italic;
+      color: #3a4cb8;
+      letter-spacing: 0.2px;
+      line-height: 1;
+    }
 
     #search-overlay, #plus-overlay {
       position: fixed; inset: 0;
@@ -555,6 +569,43 @@
 
     /* Language quick-row: small flat row at the bottom of the profile, no
        card background — just a label and three tappable codes. */
+    /* Account-type segmented switch — pill background with two pill
+       buttons inside. The selected button has a white pill background
+       and dark-blue text; unselected has transparent background and
+       muted text. Mirrors the iOS native segmented-control look. */
+    .account-segmented {
+      display: flex;
+      margin: 16px;
+      padding: 4px;
+      background: #e7e8ed;
+      border-radius: 10px;
+      gap: 4px;
+    }
+    .account-seg-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #555;
+      cursor: pointer;
+      border-radius: 7px;
+      font-family: Arial, sans-serif;
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+    .account-seg-btn.selected {
+      background: white;
+      color: #0C0243;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    /* Static version label inside Tietoja-näkymä */
+    .about-version {
+      font-size: 14px;
+      color: #888;
+      margin-left: 8px;
+    }
+
     .lang-quickrow {
       padding: 18px 20px 24px 20px;
       display: flex;
@@ -2327,6 +2378,7 @@
     <!-- Brand wordmark — placeholder until the logo is ready -->
     <div class="profile-brand">
       <div class="profile-brand-text">TotalParking</div>
+      <div class="profile-brand-tagline">Suomessa kehitetty suomalaisille</div>
     </div>
     <div class="overlay-content">
       <!-- Reordered main settings; sub-text removed for visual cleanliness. -->
@@ -2343,15 +2395,15 @@
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
-        <div class="settings-item" onclick="openNotificationSettings()">
+        <div class="settings-item" onclick="openAppSettings()">
           <div class="settings-item-icon">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2H4.5L6 16z"/>
-              <path d="M10 20a2 2 0 0 0 4 0"/>
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
             </svg>
           </div>
           <div class="settings-item-text">
-            <div class="settings-item-label">Ilmoitukset</div>
+            <div class="settings-item-label">Asetukset</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
@@ -2364,6 +2416,20 @@
           </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Maksutavat</div>
+          </div>
+          <div class="settings-item-chevron">›</div>
+        </div>
+        <div class="settings-item" onclick="openVehiclesSettings()">
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 16V12l1.6-4.5A2 2 0 0 1 8.5 6h7a2 2 0 0 1 1.9 1.5L19 12v4"/>
+              <path d="M5 16h14"/>
+              <circle cx="7.5" cy="17" r="1.5"/>
+              <circle cx="16.5" cy="17" r="1.5"/>
+            </svg>
+          </div>
+          <div class="settings-item-text">
+            <div class="settings-item-label">Ajoneuvot</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
@@ -2401,7 +2467,7 @@
             </svg>
           </div>
           <div class="settings-item-text">
-            <div class="settings-item-label">Tietoja</div>
+            <div class="settings-item-label">Tietoja sovelluksesta</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
@@ -2446,24 +2512,6 @@
               <div class="settings-item-label">Alueiden muokkaus</div>
             </div>
             <div class="settings-item-chevron">›</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Asetukset-osio: screen rotation toggle -->
-      <div class="settings-section">
-        <div class="settings-item" style="cursor:default;" onclick="toggleRotationSetting()">
-          <div class="settings-item-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/>
-            </svg>
-          </div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Näytön rotaatio</div>
-          </div>
-          <!-- iOS-style toggle -->
-          <div id="rotation-toggle" onclick="event.stopPropagation();toggleRotationSetting()" style="width:51px;height:31px;border-radius:16px;background:#e0e0e0;position:relative;cursor:pointer;transition:background 0.25s ease;flex-shrink:0;">
-            <div id="rotation-knob" style="position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:white;box-shadow:0 2px 5px rgba(0,0,0,0.3);transition:transform 0.25s ease;"></div>
           </div>
         </div>
       </div>
@@ -2673,12 +2721,77 @@
     </div>
   </div>
 
+  <!-- "Tietoja sovelluksesta" — five flat rows. The version row is shown
+       as a static value (not tappable). Käyttäjätiedot/Tietosuojaseloste/
+       Lisenssit/Yrityksen kotisivut open external links or placeholder
+       toasts until those pages exist. -->
+  <div id="about-detail" class="settings-detail-overlay">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeAboutSettings()">←</button>
+      <div class="overlay-title">Tietoja sovelluksesta</div>
+    </div>
+    <div class="overlay-content">
+      <div class="settings-section">
+        <div class="settings-item" onclick="showCustomToast('Käyttäjätiedot — tulossa pian', 2200)">
+          <div class="settings-item-text"><div class="settings-item-label">Käyttäjätiedot</div></div>
+          <div class="settings-item-chevron">›</div>
+        </div>
+        <div class="settings-item" onclick="showCustomToast('Tietosuojaseloste — tulossa pian', 2200)">
+          <div class="settings-item-text"><div class="settings-item-label">Tietosuojaseloste</div></div>
+          <div class="settings-item-chevron">›</div>
+        </div>
+        <div class="settings-item" onclick="showCustomToast('Lisenssit — tulossa pian', 2200)">
+          <div class="settings-item-text"><div class="settings-item-label">Lisenssit</div></div>
+          <div class="settings-item-chevron">›</div>
+        </div>
+        <div class="settings-item" style="cursor:default;">
+          <div class="settings-item-text"><div class="settings-item-label">Sovelluksen versio</div></div>
+          <div class="about-version">1.0.0</div>
+        </div>
+        <div class="settings-item" onclick="window.open('https://totalparking.fi','_blank')">
+          <div class="settings-item-text"><div class="settings-item-label">Yrityksen kotisivut</div></div>
+          <div class="settings-item-chevron">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App settings overlay reached via Profiili → Asetukset. -->
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeAppSettings()">←</button>
+      <div class="overlay-title">Asetukset</div>
+    </div>
+    <div class="overlay-content">
+      <div class="settings-section">
+        <div class="settings-item" style="cursor:default;" onclick="toggleRotationSetting()">
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/>
+            </svg>
+          </div>
+          <div class="settings-item-text">
+            <div class="settings-item-label">Näytön rotaatio</div>
+          </div>
+          <div id="rotation-toggle" onclick="event.stopPropagation();toggleRotationSetting()" style="width:51px;height:31px;border-radius:16px;background:#e0e0e0;position:relative;cursor:pointer;transition:background 0.25s ease;flex-shrink:0;">
+            <div id="rotation-knob" style="position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:white;box-shadow:0 2px 5px rgba(0,0,0,0.3);transition:transform 0.25s ease;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="account-detail" class="settings-detail-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAccountSettings()">←</button>
       <div class="overlay-title">Tili</div>
     </div>
     <div class="overlay-content">
+      <!-- Segmented switch — toggles between personal and business profiles.
+           Visual only for now (no separate business data yet). -->
+      <div class="account-segmented">
+        <button class="account-seg-btn selected" id="acct-seg-personal" onclick="setAccountType('personal')">Henkilökohtainen</button>
+        <button class="account-seg-btn"          id="acct-seg-business" onclick="setAccountType('business')">Yritys</button>
+      </div>
       <div class="settings-section">
         <div class="settings-item">
           <div class="settings-item-text">
@@ -6198,6 +6311,30 @@
     function closeAccountSettings() {
       document.getElementById('account-detail').classList.remove('open');
     }
+
+    // Account-type segmented switch (Henkilökohtainen / Yritys). Visual
+    // only for now — the underlying data store doesn't yet split between
+    // personal and business profiles.
+    let _accountType = 'personal';
+    function setAccountType(kind) {
+      _accountType = kind;
+      const p = document.getElementById('acct-seg-personal');
+      const b = document.getElementById('acct-seg-business');
+      if (p) p.classList.toggle('selected', kind === 'personal');
+      if (b) b.classList.toggle('selected', kind === 'business');
+    }
+
+    // Stubs for the rest of the new profile-row destinations. Replaced
+    // with real overlays as those screens get built.
+    function openVehiclesSettings() {
+      showCustomToast('Ajoneuvojen hallinta — tulossa pian', 2500);
+    }
+    function openAppSettings() {
+      document.getElementById('app-settings-detail').classList.add('open');
+    }
+    function closeAppSettings() {
+      document.getElementById('app-settings-detail').classList.remove('open');
+    }
     
     function openNotificationSettings() {
       alert('Ilmoitusasetukset - tulossa pian');
@@ -6408,7 +6545,10 @@
     }
     
     function openAboutSettings() {
-      alert('Tietoja - tulossa pian');
+      document.getElementById('about-detail').classList.add('open');
+    }
+    function closeAboutSettings() {
+      document.getElementById('about-detail').classList.remove('open');
     }
 
     const SEARCH_HISTORY_KEY = 'parking_search_history';
