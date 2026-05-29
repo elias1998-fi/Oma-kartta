@@ -1603,18 +1603,52 @@
     }
     .event-comment-line .comment-text { font-style: italic; }
 
-    /* Disclosure indicator on the right side of each event card */
+    /* Right-side stack: price + bottom-positioned chevron (shown in select mode) */
+    .event-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    /* Disclosure indicator. Two variants:
+       - .event-chevron-side    → outside the right stack, vertically centered
+                                  (default state, when not selecting)
+       - .event-chevron-bottom  → inside the right stack, below the price
+                                  (shown when in select mode) */
     .event-chevron {
-      align-self: center;
       font-size: 24px;
       color: #c0c0c0;
       font-weight: 300;
-      margin-left: 4px;
-      flex-shrink: 0;
       line-height: 1;
+      flex-shrink: 0;
     }
+    .event-chevron-side {
+      align-self: center;
+      margin-left: 4px;
+    }
+    /* Bottom chevron is hidden by default; appears only in select mode */
+    .event-chevron-bottom { display: none; }
 
     /* ── Pysäköintihistorian otsikon oikean reunan painikkeet ───────── */
+    /* Toolbar row below the history overlay header. Lives in the same gray
+       gutter area as the list, right-aligned, aligned with the first
+       month label visually. */
+    #history-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px 0 16px;
+      background: transparent;
+      flex-shrink: 0;
+    }
+    /* "Active" state for filter — turns dark-blue like Select when active */
+    #history-filter-btn.active {
+      background: #0C0243;
+      color: white;
+    }
+
     .header-action-btn {
       height: 32px;
       padding: 0 14px;
@@ -1650,7 +1684,8 @@
     /* Show the circle only when the list is in select mode */
     #parking-history-content.select-mode .event-select-circle { display: block; }
     /* Hide the right-side chevron in select mode — the card is a checkbox now */
-    #parking-history-content.select-mode .event-chevron { display: none; }
+    #parking-history-content.select-mode .event-chevron-side   { display: none; }
+    #parking-history-content.select-mode .event-chevron-bottom { display: block; }
     .parking-event-card.selected .event-select-circle {
       background: #0C0243;
       border-color: #0C0243;
@@ -1713,8 +1748,20 @@
       letter-spacing: 0.5px;
       margin-bottom: 6px;
     }
-    .filter-date-row { display: flex; gap: 10px; }
+    .filter-date-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+    }
     .filter-date-col { flex: 1; min-width: 0; }
+    /* Centered en-dash between the two date columns */
+    .filter-date-sep {
+      font-size: 18px;
+      color: #888;
+      font-weight: 500;
+      padding-bottom: 10px;
+      flex-shrink: 0;
+    }
     .filter-date-col label {
       font-size: 11px;
       color: #888;
@@ -2264,15 +2311,16 @@
   </div>
 
   <div id="parking-history-overlay" class="settings-detail-overlay">
-    <div class="overlay-header" style="justify-content:space-between;">
-      <div style="display:flex;align-items:center;">
-        <button class="overlay-back-btn" onclick="closeParkingHistory()">←</button>
-        <div class="overlay-title">Pysäköintitapahtumat</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button id="select-btn" class="header-action-btn" onclick="toggleSelectMode()">Valitse</button>
-        <button id="filter-btn" class="header-action-btn" onclick="openFilterModal()">Suodata</button>
-      </div>
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeParkingHistory()">←</button>
+      <div class="overlay-title">Pysäköintitapahtumat</div>
+    </div>
+    <!-- Toolbar row: lives in the gray gutter area below the header, right-
+         aligned. Sits at roughly the same vertical level as the first
+         month-label inside the list. -->
+    <div id="history-toolbar">
+      <button id="history-select-btn" class="header-action-btn" onclick="toggleSelectMode()">Valitse</button>
+      <button id="history-filter-btn" class="header-action-btn" onclick="openFilterModal()">Suodata</button>
     </div>
     <div class="overlay-content" id="parking-history-content">
       <div class="history-loading">Ladataan...</div>
@@ -2295,6 +2343,7 @@
           <label for="filter-start-date">Alkupäivä</label>
           <input type="date" id="filter-start-date">
         </div>
+        <div class="filter-date-sep">–</div>
         <div class="filter-date-col">
           <label for="filter-end-date">Loppupäivä</label>
           <input type="date" id="filter-end-date">
@@ -3339,9 +3388,11 @@
         'right:-4px',
         'width:16px',
         'height:16px',
-        'background:white',
+        'background:rgba(255,255,255,0.75)',
+        'backdrop-filter:blur(2px)',
+        '-webkit-backdrop-filter:blur(2px)',
         'border-radius:50%',
-        'color:#aaa',
+        'color:#777',
         'font-size:10px',
         'font-weight:bold',
         'line-height:1',
@@ -7375,8 +7426,8 @@
       // Reset transient state whenever the list is freshly loaded
       _selectMode = false;
       _selectedEventIds.clear();
-      document.getElementById('select-btn').textContent = 'Valitse';
-      document.getElementById('select-btn').classList.remove('active');
+      document.getElementById('history-select-btn').textContent = 'Valitse';
+      document.getElementById('history-select-btn').classList.remove('active');
       document.getElementById('history-action-footer').classList.remove('visible');
       container.classList.remove('select-mode');
       try {
@@ -7494,7 +7545,7 @@
     // ── History: select mode ───────────────────────────────────────────
     function toggleSelectMode() {
       _selectMode = !_selectMode;
-      const btn       = document.getElementById('select-btn');
+      const btn       = document.getElementById('history-select-btn');
       const container = document.getElementById('parking-history-content');
       const footer    = document.getElementById('history-action-footer');
       if (_selectMode) {
@@ -7538,8 +7589,19 @@
       const btn = document.getElementById('sheet-nav-btn');
       if (!btn) return;
       const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
-      if (hasArea) btn.classList.add('visible');
-      else         btn.classList.remove('visible');
+      if (!hasArea) {
+        btn.classList.remove('visible');
+        return;
+      }
+      // Also require that the sheet is fully expanded (close to max height).
+      // currentY is the translateY in pixels; smaller = more open. The sheet's
+      // max expansion sets translateY around 20% of viewport height. We treat
+      // anything below ~25% as "fully open" to avoid jitter at the boundary.
+      const viewportH = window.innerHeight || 1;
+      const ratio     = 1 - (currentY / viewportH); // 0 = collapsed, 1 = full
+      const isMaxOpen = ratio >= 0.75;
+      if (isMaxOpen) btn.classList.add('visible');
+      else           btn.classList.remove('visible');
     }
 
     // Destination pin marker — a red pin dropped on the parking area
@@ -7745,7 +7807,7 @@
       _historyFilters.paymentType = _filterModalPaymentType;
       closeFilterModal();
       // Reflect active state on the Suodata button
-      const filterBtn = document.getElementById('filter-btn');
+      const filterBtn = document.getElementById('history-filter-btn');
       if (_historyFilters.startDate || _historyFilters.endDate || _historyFilters.paymentType !== 'all') {
         filterBtn.classList.add('active');
       } else {
@@ -7831,8 +7893,11 @@
             <div class="event-payment-type">${paymentType}</div>
             ${commentLine}
           </div>
-          <div class="event-price">${escapeHtml(priceStr)}</div>
-          <div class="event-chevron">›</div>
+          <div class="event-right">
+            <div class="event-price">${escapeHtml(priceStr)}</div>
+            <div class="event-chevron event-chevron-bottom">›</div>
+          </div>
+          <div class="event-chevron event-chevron-side">›</div>
         </div>
       `;
     }
