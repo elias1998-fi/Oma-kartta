@@ -1177,6 +1177,217 @@
     }
     #summary-back-btn:active { opacity: 0.85; }
 
+    /* ── Maksutavat (payment methods) overlay ────────────────────────── */
+    .pm-section-label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 18px 16px 8px 16px;
+      font-family: Arial, sans-serif;
+    }
+    .pm-section-label:first-child { margin-top: 12px; }
+    .pm-loading, .pm-empty {
+      padding: 60px 20px;
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+    }
+    /* Existing saved card / Apple Pay / etc. */
+    .pm-saved-card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 0 16px 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: Arial, sans-serif;
+    }
+    .pm-saved-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 20px;
+    }
+    .pm-saved-info { flex: 1; min-width: 0; }
+    .pm-saved-name { font-size: 14px; font-weight: 500; color: #222; }
+    .pm-saved-meta { font-size: 12px; color: #777; margin-top: 2px; }
+    .pm-saved-default-badge {
+      font-size: 10px;
+      font-weight: bold;
+      color: #0C0243;
+      background: #e7e8ed;
+      padding: 3px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+    /* "Add..." rows — gray box with circled-plus + icon + label */
+    .pm-add-card {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 0 16px 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .pm-add-card:active { background: #e7e8ed; }
+    /* Circled plus indicator on the left */
+    .pm-add-plus {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid #888;
+      color: #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 300;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    /* Payment method icon (Apple Pay, card, MobilePay, business) */
+    .pm-add-icon {
+      width: 34px;
+      height: 34px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+    }
+    .pm-add-icon svg { width: 28px; height: 28px; }
+    .pm-add-label {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      color: #888;
+    }
+
+    /* ── Apple Pay confirmation sheet (iOS-native style) ────────────── */
+    #apple-pay-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 9996;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    }
+    #apple-pay-sheet.visible { display: flex; }
+    .ap-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+    }
+    .ap-sheet {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      background: #f2f3f5;
+      border-radius: 14px 14px 0 0;
+      padding: 18px 16px;
+      padding-bottom: max(28px, env(safe-area-inset-bottom));
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+    }
+    .ap-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .ap-cancel-btn {
+      background: transparent;
+      border: none;
+      color: #007aff;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 4px 0;
+      font-family: inherit;
+    }
+    .ap-title {
+      font-size: 13px;
+      color: #888;
+      font-weight: 500;
+    }
+    .ap-merchant {
+      background: white;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ap-merchant-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #0C0243;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .ap-merchant-name { font-size: 15px; font-weight: 600; color: #000; }
+    .ap-merchant-sub  { font-size: 12px; color: #777; margin-top: 1px; }
+    .ap-section {
+      background: white;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .ap-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-bottom: 1px solid #efefef;
+    }
+    .ap-row:last-child { border-bottom: none; }
+    .ap-row-label { font-size: 14px; color: #000; }
+    .ap-row-value { font-size: 14px; color: #555; font-weight: 500; }
+    .ap-confirm-btn {
+      width: 100%;
+      height: 50px;
+      background: #000;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .ap-confirm-btn:active { opacity: 0.85; }
+    .ap-confirm-btn .ap-logo-text { font-weight: 500; }
+    .ap-double-tap-hint {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      margin-top: 10px;
+    }
+
     /* Secondary action — send the receipt by email.
        Lives in the scrollable content area (below the notes section, above
        the sticky footer). Gray styling keeps it visually subordinate to
@@ -1879,6 +2090,53 @@
   </div>
 
   <!-- Tason 2 asetussivut -->
+  <!-- Payment methods overlay (Profiili → Maksutavat) ── lists saved methods
+       at top, then "Add" options for each supported payment provider. -->
+  <div id="payment-methods-overlay" class="settings-detail-overlay">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closePaymentMethods()">←</button>
+      <div class="overlay-title">Maksutavat</div>
+    </div>
+    <div class="overlay-content" id="payment-methods-content">
+      <div class="pm-loading">Ladataan...</div>
+    </div>
+  </div>
+
+  <!-- Apple Pay confirmation sheet — mimics iOS-native Apple Pay sheet for
+       authentication during card addition. -->
+  <div id="apple-pay-sheet">
+    <div class="ap-backdrop" onclick="closeApplePaySheet()"></div>
+    <div class="ap-sheet">
+      <div class="ap-header-row">
+        <button class="ap-cancel-btn" onclick="closeApplePaySheet()">Peruuta</button>
+        <div class="ap-title">PAY</div>
+        <div style="width:50px;"></div>
+      </div>
+      <div class="ap-merchant">
+        <div class="ap-merchant-logo">P</div>
+        <div>
+          <div class="ap-merchant-name">Parkkihubi</div>
+          <div class="ap-merchant-sub">Maksutavan lisäys</div>
+        </div>
+      </div>
+      <div class="ap-section">
+        <div class="ap-row">
+          <div class="ap-row-label">Maksukortti</div>
+          <div class="ap-row-value">Visa •••• 1234</div>
+        </div>
+        <div class="ap-row">
+          <div class="ap-row-label">Lähettäjä</div>
+          <div class="ap-row-value">iPhone</div>
+        </div>
+      </div>
+      <button class="ap-confirm-btn" onclick="confirmApplePay()">
+        <span class="ap-logo-text">Maksa</span>
+        <span style="font-size:18px;font-weight:600;">&#xf8ff; Pay</span>
+      </button>
+      <div class="ap-double-tap-hint">Kaksoispainalla sivunappia vahvistaaksesi</div>
+    </div>
+  </div>
+
   <div id="parking-history-overlay" class="settings-detail-overlay">
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
@@ -5371,7 +5629,123 @@
     }
     
     function openPaymentSettings() {
-      alert('Maksutapa-asetukset - tulossa pian');
+      openPaymentMethods();
+    }
+    function openPaymentMethods() {
+      document.getElementById('payment-methods-overlay').classList.add('open');
+      renderPaymentMethodsList();
+    }
+    function closePaymentMethods() {
+      document.getElementById('payment-methods-overlay').classList.remove('open');
+    }
+    // For now the list is rendered from a local in-memory array. When Stripe
+    // is wired up, this will be replaced by a fetch from Supabase's
+    // payment_methods table (which mirrors the Stripe Customer's methods).
+    let _savedPaymentMethods = [];
+    function renderPaymentMethodsList() {
+      const c = document.getElementById('payment-methods-content');
+      const savedHtml = _savedPaymentMethods.length
+        ? `<div class="pm-section-label">Tallennetut maksutavat</div>` +
+          _savedPaymentMethods.map(renderSavedPaymentMethodCard).join('')
+        : '';
+      const addHtml = `
+        <div class="pm-section-label">Lisää uusi maksutapa</div>
+        <div class="pm-add-card" onclick="addPaymentMethod('apple_pay')">
+          <div class="pm-add-plus">+</div>
+          <div class="pm-add-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M17.05 12.04c-.03-2.83 2.31-4.19 2.42-4.26-1.32-1.93-3.38-2.19-4.11-2.22-1.75-.18-3.41 1.03-4.3 1.03-.89 0-2.26-1-3.71-.97-1.91.03-3.67 1.11-4.65 2.82-1.98 3.44-.51 8.53 1.42 11.32.94 1.37 2.07 2.91 3.54 2.86 1.42-.06 1.96-.92 3.68-.92 1.72 0 2.21.92 3.72.89 1.54-.03 2.51-1.4 3.45-2.78 1.09-1.6 1.54-3.15 1.56-3.23-.03-.01-2.99-1.15-3.02-4.54zM14.36 3.96c.78-.94 1.31-2.25 1.16-3.55-1.13.05-2.49.75-3.3 1.69-.72.83-1.36 2.16-1.19 3.44 1.26.1 2.55-.64 3.33-1.58z"/>
+            </svg>
+          </div>
+          <div class="pm-add-label">Lisää Apple Pay</div>
+        </div>
+        <div class="pm-add-card" onclick="addPaymentMethod('card')">
+          <div class="pm-add-plus">+</div>
+          <div class="pm-add-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+          </div>
+          <div class="pm-add-label">Lisää maksukortti</div>
+        </div>
+        <div class="pm-add-card" onclick="addPaymentMethod('mobilepay')">
+          <div class="pm-add-plus">+</div>
+          <div class="pm-add-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="6" y="2" width="12" height="20" rx="2.5"/>
+              <line x1="11" y1="18" x2="13" y2="18"/>
+            </svg>
+          </div>
+          <div class="pm-add-label">Lisää MobilePay</div>
+        </div>
+        <div class="pm-add-card" onclick="addPaymentMethod('business')">
+          <div class="pm-add-plus">+</div>
+          <div class="pm-add-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 21V8l9-5 9 5v13"/>
+              <line x1="3" y1="21" x2="21" y2="21"/>
+              <rect x="9" y="13" width="6" height="8"/>
+            </svg>
+          </div>
+          <div class="pm-add-label">Lisää yrityslaskutus</div>
+        </div>
+      `;
+      c.innerHTML = savedHtml + addHtml;
+    }
+    function renderSavedPaymentMethodCard(pm) {
+      const iconHtml = pm.type === 'apple_pay'
+        ? `<svg viewBox="0 0 24 24" fill="currentColor" style="width:22px;height:22px;color:#000;">
+             <path d="M17.05 12.04c-.03-2.83 2.31-4.19 2.42-4.26-1.32-1.93-3.38-2.19-4.11-2.22-1.75-.18-3.41 1.03-4.3 1.03-.89 0-2.26-1-3.71-.97-1.91.03-3.67 1.11-4.65 2.82-1.98 3.44-.51 8.53 1.42 11.32.94 1.37 2.07 2.91 3.54 2.86 1.42-.06 1.96-.92 3.68-.92 1.72 0 2.21.92 3.72.89 1.54-.03 2.51-1.4 3.45-2.78 1.09-1.6 1.54-3.15 1.56-3.23-.03-.01-2.99-1.15-3.02-4.54zM14.36 3.96c.78-.94 1.31-2.25 1.16-3.55-1.13.05-2.49.75-3.3 1.69-.72.83-1.36 2.16-1.19 3.44 1.26.1 2.55-.64 3.33-1.58z"/>
+           </svg>`
+        : '💳';
+      const meta = pm.last4 ? `•••• ${pm.last4}` : (pm.type === 'apple_pay' ? 'Apple Pay' : '');
+      const defaultBadge = pm.is_default ? '<span class="pm-saved-default-badge">OLETUS</span>' : '';
+      return `
+        <div class="pm-saved-card">
+          <div class="pm-saved-icon">${iconHtml}</div>
+          <div class="pm-saved-info">
+            <div class="pm-saved-name">${escapeHtml(pm.name || (pm.type === 'apple_pay' ? 'Apple Pay' : 'Maksukortti'))}</div>
+            <div class="pm-saved-meta">${escapeHtml(meta)}</div>
+          </div>
+          ${defaultBadge}
+        </div>
+      `;
+    }
+    // Dispatcher for "Add X" actions. Apple Pay opens the native-style sheet;
+    // card / MobilePay / business are placeholders until their flows are built.
+    function addPaymentMethod(kind) {
+      if (kind === 'apple_pay') {
+        openApplePaySheet();
+      } else if (kind === 'card') {
+        showCustomToast('Maksukortin lisäys — tulossa pian', 2500);
+      } else if (kind === 'mobilepay') {
+        showCustomToast('MobilePay-integraatio — tulossa pian', 2500);
+      } else if (kind === 'business') {
+        showCustomToast('Yrityslaskutus — tulossa pian', 2500);
+      }
+    }
+
+    // ── Apple Pay confirmation sheet ───────────────────────────────────
+    function openApplePaySheet() {
+      document.getElementById('apple-pay-sheet').classList.add('visible');
+    }
+    function closeApplePaySheet() {
+      document.getElementById('apple-pay-sheet').classList.remove('visible');
+    }
+    // Placeholder: in the real Stripe integration this kicks off the actual
+    // Apple Pay payment session and stores the resulting payment method ID.
+    function confirmApplePay() {
+      closeApplePaySheet();
+      // Add a mock Apple Pay entry to the in-memory list and re-render
+      _savedPaymentMethods.unshift({
+        id:         'pm_apple_' + Date.now(),
+        type:       'apple_pay',
+        name:       'Apple Pay',
+        is_default: _savedPaymentMethods.length === 0
+      });
+      renderPaymentMethodsList();
+      showCustomToast('Apple Pay lisätty maksutavaksi', 2500);
     }
     
     function openPrivacySettings() {
