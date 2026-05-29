@@ -1243,16 +1243,19 @@
       font-weight: bold;
       line-height: 1;
     }
-    /* Empty plus state for "Add" rows */
+    /* Empty plus state for "Add" rows — larger and dark-blue accented so
+       the "add new" action is visually prominent in the list. */
     .pm-check.add-state {
-      border-style: solid;
-      border-color: #ccc;
+      width: 32px;
+      height: 32px;
+      border-width: 2.5px;
+      border-color: #0C0243;
     }
     .pm-check.add-state::after {
       content: '+';
-      color: #999;
-      font-size: 18px;
-      font-weight: 300;
+      color: #0C0243;
+      font-size: 24px;
+      font-weight: 400;
       line-height: 1;
     }
     /* White, bordered icon frame — same as parking-sheet's payment-icon-box */
@@ -1281,7 +1284,11 @@
     /* "Add" rows fade the label slightly so saved methods stand out */
     .pm-row.is-add .pm-label { color: #555; }
 
-    /* ── Apple Pay confirmation sheet (iOS-native style) ────────────── */
+    /* ── Apple Pay confirmation sheet — visually mimics the iOS native sheet.
+       Dark "card" floats over a dimmed backdrop; rounded corners on all four
+       sides (not slide-up sheet style). Layout matches the screenshot exactly:
+       Apple Pay header + close button | card row | change payment row |
+       merchant + amount + info | side-button indicator. */
     #apple-pay-sheet {
       position: fixed;
       inset: 0;
@@ -1289,108 +1296,214 @@
       display: none;
       align-items: flex-end;
       justify-content: center;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+                    'SF Pro Text', 'Segoe UI', Arial, sans-serif;
     }
     #apple-pay-sheet.visible { display: flex; }
     .ap-backdrop {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.65);
     }
-    .ap-sheet {
+    /* The dark card itself — floats with rounded corners on all four sides */
+    .ap-card {
       position: relative;
-      width: 100%;
-      max-width: 420px;
-      background: #f2f3f5;
-      border-radius: 14px 14px 0 0;
-      padding: 18px 16px;
-      padding-bottom: max(28px, env(safe-area-inset-bottom));
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+      width: calc(100% - 16px);
+      max-width: 440px;
+      margin: 0 8px max(8px, env(safe-area-inset-bottom)) 8px;
+      background: #1c1c1e;
+      border-radius: 36px;
+      padding: 22px 22px 26px 22px;
+      color: white;
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
     }
-    .ap-header-row {
+    /* Header: "Apple Pay" wordmark on the left, X-button on the right */
+    .ap-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 18px;
+      padding: 0 6px;
     }
-    .ap-cancel-btn {
-      background: transparent;
+    .ap-wordmark {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    .ap-wordmark .apple-glyph { font-size: 26px; line-height: 1; }
+    .ap-close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.18);
       border: none;
-      color: #007aff;
+      color: white;
       font-size: 16px;
       font-weight: 500;
       cursor: pointer;
-      padding: 4px 0;
-      font-family: inherit;
-    }
-    .ap-title {
-      font-size: 13px;
-      color: #888;
-      font-weight: 500;
-    }
-    .ap-merchant {
-      background: white;
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .ap-merchant-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: #0C0243;
-      color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 18px;
-      flex-shrink: 0;
+      line-height: 1;
+      padding: 0;
     }
-    .ap-merchant-name { font-size: 15px; font-weight: 600; color: #000; }
-    .ap-merchant-sub  { font-size: 12px; color: #777; margin-top: 1px; }
-    .ap-section {
-      background: white;
-      border-radius: 10px;
-      margin-bottom: 12px;
+    .ap-close-btn:active { background: rgba(255,255,255,0.28); }
+    /* Pill row — both "card" and "change payment method" use this base */
+    .ap-pill {
+      width: 100%;
+      background: rgba(255,255,255,0.10);
+      border: none;
+      border-radius: 999px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: white;
+      font-family: inherit;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .ap-pill:active { background: rgba(255,255,255,0.16); }
+    .ap-pill-card-img {
+      width: 38px;
+      height: 28px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Gold-card gradient that resembles OP Gold Debit */
+      background: linear-gradient(135deg, #d4af37 0%, #f0d878 45%, #a98a2c 100%);
+      position: relative;
       overflow: hidden;
     }
-    .ap-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      border-bottom: 1px solid #efefef;
+    .ap-pill-card-img::after {
+      content: 'op';
+      position: absolute;
+      top: 3px; left: 4px;
+      font-size: 8px;
+      font-weight: 700;
+      color: #5d4a16;
+      letter-spacing: -0.3px;
     }
-    .ap-row:last-child { border-bottom: none; }
-    .ap-row-label { font-size: 14px; color: #000; }
-    .ap-row-value { font-size: 14px; color: #555; font-weight: 500; }
-    .ap-confirm-btn {
-      width: 100%;
-      height: 50px;
-      background: #000;
-      color: white;
-      border: none;
-      border-radius: 12px;
+    .ap-pill-card-img::before {
+      content: 'VISA';
+      position: absolute;
+      bottom: 2px; right: 4px;
+      font-size: 6px;
+      font-weight: 800;
+      color: #1a1a1a;
+      letter-spacing: 0.2px;
+      font-style: italic;
+    }
+    .ap-pill-card-name {
+      flex: 1;
       font-size: 17px;
+      font-weight: 500;
+      letter-spacing: -0.2px;
+      text-align: left;
+    }
+    .ap-pill-card-last4 {
+      font-size: 15px;
+      color: rgba(255,255,255,0.95);
+      letter-spacing: 0.5px;
+    }
+    .ap-pill-card-last4 .dots {
+      letter-spacing: 1px;
+      margin-right: 4px;
+    }
+    /* "Change Payment Method" pill */
+    .ap-pill-change {
+      justify-content: space-between;
+      padding: 14px 22px;
+    }
+    .ap-pill-change-text {
+      font-size: 17px;
+      font-weight: 400;
+      letter-spacing: -0.2px;
+    }
+    .ap-pill-chevron {
+      color: rgba(255,255,255,0.55);
+      font-size: 18px;
+      line-height: 1;
+    }
+    /* Merchant + amount row */
+    .ap-merchant-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 22px;
+      padding: 0 6px;
+    }
+    .ap-merchant-info { flex: 1; }
+    .ap-merchant-name {
+      font-size: 15px;
+      color: rgba(255,255,255,0.55);
+      font-weight: 400;
+      margin-bottom: 2px;
+    }
+    .ap-merchant-amount {
+      font-size: 30px;
       font-weight: 600;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+    .ap-info-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      border: none;
+      color: white;
+      font-size: 13px;
+      font-style: italic;
+      font-weight: 500;
       cursor: pointer;
-      font-family: inherit;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      font-family: Georgia, serif;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
     }
-    .ap-confirm-btn:active { opacity: 0.85; }
-    .ap-confirm-btn .ap-logo-text { font-weight: 500; }
-    .ap-double-tap-hint {
-      text-align: center;
-      font-size: 12px;
-      color: #888;
-      margin-top: 10px;
+    /* "Confirm with Side Button" indicator — blue ring with side-arrow icon */
+    .ap-confirm-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 26px;
+    }
+    .ap-side-ring {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: 3.5px solid #0a84ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      position: relative;
+      animation: ap-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes ap-pulse {
+      0%, 100% { transform: scale(1);   opacity: 1;   }
+      50%      { transform: scale(1.05); opacity: 0.85; }
+    }
+    .ap-side-ring svg {
+      width: 34px;
+      height: 34px;
+      color: #0a84ff;
+    }
+    .ap-confirm-text {
+      font-size: 15px;
+      color: rgba(255,255,255,0.95);
+      font-weight: 400;
+      letter-spacing: -0.2px;
     }
 
     /* Secondary action — send the receipt by email.
@@ -2107,38 +2220,46 @@
     </div>
   </div>
 
-  <!-- Apple Pay confirmation sheet — mimics iOS-native Apple Pay sheet for
-       authentication during card addition. -->
+  <!-- Apple Pay confirmation sheet — visually mimics the iOS-native sheet
+       (rendered as a floating dark card with rounded corners). Test/demo
+       only; tapping "Maksa" stores a placeholder method, no real Apple Pay
+       session is initiated. -->
   <div id="apple-pay-sheet">
     <div class="ap-backdrop" onclick="closeApplePaySheet()"></div>
-    <div class="ap-sheet">
-      <div class="ap-header-row">
-        <button class="ap-cancel-btn" onclick="closeApplePaySheet()">Peruuta</button>
-        <div class="ap-title">PAY</div>
-        <div style="width:50px;"></div>
-      </div>
-      <div class="ap-merchant">
-        <div class="ap-merchant-logo">P</div>
-        <div>
-          <div class="ap-merchant-name">Parkkihubi</div>
-          <div class="ap-merchant-sub">Maksutavan lisäys</div>
+    <div class="ap-card">
+      <div class="ap-head">
+        <div class="ap-wordmark">
+          <span class="apple-glyph">&#xf8ff;</span><span>Pay</span>
         </div>
+        <button class="ap-close-btn" onclick="closeApplePaySheet()" aria-label="Sulje">✕</button>
       </div>
-      <div class="ap-section">
-        <div class="ap-row">
-          <div class="ap-row-label">Maksukortti</div>
-          <div class="ap-row-value">Visa •••• 1234</div>
-        </div>
-        <div class="ap-row">
-          <div class="ap-row-label">Lähettäjä</div>
-          <div class="ap-row-value">iPhone</div>
-        </div>
-      </div>
-      <button class="ap-confirm-btn" onclick="confirmApplePay()">
-        <span class="ap-logo-text">Maksa</span>
-        <span style="font-size:18px;font-weight:600;">&#xf8ff; Pay</span>
+      <button type="button" class="ap-pill">
+        <div class="ap-pill-card-img"></div>
+        <div class="ap-pill-card-name">OP Gold Debit</div>
+        <div class="ap-pill-card-last4"><span class="dots">••••</span>2582</div>
       </button>
-      <div class="ap-double-tap-hint">Kaksoispainalla sivunappia vahvistaaksesi</div>
+      <button type="button" class="ap-pill ap-pill-change">
+        <div class="ap-pill-change-text">Change Payment Method</div>
+        <div class="ap-pill-chevron">›</div>
+      </button>
+      <div class="ap-merchant-row">
+        <div class="ap-merchant-info">
+          <div class="ap-merchant-name">Pay Parkkihubi Oy</div>
+          <div class="ap-merchant-amount">0,00 €</div>
+        </div>
+        <button class="ap-info-btn" aria-label="Tietoja">i</button>
+      </div>
+      <div class="ap-confirm-area" onclick="confirmApplePay()">
+        <div class="ap-side-ring">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <!-- Phone outline with arrow indicating side-button press -->
+            <rect x="10" y="3" width="14" height="26" rx="3"/>
+            <path d="M5 13 L9 16 L5 19" />
+          </svg>
+        </div>
+        <div class="ap-confirm-text">Confirm with Side Button</div>
+      </div>
     </div>
   </div>
 
@@ -5650,12 +5771,21 @@
     function renderPaymentMethodsList() {
       const c = document.getElementById('payment-methods-content');
       const savedHtml = _savedPaymentMethods.map(renderSavedPaymentRow).join('');
-      const addHtml = `
-        ${renderAddRow('apple_pay',  'Apple Pay',         applePayIconSVG())}
-        ${renderAddRow('card',       'Maksukortti',       cardIconSVG())}
-        ${renderAddRow('mobilepay',  'MobilePay',         mobilePayIconSVG())}
-        ${renderAddRow('business',   'Yrityslaskutus',    businessIconSVG())}
-      `;
+      // Hide an "Add X" row if the user has already saved a method of that
+      // kind (e.g. once Apple Pay is added, no need to show "Lisää Apple Pay").
+      // Cards are an exception — the user may want to add multiple cards.
+      const savedKinds = new Set(_savedPaymentMethods.map(pm => pm.type));
+      const addOptions = [
+        { kind: 'apple_pay', label: 'Apple Pay',      icon: applePayIconSVG(), once: true  },
+        { kind: 'card',      label: 'Maksukortti',    icon: cardIconSVG(),     once: false },
+        { kind: 'mobilepay', label: 'MobilePay',      icon: mobilePayIconSVG(),once: true  },
+        { kind: 'business',  label: 'Yrityslaskutus', icon: businessIconSVG(), once: true  },
+      ];
+      const visibleAdds = addOptions.filter(o => !(o.once && savedKinds.has(o.kind)));
+      const addHtml = visibleAdds.length
+        ? `<div class="pm-section-label">Lisää uusi maksutapa</div>` +
+          visibleAdds.map(o => renderAddRow(o.kind, o.label, o.icon)).join('')
+        : '';
       c.innerHTML = savedHtml + addHtml;
     }
     function renderSavedPaymentRow(pm) {
