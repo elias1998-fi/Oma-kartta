@@ -1214,6 +1214,15 @@
       transition: background 0.15s ease;
     }
     .pm-row:active { background: #e7e8ed; }
+    /* Brief blue flash to confirm the user's tap was registered. Applied via
+       JS for ~300ms when a row is clicked, then auto-removes. */
+    .pm-row.pm-row-flash {
+      background: #d8dceb;
+      transition: background 0.15s ease;
+    }
+    .pm-row.pm-row-flash .pm-icon-frame {
+      border-color: #0C0243;
+    }
     /* Selected-state circle (same look as parking sheet's option-check) */
     .pm-check {
       width: 24px;
@@ -5673,12 +5682,23 @@
     }
     function renderAddRow(kind, label, iconHtml) {
       return `
-        <div class="pm-row is-add" onclick="addPaymentMethod('${kind}')">
+        <div class="pm-row is-add" onclick="onAddPaymentRowClick(event, '${kind}')">
           <div class="pm-check add-state"></div>
           <div class="pm-icon-frame">${iconHtml}</div>
           <div class="pm-label">Lisää ${escapeHtml(label)}</div>
         </div>
       `;
+    }
+    // Click dispatcher for "Add X" rows. Flashes the row blue briefly so the
+    // user gets a clear "yes, I registered your tap" cue, then runs the
+    // actual addPaymentMethod handler for the given payment kind.
+    function onAddPaymentRowClick(ev, kind) {
+      const row = ev.currentTarget;
+      row.classList.add('pm-row-flash');
+      // Remove the flash after a brief moment regardless of what addPaymentMethod does
+      setTimeout(() => row.classList.remove('pm-row-flash'), 280);
+      // Small delay before opening modal so the user actually sees the flash
+      setTimeout(() => addPaymentMethod(kind), 120);
     }
     // Icon SVGs — sized to fit the 56×36 framed box. Apple Pay uses a text
     // glyph because the Apple logo character isn't reliably renderable as SVG;
@@ -6669,7 +6689,7 @@
       const addRow = document.createElement('div');
       addRow.className = 'add-option';
       addRow.textContent = '＋ Lisää uusi maksutapa...';
-      addRow.addEventListener('click', addPaymentMethod);
+      addRow.addEventListener('click', openAddPaymentMethodFromParking);
       container.appendChild(addRow);
     }
 
@@ -6684,9 +6704,12 @@
       document.getElementById('start-btn-container').style.display = '';
     }
 
-    function addPaymentMethod() {
-      alert('Tämä toiminto lisäisi uuden maksutavan. Tässä demossa käytetään olemassa olevia maksutapoja.');
+    function openAddPaymentMethodFromParking() {
+      // Called from the parking sheet's "Lisää uusi maksutapa..." row.
+      // Closes the parking-sheet payment picker, then jumps the user to
+      // Profile → Maksutavat where they can add a real payment method.
       closePaymentSheet();
+      openPaymentMethods();
     }
 
     const overlay=document.getElementById('parking-overlay');
