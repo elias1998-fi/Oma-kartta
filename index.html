@@ -500,36 +500,35 @@
     }
     #drag-handle-area { width: 100%; padding: 8px 0 6px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
 
-    /* ── Sheet "Open directions" button (top-RIGHT of the sheet) ───────
-       Fades in/out continuously as the sheet crosses ~60% of viewport.
-       Only ever visible when a parking area is currently selected. */
+    /* ── "Directions" button (above the main action button) ────────────
+       Visible only when a parking area is currently selected. Sits inside
+       btn-container, so its visibility piggybacks on the container's own
+       slide-in animation when the sheet opens up. */
     #sheet-nav-btn {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 44px;
-      height: 44px;
+      width: 100%;
+      height: 54px;
+      margin-bottom: 10px;
       background: #f3f4f6;
       border: 2px solid #0C0243;
-      border-radius: 12px;
-      display: flex;
+      border-radius: 14px;
+      display: none;
       align-items: center;
       justify-content: center;
+      gap: 10px;
       cursor: pointer;
-      padding: 0;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease;
-      z-index: 6;
+      padding: 0 16px;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
       color: #0C0243;
-      /* The sheet sets touch-action: none for its drag handling — restore
-         the default here so the native tap → click translation works on
-         iOS Safari. Without this the onclick never fires from a finger tap. */
       touch-action: auto;
       -webkit-tap-highlight-color: transparent;
     }
-    #sheet-nav-btn svg { width: 22px; height: 22px; }
+    /* Toggle via class — only shown when a parking area is currently selected */
+    #sheet-nav-btn.visible { display: flex; }
     #sheet-nav-btn:active { background: #e7e8ed; }
+    #sheet-nav-btn svg { width: 26px; height: 26px; flex-shrink: 0; }
+    .sheet-nav-label { line-height: 1; }
 
     /* Red destination pin dropped on the map when the nav button is tapped. */
     .destination-pin {
@@ -2401,14 +2400,6 @@
 
   <div id="bottom-sheet">
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
-    <!-- "Open directions" button — appears top-left when sheet is expanded
-         past ~60% of viewport AND a parking area is currently selected. -->
-    <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="19" y1="12" x2="5" y2="12"/>
-        <polyline points="12 19 5 12 12 5"/>
-      </svg>
-    </button>
     <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
     <div id="gps-warning">
@@ -2596,7 +2587,19 @@
     <div id="start-btn-container"><button id="start-btn" class="disabled">Aseta pysäköintiaika</button></div>
   </div>
 
-  <div id="btn-container"><button id="action-btn">Siirrä kursori pysäköintialueelle</button></div>
+  <div id="btn-container">
+    <!-- "Directions" button — sits just above the main action button when a
+         parking area is selected and the sheet is open. The SVG arrow is the
+         "turn right" L-shape (matches the user's reference image). -->
+    <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
+      <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M5 28 V18 a3 3 0 0 1 3 -3 H20 V9 L29 16.5 L20 24 V18 H10 V28 Z"
+              fill="currentColor"/>
+      </svg>
+      <span class="sheet-nav-label">Directions</span>
+    </button>
+    <button id="action-btn">Siirrä kursori pysäköintialueelle</button>
+  </div>
 
   <script>
     // ── Lock screen orientation to portrait ────────────────────────────
@@ -7004,28 +7007,16 @@
     // ── Sheet "Open directions" button + maps app picker ──────────────
     // Visibility: fades in continuously as the sheet crosses ~60% of viewport,
     // but only when a parking area is currently selected (currentParkingProps).
+    // Show/hide the "Directions" button based on whether a parking area
+    // is currently selected. The button lives inside btn-container, so the
+    // sheet's open/close animation already controls its on-screen presence
+    // via the floating action button — no opacity fade needed.
     function updateNavBtnVisibility() {
       const btn = document.getElementById('sheet-nav-btn');
       if (!btn) return;
-      // The button is meaningful only when a parking area is currently
-      // selected. Both currentParkingProps and hoveredPolyId can signal
-      // that, depending on which detection path fired; check either.
       const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
-      if (!hasArea) {
-        btn.style.opacity = '0';
-        btn.style.pointerEvents = 'none';
-        return;
-      }
-      // Sheet expansion ratio: 0 = collapsed, 1 = full screen
-      const viewportH = window.innerHeight || 1;
-      const visibleH  = sheet.offsetHeight - currentY;
-      const ratio     = Math.max(0, Math.min(1, visibleH / viewportH));
-      // Fade in between 55% and 65% expansion: at 60% the button is half-
-      // visible, at ≥65% it's fully visible. (The 60% midpoint matches the
-      // spec's "yli näytön 60% rajan" threshold.)
-      const opacity = Math.max(0, Math.min(1, (ratio - 0.55) / 0.10));
-      btn.style.opacity = opacity;
-      btn.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
+      if (hasArea) btn.classList.add('visible');
+      else         btn.classList.remove('visible');
     }
 
     // Destination pin marker — a red pin dropped on the parking area
@@ -7075,10 +7066,12 @@
       const c = map.getCenter();
       console.log('[nav-btn] captured center:', c.lat, c.lng);
 
-      // 1) Block centerCheck from clobbering our sheet animation
+      // 1) Block centerCheck from clobbering our sheet animation. The timer
+      //    must outlive the 3s modal delay so we don't reactivate centerCheck
+      //    mid-sequence; it's cleared explicitly on modal close/pick.
       _navigationInProgress = true;
       clearTimeout(_navigationFlagTimer);
-      _navigationFlagTimer = setTimeout(() => { _navigationInProgress = false; }, 3000);
+      _navigationFlagTimer = setTimeout(() => { _navigationInProgress = false; }, 5000);
 
       // 2) Drop the destination pin FIRST so it's visible when the sheet
       //    starts retracting. We use a try/catch since maplibregl.Marker
@@ -7092,10 +7085,11 @@
 
       // 3) Collapse the sheet to 153px from bottom. Setting transition +
       //    transform in a rAF gives the browser a chance to commit the pin
-      //    insertion before animating, which avoids visual jank.
+      //    insertion before animating, which avoids visual jank. The slower
+      //    0.7s easing makes the retraction feel intentional, not abrupt.
       requestAnimationFrame(() => {
         const target = sheet.offsetHeight - 153;
-        sheet.style.transition = 'transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94)';
+        sheet.style.transition = 'transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94)';
         sheet.style.transform  = 'translateY(calc(100% - 153px))';
         currentY = target;
         console.log('[nav-btn] sheet collapsing to translateY=' + target);
@@ -7103,19 +7097,23 @@
         if (typeof sheetBackdrop !== 'undefined' && sheetBackdrop) {
           sheetBackdrop.style.opacity = '0';
         }
-        // Hide the nav button itself once the sheet is small
+        // The directions button itself isn't shown while the picker is open,
+        // and updateNavBtnVisibility will re-show it later if appropriate.
         const nb = document.getElementById('sheet-nav-btn');
-        if (nb) { nb.style.opacity = '0'; nb.style.pointerEvents = 'none'; }
+        if (nb) nb.classList.remove('visible');
       });
 
-      // 4) Open the modal AFTER the sheet animation finishes (~400ms + 100ms buffer).
-      //    This way the user clearly sees: sheet retract → pin land → picker appear.
+      // 4) Open the modal AFTER the user has had time to:
+      //    - See the sheet retract (~0.7s)
+      //    - See the red destination pin clearly on the map (~2.3s buffer)
+      //    Total ≈3s from button press, so the pin doesn't immediately
+      //    disappear behind the modal.
       setTimeout(() => {
         const modal = document.getElementById('navigate-modal');
         if (!modal) { console.error('[nav-btn] #navigate-modal missing'); return; }
         modal.classList.add('visible');
         console.log('[nav-btn] navigate-modal visible');
-      }, 550);
+      }, 3000);
     }
 
     // Touchend fallback for iOS — the sheet's `touch-action: none` plus the
