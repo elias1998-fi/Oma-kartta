@@ -1177,7 +1177,11 @@
     }
     #summary-back-btn:active { opacity: 0.85; }
 
-    /* ── Maksutavat (payment methods) overlay ────────────────────────── */
+    /* ── Maksutavat (payment methods) overlay ──────────────────────────
+       Visual style mirrors the parking-sheet payment selector for
+       consistency: white background page, with a light-gray "tray" under
+       each method row that delineates entries from one another. */
+    #payment-methods-content { background: white; }
     .pm-section-label {
       font-size: 11px;
       font-weight: bold;
@@ -1195,86 +1199,78 @@
       font-size: 14px;
       font-family: Arial, sans-serif;
     }
-    /* Existing saved card / Apple Pay / etc. */
-    .pm-saved-card {
-      background: white;
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin: 0 16px 10px 16px;
+    /* Each method row: check circle on the left, framed icon, then label.
+       Sits on a light-gray "tray" that provides the visual separation. */
+    .pm-row {
       display: flex;
       align-items: center;
       gap: 14px;
-      font-family: Arial, sans-serif;
-    }
-    .pm-saved-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: #f3f4f6;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      font-size: 20px;
-    }
-    .pm-saved-info { flex: 1; min-width: 0; }
-    .pm-saved-name { font-size: 14px; font-weight: 500; color: #222; }
-    .pm-saved-meta { font-size: 12px; color: #777; margin-top: 2px; }
-    .pm-saved-default-badge {
-      font-size: 10px;
-      font-weight: bold;
-      color: #0C0243;
-      background: #e7e8ed;
-      padding: 3px 7px;
-      border-radius: 4px;
-      letter-spacing: 0.3px;
-    }
-    /* "Add..." rows — gray box with circled-plus + icon + label */
-    .pm-add-card {
-      background: #f3f4f6;
-      border-radius: 12px;
       padding: 14px 16px;
       margin: 0 16px 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      border-radius: 14px;
       cursor: pointer;
+      font-family: Arial, sans-serif;
       transition: background 0.15s ease;
     }
-    .pm-add-card:active { background: #e7e8ed; }
-    /* Circled plus indicator on the left */
-    .pm-add-plus {
-      width: 26px;
-      height: 26px;
+    .pm-row:active { background: #e7e8ed; }
+    /* Selected-state circle (same look as parking sheet's option-check) */
+    .pm-check {
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
-      border: 1.5px solid #888;
-      color: #888;
+      border: 2px solid #ccc;
+      background: white;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+    .pm-check.selected { background: #0C0243; border-color: #0C0243; }
+    .pm-check.selected::after {
+      content: '✓';
+      color: white;
+      font-size: 13px;
+      font-weight: bold;
+      line-height: 1;
+    }
+    /* Empty plus state for "Add" rows */
+    .pm-check.add-state {
+      border-style: solid;
+      border-color: #ccc;
+    }
+    .pm-check.add-state::after {
+      content: '+';
+      color: #999;
       font-size: 18px;
       font-weight: 300;
       line-height: 1;
-      flex-shrink: 0;
     }
-    /* Payment method icon (Apple Pay, card, MobilePay, business) */
-    .pm-add-icon {
-      width: 34px;
-      height: 34px;
-      flex-shrink: 0;
+    /* White, bordered icon frame — same as parking-sheet's payment-icon-box */
+    .pm-icon-frame {
+      width: 56px;
+      height: 36px;
+      background: white;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #888;
+      flex-shrink: 0;
     }
-    .pm-add-icon svg { width: 28px; height: 28px; }
-    .pm-add-label {
+    .pm-icon-frame svg { width: 32px; height: 32px; }
+    .pm-icon-frame .ap-mark {
+      font-size: 14px; font-weight: 600; color: #000;
+      letter-spacing: -0.3px;
+    }
+    .pm-label {
       flex: 1;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 500;
-      color: #888;
+      color: #222;
     }
+    /* "Add" rows fade the label slightly so saved methods stand out */
+    .pm-row.is-add .pm-label { color: #555; }
 
     /* ── Apple Pay confirmation sheet (iOS-native style) ────────────── */
     #apple-pay-sheet {
@@ -5644,73 +5640,73 @@
     let _savedPaymentMethods = [];
     function renderPaymentMethodsList() {
       const c = document.getElementById('payment-methods-content');
-      const savedHtml = _savedPaymentMethods.length
-        ? `<div class="pm-section-label">Tallennetut maksutavat</div>` +
-          _savedPaymentMethods.map(renderSavedPaymentMethodCard).join('')
-        : '';
+      const savedHtml = _savedPaymentMethods.map(renderSavedPaymentRow).join('');
       const addHtml = `
-        <div class="pm-section-label">Lisää uusi maksutapa</div>
-        <div class="pm-add-card" onclick="addPaymentMethod('apple_pay')">
-          <div class="pm-add-plus">+</div>
-          <div class="pm-add-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M17.05 12.04c-.03-2.83 2.31-4.19 2.42-4.26-1.32-1.93-3.38-2.19-4.11-2.22-1.75-.18-3.41 1.03-4.3 1.03-.89 0-2.26-1-3.71-.97-1.91.03-3.67 1.11-4.65 2.82-1.98 3.44-.51 8.53 1.42 11.32.94 1.37 2.07 2.91 3.54 2.86 1.42-.06 1.96-.92 3.68-.92 1.72 0 2.21.92 3.72.89 1.54-.03 2.51-1.4 3.45-2.78 1.09-1.6 1.54-3.15 1.56-3.23-.03-.01-2.99-1.15-3.02-4.54zM14.36 3.96c.78-.94 1.31-2.25 1.16-3.55-1.13.05-2.49.75-3.3 1.69-.72.83-1.36 2.16-1.19 3.44 1.26.1 2.55-.64 3.33-1.58z"/>
-            </svg>
-          </div>
-          <div class="pm-add-label">Lisää Apple Pay</div>
-        </div>
-        <div class="pm-add-card" onclick="addPaymentMethod('card')">
-          <div class="pm-add-plus">+</div>
-          <div class="pm-add-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="2" y="5" width="20" height="14" rx="2"/>
-              <line x1="2" y1="10" x2="22" y2="10"/>
-            </svg>
-          </div>
-          <div class="pm-add-label">Lisää maksukortti</div>
-        </div>
-        <div class="pm-add-card" onclick="addPaymentMethod('mobilepay')">
-          <div class="pm-add-plus">+</div>
-          <div class="pm-add-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="6" y="2" width="12" height="20" rx="2.5"/>
-              <line x1="11" y1="18" x2="13" y2="18"/>
-            </svg>
-          </div>
-          <div class="pm-add-label">Lisää MobilePay</div>
-        </div>
-        <div class="pm-add-card" onclick="addPaymentMethod('business')">
-          <div class="pm-add-plus">+</div>
-          <div class="pm-add-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 21V8l9-5 9 5v13"/>
-              <line x1="3" y1="21" x2="21" y2="21"/>
-              <rect x="9" y="13" width="6" height="8"/>
-            </svg>
-          </div>
-          <div class="pm-add-label">Lisää yrityslaskutus</div>
-        </div>
+        ${renderAddRow('apple_pay',  'Apple Pay',         applePayIconSVG())}
+        ${renderAddRow('card',       'Maksukortti',       cardIconSVG())}
+        ${renderAddRow('mobilepay',  'MobilePay',         mobilePayIconSVG())}
+        ${renderAddRow('business',   'Yrityslaskutus',    businessIconSVG())}
       `;
       c.innerHTML = savedHtml + addHtml;
     }
-    function renderSavedPaymentMethodCard(pm) {
+    function renderSavedPaymentRow(pm) {
       const iconHtml = pm.type === 'apple_pay'
-        ? `<svg viewBox="0 0 24 24" fill="currentColor" style="width:22px;height:22px;color:#000;">
-             <path d="M17.05 12.04c-.03-2.83 2.31-4.19 2.42-4.26-1.32-1.93-3.38-2.19-4.11-2.22-1.75-.18-3.41 1.03-4.3 1.03-.89 0-2.26-1-3.71-.97-1.91.03-3.67 1.11-4.65 2.82-1.98 3.44-.51 8.53 1.42 11.32.94 1.37 2.07 2.91 3.54 2.86 1.42-.06 1.96-.92 3.68-.92 1.72 0 2.21.92 3.72.89 1.54-.03 2.51-1.4 3.45-2.78 1.09-1.6 1.54-3.15 1.56-3.23-.03-.01-2.99-1.15-3.02-4.54zM14.36 3.96c.78-.94 1.31-2.25 1.16-3.55-1.13.05-2.49.75-3.3 1.69-.72.83-1.36 2.16-1.19 3.44 1.26.1 2.55-.64 3.33-1.58z"/>
-           </svg>`
-        : '💳';
-      const meta = pm.last4 ? `•••• ${pm.last4}` : (pm.type === 'apple_pay' ? 'Apple Pay' : '');
-      const defaultBadge = pm.is_default ? '<span class="pm-saved-default-badge">OLETUS</span>' : '';
+        ? applePayIconSVG()
+        : pm.type === 'mobilepay'
+          ? mobilePayIconSVG()
+          : pm.type === 'business'
+            ? businessIconSVG()
+            : cardIconSVG();
+      const labelText = pm.name || (
+        pm.type === 'apple_pay' ? 'Apple Pay' :
+        pm.type === 'mobilepay' ? 'MobilePay' :
+        pm.type === 'business'  ? 'Yrityslaskutus' :
+        pm.last4 ? `Maksukortti •••• ${pm.last4}` : 'Maksukortti'
+      );
       return `
-        <div class="pm-saved-card">
-          <div class="pm-saved-icon">${iconHtml}</div>
-          <div class="pm-saved-info">
-            <div class="pm-saved-name">${escapeHtml(pm.name || (pm.type === 'apple_pay' ? 'Apple Pay' : 'Maksukortti'))}</div>
-            <div class="pm-saved-meta">${escapeHtml(meta)}</div>
-          </div>
-          ${defaultBadge}
+        <div class="pm-row">
+          <div class="pm-check ${pm.is_default ? 'selected' : ''}"></div>
+          <div class="pm-icon-frame">${iconHtml}</div>
+          <div class="pm-label">${escapeHtml(labelText)}</div>
         </div>
       `;
+    }
+    function renderAddRow(kind, label, iconHtml) {
+      return `
+        <div class="pm-row is-add" onclick="addPaymentMethod('${kind}')">
+          <div class="pm-check add-state"></div>
+          <div class="pm-icon-frame">${iconHtml}</div>
+          <div class="pm-label">Lisää ${escapeHtml(label)}</div>
+        </div>
+      `;
+    }
+    // Icon SVGs — sized to fit the 56×36 framed box. Apple Pay uses a text
+    // glyph because the Apple logo character isn't reliably renderable as SVG;
+    // others use neutral monochrome line icons.
+    function applePayIconSVG() {
+      return `<span class="ap-mark">&#xf8ff; Pay</span>`;
+    }
+    function cardIconSVG() {
+      return `<svg viewBox="0 0 32 24" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="28" height="18" rx="3"/>
+        <line x1="2" y1="9" x2="30" y2="9"/>
+      </svg>`;
+    }
+    function mobilePayIconSVG() {
+      return `<svg viewBox="0 0 32 32" fill="none" stroke="#5A78FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="3" width="14" height="26" rx="3"/>
+        <line x1="13" y1="9" x2="19" y2="9"/>
+        <line x1="13" y1="13" x2="19" y2="13"/>
+        <line x1="13" y1="17" x2="17" y2="17"/>
+        <circle cx="16" cy="25" r="0.5" fill="#5A78FF"/>
+      </svg>`;
+    }
+    function businessIconSVG() {
+      return `<svg viewBox="0 0 32 32" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 28V12l11-7 11 7v16"/>
+        <line x1="3" y1="28" x2="29" y2="28"/>
+        <rect x="13" y="18" width="6" height="10"/>
+      </svg>`;
     }
     // Dispatcher for "Add X" actions. Apple Pay opens the native-style sheet;
     // card / MobilePay / business are placeholders until their flows are built.
