@@ -651,7 +651,7 @@
     .hours-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; color: #333; }
     .hours-day { color: #555; min-width: 60px; }
     .hours-time { font-weight: 500; }
-    .price-label { font-size: 13px; color: #888; margin-top: 8px; margin-bottom: 4px; }
+    .price-label { font-size: 13px; color: #888; margin-top: 18px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
     #sheet-filter { display: none; flex-direction: column; padding: 4px 24px 24px 24px; flex: 1; font-family: Arial, sans-serif; }
     #sheet-filter.visible { display: flex; }
@@ -5052,16 +5052,14 @@
           // If Sunday has no data we still show the row with an en-dash to
           // make it clear the area isn't valid on Sunday (rather than
           // omitting the row, which could be ambiguous).
-          // Validity hours. The raw text in valid_mape_from is split into
-          // three parts:
-          //   "9-21, (9-18), 12-15"
-          //    ^^^^         <- ma-pe (before the first parenthesis)
-          //          ^^^^   <- la    (inside parentheses)
-          //                 ^^^^^   <- su (after closing parenthesis; optional)
-          // We parse here in JS so we don't have to rely on a DB migration
-          // having succeeded, and so the rendering still works if data is
-          // refreshed from the original raw source.
-          const rawHours = (p.valid_mape_from || p.valid_la_from || p.valid_su_from || '').trim();
+          // Validity hours. The data may be in one of two states:
+          //   (a) All three columns hold the same combined raw text
+          //       (e.g. "9-21, (9-18)") — preferred state.
+          //   (b) Earlier migration partially split the data, leaving
+          //       valid_mape_from="9-21", valid_la_from="9-18", su_from=NULL.
+          // We handle both by trying to reconstruct the combined raw text
+          // and parsing that, falling back to per-column data if needed.
+          const rawHours = reconstructRawHours(p);
           const parsed = parseScheduleString(rawHours);
           const vMaPe = parsed.maPe;
           const vLa   = parsed.la;
@@ -8013,6 +8011,31 @@
                !lo.startsWith('voimassaolo');
       });
       return kept.join(' | ');
+    }
+    // Reconstruct the raw "ma-pe, (la), su" string from whatever the DB
+    // columns currently look like. Two states are tolerated:
+    //   (a) All three columns hold the same combined raw text. We return
+    //       it directly.
+    //   (b) Each column holds a separate per-day piece (after the earlier
+    //       split_hours.sql migration). We stitch them back together so
+    //       parseScheduleString can split them out cleanly again.
+    function reconstructRawHours(p) {
+      const mape = (p.valid_mape_from || '').trim();
+      const la   = (p.valid_la_from   || '').trim();
+      const su   = (p.valid_su_from   || '').trim();
+      if (!mape && !la && !su) return '';
+      // Detect state (a): if mape already contains a "(", it's the combined
+      // raw text. Trust it as-is.
+      if (mape.includes('(')) return mape;
+      // State (b): rebuild. Format: "ma-pe, (la), su"
+      let out = mape;
+      if (la && la !== mape) {
+        out = out ? `${out}, (${la})` : `(${la})`;
+      }
+      if (su && su !== mape && su !== la) {
+        out = out ? `${out}, ${su}` : su;
+      }
+      return out;
     }
     // Parse a combined schedule string like "9-21, (9-18), 12-15" into its
     // three weekday components. Returns { maPe, la, su } where each value
