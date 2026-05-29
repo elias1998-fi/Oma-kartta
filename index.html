@@ -5981,9 +5981,14 @@
         btn.textContent = 'Pysäköi tähän';
         btn.classList.add('active');
         gpsWarning.classList.remove('visible');
-        sheet.style.transition = 'transform 0.2s ease';
-        sheet.style.transform = 'translateY(calc(100% - 150px))';
-        currentY = sheet.offsetHeight - 150;
+        // Don't override the sheet position while a directions request is in
+        // flight — onSheetNavBtnClick collapses the sheet to 153px and any
+        // re-snap to 150px from here cancels its animation.
+        if (!_navigationInProgress) {
+          sheet.style.transition = 'transform 0.2s ease';
+          sheet.style.transform = 'translateY(calc(100% - 150px))';
+          currentY = sheet.offsetHeight - 150;
+        }
         updateNavBtnVisibility();
       } else if (!masterFeatureLocked) {
         currentParkingProps = null;
@@ -7050,9 +7055,14 @@
       _destinationCoords = null;
     }
 
-    // Click handler for the sheet's top-right button: collapse the sheet to
-    // its 153px resting position, drop a red pin at the P-marker's current
-    // location, then open the maps app picker.
+    // Click handler for the sheet's top-right button. Sequence:
+    //  1. Set _navigationInProgress so centerCheck won't re-snap the sheet
+    //     to 150px (which would cancel our 153px collapse animation).
+    //  2. Drop the destination pin on the map at the P-marker's location.
+    //  3. Collapse the sheet to 153px with a smooth animation.
+    //  4. Open the maps app picker AFTER the animation finishes (~500ms).
+    let _navigationInProgress = false;
+    let _navigationFlagTimer  = null;
     function onSheetNavBtnClick() {
       console.log('[nav-btn] clicked. currentParkingProps:', currentParkingProps,
                   'hoveredPolyId:', (typeof hoveredPolyId !== 'undefined' ? hoveredPolyId : 'undef'));
@@ -7061,19 +7071,18 @@
         console.warn('[nav-btn] no parking area selected — aborting');
         return;
       }
-      // Capture the P-marker's current location (= map center, since the
-      // P-marker is anchored to the center crosshair)
+      // Capture the P-marker's current location (= map center)
       const c = map.getCenter();
       console.log('[nav-btn] captured center:', c.lat, c.lng);
 
-      // Collapse the sheet to the 153px resting position. snapTo handles
-      // the animation + currentY update + backdrop fade.
-      const target = sheet.offsetHeight - 153;
-      console.log('[nav-btn] collapsing sheet to translateY=' + target);
-      snapTo(target);
+      // 1) Block centerCheck from clobbering our sheet animation
+      _navigationInProgress = true;
+      clearTimeout(_navigationFlagTimer);
+      _navigationFlagTimer = setTimeout(() => { _navigationInProgress = false; }, 3000);
 
-      // Drop the destination pin immediately — the sheet animation runs
-      // independently and the pin sits on the map underneath.
+      // 2) Drop the destination pin FIRST so it's visible when the sheet
+      //    starts retracting. We use a try/catch since maplibregl.Marker
+      //    could in theory fail; that shouldn't block the rest of the flow.
       try {
         showDestinationPin(c.lat, c.lng);
         console.log('[nav-btn] destination pin added at', c.lat, c.lng);
@@ -7081,14 +7090,32 @@
         console.error('[nav-btn] showDestinationPin failed:', e);
       }
 
-      // Open the app picker after a brief delay so the user sees the pin
-      // land before the modal appears.
+      // 3) Collapse the sheet to 153px from bottom. Setting transition +
+      //    transform in a rAF gives the browser a chance to commit the pin
+      //    insertion before animating, which avoids visual jank.
+      requestAnimationFrame(() => {
+        const target = sheet.offsetHeight - 153;
+        sheet.style.transition = 'transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94)';
+        sheet.style.transform  = 'translateY(calc(100% - 153px))';
+        currentY = target;
+        console.log('[nav-btn] sheet collapsing to translateY=' + target);
+        // Backdrop fades out as the sheet shrinks
+        if (typeof sheetBackdrop !== 'undefined' && sheetBackdrop) {
+          sheetBackdrop.style.opacity = '0';
+        }
+        // Hide the nav button itself once the sheet is small
+        const nb = document.getElementById('sheet-nav-btn');
+        if (nb) { nb.style.opacity = '0'; nb.style.pointerEvents = 'none'; }
+      });
+
+      // 4) Open the modal AFTER the sheet animation finishes (~400ms + 100ms buffer).
+      //    This way the user clearly sees: sheet retract → pin land → picker appear.
       setTimeout(() => {
         const modal = document.getElementById('navigate-modal');
         if (!modal) { console.error('[nav-btn] #navigate-modal missing'); return; }
         modal.classList.add('visible');
         console.log('[nav-btn] navigate-modal visible');
-      }, 300);
+      }, 550);
     }
 
     // Touchend fallback for iOS — the sheet's `touch-action: none` plus the
@@ -7123,6 +7150,9 @@
       document.getElementById('navigate-modal').classList.remove('visible');
       // Pin disappears when the user dismisses the modal without picking
       removeDestinationPin();
+      // Allow centerCheck to manage the sheet normally again
+      _navigationInProgress = false;
+      clearTimeout(_navigationFlagTimer);
     }
     function openInMapsApp(app) {
       if (!_destinationCoords) {
@@ -7149,6 +7179,9 @@
         window.open(url, '_blank');
       }
       document.getElementById('navigate-modal').classList.remove('visible');
+      // Allow centerCheck to manage the sheet normally again
+      _navigationInProgress = false;
+      clearTimeout(_navigationFlagTimer);
       // Keep the pin visible after picking an app so the user sees where
       // they're navigating to on the underlying map. It clears next time
       // the picker is opened (showDestinationPin removes any prior pin).
