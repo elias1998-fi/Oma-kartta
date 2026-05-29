@@ -125,21 +125,29 @@
     }
     /* Hide MapLibre's own cone-shaped heading indicator — we use our own */
     .maplibregl-user-location-dot-heading { display: none !important; }
-    /* Custom direction arrow sits absolutely on top of the user dot. We
-       add the .has-heading class to its container only after the user has
-       granted compass permission. Otherwise the arrow stays hidden. */
+    /* Custom direction arrow. Positioned dead-center over the user dot;
+       a transform chain rotates first, then translates outward — so the
+       arrow's base ends up flush against the dot's edge in the rotated
+       direction. The arrow's tip points outward away from the center.
+
+       Dot dimensions: 22px + 3px border on each side = 28px outer diameter
+       → radius = 14px. The translate distance needs to account for the
+       triangle's own height (14px) plus the dot's radius (14px) ≈ 28px.
+       That places the triangle's BASE flush against the dot's outer edge. */
     .user-dot-arrow {
       position: absolute;
       left: 50%;
       top: 50%;
       width: 0;
       height: 0;
-      border-left: 9px solid transparent;
-      border-right: 9px solid transparent;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
       border-bottom: 14px solid #1e7cff;
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
-      transform: translate(-50%, -160%) rotate(0deg);
-      transform-origin: 50% 100%;
+      /* Initial transform: center on dot, rotate to 0° (= up = north),
+         then push outward so triangle's base sits on the dot's edge. */
+      transform: translate(-50%, -50%) rotate(0deg) translateY(-22px);
+      transform-origin: center center;
       pointer-events: none;
       display: none;
       transition: transform 0.12s linear;
@@ -507,8 +515,12 @@
       color: #0C0243;
       touch-action: auto;
       -webkit-tap-highlight-color: transparent;
+      opacity: 0;
+      transition: opacity 0.05s linear;
     }
-    /* Toggle via class — only shown when a parking area is currently selected */
+    /* Toggle via class — only present when a parking area is currently
+       selected. Visibility is then fine-tuned by inline opacity based on
+       how far the sheet has been dragged up. */
     #sheet-nav-btn.visible { display: flex; }
     #sheet-nav-btn:active { background: #e7e8ed; }
     #sheet-nav-btn svg { width: 26px; height: 26px; flex-shrink: 0; }
@@ -3593,10 +3605,11 @@
       if (!ensureUserDotArrow()) return;
       const arrow = document.querySelector('.maplibregl-user-location-dot .user-dot-arrow');
       if (!arrow) return;
-      // Translate keeps the arrow anchored to the dot's top edge; rotate
-      // by the compass heading. The arrow's transform-origin is its base
-      // so rotation pivots around the dot's center.
-      arrow.style.transform = `translate(-50%, -160%) rotate(${_currentHeading}deg)`;
+      // Order matters: center-then-rotate-then-push-outward. Result: the
+      // triangle orbits around the dot's center, base on the dot's edge,
+      // tip pointing away in the direction of the compass heading.
+      arrow.style.transform =
+        `translate(-50%, -50%) rotate(${_currentHeading}deg) translateY(-22px)`;
     }
 
     // If a geolocate happens after compass is already enabled, MapLibre may
@@ -7672,17 +7685,29 @@
       const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
       if (!hasArea) {
         btn.classList.remove('visible');
+        btn.style.opacity = '0';
+        btn.style.pointerEvents = 'none';
         return;
       }
-      // Also require that the sheet is fully expanded (close to max height).
-      // currentY is the translateY in pixels; smaller = more open. The sheet's
-      // max expansion sets translateY around 20% of viewport height. We treat
-      // anything below ~25% as "fully open" to avoid jitter at the boundary.
+      // Smooth fade based on sheet expansion. currentY is the translateY in
+      // pixels — smaller = more open. ratio = 0 (collapsed) → 1 (max open).
+      // Fade range: 0.55 to 0.75 — below 0.55 hidden, above 0.75 fully on,
+      // linear in between. Keeps .visible class on whenever opacity > 0 so
+      // display:flex stays applied for the fade transition to actually run.
       const viewportH = window.innerHeight || 1;
-      const ratio     = 1 - (currentY / viewportH); // 0 = collapsed, 1 = full
-      const isMaxOpen = ratio >= 0.75;
-      if (isMaxOpen) btn.classList.add('visible');
-      else           btn.classList.remove('visible');
+      const ratio     = 1 - (currentY / viewportH);
+      const opacity   = Math.max(0, Math.min(1, (ratio - 0.55) / 0.20));
+      if (opacity > 0) {
+        btn.classList.add('visible');
+        btn.style.opacity = String(opacity);
+        // Only allow taps when the button is mostly visible (prevents
+        // accidental taps when the button is almost gone)
+        btn.style.pointerEvents = opacity > 0.6 ? 'auto' : 'none';
+      } else {
+        btn.classList.remove('visible');
+        btn.style.opacity = '0';
+        btn.style.pointerEvents = 'none';
+      }
     }
 
     // Destination pin marker — a red pin dropped on the parking area
