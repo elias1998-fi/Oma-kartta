@@ -264,7 +264,7 @@
     /* Brand header at the top of the profile panel — placeholder for the
        eventual logo. Big "TotalParking" wordmark, dark blue, centered. */
     .profile-brand {
-      padding: max(28px, env(safe-area-inset-top)) 16px 18px 16px;
+      padding: max(44px, calc(env(safe-area-inset-top) + 16px)) 16px 22px 16px;
       text-align: center;
       background: white;
       flex-shrink: 0;
@@ -528,6 +528,61 @@
       font-size: 18px;
       margin-left: 8px;
     }
+    /* "Muut" expander: chevron rotates to point down when section is open;
+       the inner items collapse to height 0 when closed. */
+    .settings-expander .settings-item-chevron {
+      transition: transform 0.22s ease;
+    }
+    .settings-expander.open .settings-item-chevron {
+      transform: rotate(90deg);
+    }
+    .settings-collapsible {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.28s ease;
+    }
+    .settings-collapsible.open {
+      max-height: 400px; /* big enough to fit two items; clipped if more */
+    }
+    /* The header row uses the normal item border. When closed the inner
+       items aren't visible so the trailing border is unnecessary. */
+    .settings-expander {
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .settings-expander.open {
+      border-bottom-color: transparent;
+    }
+
+    /* Language quick-row: small flat row at the bottom of the profile, no
+       card background — just a label and three tappable codes. */
+    .lang-quickrow {
+      padding: 18px 20px 24px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .lang-quickrow-label {
+      font-size: 12px;
+      color: #888;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+    .lang-quickrow-options {
+      display: flex;
+      gap: 14px;
+    }
+    .lang-opt {
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      padding: 4px 6px;
+      letter-spacing: 0.5px;
+      user-select: none;
+      transition: color 0.15s ease;
+    }
+    .lang-opt:active { color: #0C0243; }
+    .lang-opt.selected { color: #0C0243; }
     
     .settings-detail-overlay {
       position: fixed;
@@ -2274,24 +2329,7 @@
       <div class="profile-brand-text">TotalParking</div>
     </div>
     <div class="overlay-content">
-      <div class="settings-section">
-        <div class="settings-item" onclick="openParkingHistory()">
-          <div class="settings-item-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4" y="3" width="16" height="18" rx="2"/>
-              <line x1="8" y1="8" x2="16" y2="8"/>
-              <line x1="8" y1="12" x2="16" y2="12"/>
-              <line x1="8" y1="16" x2="13" y2="16"/>
-            </svg>
-          </div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Pysäköintitapahtumat</div>
-            <div class="settings-item-value">Aiemmat pysäköinnit ja kuitit</div>
-          </div>
-          <div class="settings-item-chevron">›</div>
-        </div>
-      </div>
-
+      <!-- Reordered main settings; sub-text removed for visual cleanliness. -->
       <div class="settings-section">
         <div class="settings-item" onclick="openAccountSettings()">
           <div class="settings-item-icon">
@@ -2302,7 +2340,6 @@
           </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Tili</div>
-            <div class="settings-item-value">Käyttäjätiedot ja turvallisuus</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
@@ -2315,7 +2352,6 @@
           </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Ilmoitukset</div>
-            <div class="settings-item-value">Push-ilmoitukset ja sähköposti</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
@@ -2328,77 +2364,31 @@
           </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Maksutavat</div>
-            <div class="settings-item-value">Hallitse maksukortteja</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
-      </div>
-      
-      <div class="settings-section">
-        <div class="settings-item" onclick="openPrivacySettings()">
+        <div class="settings-item" onclick="openParkingHistory()">
           <div class="settings-item-icon">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <rect x="5" y="11" width="14" height="9" rx="1.5"/>
-              <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+              <rect x="4" y="3" width="16" height="18" rx="2"/>
+              <line x1="8" y1="8" x2="16" y2="8"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+              <line x1="8" y1="16" x2="13" y2="16"/>
             </svg>
           </div>
           <div class="settings-item-text">
-            <div class="settings-item-label">Yksityisyys</div>
-            <div class="settings-item-value">Tietosuoja ja turvallisuus</div>
-          </div>
-          <div class="settings-item-chevron">›</div>
-        </div>
-        <div class="settings-item" onclick="openLanguageSettings()">
-          <div class="settings-item-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="9"/>
-              <path d="M3 12h18"/>
-              <path d="M12 3c2.5 3 4 6 4 9s-1.5 6-4 9c-2.5-3-4-6-4-9s1.5-6 4-9z"/>
-            </svg>
-          </div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Kieli</div>
-            <div class="settings-item-value">Suomi</div>
-          </div>
-          <div class="settings-item-chevron">›</div>
-        </div>
-      </div>
-      
-      <div class="settings-section">
-        <div class="settings-item" onclick="openAreaEditor()">
-          <div class="settings-item-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/>
-              <line x1="9" y1="4" x2="9" y2="20"/>
-              <line x1="15" y1="6" x2="15" y2="22"/>
-            </svg>
-          </div>
-          <div class="settings-item-text"><div class="settings-item-label">Alueiden muokkaus</div><div class="settings-item-value">Yhdistä tai poista pysäköintialueita</div></div>
-          <div class="settings-item-chevron">›</div>
-        </div>
-        <div class="settings-item" onclick="openAdminOverlay()">
-          <div class="settings-item-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/>
-            </svg>
-          </div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Hallinto</div>
-            <div class="settings-item-value">Pysäköintipaikkojen hallinta</div>
+            <div class="settings-item-label">Pysäköintitapahtumat</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openHelpSettings()">
           <div class="settings-item-icon">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="9"/>
-              <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 1-1 1.7"/>
-              <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
+              <path d="M21 12a8 8 0 0 1-12 7l-5 1 1-5a8 8 0 1 1 16-3z"/>
             </svg>
           </div>
           <div class="settings-item-text">
-            <div class="settings-item-label">Ohje ja tuki</div>
-            <div class="settings-item-value">UKK ja yhteystiedot</div>
+            <div class="settings-item-label">Asiakaspalvelu</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
@@ -2412,13 +2402,55 @@
           </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Tietoja</div>
-            <div class="settings-item-value">Versio 1.0.0</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
       </div>
 
-      <!-- Asetukset-osio -->
+      <!-- Collapsed "Muut" group. Tap header to toggle expansion. -->
+      <div class="settings-section">
+        <div class="settings-item settings-expander" id="muut-expander" onclick="toggleMuutSection()">
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <div class="settings-item-text">
+            <div class="settings-item-label">Muut</div>
+          </div>
+          <div class="settings-item-chevron" id="muut-chevron">›</div>
+        </div>
+        <div id="muut-content" class="settings-collapsible">
+          <div class="settings-item" onclick="openAdminOverlay()">
+            <div class="settings-item-icon">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/>
+              </svg>
+            </div>
+            <div class="settings-item-text">
+              <div class="settings-item-label">Hallinto</div>
+            </div>
+            <div class="settings-item-chevron">›</div>
+          </div>
+          <div class="settings-item" onclick="openAreaEditor()">
+            <div class="settings-item-icon">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/>
+                <line x1="9" y1="4" x2="9" y2="20"/>
+                <line x1="15" y1="6" x2="15" y2="22"/>
+              </svg>
+            </div>
+            <div class="settings-item-text">
+              <div class="settings-item-label">Alueiden muokkaus</div>
+            </div>
+            <div class="settings-item-chevron">›</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Asetukset-osio: screen rotation toggle -->
       <div class="settings-section">
         <div class="settings-item" style="cursor:default;" onclick="toggleRotationSetting()">
           <div class="settings-item-icon">
@@ -2428,12 +2460,21 @@
           </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Näytön rotaatio</div>
-            <div class="settings-item-value" id="rotation-setting-value">Pois käytöstä</div>
           </div>
           <!-- iOS-style toggle -->
           <div id="rotation-toggle" onclick="event.stopPropagation();toggleRotationSetting()" style="width:51px;height:31px;border-radius:16px;background:#e0e0e0;position:relative;cursor:pointer;transition:background 0.25s ease;flex-shrink:0;">
             <div id="rotation-knob" style="position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:white;box-shadow:0 2px 5px rgba(0,0,0,0.3);transition:transform 0.25s ease;"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Language quick-switch: small, flat (no card) row at the very bottom -->
+      <div class="lang-quickrow">
+        <div class="lang-quickrow-label">Kieli</div>
+        <div class="lang-quickrow-options">
+          <span class="lang-opt selected" data-lang="fi" onclick="setLang('fi', this)">FI</span>
+          <span class="lang-opt"          data-lang="sv" onclick="setLang('sv', this)">SV</span>
+          <span class="lang-opt"          data-lang="en" onclick="setLang('en', this)">EN</span>
         </div>
       </div>
     </div>
@@ -6309,7 +6350,27 @@
     function openLanguageSettings() {
       alert('Kieliasetukset - tulossa pian');
     }
-    
+
+    // "Muut" expander toggle — opens/closes the collapsed group of admin
+    // and area-editor links inside the profile panel.
+    function toggleMuutSection() {
+      const expander = document.getElementById('muut-expander');
+      const content  = document.getElementById('muut-content');
+      if (!expander || !content) return;
+      const isOpen = expander.classList.toggle('open');
+      content.classList.toggle('open', isOpen);
+    }
+
+    // Language quick-switch at the bottom of the profile. Just visual for
+    // now — no actual translation layer yet. When a user taps a code, the
+    // previously selected one is unselected and the chosen one highlighted.
+    let _currentLang = 'fi';
+    function setLang(code, el) {
+      _currentLang = code;
+      document.querySelectorAll('.lang-opt').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      // TODO: when an i18n layer exists, swap dictionaries here.
+    }
 
     // ── Rotation toggle ──────────────────────────────────────────────
     let rotationEnabled = false;
@@ -6321,13 +6382,13 @@
       if (rotationEnabled) {
         toggle.style.background = '#0C0243';
         knob.style.transform    = 'translateX(20px)';
-        label.textContent       = 'Käytössä';
+        if (label) label.textContent = 'Käytössä';
         map.dragRotate.enable();
         map.touchZoomRotate.enableRotation();
       } else {
         toggle.style.background = '#e0e0e0';
         knob.style.transform    = 'translateX(0)';
-        label.textContent       = 'Pois käytöstä';
+        if (label) label.textContent = 'Pois käytöstä';
         map.dragRotate.disable();
         map.touchZoomRotate.disableRotation();
       }
