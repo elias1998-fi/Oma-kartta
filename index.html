@@ -112,32 +112,40 @@
     /* (Splash screen removed — app now opens directly to the map.) */
 
     /* ── User location indicator — direction arrow (Apple Maps style) ─
-       MapLibre's GeolocateControl puts a blue dot inside a wide pulsing
-       circle. With showUserHeading:true it also adds an inner sector arc
-       (`-heading`) which is wide and cone-shaped. Override it to show a
-       sharp arrowhead like the reference image. */
+       MapLibre's native heading cone is hidden; we render our own arrow
+       inside the user-location-dot, rotated via JS using DeviceOrientation
+       data (after the user grants compass permission on iOS). */
     .maplibregl-user-location-dot {
       background-color: #1e7cff !important;
       width: 22px !important;
       height: 22px !important;
       border: 3px solid white !important;
       box-shadow: 0 0 0 1px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.25) !important;
+      position: relative !important;
     }
-    /* The native heading element is a sector slice — replace its background
-       with a small triangular arrowhead via clip-path. The arrow points up
-       (toward 0°/north) and MapLibre rotates the parent based on compass
-       heading, so we naturally inherit the right direction. */
-    .maplibregl-user-location-dot-heading {
-      width: 18px !important;
-      height: 22px !important;
-      background: #1e7cff !important;
-      clip-path: polygon(50% 0%, 100% 100%, 50% 75%, 0% 100%) !important;
-      opacity: 1 !important;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
-      transform-origin: 50% 100% !important;
-      /* Pull the arrow up above the dot */
-      top: -18px !important;
-      left: 2px !important;
+    /* Hide MapLibre's own cone-shaped heading indicator — we use our own */
+    .maplibregl-user-location-dot-heading { display: none !important; }
+    /* Custom direction arrow sits absolutely on top of the user dot. We
+       add the .has-heading class to its container only after the user has
+       granted compass permission. Otherwise the arrow stays hidden. */
+    .user-dot-arrow {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 0;
+      height: 0;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-bottom: 14px solid #1e7cff;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+      transform: translate(-50%, -160%) rotate(0deg);
+      transform-origin: 50% 100%;
+      pointer-events: none;
+      display: none;
+      transition: transform 0.12s linear;
+    }
+    .maplibregl-user-location-dot.has-heading .user-dot-arrow {
+      display: block;
     }
     
     #left-menu-pill {
@@ -3511,6 +3519,92 @@
         locationBtn.style.background = 'white';
         locationBtn.querySelector('svg path').style.fill = '#333';
       }, 120);
+      // Request compass permission on first tap. On iOS 13+ this MUST be
+      // triggered from a user gesture, so we kick it off from here. After
+      // the user grants permission, _compassEnabled stays true for the
+      // remainder of the session.
+      enableCompassHeading();
+    });
+
+    // ── Compass / device heading ──────────────────────────────────────
+    // Tracks the device's compass bearing (0° = north, 90° = east, ...).
+    // On iOS 13+, DeviceOrientationEvent.requestPermission() must be called
+    // from a user gesture; we trigger it from the location button.
+    let _compassEnabled = false;
+    let _currentHeading = null;   // in degrees, 0..359
+
+    async function enableCompassHeading() {
+      if (_compassEnabled) return;
+      // iOS-style permission API
+      if (typeof DeviceOrientationEvent !== 'undefined' &&
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const state = await DeviceOrientationEvent.requestPermission();
+          if (state !== 'granted') {
+            console.log('[compass] permission denied');
+            return;
+          }
+        } catch (e) {
+          console.warn('[compass] permission request failed:', e);
+          return;
+        }
+      }
+      // Android + iOS supply heading via deviceorientation events.
+      // iOS uses `webkitCompassHeading` (already true heading in degrees, 0=N).
+      // Android uses `alpha` (counter-clockwise from north when screen is flat).
+      window.addEventListener('deviceorientation', onDeviceOrientation, true);
+      // Some Android devices fire a different "absolute" event — listen too.
+      window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
+      _compassEnabled = true;
+      ensureUserDotArrow();
+    }
+
+    function onDeviceOrientation(e) {
+      let heading = null;
+      if (typeof e.webkitCompassHeading === 'number') {
+        // iOS: already a true compass heading (0..360, clockwise)
+        heading = e.webkitCompassHeading;
+      } else if (typeof e.alpha === 'number') {
+        // Android: alpha is 0..360 counter-clockwise from north. Flip it.
+        heading = (360 - e.alpha) % 360;
+      }
+      if (heading == null || isNaN(heading)) return;
+      _currentHeading = heading;
+      applyHeadingToUserDot();
+    }
+
+    // Ensure our custom arrow element exists inside MapLibre's user dot.
+    // MapLibre creates the dot only after the first successful geolocate, so
+    // we re-check whenever a heading update arrives.
+    function ensureUserDotArrow() {
+      const dot = document.querySelector('.maplibregl-user-location-dot');
+      if (!dot) return false;
+      if (!dot.querySelector('.user-dot-arrow')) {
+        const arrow = document.createElement('div');
+        arrow.className = 'user-dot-arrow';
+        dot.appendChild(arrow);
+      }
+      dot.classList.add('has-heading');
+      return true;
+    }
+
+    function applyHeadingToUserDot() {
+      if (_currentHeading == null) return;
+      if (!ensureUserDotArrow()) return;
+      const arrow = document.querySelector('.maplibregl-user-location-dot .user-dot-arrow');
+      if (!arrow) return;
+      // Translate keeps the arrow anchored to the dot's top edge; rotate
+      // by the compass heading. The arrow's transform-origin is its base
+      // so rotation pivots around the dot's center.
+      arrow.style.transform = `translate(-50%, -160%) rotate(${_currentHeading}deg)`;
+    }
+
+    // If a geolocate happens after compass is already enabled, MapLibre may
+    // recreate the dot element — re-attach the arrow.
+    geolocate.on('geolocate', () => {
+      if (_compassEnabled) {
+        setTimeout(() => { ensureUserDotArrow(); applyHeadingToUserDot(); }, 100);
+      }
     });
 
     let menuExpanded = false;
