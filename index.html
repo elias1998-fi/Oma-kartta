@@ -642,7 +642,7 @@
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
     #filter-close-btn.visible { display: flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    #sheet-summary { padding: 7px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
+    #sheet-summary { padding: 9px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
     #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
     #summary-type { font-size: 14px; color: #555; }
     #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
@@ -5047,27 +5047,43 @@
           // Build details: voimassaoloaika, hinta, lisätiedot
           const isMaksullinen = p.source && (p.source.includes('kertamaksu') || p.source.includes('maksullinen'));
           let detailsHTML = '';
-          const vMaPeTo  = p.valid_mape_to || '';
-          const vLaFrom  = p.valid_la_from || '';
-          const vLaTo    = p.valid_la_to || '';
-          const vSuFrom  = p.valid_su_from || '';
-          const vSuTo    = p.valid_su_to || '';
-          const hasMaPe = valid || vMaPeTo;
-          const hasLa   = vLaFrom || vLaTo;
-          const hasSu   = vSuFrom || vSuTo;
-          if (hasMaPe || hasLa || hasSu) {
+          // Validity hours. After the schema split (split_hours.sql), each
+          // weekday column holds ONLY that day's hours, so render directly.
+          // If Sunday has no data we still show the row with an en-dash to
+          // make it clear the area isn't valid on Sunday (rather than
+          // omitting the row, which could be ambiguous).
+          const vMaPe = (p.valid_mape_from || '').trim();
+          const vLa   = (p.valid_la_from   || '').trim();
+          const vSu   = (p.valid_su_from   || '').trim();
+          if (vMaPe || vLa || vSu) {
             detailsHTML += '<p class="price-label">Voimassaoloaika</p>';
             detailsHTML += '<table style="width:100%;font-size:14px;color:#333;border-collapse:collapse;">';
-            if (hasMaPe) detailsHTML += `<tr><td style="color:#555;padding:2px 0;width:52px;">Ma–Pe</td><td style="font-weight:500;">${valid}${vMaPeTo ? ' – ' + vMaPeTo : ''}</td></tr>`;
-            if (hasLa)   detailsHTML += `<tr><td style="color:#555;padding:2px 0;">La</td><td style="font-weight:500;">${vLaFrom}${vLaTo ? ' – ' + vLaTo : ''}</td></tr>`;
-            if (hasSu)   detailsHTML += `<tr><td style="color:#e53935;padding:2px 0;">Su</td><td style="font-weight:500;color:#e53935;">${vSuFrom}${vSuTo ? ' – ' + vSuTo : ''}</td></tr>`;
+            detailsHTML += `<tr><td style="color:#555;padding:2px 0;width:52px;">Ma–Pe</td><td style="font-weight:500;">${escapeHtml(vMaPe || '–')}</td></tr>`;
+            detailsHTML += `<tr><td style="color:#555;padding:2px 0;">La</td><td style="font-weight:500;">${escapeHtml(vLa || '–')}</td></tr>`;
+            detailsHTML += `<tr><td style="color:#e53935;padding:2px 0;">Su</td><td style="font-weight:500;color:#e53935;">${escapeHtml(vSu || '–')}</td></tr>`;
             detailsHTML += '</table>';
-          } else if (valid) {
-            detailsHTML += `<p class="price-label">Voimassaoloaika</p><p class="price-value">${valid}</p>`;
           }
-          if (isMaksullinen) detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">Maksullinen — katso tarkemmat hinnat paikan opastekylteistä</p>`;
-          else detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">Ilmainen</p>`;
-          if (extraInfo) detailsHTML += `<p class="price-label">Lisätiedot</p><p class="price-value">${extraInfo}</p>`;
+          // Pricing: zone-based for paid Helsinki streetside areas. Halls
+          // have their own pricing structures so leave the row empty for now.
+          // Free areas display "Ilmainen".
+          const isHalli = p.source === 'hel_halli';
+          let priceText = '';
+          if (isMaksullinen && !isHalli) {
+            priceText = (featZone === 1) ? '4 €/h'
+                      : (featZone === 2) ? '2 €/h'
+                      : 'Maksullinen';
+          } else if (!isHalli) {
+            priceText = 'Ilmainen';
+          }
+          if (priceText) {
+            detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">${escapeHtml(priceText)}</p>`;
+          }
+          // Lisätiedot: filter out the duration/validity/kertamaksu boilerplate
+          // since those are already shown above. Anything else stays.
+          const extraInfoCleaned = cleanExtraInfoForSheet(extraInfo);
+          if (extraInfoCleaned) {
+            detailsHTML += `<p class="price-label">Lisätiedot</p><p class="price-value">${escapeHtml(extraInfoCleaned)}</p>`;
+          }
           showCenterFeatureInSheet(line1, srcType, op, computeAreaCodeFromFeature(f), detailsHTML);
         }
         // ALWAYS update btn when feature is under center (regardless of same/different ID)
@@ -7972,6 +7988,21 @@
       return String(s == null ? '' : s)
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
         .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    // Strip out the boilerplate pieces ("Kertamaksu enintään …", "Kesto: …",
+    // "Voimassaolo: …") from extra_info before showing it as "Lisätiedot"
+    // in the bottom sheet, since they're already rendered higher up.
+    // Anything else stays.
+    function cleanExtraInfoForSheet(s) {
+      if (!s) return '';
+      const parts = String(s).split('|').map(p => p.trim()).filter(Boolean);
+      const kept = parts.filter(p => {
+        const lo = p.toLowerCase();
+        return !lo.startsWith('kertamaksu') &&
+               !lo.startsWith('kesto')      &&
+               !lo.startsWith('voimassaolo');
+      });
+      return kept.join(' | ');
     }
     function renderParkingHistory(events) {
       const groups = groupEventsByMonth(events);
