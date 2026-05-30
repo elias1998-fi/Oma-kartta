@@ -614,6 +614,152 @@
       flex-direction: column;
       gap: 12px;
     }
+
+    /* ── App settings layout ────────────────────────────────────────────
+       Group label is a small uppercase caption above each section. The
+       toggle row has a stacked title + optional gray subtitle on the
+       left and an iOS-style switch on the right. */
+    .app-settings-group-label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 22px 20px 8px 20px;
+      font-family: Arial, sans-serif;
+    }
+    .app-settings-group-label:first-child { margin-top: 12px; }
+
+    .settings-row-toggle {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .settings-row-toggle:last-child { border-bottom: none; }
+    .settings-row-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .settings-row-title {
+      font-size: 14px;
+      color: #222;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    .settings-row-sub {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+
+    /* iOS-style switch — track + thumb. Dark blue (#0C0243) when checked. */
+    .ios-switch {
+      position: relative;
+      display: inline-block;
+      width: 51px;
+      height: 31px;
+      flex-shrink: 0;
+    }
+    .ios-switch input { opacity: 0; width: 0; height: 0; }
+    .ios-switch-track {
+      position: absolute;
+      inset: 0;
+      background: #e0e0e0;
+      border-radius: 16px;
+      transition: background 0.22s ease;
+      cursor: pointer;
+    }
+    .ios-switch-track::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 27px;
+      height: 27px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+      transition: transform 0.22s ease;
+    }
+    .ios-switch input:checked + .ios-switch-track { background: #0C0243; }
+    .ios-switch input:checked + .ios-switch-track::before { transform: translateX(20px); }
+
+    /* Auto-receipt email input row — hidden by default, revealed by JS
+       when the auto-receipt toggle is enabled. */
+    .settings-email-row {
+      display: none;
+      padding: 12px 16px 16px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .settings-email-row.visible { display: flex; }
+    .settings-email-label {
+      font-size: 12px;
+      color: #888;
+      font-weight: 500;
+    }
+    .settings-email-input {
+      width: 100%;
+      height: 38px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      padding: 0 10px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      outline: none;
+      box-sizing: border-box;
+      background: white;
+      color: #222;
+    }
+    .settings-email-input:focus { border-color: #0C0243; }
+
+    /* Language collapsible inside the Muut group */
+    .settings-lang-header {
+      cursor: pointer;
+      user-select: none;
+    }
+    .settings-lang-current {
+      font-size: 14px;
+      color: #888;
+      margin-right: 4px;
+    }
+    .settings-lang-chevron {
+      font-size: 18px;
+      color: #bbb;
+      transition: transform 0.22s ease;
+    }
+    .settings-lang-header.open .settings-lang-chevron {
+      transform: rotate(90deg);
+    }
+    .settings-lang-options {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+      background: #fafafa;
+    }
+    .settings-lang-options.open { max-height: 220px; }
+    .settings-lang-option {
+      padding: 12px 20px;
+      font-size: 14px;
+      color: #222;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .settings-lang-option:active { background: #eaeaea; }
+    .settings-lang-check {
+      color: #0C0243;
+      font-weight: bold;
+      font-size: 16px;
+      opacity: 0;
+    }
+    .settings-lang-option.selected .settings-lang-check { opacity: 1; }
     .account-action-btn {
       width: 100%;
       padding: 14px 16px;
@@ -1877,22 +2023,28 @@
     /* Toolbar row sits absolutely on top of the content area's right side so
        the first month label inside the list ends up at the same vertical
        level as the toolbar buttons. */
+    /* Toolbar row for the history overlay. It sits absolutely below the
+       overlay header, anchored to the right side. The buttons need to
+       layer above the scrolling content area so they remain tappable.
+       Positioning via `top` here is computed from the safe-area-inset-top
+       + header height to make sure it doesn't land underneath the header. */
     #history-toolbar {
       position: absolute;
-      top: 0;
+      top: calc(max(14px, env(safe-area-inset-top)) + 50px);
       right: 16px;
       display: flex;
       align-items: center;
       gap: 8px;
-      padding-top: 14px;
       pointer-events: none; /* let buttons re-enable themselves */
       z-index: 5;
     }
     #history-toolbar > * { pointer-events: auto; }
     #parking-history-overlay { position: fixed; }
     #parking-history-overlay .overlay-header { position: relative; z-index: 6; }
-    /* Bring the first month label up to align with the toolbar buttons */
-    .history-month-header:first-child { margin-top: 18px; }
+    /* The first month label sits at the same vertical level as the
+       toolbar buttons; padding compensates for the toolbar's absolute
+       position so the list isn't covered. */
+    .history-month-header:first-child { margin-top: 20px; }
     /* "Active" state for filter — turns dark-blue like Select when active */
     #history-filter-btn.active {
       background: #0C0243;
@@ -2791,23 +2943,107 @@
   </div>
 
   <!-- App settings overlay reached via Profiili → Asetukset. -->
+  <div id="app-settings-detail" class="settings-detail-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAppSettings()">←</button>
       <div class="overlay-title">Asetukset</div>
     </div>
     <div class="overlay-content">
+      <!-- ─ Ilmoitukset ─ -->
+      <div class="app-settings-group-label">Ilmoitukset</div>
       <div class="settings-section">
-        <div class="settings-item" style="cursor:default;" onclick="toggleRotationSetting()">
-          <div class="settings-item-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/>
-            </svg>
+        <div class="settings-row-toggle">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Salli sovelluksen ilmoitukset (pakollinen)</div>
+            <div class="settings-row-sub">Sovellus ilmoittaa tärkeistä pysäköintiin liittyvistä asioista</div>
           </div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Näytön rotaatio</div>
+          <label class="ios-switch">
+            <input type="checkbox" id="setting-notif-enabled" checked onchange="onSettingToggle(this)">
+            <span class="ios-switch-track"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- ─ Pysäköinti ─ -->
+      <div class="app-settings-group-label">Pysäköinti</div>
+      <div class="settings-section">
+        <div class="settings-row-toggle">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Muistuta pysäköintiajan päättyessä</div>
           </div>
-          <div id="rotation-toggle" onclick="event.stopPropagation();toggleRotationSetting()" style="width:51px;height:31px;border-radius:16px;background:#e0e0e0;position:relative;cursor:pointer;transition:background 0.25s ease;flex-shrink:0;">
-            <div id="rotation-knob" style="position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:white;box-shadow:0 2px 5px rgba(0,0,0,0.3);transition:transform 0.25s ease;"></div>
+          <label class="ios-switch">
+            <input type="checkbox" id="setting-notif-end" checked onchange="onSettingToggle(this)">
+            <span class="ios-switch-track"></span>
+          </label>
+        </div>
+        <div class="settings-row-toggle">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Muistuta 15 min ennen kuin pysäköintiaika päättyy</div>
+          </div>
+          <label class="ios-switch">
+            <input type="checkbox" id="setting-notif-15min" onchange="onSettingToggle(this)">
+            <span class="ios-switch-track"></span>
+          </label>
+        </div>
+        <div class="settings-row-toggle">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Muistuta pysäköinnin lopettamisesta palatessani ajoneuvolle</div>
+          </div>
+          <label class="ios-switch">
+            <input type="checkbox" id="setting-notif-return" onchange="onSettingToggle(this)">
+            <span class="ios-switch-track"></span>
+          </label>
+        </div>
+        <div class="settings-row-toggle">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Lähetä pysäköinnistä automaattisesti kuitti sähköpostiin</div>
+          </div>
+          <label class="ios-switch">
+            <input type="checkbox" id="setting-receipt-auto" onchange="onAutoReceiptToggle(this)">
+            <span class="ios-switch-track"></span>
+          </label>
+        </div>
+        <!-- Email input — revealed only when the auto-receipt toggle is on -->
+        <div id="setting-receipt-email-row" class="settings-email-row">
+          <label class="settings-email-label" for="setting-receipt-email">Sähköposti kuiteille</label>
+          <input type="email" id="setting-receipt-email" class="settings-email-input"
+                 placeholder="osoite@example.com" autocomplete="email">
+        </div>
+      </div>
+
+      <!-- ─ Muut ─ -->
+      <div class="app-settings-group-label">Muut</div>
+      <div class="settings-section">
+        <div class="settings-row-toggle">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Salli kartan rotaatio</div>
+          </div>
+          <label class="ios-switch">
+            <input type="checkbox" id="setting-rotation" onchange="onMapRotationToggle(this)">
+            <span class="ios-switch-track"></span>
+          </label>
+        </div>
+        <!-- Language collapsible: header row shows current language; tapping
+             opens a list of language options. -->
+        <div class="settings-row-toggle settings-lang-header" onclick="toggleLanguageRow()">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Sovelluksen kieli</div>
+          </div>
+          <div class="settings-lang-current" id="setting-lang-current">Suomi</div>
+          <div class="settings-lang-chevron" id="setting-lang-chevron">›</div>
+        </div>
+        <div class="settings-lang-options" id="setting-lang-options">
+          <div class="settings-lang-option selected" data-lang="fi" onclick="selectLanguage('fi','Suomi', this)">
+            <span>Suomi</span>
+            <span class="settings-lang-check">✓</span>
+          </div>
+          <div class="settings-lang-option" data-lang="sv" onclick="selectLanguage('sv','Svenska', this)">
+            <span>Svenska</span>
+            <span class="settings-lang-check">✓</span>
+          </div>
+          <div class="settings-lang-option" data-lang="en" onclick="selectLanguage('en','English', this)">
+            <span>English</span>
+            <span class="settings-lang-check">✓</span>
           </div>
         </div>
       </div>
@@ -6408,6 +6644,57 @@
     }
     function closeAppSettings() {
       document.getElementById('app-settings-detail').classList.remove('open');
+    }
+
+    // ── App settings ────────────────────────────────────────────────────
+    // Generic toggle handler — used by most rows that just persist a
+    // boolean to localStorage and don't have a side-effect beyond that.
+    function onSettingToggle(input) {
+      try { localStorage.setItem('setting_' + input.id, input.checked ? '1' : '0'); } catch(e){}
+    }
+    // Auto-receipt toggle has a side-effect: reveal/hide the email input row.
+    function onAutoReceiptToggle(input) {
+      onSettingToggle(input);
+      const row = document.getElementById('setting-receipt-email-row');
+      if (row) row.classList.toggle('visible', input.checked);
+    }
+    // Map rotation toggle bridges into the existing toggleRotationSetting()
+    // so behavior stays identical to the previous Profile-level toggle.
+    function onMapRotationToggle(input) {
+      onSettingToggle(input);
+      // Mirror state into the legacy rotation flag if it exists
+      if (typeof rotationEnabled !== 'undefined' && input.checked !== rotationEnabled) {
+        toggleRotationSetting();
+      } else if (typeof rotationEnabled === 'undefined') {
+        // Direct mapbox call if the legacy helper isn't available
+        if (input.checked) {
+          try { map.dragRotate.enable(); map.touchZoomRotate.enableRotation(); } catch(e){}
+        } else {
+          try { map.dragRotate.disable(); map.touchZoomRotate.disableRotation(); } catch(e){}
+        }
+      }
+    }
+    // Language section: header toggles the collapsible list of options
+    function toggleLanguageRow() {
+      const hdr = document.querySelector('.settings-lang-header');
+      const opts = document.getElementById('setting-lang-options');
+      if (!hdr || !opts) return;
+      const isOpen = hdr.classList.toggle('open');
+      opts.classList.toggle('open', isOpen);
+    }
+    function selectLanguage(code, displayName, el) {
+      // Update the header's "current language" label
+      const current = document.getElementById('setting-lang-current');
+      if (current) current.textContent = displayName;
+      // Mark the chosen row, unmark others
+      document.querySelectorAll('.settings-lang-option').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      // Persist + also sync the bottom-of-profile quick-row state
+      try { localStorage.setItem('app_language', code); } catch(e){}
+      if (typeof setLang === 'function') {
+        const quickEl = document.querySelector('.lang-opt[data-lang="' + code + '"]');
+        setLang(code, quickEl);
+      }
     }
     
     function openNotificationSettings() {
