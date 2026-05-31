@@ -849,16 +849,16 @@
     /* Pair of action buttons (directions + share). A direct child of
        #bottom-sheet, positioned absolutely against the sheet's own
        top edge. Because the sheet is `height: 100vh` and the row is
-       offset by `80vh - 148px`, when the sheet sits at its fully-open
+       offset by `80vh - 48px`, when the sheet sits at its fully-open
        position (~80% open, top edge ~20vh from viewport top) the row
-       lands just above the floating action button at the bottom of the
-       screen. As the sheet's transform pushes it down, the row moves
-       in true lockstep with the sheet (no JS, no lag), eventually
-       sliding behind the floating action button. */
+       lands a comfortable distance above the floating action button.
+       As the sheet's transform pushes it down, the row moves in true
+       lockstep with the sheet (no JS, no lag), eventually sliding
+       behind the floating action button. */
     #sheet-nav-row {
       display: none;
       position: absolute;
-      top: calc(80vh - 148px - env(safe-area-inset-bottom));
+      top: calc(80vh - 48px - env(safe-area-inset-bottom));
       left: 20px;
       right: 20px;
       height: 54px;
@@ -3504,11 +3504,11 @@
     </div>
     <!-- Pair of action buttons — direct child of the sheet so they move
          in lockstep with the sheet's transform (no JS sync needed). The
-         CSS positions them at "80vh - 148px" from the sheet's top edge,
-         which places them just above the floating action button when
-         the sheet is at its fully-open position. As the sheet collapses,
-         the row slides down with it and disappears behind the floating
-         action button. -->
+         CSS positions them at "80vh - 48px" from the sheet's top edge,
+         which places them low on the sheet, just above the floating
+         action button when the sheet is at its fully-open position. As
+         the sheet collapses, the row slides down with it and disappears
+         behind the floating action button. -->
     <div id="sheet-nav-row">
       <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
         <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
