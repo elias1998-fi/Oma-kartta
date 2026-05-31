@@ -8678,19 +8678,19 @@
     }
 
     // Mirror the sheet's downward translate onto the nav row so the row
-    // "moves with the sheet". When the sheet sits in its open position
-    // (currentY small), the row sits at its CSS-defined spot (94px above
-    // the action button). When the sheet collapses (currentY large), the
-    // row gets pushed down the same amount, sliding behind the floating
-    // action button.
+    // "moves with the sheet". The baseline is the sheet's fully-open
+    // position (~80% of the viewport — the same maxSheetVisible used by
+    // the drag handler). At that point shift = 0 and the buttons sit at
+    // their CSS spot, just above the floating action button. As soon as
+    // the user starts dragging the sheet down, currentY grows past the
+    // baseline and the buttons get pushed down by the same amount, so
+    // they appear to slide out from behind the action button.
     function updateNavRowFollow() {
       const row = document.getElementById('sheet-nav-row');
       if (!row) return;
-      // currentY = how many px the sheet has been pushed down. It's 0
-      // when fully open and grows as the sheet collapses. We treat any
-      // amount beyond the "153px open" baseline as a downward shift.
       const sheetH = (typeof sheet !== 'undefined' && sheet) ? sheet.offsetHeight : window.innerHeight;
-      const baseline = sheetH - 153; // currentY at the standard open position
+      // Fully-open position: sheet shows 80% of viewport height.
+      const baseline = sheetH - window.innerHeight * 0.8;
       const shift = Math.max(0, currentY - baseline);
       row.style.transform = `translateY(${shift}px)`;
     }
