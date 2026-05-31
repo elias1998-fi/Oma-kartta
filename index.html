@@ -880,6 +880,21 @@
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
     }
 
+    /* "Pin drop" animation — the marker starts well above the screen and
+       falls into place, landing with a small bounce. Used when the
+       directions flow plants the red pin at the parking area. */
+    @keyframes pinDrop {
+      0%   { transform: translateY(-260px) scale(0.9);  opacity: 0; }
+      40%  { transform: translateY(-260px) scale(0.9);  opacity: 0; }
+      55%  { transform: translateY(0) scale(1.05);      opacity: 1; }
+      72%  { transform: translateY(-16px) scale(1);     opacity: 1; }
+      100% { transform: translateY(0) scale(1);         opacity: 1; }
+    }
+    .pin-drop {
+      animation: pinDrop 1.1s cubic-bezier(0.34, 0.84, 0.64, 1) both;
+      transform-origin: 50% 100%;
+    }
+
     /* ── Maps app picker modal ──────────────────────────────────────── */
     #navigate-modal {
       position: fixed;
@@ -2831,20 +2846,17 @@
   <div id="navigate-modal">
     <div class="confirm-backdrop" onclick="closeNavigateModal()"></div>
     <div class="navigate-box">
-      <div class="navigate-title">Avaa reittiohjeet</div>
+      <div class="navigate-title">Reittiohjeet</div>
       <div class="navigate-subtitle">Valitse sovellus, johon reittiohjeet avataan</div>
       <button class="navigate-option" onclick="openInMapsApp('apple')">
-        <span class="navigate-icon">🗺️</span>
         <span class="navigate-name">Apple Maps</span>
         <span class="navigate-chevron">›</span>
       </button>
       <button class="navigate-option" onclick="openInMapsApp('google')">
-        <span class="navigate-icon">🌐</span>
         <span class="navigate-name">Google Maps</span>
         <span class="navigate-chevron">›</span>
       </button>
       <button class="navigate-option" onclick="openInMapsApp('waze')">
-        <span class="navigate-icon">🚗</span>
         <span class="navigate-name">Waze</span>
         <span class="navigate-chevron">›</span>
       </button>
@@ -5402,7 +5414,7 @@
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
 
         // Base fill layer
-        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:14,
           paint:{ 'fill-opacity': 0.30,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -5419,7 +5431,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:14,
           paint:{ 'line-width': 1.5, 'line-opacity': 0.30,
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
@@ -5431,22 +5443,22 @@
           }
         });
         // Hover fill — red, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:14,
           paint:{ 'fill-color':'#ff1744', 'fill-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Hover outline — on the red hovered area, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:14,
           paint:{ 'line-color':'#ff1744', 'line-width': 1.5, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:14,
           paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:14,
           paint:{ 'fill-opacity': 0.50,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -5788,18 +5800,18 @@
     function updateButtonText() {
       // Always show "Lähennä karttaa" when zoomed out, regardless of lock or hoveredPolyId
       const zoom = map.getZoom();
-      if (zoom < 13) {
+      const cm = document.getElementById('center-marker');
+      if (zoom < 14) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
+        // Also hide the P-marker — polygons and halli icons are hidden by
+        // their own minzoom, but the P-marker is HTML so we toggle it here.
+        if (cm) cm.classList.add('hidden');
         return;
       }
+      if (cm) cm.classList.remove('hidden');
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
-      if (zoom < 13) {
-        btn.textContent = 'Lähennä karttaa';
-        btn.classList.remove('active');
-        return;
-      }
       if (!map.getLayer('master-poly-fill')) {
         btn.textContent = 'Siirrä karttaa nähdäksesi pysäköintialueet';
         btn.classList.remove('active');
@@ -5936,7 +5948,7 @@
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
       map.addLayer({
-        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
+        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 14,
         layout: {
           'icon-image': 'halli-icon', 'icon-size': 0.52,
           'icon-allow-overlap': true, 'icon-anchor': 'center'
@@ -6898,7 +6910,10 @@
     function updateZoomIndicator() {
       zoomIndicator.textContent = `Z ${map.getZoom().toFixed(1)}`;
     }
-    map.on('zoom', updateZoomIndicator);
+    map.on('zoom', () => {
+      updateZoomIndicator();
+      updateButtonText();
+    });
     map.on('load', updateZoomIndicator);
 
     function openHelpSettings() {
@@ -7904,6 +7919,12 @@
 
     document.getElementById('back-btn').addEventListener('click',goBackToMap);
     btn.addEventListener('click', () => {
+      // Special state: zoomed out, button says "Lähennä karttaa". Tapping
+      // it should fly the camera in to zoom 16 around the current center.
+      if (map.getZoom() < 14) {
+        map.flyTo({ center: map.getCenter(), zoom: 16, duration: 700 });
+        return;
+      }
       // If the button is in "Pysäköi tähän" state (active), find the area under the
       // P-marker right now and open the overlay. Don't rely on cached state — it can
       // be out of sync after fast pans, and a single-pixel query can miss the area
@@ -8560,14 +8581,15 @@
 
     function showDestinationPin(lat, lng) {
       removeDestinationPin();
-      const el = document.createElement('div');
-      el.className = 'destination-pin';
-      el.innerHTML = `
-        <svg viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 0 C7 0 0 7 0 16 C0 26 16 40 16 40 C16 40 32 26 32 16 C32 7 25 0 16 0 Z" fill="#e53935"/>
-          <circle cx="16" cy="14" r="5" fill="white"/>
-        </svg>`;
-      _destinationPinMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      // Reuse the same red pin element used by search results so the visuals
+      // match across the app. Wrap it in a drop-animation container so the
+      // pin "falls" from above and lands on the target.
+      const pinEl = createPinElement();
+      const wrapper = document.createElement('div');
+      wrapper.className = 'pin-drop';
+      wrapper.style.cssText = 'pointer-events:none;';
+      wrapper.appendChild(pinEl);
+      _destinationPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' })
         .setLngLat([lng, lat])
         .addTo(map);
       _destinationCoords = { lat, lng };
@@ -8601,53 +8623,57 @@
       console.log('[nav-btn] captured center:', c.lat, c.lng);
 
       // 1) Block centerCheck from clobbering our sheet animation. The timer
-      //    must outlive the 3s modal delay so we don't reactivate centerCheck
+      //    must outlive the modal delay so we don't reactivate centerCheck
       //    mid-sequence; it's cleared explicitly on modal close/pick.
       _navigationInProgress = true;
       clearTimeout(_navigationFlagTimer);
-      _navigationFlagTimer = setTimeout(() => { _navigationInProgress = false; }, 5000);
+      _navigationFlagTimer = setTimeout(() => { _navigationInProgress = false; }, 8000);
 
-      // 2) Drop the destination pin FIRST so it's visible when the sheet
-      //    starts retracting. We use a try/catch since maplibregl.Marker
-      //    could in theory fail; that shouldn't block the rest of the flow.
-      try {
-        showDestinationPin(c.lat, c.lng);
-        console.log('[nav-btn] destination pin added at', c.lat, c.lng);
-      } catch (e) {
-        console.error('[nav-btn] showDestinationPin failed:', e);
-      }
+      // 2) Hide the P-marker for the duration of the directions flow. The
+      //    user has already committed to navigation; the P-marker would
+      //    otherwise overlap the red destination pin.
+      const cm = document.getElementById('center-marker');
+      if (cm) cm.classList.add('hidden');
 
-      // 3) Collapse the sheet to 153px from bottom. Setting transition +
-      //    transform in a rAF gives the browser a chance to commit the pin
-      //    insertion before animating, which avoids visual jank. The slower
-      //    0.7s easing makes the retraction feel intentional, not abrupt.
+      // 3) Collapse the sheet to its 153px resting position.
       requestAnimationFrame(() => {
         const target = sheet.offsetHeight - 153;
         sheet.style.transition = 'transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94)';
         sheet.style.transform  = 'translateY(calc(100% - 153px))';
         currentY = target;
-        console.log('[nav-btn] sheet collapsing to translateY=' + target);
-        // Backdrop fades out as the sheet shrinks
         if (typeof sheetBackdrop !== 'undefined' && sheetBackdrop) {
           sheetBackdrop.style.opacity = '0';
         }
-        // The directions button itself isn't shown while the picker is open,
-        // and updateNavBtnVisibility will re-show it later if appropriate.
         const nb = document.getElementById('sheet-nav-btn');
         if (nb) nb.classList.remove('visible');
       });
 
-      // 4) Open the modal AFTER the user has had time to:
-      //    - See the sheet retract (~0.7s)
-      //    - See the red destination pin clearly on the map (~2.3s buffer)
-      //    Total ≈3s from button press, so the pin doesn't immediately
-      //    disappear behind the modal.
-      setTimeout(() => {
-        const modal = document.getElementById('navigate-modal');
-        if (!modal) { console.error('[nav-btn] #navigate-modal missing'); return; }
-        modal.classList.add('visible');
-        console.log('[nav-btn] navigate-modal visible');
-      }, 3000);
+      // 4) Fly the camera to zoom 16 centered on the P-marker location.
+      //    This happens in parallel with the sheet retraction. The pin is
+      //    dropped only after this flyTo settles so it lands at the correct
+      //    on-screen position.
+      map.flyTo({
+        center: [c.lng, c.lat],
+        zoom:   16,
+        duration: 900
+      });
+
+      // 5) Drop the red destination pin once the camera arrives. The
+      //    pin uses a CSS animation that makes it fall in from above.
+      map.once('moveend', () => {
+        try {
+          showDestinationPin(c.lat, c.lng);
+        } catch (e) {
+          console.error('[nav-btn] showDestinationPin failed:', e);
+        }
+
+        // 6) Wait 3s after the pin lands, then open the maps app picker.
+        setTimeout(() => {
+          const modal = document.getElementById('navigate-modal');
+          if (!modal) { console.error('[nav-btn] #navigate-modal missing'); return; }
+          modal.classList.add('visible');
+        }, 3000);
+      });
     }
 
     // Touchend fallback for iOS — the sheet's `touch-action: none` plus the
@@ -8685,6 +8711,9 @@
       // Allow centerCheck to manage the sheet normally again
       _navigationInProgress = false;
       clearTimeout(_navigationFlagTimer);
+      // Restore the P-marker now that the directions flow is over
+      const cm = document.getElementById('center-marker');
+      if (cm) cm.classList.remove('hidden');
     }
     function openInMapsApp(app) {
       if (!_destinationCoords) {
@@ -8714,6 +8743,9 @@
       // Allow centerCheck to manage the sheet normally again
       _navigationInProgress = false;
       clearTimeout(_navigationFlagTimer);
+      // Restore the P-marker now that the directions flow is over
+      const cm = document.getElementById('center-marker');
+      if (cm) cm.classList.remove('hidden');
       // Keep the pin visible after picking an app so the user sees where
       // they're navigating to on the underlying map. It clears next time
       // the picker is opened (showDestinationPin removes any prior pin).
