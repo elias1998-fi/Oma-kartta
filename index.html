@@ -46,6 +46,15 @@
       display: flex; flex-direction: column; align-items: center;
     }
     #center-marker.hidden { display: none !important; }
+    /* Belt-and-braces: hide the P-marker outright in filter / search /
+       plus modes so it can't sneak back in via a stale class. */
+    body.filter-mode   #center-marker,
+    body.search-mode   #center-marker,
+    body.plus-mode     #center-marker { display: none !important; }
+    /* The big floating action button must disappear in search and plus
+       modes (those overlays cover the map and have their own controls). */
+    body.search-mode   #btn-container,
+    body.plus-mode     #btn-container { opacity: 0 !important; pointer-events: none !important; }
 
     #cm-body {
       display: flex; align-items: center;
@@ -605,6 +614,117 @@
       color: #888;
       margin-left: 8px;
     }
+
+    /* ── Ajoneuvot ──────────────────────────────────────────────────────
+       List of saved vehicles + an "add new" tile. Visual language matches
+       the Maksutavat list: rounded white tile, dark-blue icon, two-line
+       text on the right. */
+    #vehicles-list-section {
+      padding: 20px 16px 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .vehicle-row, .vehicle-add-row {
+      background: white;
+      border: 1.5px solid #e8e8ee;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .vehicle-row:active,
+    .vehicle-add-row:active { background: #f4f4f7; }
+    .vehicle-icon,
+    .vehicle-add-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0C0243;
+      flex-shrink: 0;
+    }
+    .vehicle-icon svg,
+    .vehicle-add-icon svg { width: 32px; height: 32px; }
+    .vehicle-text,
+    .vehicle-add-text { flex: 1; min-width: 0; }
+    .vehicle-plate,
+    .vehicle-add-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #0C0243;
+      font-family: Arial, sans-serif;
+      line-height: 1.2;
+    }
+    .vehicle-name,
+    .vehicle-add-sub {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .vehicle-delete {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      color: #d92626;
+      font-size: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .vehicle-delete:active { background: #fdebeb; }
+
+    /* Add-vehicle bottom sheet */
+    #add-vehicle-sheet.visible { display: block !important; }
+    #add-vehicle-sheet .sheet-panel {
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+    }
+    .add-vehicle-body {
+      padding: 0 20px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      font-family: Arial, sans-serif;
+    }
+    .add-vehicle-label {
+      font-size: 12px;
+      color: #888;
+      font-weight: 500;
+      margin: 14px 0 6px 0;
+    }
+    .add-vehicle-input {
+      height: 44px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      padding: 0 12px;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      outline: none;
+      background: white;
+      color: #222;
+      box-sizing: border-box;
+    }
+    .add-vehicle-input:focus { border-color: #0C0243; }
+    .add-vehicle-save {
+      margin-top: 22px;
+      height: 52px;
+      background: #0C0243;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+    }
+    .add-vehicle-save:active { opacity: 0.88; }
     /* Stacked action buttons at the bottom of the Tili overlay. Logout
        is the primary "neutral" action; delete is destructive and shown
        in red below it. */
@@ -2603,7 +2723,7 @@
     <!-- Brand wordmark — placeholder until the logo is ready -->
     <div class="profile-brand">
       <div class="profile-brand-text">TotalParking</div>
-      <div class="profile-brand-tagline">Suomessa kehitetty suomalaisille</div>
+      <div class="profile-brand-tagline">100% suomalainen</div>
     </div>
     <div class="overlay-content">
       <!-- Reordered main settings; sub-text removed for visual cleanliness. -->
@@ -2939,6 +3059,58 @@
           <label>Kommentti</label>
           <div id="ed-notes-text" style="font-size:14px;color:#222;line-height:1.5;white-space:pre-wrap;word-break:break-word;padding:8px 0 0 0;"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ajoneuvot — list of the user's vehicles + an "add new" tile.
+       Empty by default; tapping the add tile opens a small form. -->
+  <div id="vehicles-detail" class="settings-detail-overlay">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeVehiclesSettings()">←</button>
+      <div class="overlay-title">Ajoneuvot</div>
+    </div>
+    <div class="overlay-content">
+      <div id="vehicles-list-section">
+        <!-- Dynamically rendered list of saved vehicles (empty by default) -->
+        <div id="vehicles-list"></div>
+        <!-- Add-new tile — always present at the bottom of the list -->
+        <div class="vehicle-add-row" onclick="openAddVehicleSheet()">
+          <div class="vehicle-add-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="12" y1="7.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="7.5" y1="12" x2="16.5" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="vehicle-add-text">
+            <div class="vehicle-add-title">Lisää uusi ajoneuvo</div>
+            <div class="vehicle-add-sub">Rekisterinumero ja nimi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom sheet for entering a new vehicle's details. Slides up from
+       the bottom when the user taps the add-new tile. -->
+  <div id="add-vehicle-sheet" style="position:fixed;inset:0;z-index:220;display:none;">
+    <div class="sheet-backdrop" onclick="closeAddVehicleSheet()"></div>
+    <div class="sheet-panel">
+      <div class="sheet-header">
+        <div class="sheet-title">Uusi ajoneuvo</div>
+        <button class="sheet-close-btn" onclick="closeAddVehicleSheet()">✕</button>
+      </div>
+      <div class="add-vehicle-body">
+        <label class="add-vehicle-label" for="vehicle-plate-input">Rekisterinumero</label>
+        <input type="text" id="vehicle-plate-input" class="add-vehicle-input"
+               placeholder="ABC-123" autocomplete="off" maxlength="10">
+
+        <label class="add-vehicle-label" for="vehicle-name-input">Nimi (valinnainen)</label>
+        <input type="text" id="vehicle-name-input" class="add-vehicle-input"
+               placeholder="esim. Oma auto" autocomplete="off" maxlength="40">
+
+        <button class="add-vehicle-save" onclick="saveNewVehicle()">Tallenna</button>
       </div>
     </div>
   </div>
@@ -4434,6 +4606,7 @@
       // If filter is active, close it silently before switching
       if (filterMode && idx !== 2) {
         filterMode = false;
+        document.body.classList.remove('filter-mode');
         filterBtn.classList.remove('active', 'filter-on');
         filterCloseBtn.classList.remove('visible');
         sheetNormal.style.display = 'flex';
@@ -4472,12 +4645,22 @@
     });
 
     plusMenuBtn.addEventListener('click', () => {
-      menuItemClick(3, () => document.getElementById('plus-overlay').classList.add('open'));
+      menuItemClick(3, () => {
+        document.getElementById('plus-overlay').classList.add('open');
+        document.body.classList.add('plus-mode');
+        // The plus / "Ilmoita alueesta" view covers the map — hide the
+        // floating action button so it doesn't show through.
+        btnContainer.classList.add('hidden');
+      });
     });
 
     searchBtn.addEventListener('click', () => {
       menuItemClick(4, () => {
         document.getElementById('search-overlay').classList.add('open');
+        document.body.classList.add('search-mode');
+        // The search view covers the map — hide the floating action button
+        // so it doesn't show through behind the keyboard.
+        btnContainer.classList.add('hidden');
         setTimeout(() => { document.getElementById('search-input').focus(); showSearchHistory(); }, 100);
       });
     });
@@ -4493,15 +4676,21 @@
     
     function closeSearchOverlay() {
       document.getElementById('search-overlay').classList.remove('open');
+      document.body.classList.remove('search-mode');
       document.getElementById('search-input').value = '';
       document.getElementById('search-results').innerHTML = '';
+      // Restore the floating action button now that the search view is gone.
+      btnContainer.classList.remove('hidden');
       if (filterMode) closeFilter();
     }
     
     function closePlusOverlay() {
       document.getElementById('plus-overlay').classList.remove('open');
+      document.body.classList.remove('plus-mode');
       closeAddParkingArea();
       closeCommentAreas();
+      // Restore the floating action button now that the plus view is gone.
+      btnContainer.classList.remove('hidden');
       if (filterMode) closeFilter();
     }
     function openAddParkingArea() {
@@ -5920,15 +6109,18 @@
       // navigation. Access via window to avoid TDZ issues since the
       // declaration appears later in the source.
       const inNav = !!window._navigationInProgress;
+      // Filter view manages its own P-marker visibility (hidden); don't
+      // fight it from here.
+      const inFilter = (typeof filterMode !== 'undefined' && filterMode);
       if (zoom < 14) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
         // Also hide the P-marker — polygons and halli icons are hidden by
         // their own minzoom, but the P-marker is HTML so we toggle it here.
-        if (cm && !inNav) cm.classList.add('hidden');
+        if (cm && !inNav && !inFilter) cm.classList.add('hidden');
         return;
       }
-      if (cm && !inNav) cm.classList.remove('hidden');
+      if (cm && !inNav && !inFilter) cm.classList.remove('hidden');
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
       if (!map.getLayer('master-poly-fill')) {
@@ -6768,7 +6960,95 @@
     // Stubs for the rest of the new profile-row destinations. Replaced
     // with real overlays as those screens get built.
     function openVehiclesSettings() {
-      showCustomToast('Ajoneuvojen hallinta — tulossa pian', 2500);
+      document.getElementById('vehicles-detail').classList.add('open');
+      renderVehiclesList();
+    }
+    function closeVehiclesSettings() {
+      document.getElementById('vehicles-detail').classList.remove('open');
+    }
+
+    // ── Vehicle storage (localStorage-backed) ──────────────────────────
+    // No backend yet, so saved vehicles live in localStorage. The data is
+    // intentionally simple: an array of { plate, name } objects.
+    const VEHICLES_KEY = 'app_vehicles';
+    function loadVehicles() {
+      try {
+        const raw = localStorage.getItem(VEHICLES_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch(e) { return []; }
+    }
+    function saveVehicles(list) {
+      try { localStorage.setItem(VEHICLES_KEY, JSON.stringify(list)); } catch(e){}
+    }
+    // Render the list of saved vehicles inside the Ajoneuvot overlay.
+    function renderVehiclesList() {
+      const list = document.getElementById('vehicles-list');
+      if (!list) return;
+      const vehicles = loadVehicles();
+      if (vehicles.length === 0) {
+        list.innerHTML = '';
+        return;
+      }
+      const carIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M5 16V12l1.6-4.5A2 2 0 0 1 8.5 6h7a2 2 0 0 1 1.9 1.5L19 12v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M5 16h14" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <circle cx="7.5" cy="17" r="1.5" fill="currentColor"/>
+        <circle cx="16.5" cy="17" r="1.5" fill="currentColor"/>
+      </svg>`;
+      list.innerHTML = vehicles.map((v, i) => `
+        <div class="vehicle-row">
+          <div class="vehicle-icon">${carIcon}</div>
+          <div class="vehicle-text">
+            <div class="vehicle-plate">${escapeHtml(v.plate)}</div>
+            ${v.name ? `<div class="vehicle-name">${escapeHtml(v.name)}</div>` : ''}
+          </div>
+          <button class="vehicle-delete" onclick="deleteVehicle(${i});event.stopPropagation();" aria-label="Poista">✕</button>
+        </div>
+      `).join('');
+    }
+    function deleteVehicle(index) {
+      const vehicles = loadVehicles();
+      if (index < 0 || index >= vehicles.length) return;
+      if (!confirm(`Poista ajoneuvo ${vehicles[index].plate}?`)) return;
+      vehicles.splice(index, 1);
+      saveVehicles(vehicles);
+      renderVehiclesList();
+    }
+
+    // ── Add-vehicle sheet ──────────────────────────────────────────────
+    function openAddVehicleSheet() {
+      const sheet = document.getElementById('add-vehicle-sheet');
+      if (!sheet) return;
+      sheet.classList.add('visible');
+      // Reset fields each time the sheet opens
+      const plateInput = document.getElementById('vehicle-plate-input');
+      const nameInput  = document.getElementById('vehicle-name-input');
+      if (plateInput) plateInput.value = '';
+      if (nameInput)  nameInput.value  = '';
+      setTimeout(() => { if (plateInput) plateInput.focus(); }, 100);
+    }
+    function closeAddVehicleSheet() {
+      const sheet = document.getElementById('add-vehicle-sheet');
+      if (sheet) sheet.classList.remove('visible');
+    }
+    function saveNewVehicle() {
+      const plate = (document.getElementById('vehicle-plate-input').value || '').trim().toUpperCase();
+      const name  = (document.getElementById('vehicle-name-input').value || '').trim();
+      if (!plate) {
+        showCustomToast('Rekisterinumero on pakollinen', 2200);
+        return;
+      }
+      const vehicles = loadVehicles();
+      // Reject duplicates on plate number
+      if (vehicles.some(v => v.plate === plate)) {
+        showCustomToast('Tämä ajoneuvo on jo lisätty', 2200);
+        return;
+      }
+      vehicles.push({ plate, name });
+      saveVehicles(vehicles);
+      closeAddVehicleSheet();
+      renderVehiclesList();
+      showCustomToast(`Ajoneuvo ${plate} lisätty`, 2200);
     }
     function openAppSettings() {
       document.getElementById('app-settings-detail').classList.add('open');
@@ -7422,6 +7702,7 @@
     const filterCloseBtn=document.getElementById('filter-close-btn'),sheetNormal=document.getElementById('sheet-normal'),sheetFilter=document.getElementById('sheet-filter');
     function openFilter(){
       filterMode=true;
+      document.body.classList.add('filter-mode');
       filterCloseBtn.classList.add('visible');
       // Hide GPS warning + zoom indicator in filter view
       const gw = document.getElementById('gps-warning'); if (gw) gw.style.display = 'none';
@@ -7444,6 +7725,7 @@
     }
     function closeFilter(){
       filterMode=false;
+      document.body.classList.remove('filter-mode');
       filterBtn.classList.remove('active');
       filterBtn.classList.remove('filter-on');
       filterCloseBtn.classList.remove('visible');
