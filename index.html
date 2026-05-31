@@ -5801,15 +5801,21 @@
       // Always show "Lähennä karttaa" when zoomed out, regardless of lock or hoveredPolyId
       const zoom = map.getZoom();
       const cm = document.getElementById('center-marker');
+      // During the directions flow, the navigation handler manages the
+      // P-marker's visibility itself — we mustn't fight it from here. The
+      // same flag prevents centerCheck from re-snapping the sheet during
+      // navigation. Access via window to avoid TDZ issues since the
+      // declaration appears later in the source.
+      const inNav = !!window._navigationInProgress;
       if (zoom < 14) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
         // Also hide the P-marker — polygons and halli icons are hidden by
         // their own minzoom, but the P-marker is HTML so we toggle it here.
-        if (cm) cm.classList.add('hidden');
+        if (cm && !inNav) cm.classList.add('hidden');
         return;
       }
-      if (cm) cm.classList.remove('hidden');
+      if (cm && !inNav) cm.classList.remove('hidden');
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
       if (!map.getLayer('master-poly-fill')) {
@@ -8610,6 +8616,9 @@
     //  4. Open the maps app picker AFTER the animation finishes (~500ms).
     let _navigationInProgress = false;
     let _navigationFlagTimer  = null;
+    // Mirror onto window so functions defined earlier in the source (e.g.
+    // updateButtonText) can read the flag without running into a TDZ.
+    window._navigationInProgress = false;
     function onSheetNavBtnClick() {
       console.log('[nav-btn] clicked. currentParkingProps:', currentParkingProps,
                   'hoveredPolyId:', (typeof hoveredPolyId !== 'undefined' ? hoveredPolyId : 'undef'));
@@ -8626,8 +8635,12 @@
       //    must outlive the modal delay so we don't reactivate centerCheck
       //    mid-sequence; it's cleared explicitly on modal close/pick.
       _navigationInProgress = true;
+      window._navigationInProgress = true;
       clearTimeout(_navigationFlagTimer);
-      _navigationFlagTimer = setTimeout(() => { _navigationInProgress = false; }, 8000);
+      _navigationFlagTimer = setTimeout(() => {
+        _navigationInProgress = false;
+        window._navigationInProgress = false;
+      }, 8000);
 
       // 2) Hide the P-marker for the duration of the directions flow. The
       //    user has already committed to navigation; the P-marker would
@@ -8710,6 +8723,7 @@
       removeDestinationPin();
       // Allow centerCheck to manage the sheet normally again
       _navigationInProgress = false;
+      window._navigationInProgress = false;
       clearTimeout(_navigationFlagTimer);
       // Restore the P-marker now that the directions flow is over
       const cm = document.getElementById('center-marker');
@@ -8742,6 +8756,7 @@
       document.getElementById('navigate-modal').classList.remove('visible');
       // Allow centerCheck to manage the sheet normally again
       _navigationInProgress = false;
+      window._navigationInProgress = false;
       clearTimeout(_navigationFlagTimer);
       // Restore the P-marker now that the directions flow is over
       const cm = document.getElementById('center-marker');
