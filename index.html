@@ -847,19 +847,22 @@
        sheet collapses these buttons travel down behind the floating
        action button without any fade. */
     /* Pair of action buttons inside the sheet (directions + share).
-       Pinned to the very bottom of the sheet's normal-content area —
-       margin-top:auto pushes them past any natural content above, and
-       margin-bottom reserves enough room for the floating btn-container
-       so the buttons land just above the big "Pysäköi tähän" button.
-       When the sheet collapses, the buttons travel down with it and
-       disappear behind that same floating button. */
+       Positioned absolutely against the sheet's own bottom edge so they
+       sit just above the floating action button. Because the sheet is
+       `position: absolute; bottom: 0`, this anchors the row to the
+       viewport's bottom edge while still letting the row travel with
+       the sheet's transform — when the sheet slides down, the buttons
+       slide down with it and disappear behind the action button. */
     #sheet-nav-row {
       display: none;
+      position: absolute;
+      bottom: calc(94px + env(safe-area-inset-bottom));
+      left: 20px;
+      right: 20px;
       gap: 10px;
-      margin-top: auto;
-      margin-bottom: calc(94px + env(safe-area-inset-bottom));
-      padding: 0 20px;
+      z-index: 5;
     }
+    #sheet-nav-row.visible { display: flex; }
     #sheet-nav-row.visible { display: flex; }
     #sheet-nav-btn, #sheet-share-btn {
       flex: 1;                       /* equal width */
@@ -3496,34 +3499,34 @@
       </div>
       <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
-      <!-- Pair of action buttons pinned to the bottom of the sheet's
-           normal-content area. They scroll/translate with the sheet, so
-           as the sheet collapses they slide down behind the floating
-           action button rather than fading out. -->
-      <div id="sheet-nav-row">
-        <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
-          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M5 28 V18 a3 3 0 0 1 3 -3 H20 V9 L29 16.5 L20 24 V18 H10 V28 Z"
-                  fill="currentColor"/>
-          </svg>
-          <span class="sheet-nav-label">Directions</span>
-        </button>
-        <button id="sheet-share-btn" aria-label="Jaa kaverille">
-          <!-- iOS-style share glyph: a rounded square (out-tray) with an
-               upward-pointing arrow above it. The square's top edge is
-               intentionally open so the arrow looks like it's leaving the
-               box, mirroring Apple's icon. -->
-          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M16 4 V20 M16 4 L11 9 M16 4 L21 9"
-                  fill="none" stroke="currentColor" stroke-width="2.6"
-                  stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M9 14 H7 a2 2 0 0 0 -2 2 V26 a2 2 0 0 0 2 2 H25 a2 2 0 0 0 2 -2 V16 a2 2 0 0 0 -2 -2 H23"
-                  fill="none" stroke="currentColor" stroke-width="2.6"
-                  stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span class="sheet-nav-label">Jaa kaverille</span>
-        </button>
-      </div>
+    </div>
+    <!-- Pair of action buttons positioned absolutely inside the sheet —
+         anchored to the bottom edge (just above the floating action
+         button). They travel with the sheet's transform, so they slide
+         down behind the action button as the sheet collapses. -->
+    <div id="sheet-nav-row">
+      <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M5 28 V18 a3 3 0 0 1 3 -3 H20 V9 L29 16.5 L20 24 V18 H10 V28 Z"
+                fill="currentColor"/>
+        </svg>
+        <span class="sheet-nav-label">Directions</span>
+      </button>
+      <button id="sheet-share-btn" aria-label="Jaa kaverille">
+        <!-- iOS-style share glyph: a rounded square (out-tray) with an
+             upward-pointing arrow above it. The square's top edge is
+             intentionally open so the arrow looks like it's leaving the
+             box, mirroring Apple's icon. -->
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M16 4 V20 M16 4 L11 9 M16 4 L21 9"
+                fill="none" stroke="currentColor" stroke-width="2.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 14 H7 a2 2 0 0 0 -2 2 V26 a2 2 0 0 0 2 2 H25 a2 2 0 0 0 2 -2 V16 a2 2 0 0 0 -2 -2 H23"
+                fill="none" stroke="currentColor" stroke-width="2.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="sheet-nav-label">Jaa kaverille</span>
+      </button>
     </div>
     <div id="sheet-filter">
       <div id="filter-title">Suodata karttanäkymää</div>
