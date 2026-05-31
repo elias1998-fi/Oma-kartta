@@ -841,15 +841,16 @@
        Visible only when a parking area is currently selected. Sits inside
        btn-container, so its visibility piggybacks on the container's own
        slide-in animation when the sheet opens up. */
-    /* Row holding the directions + share buttons. Behaves as a single
-       hide/show unit (controlled by the .visible class) so existing code
-       that manages the directions-button visibility keeps working. */
+    /* Pair of action buttons inside the sheet (directions + share).
+       Sits below the parking details and scrolls with the sheet. The
+       sheet's normal content slides up/down with the panel, so when the
+       sheet collapses these buttons travel down behind the floating
+       action button without any fade. */
     #sheet-nav-row {
       display: none;
       gap: 10px;
-      margin-bottom: 10px;
-      opacity: 0;
-      transition: opacity 0.05s linear;
+      margin-top: 8px;
+      padding: 0 20px;
     }
     #sheet-nav-row.visible { display: flex; }
     #sheet-nav-btn, #sheet-share-btn {
@@ -1017,7 +1018,7 @@
     #summary-type { font-size: 14px; color: #555; }
     #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
     #sheet-divider { border: none; border-top: 1px solid #eee; margin: 5px 20px 0 20px; flex-shrink: 0; }
-    #sheet-details { padding: 0 20px 16px 20px; overflow-y: auto; flex: 1; font-family: Arial, sans-serif; background: white; }
+    #sheet-details { padding: 0 20px 16px 20px; overflow-y: auto; font-family: Arial, sans-serif; background: white; }
     .hours-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; color: #333; }
     .hours-day { color: #555; min-width: 60px; }
     .hours-time { font-weight: 500; }
@@ -3487,6 +3488,34 @@
       </div>
       <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
+      <!-- Pair of action buttons pinned to the bottom of the sheet's
+           normal-content area. They scroll/translate with the sheet, so
+           as the sheet collapses they slide down behind the floating
+           action button rather than fading out. -->
+      <div id="sheet-nav-row">
+        <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M5 28 V18 a3 3 0 0 1 3 -3 H20 V9 L29 16.5 L20 24 V18 H10 V28 Z"
+                  fill="currentColor"/>
+          </svg>
+          <span class="sheet-nav-label">Directions</span>
+        </button>
+        <button id="sheet-share-btn" aria-label="Jaa kaverille">
+          <!-- iOS-style share glyph: a rounded square (out-tray) with an
+               upward-pointing arrow above it. The square's top edge is
+               intentionally open so the arrow looks like it's leaving the
+               box, mirroring Apple's icon. -->
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M16 4 V20 M16 4 L11 9 M16 4 L21 9"
+                  fill="none" stroke="currentColor" stroke-width="2.6"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 14 H7 a2 2 0 0 0 -2 2 V26 a2 2 0 0 0 2 2 H25 a2 2 0 0 0 2 -2 V16 a2 2 0 0 0 -2 -2 H23"
+                  fill="none" stroke="currentColor" stroke-width="2.6"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="sheet-nav-label">Jaa kaverille</span>
+        </button>
+      </div>
     </div>
     <div id="sheet-filter">
       <div id="filter-title">Suodata karttanäkymää</div>
@@ -3729,33 +3758,6 @@
   </div>
 
   <div id="btn-container">
-    <!-- Pair of buttons sitting just above the main action button when a
-         parking area is selected and the sheet is open. Left: directions;
-         Right: share with a friend (opens iOS native share sheet). -->
-    <div id="sheet-nav-row">
-      <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
-        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M5 28 V18 a3 3 0 0 1 3 -3 H20 V9 L29 16.5 L20 24 V18 H10 V28 Z"
-                fill="currentColor"/>
-        </svg>
-        <span class="sheet-nav-label">Directions</span>
-      </button>
-      <button id="sheet-share-btn" aria-label="Jaa kaverille">
-        <!-- iOS-style share glyph: a rounded square (out-tray) with an
-             upward-pointing arrow above it. The square's top edge is
-             intentionally open so the arrow looks like it's leaving the
-             box, mirroring Apple's icon. -->
-        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M16 4 V20 M16 4 L11 9 M16 4 L21 9"
-                fill="none" stroke="currentColor" stroke-width="2.6"
-                stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M9 14 H7 a2 2 0 0 0 -2 2 V26 a2 2 0 0 0 2 2 H25 a2 2 0 0 0 2 -2 V16 a2 2 0 0 0 -2 -2 H23"
-                fill="none" stroke="currentColor" stroke-width="2.6"
-                stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="sheet-nav-label">Jaa kaverille</span>
-      </button>
-    </div>
     <button id="action-btn">Siirrä kursori pysäköintialueelle</button>
   </div>
 
@@ -5824,17 +5826,7 @@
           const vMaPe = parsed.maPe;
           const vLa   = parsed.la;
           const vSu   = parsed.su;
-          if (vMaPe || vLa || vSu) {
-            detailsHTML += '<p class="price-label">Voimassaoloaika</p>';
-            detailsHTML += '<table style="width:100%;font-size:14px;color:#333;border-collapse:collapse;">';
-            detailsHTML += `<tr><td style="color:#555;padding:2px 0;width:52px;">Ma–Pe</td><td style="font-weight:500;">${escapeHtml(vMaPe || '—')}</td></tr>`;
-            detailsHTML += `<tr><td style="color:#555;padding:2px 0;">La</td><td style="font-weight:500;">${escapeHtml(vLa || '—')}</td></tr>`;
-            detailsHTML += `<tr><td style="color:#555;padding:2px 0;">Su</td><td style="font-weight:500;">${escapeHtml(vSu || '—')}</td></tr>`;
-            detailsHTML += '</table>';
-          }
-          // Pricing: zone-based for paid Helsinki streetside areas. Halls
-          // have their own pricing structures so leave the row empty for now.
-          // Free areas display "Ilmainen".
+          // Pricing first so we can fold it into the schedule table
           const isHalli = p.source === 'hel_halli';
           let priceText = '';
           if (isMaksullinen && !isHalli) {
@@ -5844,7 +5836,45 @@
           } else if (!isHalli) {
             priceText = 'Ilmainen';
           }
-          if (priceText) {
+          // Per-day price: data doesn't yet distinguish weekday/weekend
+          // tariffs, so all enforced days share the same price. Days
+          // without enforcement hours get an em-dash (no price applies).
+          const priceFor = (hours) => hours ? (priceText || '—') : '—';
+
+          if (vMaPe || vLa || vSu) {
+            // Three-column table: Päivät | Tunnit | Hinta. Header row
+            // uses the same small uppercase caption style as other section
+            // labels in the sheet ("LISÄTIEDOT" etc.) for visual cohesion.
+            const capStyle = 'font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.4px;padding:0 0 6px 0;text-align:left;';
+            const dayStyle = 'color:#555;padding:3px 0;font-size:14px;';
+            const valStyle = 'color:#222;padding:3px 0;font-weight:500;font-size:14px;';
+            detailsHTML += '<p class="price-label" style="margin-bottom:0;">&nbsp;</p>'; // small spacer
+            detailsHTML += '<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;">';
+            detailsHTML += `<thead><tr>`
+                        + `<th style="${capStyle}width:33%;">Päivät</th>`
+                        + `<th style="${capStyle}width:34%;">Tunnit</th>`
+                        + `<th style="${capStyle}width:33%;">Hinta</th>`
+                        + `</tr></thead><tbody>`;
+            detailsHTML += `<tr>`
+                        + `<td style="${dayStyle}">Ma–Pe</td>`
+                        + `<td style="${valStyle}">${escapeHtml(vMaPe || '—')}</td>`
+                        + `<td style="${valStyle}">${escapeHtml(priceFor(vMaPe))}</td>`
+                        + `</tr>`;
+            detailsHTML += `<tr>`
+                        + `<td style="${dayStyle}">La</td>`
+                        + `<td style="${valStyle}">${escapeHtml(vLa || '—')}</td>`
+                        + `<td style="${valStyle}">${escapeHtml(priceFor(vLa))}</td>`
+                        + `</tr>`;
+            detailsHTML += `<tr>`
+                        + `<td style="${dayStyle}">Su</td>`
+                        + `<td style="${valStyle}">${escapeHtml(vSu || '—')}</td>`
+                        + `<td style="${valStyle}">${escapeHtml(priceFor(vSu))}</td>`
+                        + `</tr>`;
+            detailsHTML += '</tbody></table>';
+          } else if (priceText) {
+            // No schedule data but we still know the pricing — show it
+            // as a simple label/value pair so users at least see "Ilmainen"
+            // or "4 €/h" without a confusing empty schedule table.
             detailsHTML += `<p class="price-label">Hinta</p><p class="price-value">${escapeHtml(priceText)}</p>`;
           }
           // Lisätiedot: filter out the duration/validity/kertamaksu boilerplate
@@ -8625,35 +8655,14 @@
     // sheet's open/close animation already controls its on-screen presence
     // via the floating action button — no opacity fade needed.
     function updateNavBtnVisibility() {
-      // Both buttons share a parent row that owns the visibility/opacity.
+      // Both buttons share a parent row that owns the visibility. Now
+      // that the row lives inside the sheet itself, we don't need an
+      // opacity fade — the sheet's own transform handles the slide.
+      // Show whenever a parking area is currently under the P-marker.
       const row = document.getElementById('sheet-nav-row');
       if (!row) return;
       const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
-      if (!hasArea) {
-        row.classList.remove('visible');
-        row.style.opacity = '0';
-        row.style.pointerEvents = 'none';
-        return;
-      }
-      // Smooth fade based on sheet expansion. currentY is the translateY in
-      // pixels — smaller = more open. ratio = 0 (collapsed) → 1 (max open).
-      // Fade range: 0.55 to 0.75 — below 0.55 hidden, above 0.75 fully on,
-      // linear in between. Keeps .visible class on whenever opacity > 0 so
-      // display:flex stays applied for the fade transition to actually run.
-      const viewportH = window.innerHeight || 1;
-      const ratio     = 1 - (currentY / viewportH);
-      const opacity   = Math.max(0, Math.min(1, (ratio - 0.55) / 0.20));
-      if (opacity > 0) {
-        row.classList.add('visible');
-        row.style.opacity = String(opacity);
-        // Only allow taps when the row is mostly visible (prevents
-        // accidental taps when the buttons are almost gone)
-        row.style.pointerEvents = opacity > 0.6 ? 'auto' : 'none';
-      } else {
-        row.classList.remove('visible');
-        row.style.opacity = '0';
-        row.style.pointerEvents = 'none';
-      }
+      row.classList.toggle('visible', hasArea);
     }
 
     // Destination pin marker — a red pin dropped on the parking area
