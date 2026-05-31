@@ -5692,6 +5692,10 @@
     const centerBadgeCode = document.getElementById('cm-code');
 
     function showCenterBadge(code) {
+      // Don't re-expand the P-marker mid-navigation; the directions flow
+      // hides the marker entirely and expects it to stay hidden until the
+      // flow concludes.
+      if (window._navigationInProgress) return;
       if (code) centerBadgeCode.textContent = code;
       // Add .expanded — CSS transitions animate the morph
       centerPointerEl.classList.add('expanded');
@@ -8676,9 +8680,17 @@
 
       // 2) Hide the P-marker for the duration of the directions flow. The
       //    user has already committed to navigation; the P-marker would
-      //    otherwise overlap the red destination pin.
+      //    otherwise overlap the red destination pin. We also strip the
+      //    .expanded class and clear the area-code badge so even if the
+      //    marker briefly becomes visible later (e.g. via stale logic),
+      //    it won't render the badge form with the area code.
       const cm = document.getElementById('center-marker');
-      if (cm) cm.classList.add('hidden');
+      if (cm) {
+        cm.classList.add('hidden');
+        cm.classList.remove('expanded');
+      }
+      const acb = document.getElementById('area-code-badge');
+      if (acb) acb.style.display = 'none';
 
       // 3) Collapse the sheet to its 153px resting position.
       requestAnimationFrame(() => {
