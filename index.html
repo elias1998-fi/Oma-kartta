@@ -45,7 +45,7 @@
       pointer-events: none; z-index: 10;
       display: flex; flex-direction: column; align-items: center;
     }
-    #center-marker.hidden { display: none; }
+    #center-marker.hidden { display: none !important; }
 
     #cm-body {
       display: flex; align-items: center;
@@ -7430,18 +7430,22 @@
     function checkParking(){
       if(filterMode)return;
       if(masterFeatureLocked)return;
+      // During the directions flow, the navigation handler owns the
+      // P-marker's visibility. Don't fight it from here.
+      if(window._navigationInProgress)return;
 
       const zoom=map.getZoom();
 
-      // Hide P-marker when zoomed out
-      if(zoom < 13) {
+      // Hide P-marker when zoomed out (matches the master-poly / halli
+      // layer minzoom of 14)
+      if(zoom < 14) {
         centerPointerEl.classList.add('hidden');
       } else {
         centerPointerEl.classList.remove('hidden');
       }
 
       // Highlight parking area under map center (works on mobile & desktop)
-      if(zoom>=13 && map.getLayer('master-poly-fill')){
+      if(zoom>=14 && map.getLayer('master-poly-fill')){
         const cpt = map.project(map.getCenter());
         // Create detection area: 5px radius circle around center (easier targeting)
         const radius = 5;
