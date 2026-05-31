@@ -846,10 +846,18 @@
        sheet's normal content slides up/down with the panel, so when the
        sheet collapses these buttons travel down behind the floating
        action button without any fade. */
+    /* Pair of action buttons inside the sheet (directions + share).
+       Pinned to the very bottom of the sheet's normal-content area —
+       margin-top:auto pushes them past any natural content above, and
+       margin-bottom reserves enough room for the floating btn-container
+       so the buttons land just above the big "Pysäköi tähän" button.
+       When the sheet collapses, the buttons travel down with it and
+       disappear behind that same floating button. */
     #sheet-nav-row {
       display: none;
       gap: 10px;
-      margin-top: 8px;
+      margin-top: auto;
+      margin-bottom: calc(94px + env(safe-area-inset-bottom));
       padding: 0 20px;
     }
     #sheet-nav-row.visible { display: flex; }
