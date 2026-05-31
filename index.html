@@ -739,6 +739,156 @@
     }
     .account-edit-btn.primary:active { background: #1a106e; }
 
+    /* ── Phone country / dial-code button (inside the phone edit) ──
+       A tappable row that opens the country picker. Shows the selected
+       country's flag, name, and dial code. Hidden when the modal is in
+       email mode. */
+    #edit-phone-country-row { display: none; }
+    #edit-phone-country-row.visible { display: flex; }
+    .phone-country-btn {
+      width: 100%;
+      height: 54px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      background: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      box-sizing: border-box;
+    }
+    .phone-country-btn:active { background: #f4f4f4; }
+    .phone-country-flag {
+      font-size: 24px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .phone-country-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      min-width: 0;
+    }
+    .phone-country-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .phone-country-dial {
+      font-size: 13px;
+      color: #888;
+    }
+    .phone-country-chevron {
+      font-size: 22px;
+      color: #aaa;
+      flex-shrink: 0;
+    }
+
+    /* ── Country picker (slide-up sheet over the account edit) ─────── */
+    #country-picker-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10020;       /* above account-edit-modal (10010) */
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+    }
+    #country-picker-modal.visible { display: flex; }
+    .country-picker-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+    }
+    .country-picker-sheet {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      max-height: 75vh;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -2px 24px rgba(0,0,0,0.18);
+      animation: accEditSlideUp 0.28s cubic-bezier(0.22,1,0.36,1);
+      display: flex;
+      flex-direction: column;
+    }
+    .country-picker-header {
+      padding: 18px 20px 12px 20px;
+      border-bottom: 1px solid #eee;
+      flex-shrink: 0;
+    }
+    .country-picker-title {
+      font-size: 17px;
+      font-weight: bold;
+      color: #0C0243;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .country-picker-search {
+      width: 100%;
+      height: 40px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      outline: none;
+      box-sizing: border-box;
+      background: #f8f8f8;
+    }
+    .country-picker-search:focus { border-color: #0C0243; background: white; }
+    .country-picker-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      -webkit-overflow-scrolling: touch;
+    }
+    .country-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 1px solid #f4f4f4;
+    }
+    .country-row:active { background: #f4f4f4; }
+    .country-row .country-row-flag {
+      font-size: 22px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .country-row .country-row-name {
+      flex: 1;
+      font-size: 15px;
+      color: #222;
+    }
+    .country-row .country-row-dial {
+      font-size: 14px;
+      color: #888;
+      flex-shrink: 0;
+    }
+    .country-row.selected {
+      background: #f0f1f7;
+    }
+    .country-row.selected .country-row-name {
+      color: #0C0243;
+      font-weight: 600;
+    }
+    .country-picker-empty {
+      text-align: center;
+      color: #aaa;
+      font-size: 14px;
+      padding: 30px 20px;
+    }
+
     /* Static version label inside Tietoja-näkymä */
     .about-version {
       font-size: 14px;
@@ -3401,7 +3551,8 @@
         <button class="account-seg-btn selected" id="acct-seg-personal" onclick="setAccountType('personal')">Henkilökohtainen</button>
         <button class="account-seg-btn"          id="acct-seg-business" onclick="setAccountType('business')">Yritys</button>
       </div>
-      <div class="settings-section">
+      <!-- Henkilökohtainen — name + email + phone. -->
+      <div id="account-fields-personal" class="settings-section">
         <div class="settings-item" onclick="openAccountEdit('name')">
           <div class="settings-item-text">
             <div class="settings-item-label">Nimi</div>
@@ -3420,6 +3571,31 @@
           <div class="settings-item-text">
             <div class="settings-item-label">Puhelinnumero</div>
             <div class="settings-item-value" id="account-value-phone">+358 40 123 4567</div>
+          </div>
+          <div class="settings-item-chevron">›</div>
+        </div>
+      </div>
+      <!-- Yritys — company name + business ID (Y-tunnus) + email. Shown
+           only when the segmented switch is on the "Yritys" tab. -->
+      <div id="account-fields-business" class="settings-section" style="display:none;">
+        <div class="settings-item" onclick="openAccountEdit('companyName')">
+          <div class="settings-item-text">
+            <div class="settings-item-label">Yrityksen nimi</div>
+            <div class="settings-item-value" id="account-value-company-name">Yritys Oy</div>
+          </div>
+          <div class="settings-item-chevron">›</div>
+        </div>
+        <div class="settings-item" onclick="openAccountEdit('businessId')">
+          <div class="settings-item-text">
+            <div class="settings-item-label">Y-tunnus</div>
+            <div class="settings-item-value" id="account-value-business-id">1234567-8</div>
+          </div>
+          <div class="settings-item-chevron">›</div>
+        </div>
+        <div class="settings-item" onclick="openAccountEdit('businessEmail')">
+          <div class="settings-item-text">
+            <div class="settings-item-label">Sähköposti</div>
+            <div class="settings-item-value" id="account-value-business-email">yritys@example.com</div>
           </div>
           <div class="settings-item-chevron">›</div>
         </div>
@@ -3457,6 +3633,18 @@
         </div>
         <!-- Single field (email or phone) -->
         <div id="account-edit-single" class="account-edit-fields">
+          <!-- Country / dial-code selector (only shown for phone) -->
+          <div class="account-edit-field" id="edit-phone-country-row">
+            <label>Maa</label>
+            <button type="button" class="phone-country-btn" onclick="openCountryPicker()">
+              <span class="phone-country-flag" id="phone-country-flag">🇫🇮</span>
+              <span class="phone-country-info">
+                <span class="phone-country-name" id="phone-country-name">Suomi</span>
+                <span class="phone-country-dial" id="phone-country-dial">+358</span>
+              </span>
+              <span class="phone-country-chevron">›</span>
+            </button>
+          </div>
           <div class="account-edit-field">
             <label for="edit-single-value" id="edit-single-label">Sähköposti</label>
             <input type="text" id="edit-single-value" placeholder="">
@@ -3486,6 +3674,22 @@
           <button class="account-edit-btn primary" onclick="confirmAccountEditStep2()">Vahvista</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Country picker — opens over the account edit modal when the user
+       taps the country/dial-code button in the phone edit. Lists ~75
+       countries with their flag emoji and dial code; a search input at
+       the top filters by name or dial code. -->
+  <div id="country-picker-modal">
+    <div class="country-picker-backdrop" onclick="closeCountryPicker()"></div>
+    <div class="country-picker-sheet">
+      <div class="country-picker-header">
+        <div class="country-picker-title">Valitse maa</div>
+        <input type="search" id="country-picker-search" class="country-picker-search"
+               placeholder="Etsi maa tai suuntanumero…" oninput="renderCountryList(this.value)">
+      </div>
+      <div class="country-picker-list" id="country-picker-list"></div>
     </div>
   </div>
 
@@ -7125,6 +7329,12 @@
       const b = document.getElementById('acct-seg-business');
       if (p) p.classList.toggle('selected', kind === 'personal');
       if (b) b.classList.toggle('selected', kind === 'business');
+      // Show the matching set of fields. Personal: name/email/phone.
+      // Business: company name / Y-tunnus / email.
+      const pf = document.getElementById('account-fields-personal');
+      const bf = document.getElementById('account-fields-business');
+      if (pf) pf.style.display = (kind === 'personal') ? '' : 'none';
+      if (bf) bf.style.display = (kind === 'business') ? '' : 'none';
       // Logout/delete actions belong to the personal account only; on the
       // business tab they should be hidden because the business account
       // management lives elsewhere.
@@ -7144,6 +7354,159 @@
         showCustomToast('Tilin poistopyyntö lähetetty', 2500);
         // TODO: send deletion request to the backend.
       }
+    }
+
+    // ── Country list & dial-code picker ────────────────────────────
+    // Used by the phone-edit flow. Each entry: ISO-2 code, dial prefix,
+    // Finnish display name. The flag is derived from the ISO code via
+    // regional-indicator Unicode (works natively on iOS/Android — no
+    // image assets needed). The list is intentionally finite (~75 of
+    // the most common countries); add more here as needed.
+    const COUNTRIES = [
+      { code: 'FI', dial: '+358', name: 'Suomi' },
+      { code: 'SE', dial: '+46',  name: 'Ruotsi' },
+      { code: 'NO', dial: '+47',  name: 'Norja' },
+      { code: 'DK', dial: '+45',  name: 'Tanska' },
+      { code: 'IS', dial: '+354', name: 'Islanti' },
+      { code: 'EE', dial: '+372', name: 'Viro' },
+      { code: 'LV', dial: '+371', name: 'Latvia' },
+      { code: 'LT', dial: '+370', name: 'Liettua' },
+      { code: 'DE', dial: '+49',  name: 'Saksa' },
+      { code: 'GB', dial: '+44',  name: 'Iso-Britannia' },
+      { code: 'IE', dial: '+353', name: 'Irlanti' },
+      { code: 'FR', dial: '+33',  name: 'Ranska' },
+      { code: 'ES', dial: '+34',  name: 'Espanja' },
+      { code: 'IT', dial: '+39',  name: 'Italia' },
+      { code: 'PT', dial: '+351', name: 'Portugali' },
+      { code: 'NL', dial: '+31',  name: 'Alankomaat' },
+      { code: 'BE', dial: '+32',  name: 'Belgia' },
+      { code: 'LU', dial: '+352', name: 'Luxemburg' },
+      { code: 'AT', dial: '+43',  name: 'Itävalta' },
+      { code: 'CH', dial: '+41',  name: 'Sveitsi' },
+      { code: 'PL', dial: '+48',  name: 'Puola' },
+      { code: 'CZ', dial: '+420', name: 'Tšekki' },
+      { code: 'SK', dial: '+421', name: 'Slovakia' },
+      { code: 'HU', dial: '+36',  name: 'Unkari' },
+      { code: 'RO', dial: '+40',  name: 'Romania' },
+      { code: 'BG', dial: '+359', name: 'Bulgaria' },
+      { code: 'GR', dial: '+30',  name: 'Kreikka' },
+      { code: 'CY', dial: '+357', name: 'Kypros' },
+      { code: 'MT', dial: '+356', name: 'Malta' },
+      { code: 'SI', dial: '+386', name: 'Slovenia' },
+      { code: 'HR', dial: '+385', name: 'Kroatia' },
+      { code: 'BA', dial: '+387', name: 'Bosnia ja Hertsegovina' },
+      { code: 'RS', dial: '+381', name: 'Serbia' },
+      { code: 'ME', dial: '+382', name: 'Montenegro' },
+      { code: 'AL', dial: '+355', name: 'Albania' },
+      { code: 'MK', dial: '+389', name: 'Pohjois-Makedonia' },
+      { code: 'TR', dial: '+90',  name: 'Turkki' },
+      { code: 'RU', dial: '+7',   name: 'Venäjä' },
+      { code: 'UA', dial: '+380', name: 'Ukraina' },
+      { code: 'BY', dial: '+375', name: 'Valko-Venäjä' },
+      { code: 'MD', dial: '+373', name: 'Moldova' },
+      { code: 'GE', dial: '+995', name: 'Georgia' },
+      { code: 'AM', dial: '+374', name: 'Armenia' },
+      { code: 'AZ', dial: '+994', name: 'Azerbaidžan' },
+      { code: 'KZ', dial: '+7',   name: 'Kazakstan' },
+      { code: 'IL', dial: '+972', name: 'Israel' },
+      { code: 'SA', dial: '+966', name: 'Saudi-Arabia' },
+      { code: 'AE', dial: '+971', name: 'Yhdistyneet arabiemiirikunnat' },
+      { code: 'EG', dial: '+20',  name: 'Egypti' },
+      { code: 'ZA', dial: '+27',  name: 'Etelä-Afrikka' },
+      { code: 'MA', dial: '+212', name: 'Marokko' },
+      { code: 'TN', dial: '+216', name: 'Tunisia' },
+      { code: 'DZ', dial: '+213', name: 'Algeria' },
+      { code: 'US', dial: '+1',   name: 'Yhdysvallat' },
+      { code: 'CA', dial: '+1',   name: 'Kanada' },
+      { code: 'MX', dial: '+52',  name: 'Meksiko' },
+      { code: 'BR', dial: '+55',  name: 'Brasilia' },
+      { code: 'AR', dial: '+54',  name: 'Argentiina' },
+      { code: 'CL', dial: '+56',  name: 'Chile' },
+      { code: 'CO', dial: '+57',  name: 'Kolumbia' },
+      { code: 'PE', dial: '+51',  name: 'Peru' },
+      { code: 'CN', dial: '+86',  name: 'Kiina' },
+      { code: 'HK', dial: '+852', name: 'Hongkong' },
+      { code: 'TW', dial: '+886', name: 'Taiwan' },
+      { code: 'JP', dial: '+81',  name: 'Japani' },
+      { code: 'KR', dial: '+82',  name: 'Etelä-Korea' },
+      { code: 'IN', dial: '+91',  name: 'Intia' },
+      { code: 'TH', dial: '+66',  name: 'Thaimaa' },
+      { code: 'VN', dial: '+84',  name: 'Vietnam' },
+      { code: 'PH', dial: '+63',  name: 'Filippiinit' },
+      { code: 'ID', dial: '+62',  name: 'Indonesia' },
+      { code: 'MY', dial: '+60',  name: 'Malesia' },
+      { code: 'SG', dial: '+65',  name: 'Singapore' },
+      { code: 'AU', dial: '+61',  name: 'Australia' },
+      { code: 'NZ', dial: '+64',  name: 'Uusi-Seelanti' },
+    ];
+    // Convert an ISO-2 country code into its flag emoji.
+    function flagEmoji(code) {
+      if (!code || code.length !== 2) return '';
+      return code.toUpperCase().replace(/./g, c =>
+        String.fromCodePoint(127397 + c.charCodeAt(0))
+      );
+    }
+    // Currently-selected country in the phone edit. Defaults to Finland.
+    let _selectedPhoneCountry = 'FI';
+
+    function applyCountrySelection(code) {
+      const c = COUNTRIES.find(x => x.code === code) || COUNTRIES[0];
+      _selectedPhoneCountry = c.code;
+      const flagEl = document.getElementById('phone-country-flag');
+      const nameEl = document.getElementById('phone-country-name');
+      const dialEl = document.getElementById('phone-country-dial');
+      if (flagEl) flagEl.textContent = flagEmoji(c.code);
+      if (nameEl) nameEl.textContent = c.name;
+      if (dialEl) dialEl.textContent = c.dial;
+    }
+
+    // Attempt to strip a known dial-code prefix from a stored phone
+    // string, so legacy stored values (e.g. "+358 40 123 4567") show
+    // only the local part ("40 123 4567") when reopened for editing.
+    function stripDialCodeFromPhone(phone, countryCode) {
+      if (!phone) return '';
+      const c = COUNTRIES.find(x => x.code === countryCode);
+      if (c && phone.startsWith(c.dial)) {
+        return phone.slice(c.dial.length).trim();
+      }
+      return phone;
+    }
+
+    function openCountryPicker() {
+      const modal = document.getElementById('country-picker-modal');
+      document.getElementById('country-picker-search').value = '';
+      renderCountryList('');
+      modal.classList.add('visible');
+    }
+    function closeCountryPicker() {
+      document.getElementById('country-picker-modal').classList.remove('visible');
+    }
+    function selectCountry(code) {
+      applyCountrySelection(code);
+      closeCountryPicker();
+    }
+    function renderCountryList(filter) {
+      const list = document.getElementById('country-picker-list');
+      if (!list) return;
+      const q = (filter || '').trim().toLowerCase();
+      const filtered = q
+        ? COUNTRIES.filter(c =>
+            c.name.toLowerCase().includes(q) ||
+            c.dial.includes(q) ||
+            c.code.toLowerCase().includes(q))
+        : COUNTRIES.slice();
+      if (!filtered.length) {
+        list.innerHTML = '<div class="country-picker-empty">Ei osumia</div>';
+        return;
+      }
+      list.innerHTML = filtered.map(c => `
+        <div class="country-row ${c.code === _selectedPhoneCountry ? 'selected' : ''}"
+             onclick="selectCountry('${c.code}')">
+          <span class="country-row-flag">${flagEmoji(c.code)}</span>
+          <span class="country-row-name">${c.name}</span>
+          <span class="country-row-dial">${c.dial}</span>
+        </div>
+      `).join('');
     }
 
     // ── Account edit modal ─────────────────────────────────────────────
@@ -7172,6 +7535,13 @@
       if (nameEl  && acct.name)  nameEl.textContent  = acct.name;
       if (emailEl && acct.email) emailEl.textContent = acct.email;
       if (phoneEl && acct.phone) phoneEl.textContent = acct.phone;
+      // Business fields
+      const cnEl = document.getElementById('account-value-company-name');
+      const biEl = document.getElementById('account-value-business-id');
+      const beEl = document.getElementById('account-value-business-email');
+      if (cnEl && acct.companyName)   cnEl.textContent = acct.companyName;
+      if (biEl && acct.businessId)    biEl.textContent = acct.businessId;
+      if (beEl && acct.businessEmail) beEl.textContent = acct.businessEmail;
     }
     // Restore the user's saved account values on page load
     refreshAccountDisplay();
@@ -7212,11 +7582,55 @@
         title.textContent = 'Muokkaa puhelinnumeroa';
         nameFields.classList.remove('visible');
         singleField.classList.add('visible');
+        // Show the country picker row (hidden for email)
+        document.getElementById('edit-phone-country-row').classList.add('visible');
         singleLabel.textContent = 'Puhelinnumero';
         singleInput.type = 'tel';
-        singleInput.placeholder = '+358 40 123 4567';
-        singleInput.value = acct.phone || '';
+        singleInput.placeholder = '40 123 4567';
+        // Pre-fill the local part and country from storage. If only the
+        // raw phone string exists (e.g. from before the country picker
+        // was added), try to peel off the leading dial code so the user
+        // doesn't have to retype it.
+        const savedCode = acct.phoneCountry || 'FI';
+        const savedLocal = acct.phoneLocal != null
+          ? acct.phoneLocal
+          : stripDialCodeFromPhone(acct.phone, savedCode);
+        applyCountrySelection(savedCode);
+        singleInput.value = savedLocal || '';
         setTimeout(() => singleInput.focus(), 100);
+      } else if (field === 'companyName') {
+        title.textContent = 'Muokkaa yrityksen nimeä';
+        nameFields.classList.remove('visible');
+        singleField.classList.add('visible');
+        singleLabel.textContent = 'Yrityksen nimi';
+        singleInput.type = 'text';
+        singleInput.placeholder = 'Yritys Oy';
+        singleInput.value = acct.companyName || '';
+        setTimeout(() => singleInput.focus(), 100);
+      } else if (field === 'businessId') {
+        title.textContent = 'Muokkaa Y-tunnusta';
+        nameFields.classList.remove('visible');
+        singleField.classList.add('visible');
+        singleLabel.textContent = 'Y-tunnus';
+        singleInput.type = 'text';
+        singleInput.placeholder = '1234567-8';
+        singleInput.value = acct.businessId || '';
+        setTimeout(() => singleInput.focus(), 100);
+      } else if (field === 'businessEmail') {
+        title.textContent = 'Muokkaa sähköpostia';
+        nameFields.classList.remove('visible');
+        singleField.classList.add('visible');
+        singleLabel.textContent = 'Sähköposti';
+        singleInput.type = 'email';
+        singleInput.placeholder = 'yritys@example.com';
+        singleInput.value = acct.businessEmail || '';
+        setTimeout(() => singleInput.focus(), 100);
+      }
+
+      // Hide the country row for non-phone fields. (Done outside the
+      // branches above so it always runs, even when reopening.)
+      if (field !== 'phone') {
+        document.getElementById('edit-phone-country-row').classList.remove('visible');
       }
 
       modal.classList.add('visible');
@@ -7253,22 +7667,66 @@
         showCustomToast('Nimi päivitetty', 1800);
         return;
       }
-      // Email / phone — validate, send fake code, advance to step 2
+      // Company name / business ID — single-step, no code verification.
+      if (_accountEditField === 'companyName') {
+        const val = document.getElementById('edit-single-value').value.trim();
+        if (!val) {
+          showCustomToast('Anna yrityksen nimi', 2000);
+          return;
+        }
+        const acct = loadAccount() || {};
+        acct.companyName = val;
+        saveAccount(acct);
+        refreshAccountDisplay();
+        closeAccountEdit();
+        showCustomToast('Yrityksen nimi päivitetty', 1800);
+        return;
+      }
+      if (_accountEditField === 'businessId') {
+        const val = document.getElementById('edit-single-value').value.trim();
+        // Finnish Y-tunnus format: 7 digits, hyphen, 1 check digit (e.g. 1234567-8)
+        if (!/^\d{7}-\d$/.test(val)) {
+          showCustomToast('Y-tunnus muodossa 1234567-8', 2200);
+          return;
+        }
+        const acct = loadAccount() || {};
+        acct.businessId = val;
+        saveAccount(acct);
+        refreshAccountDisplay();
+        closeAccountEdit();
+        showCustomToast('Y-tunnus päivitetty', 1800);
+        return;
+      }
+      // Email / phone / business email — validate, send fake code, advance to step 2
       const val = document.getElementById('edit-single-value').value.trim();
-      if (_accountEditField === 'email') {
+      if (_accountEditField === 'email' || _accountEditField === 'businessEmail') {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
           showCustomToast('Tarkista sähköpostiosoite', 2000);
           return;
         }
       } else if (_accountEditField === 'phone') {
-        if (!/^[+0-9\s\-()]{6,}$/.test(val)) {
+        // The dial-code lives in the country picker now, so the input
+        // should be the local part only. Accept digits and common
+        // formatting characters, requiring at least 4 digits.
+        const digits = val.replace(/\D/g, '');
+        if (digits.length < 4 || !/^[0-9\s\-()]{4,}$/.test(val)) {
           showCustomToast('Tarkista puhelinnumero', 2000);
           return;
         }
       }
-      _accountEditPendingValue = val;
+      // Remember the pending value(s). For phone we also stash the
+      // country code so confirmAccountEditStep2 can reconstruct the
+      // full phone string.
+      if (_accountEditField === 'phone') {
+        _accountEditPendingValue = {
+          country: _selectedPhoneCountry || 'FI',
+          local: val,
+        };
+      } else {
+        _accountEditPendingValue = val;
+      }
       const info = document.getElementById('account-edit-info');
-      if (_accountEditField === 'email') {
+      if (_accountEditField === 'email' || _accountEditField === 'businessEmail') {
         info.textContent = `Sähköpostiisi on lähetetty 6-numeroinen vahvistuskoodi`;
       } else {
         info.textContent = `Puhelimeesi on lähetetty 6-numeroinen vahvistuskoodi`;
@@ -7299,8 +7757,19 @@
         saveAccount(acct);
         refreshAccountDisplay();
         showCustomToast('Sähköposti päivitetty', 1800);
+      } else if (_accountEditField === 'businessEmail') {
+        acct.businessEmail = _accountEditPendingValue;
+        saveAccount(acct);
+        refreshAccountDisplay();
+        showCustomToast('Sähköposti päivitetty', 1800);
       } else if (_accountEditField === 'phone') {
-        acct.phone = _accountEditPendingValue;
+        const pending = _accountEditPendingValue || {};
+        const country = pending.country || 'FI';
+        const local   = (pending.local || '').trim();
+        const dial    = (COUNTRIES.find(c => c.code === country) || {}).dial || '';
+        acct.phoneCountry = country;
+        acct.phoneLocal   = local;
+        acct.phone        = dial ? `${dial} ${local}` : local;
         saveAccount(acct);
         refreshAccountDisplay();
         showCustomToast('Puhelinnumero päivitetty', 1800);
