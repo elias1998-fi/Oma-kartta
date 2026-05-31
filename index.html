@@ -608,6 +608,137 @@
       color: #0C0243;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
+    /* ── Account edit modal ──────────────────────────────────────────
+       Slide-up sheet that handles editing name / email / phone fields
+       on the Tili page. Email and phone share a second step where the
+       user enters a 6-digit verification code. */
+    #account-edit-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10010;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+    }
+    #account-edit-modal.visible { display: flex; }
+    .account-edit-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes accEditFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes accEditSlideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .account-edit-sheet {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px max(24px, env(safe-area-inset-bottom)) 20px;
+      box-shadow: 0 -2px 24px rgba(0,0,0,0.18);
+      animation: accEditSlideUp 0.28s cubic-bezier(0.22,1,0.36,1);
+    }
+    .account-edit-step { display: none; }
+    .account-edit-step.active { display: block; }
+    .account-edit-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #0C0243;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .account-edit-info {
+      font-size: 14px;
+      color: #444;
+      text-align: center;
+      line-height: 1.4;
+      margin-bottom: 22px;
+      padding: 0 8px;
+    }
+    .account-edit-fields {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .account-edit-fields.visible { display: flex; }
+    .account-edit-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .account-edit-field label {
+      font-size: 12px;
+      color: #888;
+      font-weight: 500;
+    }
+    .account-edit-field input {
+      width: 100%;
+      height: 44px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      padding: 0 12px;
+      font-size: 15px;
+      font-family: Arial, sans-serif;
+      outline: none;
+      box-sizing: border-box;
+      background: white;
+      color: #222;
+    }
+    .account-edit-field input:focus { border-color: #0C0243; }
+
+    /* 6-digit code inputs */
+    .account-code-inputs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+    .account-code-input {
+      width: 44px;
+      height: 54px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      color: #222;
+      background: white;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .account-code-input:focus { border-color: #0C0243; }
+
+    .account-edit-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .account-edit-btn {
+      flex: 1;
+      height: 50px;
+      border: 1.5px solid #ddd;
+      background: white;
+      color: #222;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+    }
+    .account-edit-btn:active { background: #f4f4f4; }
+    .account-edit-btn.primary {
+      background: #0C0243;
+      color: white;
+      border-color: #0C0243;
+    }
+    .account-edit-btn.primary:active { background: #1a106e; }
+
     /* Static version label inside Tietoja-näkymä */
     .about-version {
       font-size: 14px;
@@ -3271,23 +3402,26 @@
         <button class="account-seg-btn"          id="acct-seg-business" onclick="setAccountType('business')">Yritys</button>
       </div>
       <div class="settings-section">
-        <div class="settings-item">
+        <div class="settings-item" onclick="openAccountEdit('name')">
           <div class="settings-item-text">
             <div class="settings-item-label">Nimi</div>
-            <div class="settings-item-value">Käyttäjä</div>
+            <div class="settings-item-value" id="account-value-name">Käyttäjä</div>
           </div>
+          <div class="settings-item-chevron">›</div>
         </div>
-        <div class="settings-item">
+        <div class="settings-item" onclick="openAccountEdit('email')">
           <div class="settings-item-text">
             <div class="settings-item-label">Sähköposti</div>
-            <div class="settings-item-value">kayttaja@example.com</div>
+            <div class="settings-item-value" id="account-value-email">kayttaja@example.com</div>
           </div>
+          <div class="settings-item-chevron">›</div>
         </div>
-        <div class="settings-item">
+        <div class="settings-item" onclick="openAccountEdit('phone')">
           <div class="settings-item-text">
             <div class="settings-item-label">Puhelinnumero</div>
-            <div class="settings-item-value">+358 40 123 4567</div>
+            <div class="settings-item-value" id="account-value-phone">+358 40 123 4567</div>
           </div>
+          <div class="settings-item-chevron">›</div>
         </div>
       </div>
       <!-- Logout + delete-account actions, only visible on the personal
@@ -3296,6 +3430,61 @@
       <div id="account-actions" class="account-actions">
         <button class="account-action-btn"        onclick="handleLogout()">Kirjaudu ulos</button>
         <button class="account-action-btn danger" onclick="handleDeleteAccount()">Poista tili</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account-edit modal — shown when the user taps a Nimi / Sähköposti /
+       Puhelinnumero row in the Tili overlay. One modal handles all three
+       cases. Email and phone get a second step where the user enters a
+       6-digit verification code; name updates immediately. -->
+  <div id="account-edit-modal">
+    <div class="account-edit-backdrop" onclick="closeAccountEdit()"></div>
+    <div class="account-edit-sheet">
+      <!-- Step 1: enter new value(s) -->
+      <div id="account-edit-step1" class="account-edit-step">
+        <div class="account-edit-title" id="account-edit-title">Muokkaa</div>
+        <!-- Name fields (two inputs) -->
+        <div id="account-edit-name-fields" class="account-edit-fields">
+          <div class="account-edit-field">
+            <label for="edit-firstname">Etunimi</label>
+            <input type="text" id="edit-firstname" autocomplete="given-name" placeholder="Etunimi">
+          </div>
+          <div class="account-edit-field">
+            <label for="edit-lastname">Sukunimi</label>
+            <input type="text" id="edit-lastname" autocomplete="family-name" placeholder="Sukunimi">
+          </div>
+        </div>
+        <!-- Single field (email or phone) -->
+        <div id="account-edit-single" class="account-edit-fields">
+          <div class="account-edit-field">
+            <label for="edit-single-value" id="edit-single-label">Sähköposti</label>
+            <input type="text" id="edit-single-value" placeholder="">
+          </div>
+        </div>
+        <div class="account-edit-actions">
+          <button class="account-edit-btn"           onclick="closeAccountEdit()">Peru</button>
+          <button class="account-edit-btn primary"   onclick="confirmAccountEditStep1()">Vahvista</button>
+        </div>
+      </div>
+
+      <!-- Step 2: verification code (email / phone only) -->
+      <div id="account-edit-step2" class="account-edit-step">
+        <div class="account-edit-info" id="account-edit-info">
+          Sähköpostiisi on lähetetty 6-numeroinen vahvistuskoodi
+        </div>
+        <div class="account-code-inputs" id="account-code-inputs">
+          <input type="tel" inputmode="numeric" maxlength="1" class="account-code-input">
+          <input type="tel" inputmode="numeric" maxlength="1" class="account-code-input">
+          <input type="tel" inputmode="numeric" maxlength="1" class="account-code-input">
+          <input type="tel" inputmode="numeric" maxlength="1" class="account-code-input">
+          <input type="tel" inputmode="numeric" maxlength="1" class="account-code-input">
+          <input type="tel" inputmode="numeric" maxlength="1" class="account-code-input">
+        </div>
+        <div class="account-edit-actions">
+          <button class="account-edit-btn"         onclick="backToAccountEditStep1()">Takaisin</button>
+          <button class="account-edit-btn primary" onclick="confirmAccountEditStep2()">Vahvista</button>
+        </div>
       </div>
     </div>
   </div>
@@ -6956,6 +7145,192 @@
         // TODO: send deletion request to the backend.
       }
     }
+
+    // ── Account edit modal ─────────────────────────────────────────────
+    // Handles the Nimi / Sähköposti / Puhelinnumero edit flows on the
+    // Tili page. Name edits commit immediately; email/phone go through
+    // a fake "verification code" step so the UI matches what a real
+    // OTP-protected flow would look like once a backend is in place.
+    const ACCOUNT_KEY = 'app_account';
+    let _accountEditField = null;        // 'name' | 'email' | 'phone'
+    let _accountEditPendingValue = null; // value waiting for code confirm
+
+    function loadAccount() {
+      try {
+        const raw = localStorage.getItem(ACCOUNT_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch(e) { return null; }
+    }
+    function saveAccount(obj) {
+      try { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(obj)); } catch(e){}
+    }
+    function refreshAccountDisplay() {
+      const acct = loadAccount() || {};
+      const nameEl  = document.getElementById('account-value-name');
+      const emailEl = document.getElementById('account-value-email');
+      const phoneEl = document.getElementById('account-value-phone');
+      if (nameEl  && acct.name)  nameEl.textContent  = acct.name;
+      if (emailEl && acct.email) emailEl.textContent = acct.email;
+      if (phoneEl && acct.phone) phoneEl.textContent = acct.phone;
+    }
+    // Restore the user's saved account values on page load
+    refreshAccountDisplay();
+
+    function openAccountEdit(field) {
+      _accountEditField = field;
+      _accountEditPendingValue = null;
+      const modal = document.getElementById('account-edit-modal');
+      const title = document.getElementById('account-edit-title');
+      const nameFields  = document.getElementById('account-edit-name-fields');
+      const singleField = document.getElementById('account-edit-single');
+      const singleLabel = document.getElementById('edit-single-label');
+      const singleInput = document.getElementById('edit-single-value');
+
+      // Reset both step containers so we always land on step 1
+      showAccountEditStep(1);
+
+      // Pre-fill with current value(s)
+      const acct = loadAccount() || {};
+      if (field === 'name') {
+        title.textContent = 'Muokkaa nimeä';
+        nameFields.classList.add('visible');
+        singleField.classList.remove('visible');
+        const parts = (acct.name || '').split(' ');
+        document.getElementById('edit-firstname').value = parts[0] || '';
+        document.getElementById('edit-lastname').value  = parts.slice(1).join(' ') || '';
+        setTimeout(() => document.getElementById('edit-firstname').focus(), 100);
+      } else if (field === 'email') {
+        title.textContent = 'Muokkaa sähköpostia';
+        nameFields.classList.remove('visible');
+        singleField.classList.add('visible');
+        singleLabel.textContent = 'Sähköposti';
+        singleInput.type = 'email';
+        singleInput.placeholder = 'osoite@example.com';
+        singleInput.value = acct.email || '';
+        setTimeout(() => singleInput.focus(), 100);
+      } else if (field === 'phone') {
+        title.textContent = 'Muokkaa puhelinnumeroa';
+        nameFields.classList.remove('visible');
+        singleField.classList.add('visible');
+        singleLabel.textContent = 'Puhelinnumero';
+        singleInput.type = 'tel';
+        singleInput.placeholder = '+358 40 123 4567';
+        singleInput.value = acct.phone || '';
+        setTimeout(() => singleInput.focus(), 100);
+      }
+
+      modal.classList.add('visible');
+    }
+
+    function closeAccountEdit() {
+      document.getElementById('account-edit-modal').classList.remove('visible');
+      _accountEditField = null;
+      _accountEditPendingValue = null;
+      // Clear code inputs so the next open starts fresh
+      document.querySelectorAll('.account-code-input').forEach(i => i.value = '');
+    }
+
+    function showAccountEditStep(n) {
+      const s1 = document.getElementById('account-edit-step1');
+      const s2 = document.getElementById('account-edit-step2');
+      s1.classList.toggle('active', n === 1);
+      s2.classList.toggle('active', n === 2);
+    }
+
+    function confirmAccountEditStep1() {
+      if (_accountEditField === 'name') {
+        const fn = document.getElementById('edit-firstname').value.trim();
+        const ln = document.getElementById('edit-lastname').value.trim();
+        if (!fn || !ln) {
+          showCustomToast('Anna sekä etu- että sukunimi', 2000);
+          return;
+        }
+        const acct = loadAccount() || {};
+        acct.name = `${fn} ${ln}`;
+        saveAccount(acct);
+        refreshAccountDisplay();
+        closeAccountEdit();
+        showCustomToast('Nimi päivitetty', 1800);
+        return;
+      }
+      // Email / phone — validate, send fake code, advance to step 2
+      const val = document.getElementById('edit-single-value').value.trim();
+      if (_accountEditField === 'email') {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+          showCustomToast('Tarkista sähköpostiosoite', 2000);
+          return;
+        }
+      } else if (_accountEditField === 'phone') {
+        if (!/^[+0-9\s\-()]{6,}$/.test(val)) {
+          showCustomToast('Tarkista puhelinnumero', 2000);
+          return;
+        }
+      }
+      _accountEditPendingValue = val;
+      const info = document.getElementById('account-edit-info');
+      if (_accountEditField === 'email') {
+        info.textContent = `Sähköpostiisi on lähetetty 6-numeroinen vahvistuskoodi`;
+      } else {
+        info.textContent = `Puhelimeesi on lähetetty 6-numeroinen vahvistuskoodi`;
+      }
+      showAccountEditStep(2);
+      // Clear and focus the first code input
+      const inputs = document.querySelectorAll('.account-code-input');
+      inputs.forEach(i => i.value = '');
+      setTimeout(() => inputs[0] && inputs[0].focus(), 100);
+    }
+
+    function backToAccountEditStep1() {
+      showAccountEditStep(1);
+    }
+
+    function confirmAccountEditStep2() {
+      const inputs = document.querySelectorAll('.account-code-input');
+      const code = Array.from(inputs).map(i => i.value).join('');
+      if (code.length !== 6) {
+        showCustomToast('Anna 6-numeroinen koodi', 2000);
+        return;
+      }
+      // No real backend yet — accept any 6-digit code as valid. Real
+      // verification gets wired in when the auth/OTP service exists.
+      const acct = loadAccount() || {};
+      if (_accountEditField === 'email') {
+        acct.email = _accountEditPendingValue;
+        saveAccount(acct);
+        refreshAccountDisplay();
+        showCustomToast('Sähköposti päivitetty', 1800);
+      } else if (_accountEditField === 'phone') {
+        acct.phone = _accountEditPendingValue;
+        saveAccount(acct);
+        refreshAccountDisplay();
+        showCustomToast('Puhelinnumero päivitetty', 1800);
+      }
+      closeAccountEdit();
+    }
+
+    // Code-input UX: auto-advance to next box on typing, backspace jumps
+    // back, and pasting a 6-digit string distributes across the boxes.
+    document.querySelectorAll('.account-code-input').forEach((input, idx, all) => {
+      input.addEventListener('input', (e) => {
+        const v = e.target.value.replace(/[^0-9]/g, '');
+        e.target.value = v.slice(0, 1);
+        if (v && idx + 1 < all.length) all[idx + 1].focus();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+          all[idx - 1].focus();
+        }
+      });
+      input.addEventListener('paste', (e) => {
+        const text = (e.clipboardData || window.clipboardData).getData('text');
+        const digits = text.replace(/[^0-9]/g, '').slice(0, 6);
+        if (digits.length === 6) {
+          e.preventDefault();
+          all.forEach((inp, i) => { inp.value = digits[i] || ''; });
+          all[5].focus();
+        }
+      });
+    });
 
     // Stubs for the rest of the new profile-row destinations. Replaced
     // with real overlays as those screens get built.
