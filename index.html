@@ -846,25 +846,26 @@
        sheet's normal content slides up/down with the panel, so when the
        sheet collapses these buttons travel down behind the floating
        action button without any fade. */
-    /* Pair of action buttons (directions + share). Lives at the body
-       level (sibling of the bottom sheet) so iOS doesn't get confused
-       about absolute positioning inside a transformed ancestor. CSS
-       pins the row 94px above the viewport bottom; JS adds a downward
-       translate equal to the sheet's own translate, so the row appears
-       to "move with the sheet" and slips behind the floating action
-       button as the sheet collapses. */
+    /* Pair of action buttons (directions + share). A direct child of
+       #bottom-sheet, positioned absolutely against the sheet's own
+       top edge. Because the sheet is `height: 100vh` and the row is
+       offset by `80vh - 148px`, when the sheet sits at its fully-open
+       position (~80% open, top edge ~20vh from viewport top) the row
+       lands just above the floating action button at the bottom of the
+       screen. As the sheet's transform pushes it down, the row moves
+       in true lockstep with the sheet (no JS, no lag), eventually
+       sliding behind the floating action button. */
     #sheet-nav-row {
       display: none;
-      position: fixed;
-      bottom: calc(94px + env(safe-area-inset-bottom));
+      position: absolute;
+      top: calc(80vh - 148px - env(safe-area-inset-bottom));
       left: 20px;
       right: 20px;
+      height: 54px;
       gap: 10px;
-      z-index: 9989;   /* below #btn-container (9990) so it slides behind it */
-      pointer-events: none;
-      transition: transform 0.38s cubic-bezier(0.22,1,0.36,1);
+      z-index: 5;
     }
-    #sheet-nav-row.visible { display: flex; pointer-events: auto; }
+    #sheet-nav-row.visible { display: flex; }
     #sheet-nav-btn, #sheet-share-btn {
       flex: 1;                       /* equal width */
       height: 54px;
@@ -3501,6 +3502,33 @@
       <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
     </div>
+    <!-- Pair of action buttons — direct child of the sheet so they move
+         in lockstep with the sheet's transform (no JS sync needed). The
+         CSS positions them at "80vh - 148px" from the sheet's top edge,
+         which places them just above the floating action button when
+         the sheet is at its fully-open position. As the sheet collapses,
+         the row slides down with it and disappears behind the floating
+         action button. -->
+    <div id="sheet-nav-row">
+      <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M5 28 V18 a3 3 0 0 1 3 -3 H20 V9 L29 16.5 L20 24 V18 H10 V28 Z"
+                fill="currentColor"/>
+        </svg>
+        <span class="sheet-nav-label">Directions</span>
+      </button>
+      <button id="sheet-share-btn" aria-label="Jaa kaverille">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M16 4 V20 M16 4 L11 9 M16 4 L21 9"
+                fill="none" stroke="currentColor" stroke-width="2.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 14 H7 a2 2 0 0 0 -2 2 V26 a2 2 0 0 0 2 2 H25 a2 2 0 0 0 2 -2 V16 a2 2 0 0 0 -2 -2 H23"
+                fill="none" stroke="currentColor" stroke-width="2.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="sheet-nav-label">Jaa kaverille</span>
+      </button>
+    </div>
     <div id="sheet-filter">
       <div id="filter-title">Suodata karttanäkymää</div>
       
@@ -3739,32 +3767,6 @@
     </div>
 
     <div id="start-btn-container"><button id="start-btn" class="disabled">Aseta pysäköintiaika</button></div>
-  </div>
-
-  <!-- Pair of action buttons (directions + share). Positioned fixed in
-       the viewport just above the floating action button. JS keeps the
-       row's vertical position in sync with the sheet's transform so it
-       appears to "move with the sheet" — when the sheet collapses, the
-       buttons slide down behind the floating action button. -->
-  <div id="sheet-nav-row">
-    <button id="sheet-nav-btn" aria-label="Avaa reittiohjeet">
-      <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M5 28 V18 a3 3 0 0 1 3 -3 H20 V9 L29 16.5 L20 24 V18 H10 V28 Z"
-              fill="currentColor"/>
-      </svg>
-      <span class="sheet-nav-label">Directions</span>
-    </button>
-    <button id="sheet-share-btn" aria-label="Jaa kaverille">
-      <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M16 4 V20 M16 4 L11 9 M16 4 L21 9"
-              fill="none" stroke="currentColor" stroke-width="2.6"
-              stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M9 14 H7 a2 2 0 0 0 -2 2 V26 a2 2 0 0 0 2 2 H25 a2 2 0 0 0 2 -2 V16 a2 2 0 0 0 -2 -2 H23"
-              fill="none" stroke="currentColor" stroke-width="2.6"
-              stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="sheet-nav-label">Jaa kaverille</span>
-    </button>
   </div>
 
   <div id="btn-container">
@@ -8665,34 +8667,14 @@
     // sheet's open/close animation already controls its on-screen presence
     // via the floating action button — no opacity fade needed.
     function updateNavBtnVisibility() {
-      // Both buttons share a parent row that owns the visibility. Now
-      // that the row lives at the body level (sibling of the sheet) we
-      // also drive its vertical offset from the sheet's translate so it
-      // appears to move with the sheet.
+      // The row is now a direct child of the sheet, so its position is
+      // managed entirely by the sheet's own CSS transform — no JS sync
+      // needed. We only toggle the .visible class based on whether a
+      // parking area is currently under the P-marker.
       const row = document.getElementById('sheet-nav-row');
       if (!row) return;
       const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
       row.classList.toggle('visible', hasArea);
-      // Sync vertical position with sheet — see updateNavRowFollow below.
-      if (hasArea) updateNavRowFollow();
-    }
-
-    // Mirror the sheet's downward translate onto the nav row so the row
-    // "moves with the sheet". The baseline is the sheet's fully-open
-    // position (~80% of the viewport — the same maxSheetVisible used by
-    // the drag handler). At that point shift = 0 and the buttons sit at
-    // their CSS spot, just above the floating action button. As soon as
-    // the user starts dragging the sheet down, currentY grows past the
-    // baseline and the buttons get pushed down by the same amount, so
-    // they appear to slide out from behind the action button.
-    function updateNavRowFollow() {
-      const row = document.getElementById('sheet-nav-row');
-      if (!row) return;
-      const sheetH = (typeof sheet !== 'undefined' && sheet) ? sheet.offsetHeight : window.innerHeight;
-      // Fully-open position: sheet shows 80% of viewport height.
-      const baseline = sheetH - window.innerHeight * 0.8;
-      const shift = Math.max(0, currentY - baseline);
-      row.style.transform = `translateY(${shift}px)`;
     }
 
     // Destination pin marker — a red pin dropped on the parking area
@@ -9245,7 +9227,6 @@
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
-      if (typeof updateNavRowFollow === 'function') updateNavRowFollow();
 
       // Update backdrop (fade starts at 50% open)
       const maxY = sheet.clientHeight - 60;
@@ -9309,7 +9290,6 @@
       const openProgress = 1 - (currentY / (sheet.clientHeight - 60)); // 0 = closed, 1 = fully open
       sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
       updateNavBtnVisibility();
-      if (typeof updateNavRowFollow === 'function') updateNavRowFollow();
     },{passive:true});
     
     sheet.addEventListener('touchend',()=>{
