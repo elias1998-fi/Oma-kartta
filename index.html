@@ -94,7 +94,7 @@
 
     #cm-code {
       font-family: Arial, sans-serif;
-      font-size: 16px; font-weight: 800;
+      font-size: 22px; font-weight: 800;
       color: #111; letter-spacing: 0.3px;
       line-height: 1;
       max-width: 0;
@@ -132,6 +132,10 @@
       gap: 3px;
     }
     #center-marker.expanded #cm-pin { width: 26px; height: 26px; }
+    /* The paid badge's "P" pin renders a touch larger so its symbol reads at
+       the same height as the disc icon. transform:scale doesn't change the
+       layout box, so the badge height stays identical to the free badge. */
+    #center-marker.expanded #cm-pin:not(.parking-disc) { transform: scale(1.12); }
     /* The disc icon swaps to a vertical 24×32 viewBox but is sized to fit
        within the same 26px-tall footprint as the regular P pin so the
        badge keeps its constant size whether the area is paid or free.
@@ -10028,17 +10032,9 @@
       svg.setAttribute('viewBox', `0 0 ${W} ${SH}`);
       svg.style.width  = W + 'px';
       svg.style.height = SH + 'px';
-      let html = `<path d="${bubblePath(W, H, r, tailW, tailDepth, cx)}" fill="${fill}" stroke="#0C0243" stroke-width="2" stroke-linejoin="round"/>`;
-      if (isFree) {
-        // Second, inset path = the thin white inner frame, following the same
-        // shape (body + tail) so it stays continuous too.
-        const d     = 2.5;
-        const tipUp = d / Math.sin(Math.atan(tailW / tailDepth));
-        const iw = W - 2 * d, ih = H - 2 * d;
-        const inner = bubblePath(iw, ih, Math.max(1, r - d), Math.max(1, tailW - d),
-                                 tailDepth - tipUp + d, iw / 2);
-        html += `<path d="${inner}" transform="translate(${d},${d})" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>`;
-      }
+      // Single continuous outline: dark-blue border + solid fill (white for
+      // paid areas, #005EAA for free/disc areas). No inner frame.
+      const html = `<path d="${bubblePath(W, H, r, tailW, tailDepth, cx)}" fill="${fill}" stroke="#0C0243" stroke-width="2" stroke-linejoin="round"/>`;
       svg.innerHTML = html;
       svg.style.display = 'block';
     }
