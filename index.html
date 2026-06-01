@@ -6385,6 +6385,10 @@
         if (f.properties.id !== hoveredPolyId) {
           hoveredPolyId = f.properties.id;
           applyHoverHighlight(f.properties);
+          // Refresh the center pin icon — Helsinki's free purple zones
+          // flow through this code path (not checkParking), so we must
+          // call here so the disc icon swaps in.
+          if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
           // Show info without locking
           const p = f.properties;
           const style = SOURCE_STYLE[p.source] || { label: p.source || 'Pysäköintialue' };
@@ -6493,6 +6497,7 @@
           clearHoverHighlight();
           hoveredPolyId = null;
           collapseCenterSheet();
+          if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
         }
         updateButtonText();
       }
@@ -9843,20 +9848,45 @@
 
     // Decide whether the current area should show the parking-disc icon.
     // True for any of:
-    //   - area_type === 'kiekko'     (community-added disc parking)
-    //   - area_type === 'ilmainen'   (community-added free parking)
-    //   - source starts with 'hel_ilmainen' (Helsinki's free zones)
+    //   - area_type === 'kiekko'        (community-added disc parking)
+    //   - area_type === 'ilmainen'      (community-added free parking)
+    //   - source contains 'ilmainen'    (Helsinki's free zones, e.g.
+    //                                    hel_ilmainen_pitka / _lyhyt)
+    //   - source contains 'kiekko'      (any disc-only zone)
     function isDiscOrFreeArea(props) {
       if (!props) return false;
-      if (props.area_type === 'kiekko' || props.area_type === 'ilmainen') return true;
-      if (typeof props.source === 'string' && props.source.indexOf('hel_ilmainen') === 0) return true;
+      const at = props.area_type;
+      if (at === 'kiekko' || at === 'ilmainen') return true;
+      const src = props.source;
+      if (typeof src === 'string') {
+        const s = src.toLowerCase();
+        if (s.indexOf('ilmainen') !== -1) return true;
+        if (s.indexOf('kiekko')   !== -1) return true;
+      }
       return false;
     }
 
     function updateCenterPinIcon() {
       const pin = document.getElementById('cm-pin');
       if (!pin) return;
-      const showDisc = isDiscOrFreeArea(currentParkingProps);
+      // The "current area" can live in two places depending on which code
+      // path detected it: checkParking() stores the full properties object
+      // in currentParkingProps, while the hover handlers (used by free /
+      // Helsinki areas) only set hoveredPolyId. Resolve both before
+      // deciding whether to show the disc.
+      let props = currentParkingProps;
+      if (!props && typeof hoveredPolyId !== 'undefined' && hoveredPolyId
+          && typeof map !== 'undefined' && map && map.getLayer
+          && map.getLayer('master-poly-fill')) {
+        try {
+          const feats = map.queryRenderedFeatures(
+            map.project(map.getCenter()),
+            { layers: ['master-poly-fill'] }
+          );
+          if (feats && feats.length) props = feats[0].properties;
+        } catch(e) { /* map not ready yet */ }
+      }
+      const showDisc = isDiscOrFreeArea(props);
       // Only rewrite the SVG when the icon needs to flip — saves the DOM
       // from churning on every map move.
       const wantDisc = !!showDisc;
