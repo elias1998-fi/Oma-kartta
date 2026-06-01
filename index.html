@@ -57,6 +57,7 @@
     body.plus-mode     #btn-container { opacity: 0 !important; pointer-events: none !important; }
 
     #cm-body {
+      position: relative;
       display: flex; align-items: center;
       gap: 0;
       background: transparent;
@@ -66,6 +67,24 @@
       box-shadow: none;
       white-space: nowrap;
     }
+
+    /* SVG that draws the WHOLE badge outline (rounded body + downward
+       pointer) as one continuous path, sitting behind the icon/text. It is
+       redrawn by drawCenterBubble() on every badge change so it always
+       matches the current width — this is what makes the border and the
+       tail a single unbroken line (a speech bubble). */
+    #cm-bubble {
+      position: absolute;
+      left: -2px; top: -2px;          /* cover the 2px transparent border-box */
+      display: none;
+      overflow: visible;
+      pointer-events: none;
+      z-index: 0;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.22));
+    }
+    #center-marker.expanded #cm-bubble { display: block; }
+    /* Icon + text paint above the bubble path */
+    #cm-pin, #cm-code { position: relative; z-index: 1; }
 
     #cm-pin {
       display: block;
@@ -91,6 +110,7 @@
       transform: scaleY(0);
       transform-origin: top;
       position: relative; z-index: 1;
+      visibility: hidden;            /* replaced by the #cm-body::after tail */
     }
     #cm-tail #cm-tail-fill   { fill: white; stroke: none; }
     #cm-tail #cm-tail-stroke {
@@ -101,13 +121,15 @@
       stroke-linejoin: round;
     }
 
-    /* Expanded state — applied when the marker sits on a parking area */
+    /* Expanded state. The visible badge outline (rounded body + pointer) is
+       drawn entirely by the #cm-bubble SVG behind the content, so #cm-body
+       is just a transparent flex container. Its 2px transparent border only
+       reserves the layout box so the badge keeps its size. */
     #center-marker.expanded #cm-body {
-      background: white;
-      border-color: #0C0243;
+      background: transparent;
+      border-color: transparent;
       padding: 2px 8px 2px 4px;
       gap: 3px;
-      box-shadow: 0 2px 7px rgba(0,0,0,0.22);
     }
     #center-marker.expanded #cm-pin { width: 26px; height: 26px; }
     /* The disc icon swaps to a vertical 24×32 viewBox but is sized to fit
@@ -117,34 +139,21 @@
     #center-marker.expanded #cm-pin.parking-disc { width: 19.5px; height: 26px; }
     #cm-pin.parking-disc { width: 19.5px !important; height: 26px !important; }
     #center-marker.expanded #cm-code { max-width: 240px; opacity: 1; }
-    #center-marker.expanded #cm-tail { opacity: 1; transform: scaleY(1); margin-top: -4px; }
 
-    /* ── Free / disc-area badge styling ──────────────────────────────
-       Free (purple) areas get a sign-coloured badge: dark blue outer
-       border (#0C0243, same as the paid badge) and a #005EAA blue fill.
-       Inside sits the white parking-disc icon plus the duration ("2h").
-       The badge stays the same size as the paid white badge. */
-    #center-marker.expanded.disc-mode #cm-body {
-      background: #005EAA;                                 /* free-area blue fill */
-      border-color: #0C0243;                               /* dark blue outer border (same as paid) */
-      box-shadow: 0 0 0 1.5px #ffffff inset,               /* white inner frame (like the sign) */
-                  0 2px 7px rgba(0,0,0,0.22);
-      /* Padding / gap / border match the paid badge exactly, so both badges
-         are the SAME height. Width still flexes with the text content. */
-      padding: 2px 8px 2px 4px;
-      gap: 3px;
-    }
-    /* Inside the disc-mode badge the area-code text is white and bold
-       (it's now displaying the parking time, like "2h" or "30 min"). */
+    /* The duration text on free areas is white, bold, in the sign font.
+       The .disc-mode class is what tells drawCenterBubble() to draw the blue
+       fill + white inner frame; the dark outline + tail are one path. */
     #center-marker.expanded.disc-mode #cm-code {
       color: #ffffff;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 22px;
       font-weight: 800;
       letter-spacing: 0.2px;
     }
-    /* The pointer tail under the badge matches the blue fill on free areas
-       so the badge reads as one connected pointer (stroke stays dark blue). */
-    #center-marker.expanded.disc-mode #cm-tail #cm-tail-fill { fill: #005EAA; }
+    /* The old SVG tail is invisible but kept in the layout (this margin) so
+       the badge's on-map position is unchanged; the visible tail is part of
+       the #cm-bubble path. */
+    #center-marker.expanded #cm-tail { margin-top: -4px; }
 
     /* MapLibre DOM markers (e.g. the red search-result pin) sit below the
        P-marker so they can't peek out from behind it. */
@@ -2974,6 +2983,7 @@
   <!-- Unified center marker — morphs between standalone P pin and full badge -->
   <div id="center-marker">
     <div id="cm-body">
+      <svg id="cm-bubble" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
       <svg id="cm-pin" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
         <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
@@ -6391,9 +6401,11 @@
       // After writing the area code, give the disc-mode pin a chance to
       // overwrite the text with the parking duration ("2h", "30 min", …).
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
+      if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
     }
     function hideCenterBadge() {
       centerPointerEl.classList.remove('expanded');
+      if (typeof drawCenterBubble === 'function') drawCenterBubble();
     }
 
     function checkCenterHighlight() {
@@ -6413,6 +6425,14 @@
       const cf  = map.queryRenderedFeatures(bbox, { layers: ['master-poly-fill'] });
       if (cf.length) {
         const f = cf[0];
+        // Keep the on-map badge + disc icon in sync with the area actually
+        // under the marker, tracked independently of hoveredPolyId (which
+        // checkParking can claim first on moveend). Without this the blue
+        // disc badge lagged one area-change behind.
+        if (f.properties.id !== window._badgeAreaId) {
+          window._badgeAreaId = f.properties.id;
+          if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
+        }
         if (f.properties.id !== hoveredPolyId) {
           hoveredPolyId = f.properties.id;
           applyHoverHighlight(f.properties);
@@ -6527,6 +6547,7 @@
         if (hoveredPolyId) {
           clearHoverHighlight();
           hoveredPolyId = null;
+          window._badgeAreaId = null;
           collapseCenterSheet();
           if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
         }
@@ -8749,6 +8770,7 @@
           if(hoveredPolyId){
             clearHoverHighlight();
             hoveredPolyId=null;
+            window._badgeAreaId = null;
             hideCenterBadge();
             if(!masterFeatureLocked){
               summaryHeader.textContent=''; summaryType.textContent='';
@@ -9918,18 +9940,26 @@
       // in currentParkingProps, while the hover handlers (used by free /
       // Helsinki areas) only set hoveredPolyId. Resolve both before
       // deciding whether to show the disc.
-      let props = currentParkingProps;
-      if (!props && typeof hoveredPolyId !== 'undefined' && hoveredPolyId
-          && typeof map !== 'undefined' && map && map.getLayer
+      // Resolve the area ACTUALLY under the marker right now, using the same
+      // 5px detection box as checkCenterHighlight / checkParking. Querying the
+      // map live (instead of trusting currentParkingProps, which is often null
+      // or stale) is what makes the blue disc badge appear the instant the
+      // marker is over a free area — previously a stale or single-point-miss
+      // value left it showing the white badge until the next area change.
+      let props = null;
+      if (typeof map !== 'undefined' && map && map.getLayer
           && map.getLayer('master-poly-fill')) {
         try {
+          const cpt = map.project(map.getCenter());
+          const rad = 5;
           const feats = map.queryRenderedFeatures(
-            map.project(map.getCenter()),
+            [[cpt.x - rad, cpt.y - rad], [cpt.x + rad, cpt.y + rad]],
             { layers: ['master-poly-fill'] }
           );
           if (feats && feats.length) props = feats[0].properties;
         } catch(e) { /* map not ready yet */ }
       }
+      if (!props) props = currentParkingProps;   // fallback to last stored
       const wantDisc = !!isDiscOrFreeArea(props);
       const isDisc   = pin.classList.contains('parking-disc');
       // Swap the pin SVG between regular "P" and disc icons.
@@ -9952,6 +9982,65 @@
       if (wantDisc && code) {
         code.textContent = formatDiscDuration(props) || '2h';
       }
+      // Content (icon / text / fill state) just changed — redraw the badge
+      // outline so the single continuous border + tail matches the new width.
+      if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
+    }
+
+    // ── Continuous badge outline (speech bubble) ──────────────────────
+    // Builds ONE path for the whole badge: a rounded rectangle whose bottom
+    // edge opens into a downward pointer. Because it's a single path, the
+    // dark border and the tail are one unbroken line (no separate elements).
+    function bubblePath(W, H, r, tailW, tailDepth, cx) {
+      return [
+        `M ${r} 0`,
+        `H ${W - r}`,
+        `A ${r} ${r} 0 0 1 ${W} ${r}`,
+        `V ${H - r}`,
+        `A ${r} ${r} 0 0 1 ${W - r} ${H}`,
+        `H ${cx + tailW}`,
+        `L ${cx} ${H + tailDepth}`,
+        `L ${cx - tailW} ${H}`,
+        `H ${r}`,
+        `A ${r} ${r} 0 0 1 0 ${H - r}`,
+        `V ${r}`,
+        `A ${r} ${r} 0 0 1 ${r} 0`,
+        'Z'
+      ].join(' ');
+    }
+
+    // Redraw the badge bubble to match the current #cm-body size + state.
+    // Called on every badge change (expand, icon/text swap, paid↔free).
+    function drawCenterBubble() {
+      const marker = document.getElementById('center-marker');
+      const body   = document.getElementById('cm-body');
+      const svg    = document.getElementById('cm-bubble');
+      if (!marker || !body || !svg) return;
+      if (!marker.classList.contains('expanded')) { svg.style.display = 'none'; svg.innerHTML = ''; return; }
+      const W = body.offsetWidth;    // border-box width (incl. 2px transparent frame)
+      const H = body.offsetHeight;   // border-box height
+      if (!W || !H) return;
+      const isFree    = marker.classList.contains('disc-mode');
+      const fill      = isFree ? '#005EAA' : '#ffffff';
+      const tailW     = 7, tailDepth = 8, cx = W / 2;
+      const r         = Math.max(2, Math.min(9, H / 2 - 1, W / 2 - 1));
+      const SH        = H + tailDepth + 2;   // include the tail + a little slack
+      svg.setAttribute('viewBox', `0 0 ${W} ${SH}`);
+      svg.style.width  = W + 'px';
+      svg.style.height = SH + 'px';
+      let html = `<path d="${bubblePath(W, H, r, tailW, tailDepth, cx)}" fill="${fill}" stroke="#0C0243" stroke-width="2" stroke-linejoin="round"/>`;
+      if (isFree) {
+        // Second, inset path = the thin white inner frame, following the same
+        // shape (body + tail) so it stays continuous too.
+        const d     = 2.5;
+        const tipUp = d / Math.sin(Math.atan(tailW / tailDepth));
+        const iw = W - 2 * d, ih = H - 2 * d;
+        const inner = bubblePath(iw, ih, Math.max(1, r - d), Math.max(1, tailW - d),
+                                 tailDepth - tipUp + d, iw / 2);
+        html += `<path d="${inner}" transform="translate(${d},${d})" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>`;
+      }
+      svg.innerHTML = html;
+      svg.style.display = 'block';
     }
 
     // Destination pin marker — a red pin dropped on the parking area
