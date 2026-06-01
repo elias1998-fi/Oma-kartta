@@ -110,14 +110,36 @@
       box-shadow: 0 2px 7px rgba(0,0,0,0.22);
     }
     #center-marker.expanded #cm-pin { width: 26px; height: 26px; }
-    /* When showing the parking-disc icon, keep the same width but expand
-       height to match the disc's 3:4 vertical proportions (24×32 viewBox). */
-    #center-marker.expanded #cm-pin.parking-disc { width: 24px; height: 32px; }
-    /* Apply the same vertical sizing in the collapsed state so a tiny
-       disc is drawn correctly when not expanded (rare but possible). */
-    #cm-pin.parking-disc { width: 24px !important; height: 32px !important; }
+    /* The disc icon swaps to a vertical 24×32 viewBox but is sized to fit
+       within the same 26px-tall footprint as the regular P pin so the
+       badge keeps its constant size whether the area is paid or free.
+       Width is computed proportionally (26 × 24/32 = 19.5). */
+    #center-marker.expanded #cm-pin.parking-disc { width: 19.5px; height: 26px; }
+    #cm-pin.parking-disc { width: 19.5px !important; height: 26px !important; }
     #center-marker.expanded #cm-code { max-width: 240px; opacity: 1; }
     #center-marker.expanded #cm-tail { opacity: 1; transform: scaleY(1); margin-top: -4px; }
+
+    /* ── Free / disc-area badge styling ──────────────────────────────
+       The traffic-sign appearance from the Finnish road sign: a dark
+       blue outer border (already on #cm-body), then a thin white inner
+       border, then a light-blue fill. The dark blue tail underneath the
+       badge keeps the same #0C0243 stroke so the badge still reads as a
+       single connected pointer. */
+    #center-marker.expanded.disc-mode #cm-body {
+      background: #5b9bd5;                                 /* light blue fill */
+      border-color: #0C0243;                               /* outer dark border (same) */
+      box-shadow: 0 0 0 2px #ffffff inset,                 /* inner white frame */
+                  0 2px 7px rgba(0,0,0,0.22);
+      padding: 3px 9px 3px 5px;
+    }
+    /* Inside the disc-mode badge the area-code text is white and bold
+       (it's now displaying the parking time, like "2h" or "30 min"). */
+    #center-marker.expanded.disc-mode #cm-code {
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
 
     /* MapLibre DOM markers (e.g. the red search-result pin) sit below the
        P-marker so they can't peek out from behind it. */
@@ -6360,6 +6382,9 @@
       if (code) centerBadgeCode.textContent = code;
       // Add .expanded — CSS transitions animate the morph
       centerPointerEl.classList.add('expanded');
+      // After writing the area code, give the disc-mode pin a chance to
+      // overwrite the text with the parking duration ("2h", "30 min", …).
+      if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
     }
     function hideCenterBadge() {
       centerPointerEl.classList.remove('expanded');
@@ -9866,9 +9891,24 @@
       return false;
     }
 
+    // Format the parking duration for the disc badge. Accepts the
+    // parking_master columns max_hours / max_minutes and returns a short
+    // human-readable string like "30 min", "1h 30 min", "2h" or "10h".
+    function formatDiscDuration(props) {
+      if (!props) return '';
+      const h = parseInt(props.max_hours,   10) || 0;
+      const m = parseInt(props.max_minutes, 10) || 0;
+      if (h && m) return `${h}h ${m} min`;
+      if (h)     return `${h}h`;
+      if (m)     return `${m} min`;
+      return '';
+    }
+
     function updateCenterPinIcon() {
-      const pin = document.getElementById('cm-pin');
-      if (!pin) return;
+      const pin    = document.getElementById('cm-pin');
+      const marker = document.getElementById('center-marker');
+      const code   = document.getElementById('cm-code');
+      if (!pin || !marker) return;
       // The "current area" can live in two places depending on which code
       // path detected it: checkParking() stores the full properties object
       // in currentParkingProps, while the hover handlers (used by free /
@@ -9886,22 +9926,28 @@
           if (feats && feats.length) props = feats[0].properties;
         } catch(e) { /* map not ready yet */ }
       }
-      const showDisc = isDiscOrFreeArea(props);
-      // Only rewrite the SVG when the icon needs to flip — saves the DOM
-      // from churning on every map move.
-      const wantDisc = !!showDisc;
+      const wantDisc = !!isDiscOrFreeArea(props);
       const isDisc   = pin.classList.contains('parking-disc');
-      if (wantDisc === isDisc) return;
-      if (wantDisc) {
-        // Switch viewBox to the disc's 24×32 vertical proportions.
-        pin.setAttribute('viewBox', '0 0 24 32');
-        pin.innerHTML = PIN_SVG_DISC;
-        pin.classList.add('parking-disc');
-      } else {
-        // Restore the standard 24×24 viewBox used by the P-pin.
-        pin.setAttribute('viewBox', '0 0 24 24');
-        pin.innerHTML = PIN_SVG_P;
-        pin.classList.remove('parking-disc');
+      // Swap the pin SVG between regular "P" and disc icons.
+      if (wantDisc !== isDisc) {
+        if (wantDisc) {
+          pin.setAttribute('viewBox', '0 0 24 32');
+          pin.innerHTML = PIN_SVG_DISC;
+          pin.classList.add('parking-disc');
+        } else {
+          pin.setAttribute('viewBox', '0 0 24 24');
+          pin.innerHTML = PIN_SVG_P;
+          pin.classList.remove('parking-disc');
+        }
+      }
+      // Toggle the traffic-sign-style disc badge class on the marker so
+      // the surrounding badge picks up the light-blue fill / white inner
+      // border treatment — and overwrite the code text with the parking
+      // duration (e.g. "2h").
+      marker.classList.toggle('disc-mode', wantDisc);
+      if (wantDisc && code) {
+        const t = formatDiscDuration(props);
+        if (t) code.textContent = t;
       }
     }
 
