@@ -120,26 +120,31 @@
     #center-marker.expanded #cm-tail { opacity: 1; transform: scaleY(1); margin-top: -4px; }
 
     /* ── Free / disc-area badge styling ──────────────────────────────
-       The traffic-sign appearance from the Finnish road sign: a dark
-       blue outer border (already on #cm-body), then a thin white inner
-       border, then a light-blue fill. The dark blue tail underneath the
-       badge keeps the same #0C0243 stroke so the badge still reads as a
-       single connected pointer. */
+       Free (purple) areas get a sign-coloured badge: dark blue outer
+       border (#0C0243, same as the paid badge) and a #005EAA blue fill.
+       Inside sits the white parking-disc icon plus the duration ("2h").
+       The badge stays the same size as the paid white badge. */
     #center-marker.expanded.disc-mode #cm-body {
-      background: #5b9bd5;                                 /* light blue fill */
-      border-color: #0C0243;                               /* outer dark border (same) */
-      box-shadow: 0 0 0 2px #ffffff inset,                 /* inner white frame */
+      background: #005EAA;                                 /* free-area blue fill */
+      border-color: #0C0243;                               /* dark blue outer border (same as paid) */
+      box-shadow: 0 0 0 1.5px #ffffff inset,               /* white inner frame (like the sign) */
                   0 2px 7px rgba(0,0,0,0.22);
-      padding: 3px 9px 3px 5px;
+      /* Padding / gap / border match the paid badge exactly, so both badges
+         are the SAME height. Width still flexes with the text content. */
+      padding: 2px 8px 2px 4px;
+      gap: 3px;
     }
     /* Inside the disc-mode badge the area-code text is white and bold
        (it's now displaying the parking time, like "2h" or "30 min"). */
     #center-marker.expanded.disc-mode #cm-code {
       color: #ffffff;
-      font-size: 16px;
+      font-size: 22px;
       font-weight: 800;
       letter-spacing: 0.2px;
     }
+    /* The pointer tail under the badge matches the blue fill on free areas
+       so the badge reads as one connected pointer (stroke stays dark blue). */
+    #center-marker.expanded.disc-mode #cm-tail #cm-tail-fill { fill: #005EAA; }
 
     /* MapLibre DOM markers (e.g. the red search-result pin) sit below the
        P-marker so they can't peek out from behind it. */
@@ -5955,7 +5960,7 @@
 
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,zone,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coords&source=neq.hel_halli&limit=10000`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,source,area_type,extra_info,max_hours,max_minutes,zone,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coords&source=neq.hel_halli&limit=10000`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -6075,6 +6080,7 @@
             properties: {
               id: r.id, source: r.source, area_type: r.area_type,
               extra_info: r.extra_info || '', max_hours: r.max_hours,
+              max_minutes: r.max_minutes,
               zone: r.zone,
               valid: r.valid_mape_from || '',
               valid_mape_to: r.valid_mape_to || '',
@@ -9846,9 +9852,9 @@
     // ── Center pin icon swap ──────────────────────────────────────────
     // Free-parking and disc-parking areas swap the small "P" pin inside
     // the expanded center marker for a tiny parking-disc icon (matches
-    // the official Finnish pysäköintikiekko: tall blue plate, white
-    // "SAAPUMISAIKA / ANKOMSTTID" header, downward arrow, upward-opening
-    // clock arc, and a framed "P" at the bottom).
+    // the Finnish pysäköintikiekko symbol: a downward pointer, an
+    // upward-opening clock-dial crescent, and a framed "P"). The icon is
+    // drawn in white so it reads against the badge's #005EAA blue fill.
     const PIN_SVG_P = `
       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#0C0243"/>
       <text x="12" y="11" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="white">P</text>
@@ -9857,18 +9863,16 @@
     // match the real parking disc. The cm-pin <svg>'s viewBox is swapped
     // at the same time the innerHTML changes (see updateCenterPinIcon).
     const PIN_SVG_DISC = `
-      <!-- Outer blue plate -->
-      <rect x="0" y="0" width="24" height="32" rx="2" ry="2" fill="#154889"/>
-      <!-- Header text — SAAPUMISAIKA / ANKOMSTTID -->
-      <text x="12" y="4.5" text-anchor="middle" font-size="2.5" font-family="Arial" font-weight="900" fill="#ffffff">SAAPUMISAIKA</text>
-      <text x="12" y="7.2" text-anchor="middle" font-size="2.5" font-family="Arial" font-weight="900" fill="#ffffff">ANKOMSTTID</text>
-      <!-- Downward-pointing arrow -->
-      <path d="M 9.5 8.5 L 14.5 8.5 L 12 13.5 Z" fill="#ffffff"/>
-      <!-- Upward-opening clock arc (numbers omitted for clarity at this size) -->
-      <path d="M 4 14.5 A 8 7 0 0 0 20 14.5 L 16.5 15 A 4.5 3.5 0 0 1 7.5 15 Z" fill="#ffffff"/>
-      <!-- Framed P at the bottom -->
-      <rect x="6.5" y="22.5" width="11" height="8" rx="0.8" ry="0.8" fill="none" stroke="#ffffff" stroke-width="0.8"/>
-      <text x="12" y="29" text-anchor="middle" font-size="6" font-family="Arial" font-weight="900" fill="#ffffff">P</text>
+      <!-- White rounded box frame (inset so blue shows between it and the
+           badge's outer white frame) -->
+      <rect x="2.4" y="2.6" width="19.2" height="26.8" rx="2.4" ry="2.4" fill="none" stroke="#ffffff" stroke-width="1.1"/>
+      <!-- Down-pointing pointer -->
+      <path d="M 9.4 5.4 L 14.6 5.4 L 12 11.6 Z" fill="#ffffff"/>
+      <!-- Clock-dial crescent (smile), opening upward -->
+      <path d="M 4.8 14.2 Q 12 21 19.2 14.2 Q 12 16.6 4.8 14.2 Z" fill="#ffffff"/>
+      <!-- Small framed P at the bottom -->
+      <rect x="7.6" y="20.8" width="8.8" height="6.8" rx="1" ry="1" fill="none" stroke="#ffffff" stroke-width="0.8"/>
+      <text x="12" y="26.3" text-anchor="middle" font-size="5.2" font-family="Arial" font-weight="900" fill="#ffffff">P</text>
     `;
 
     // Decide whether the current area should show the parking-disc icon.
@@ -9946,8 +9950,7 @@
       // duration (e.g. "2h").
       marker.classList.toggle('disc-mode', wantDisc);
       if (wantDisc && code) {
-        const t = formatDiscDuration(props);
-        if (t) code.textContent = t;
+        code.textContent = formatDiscDuration(props) || '2h';
       }
     }
 
