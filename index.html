@@ -6947,7 +6947,7 @@
 
     async function loadEditorFeatures() {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/parking_master?select=id,area_type,parking_type,max_hours,max_minutes,valid_mape_from,info_additional,polygon_coordinates`,
+        `${SUPABASE_URL}/rest/v1/parking_master?select=id,old_polygon_ids,area_name,area_type,parking_type,owner_parking_area,location_city,city_zone,zone_number,estimated_spots_total,area_code,max_hours,max_minutes,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,data_exceptions,info_additional,polygon_coordinates`,
         { headers: { 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Prefer':'count=none' } }
       );
       const rows = await res.json();
@@ -6955,8 +6955,18 @@
         .filter(r => (r.polygon_coordinates?.type==='Polygon' || r.polygon_coordinates?.type==='MultiPolygon') && r.parking_type !== 'Pysäköintihalli')
         .map(r => ({
           type:'Feature',
-          properties:{ id:r.id, source:legacySourceFor(r.area_type, r.parking_type, r.max_hours), area_type:r.area_type, parking_type:r.parking_type||null,
-                       max_hours:r.max_hours, max_minutes:r.max_minutes, valid:r.valid_mape_from||'', extra_info:r.info_additional||'' },
+          properties:{ id:r.id, source:legacySourceFor(r.area_type, r.parking_type, r.max_hours),
+                       old_polygon_ids:r.old_polygon_ids ?? null, area_name:r.area_name ?? null,
+                       area_type:r.area_type ?? null, parking_type:r.parking_type ?? null,
+                       owner_parking_area:r.owner_parking_area ?? null, location_city:r.location_city ?? null,
+                       city_zone:r.city_zone ?? null, zone_number:r.zone_number ?? null,
+                       estimated_spots_total:r.estimated_spots_total ?? null, area_code:r.area_code ?? null,
+                       max_hours:r.max_hours ?? null, max_minutes:r.max_minutes ?? null,
+                       valid_mape_from:r.valid_mape_from ?? null, valid_mape_to:r.valid_mape_to ?? null,
+                       valid_la_from:r.valid_la_from ?? null, valid_la_to:r.valid_la_to ?? null,
+                       valid_su_from:r.valid_su_from ?? null, valid_su_to:r.valid_su_to ?? null,
+                       data_exceptions:r.data_exceptions ?? null, info_additional:r.info_additional ?? null,
+                       valid:r.valid_mape_from ?? '', extra_info:r.info_additional ?? '' },
           geometry: r.polygon_coordinates
         }));
 
@@ -7018,10 +7028,14 @@
     function isEditorCompatible(feat) {
       if (!editorFirstProps) return true;
       const p = feat.properties;
-      return p.area_type === editorFirstProps.area_type &&
-             String(p.max_hours) === String(editorFirstProps.max_hours) &&
-             p.valid === editorFirstProps.valid &&
-             p.source === editorFirstProps.source;
+      const norm = v => (v === null || v === undefined || v === '') ? '' : String(v);
+      const eq = k => norm(p[k]) === norm(editorFirstProps[k]);
+      // All these must be identical to allow merging. estimated_spots_total is
+      // summed (not matched). Mirrors "Toimintaohjeet – Alueiden yhdistäminen".
+      return ['area_name','area_type','parking_type','owner_parking_area','location_city',
+              'city_zone','zone_number','area_code','max_hours','max_minutes',
+              'valid_mape_from','valid_mape_to','valid_la_from','valid_la_to',
+              'valid_su_from','valid_su_to','data_exceptions','info_additional'].every(eq);
     }
 
     function setupEditorInteractions() {
@@ -7388,16 +7402,13 @@
     async function executeMergeEditor() {
       if(!editorPreviewGeom||editorSelected.size<2) return;
       const ids=Array.from(editorSelected);
-      const selF=editorAllFeatures.filter(f=>editorSelected.has(f.properties.id));
-      const ref=selF[0].properties;
-      const newRow={ area_type:ref.area_type, parking_type:ref.parking_type||null, max_hours:ref.max_hours, max_minutes:ref.max_minutes||null,
-        valid_mape_from:ref.valid,valid_mape_to:ref.valid,valid_la_from:ref.valid,valid_la_to:ref.valid,
-        valid_su_from:ref.valid,valid_su_to:ref.valid,info_additional:ref.extra_info,
-        polygon_coordinates:editorPreviewGeom,status:'approved' };
       try {
-        const ir=await fetch(`${SUPABASE_URL}/rest/v1/parking_master`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(newRow)});
-        if(!ir.ok) throw new Error('Insert '+ir.status);
-        for(const id of ids) await fetch(`${SUPABASE_URL}/rest/v1/parking_master?id=eq.${id}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'}});
+        const ir=await fetch(`${SUPABASE_URL}/rest/v1/rpc/merge_parking_areas`,{
+          method:'POST',
+          headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json'},
+          body:JSON.stringify({ source_ids: ids, merged_geom: editorPreviewGeom })
+        });
+        if(!ir.ok) throw new Error('Yhdistäminen epäonnistui ('+ir.status+')');
         _hidePreviewButtons();
         editorInPreview=false; editorPreviewGeom=null;
         if(editorMap.getSource('editor-preview')) editorMap.getSource('editor-preview').setData({type:'FeatureCollection',features:[]});
