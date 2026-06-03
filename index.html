@@ -5975,7 +5975,7 @@
 
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,area_type,parking_type,info_additional,max_hours,max_minutes,zone_number,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coordinates&limit=10000`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,area_name,area_type,parking_type,owner_parking_area,info_additional,max_hours,max_minutes,zone_number,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coordinates&limit=10000`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -6116,15 +6116,16 @@
             type: 'Feature',
             properties: {
               id: r.id, source: legacySourceFor(r.area_type, r.parking_type, r.max_hours), area_type: r.area_type,
+              area_name: r.area_name || '', parking_type: r.parking_type || '', owner_parking_area: r.owner_parking_area || '',
               extra_info: r.info_additional || '', max_hours: r.max_hours,
               max_minutes: r.max_minutes,
               zone: r.zone_number,
-              valid: r.valid_mape_from || '',
-              valid_mape_to: r.valid_mape_to || '',
-              valid_la_from: r.valid_la_from || '',
-              valid_la_to: r.valid_la_to || '',
-              valid_su_from: r.valid_su_from || '',
-              valid_su_to: r.valid_su_to || ''
+              valid: r.valid_mape_from ?? '',
+              valid_mape_to: r.valid_mape_to ?? '',
+              valid_la_from: r.valid_la_from ?? '',
+              valid_la_to: r.valid_la_to ?? '',
+              valid_su_from: r.valid_su_from ?? '',
+              valid_su_to: r.valid_su_to ?? ''
             },
             geometry: r.polygon_coordinates
           }));
@@ -6472,22 +6473,25 @@
           const style = SOURCE_STYLE[p.source] || { label: p.source || 'Pysäköintialue' };
           const extra = p.extra_info ? p.extra_info.split(' | ') : [];
           const name  = extra[0] || style.label;
-          const kesto = p.max_hours ? `Max. ${p.max_hours}h` : '';
-          const valid = p.valid || '';
           const extraInfo = p.extra_info || '';
           // Use the actual zone (1, 2, or 3) for this feature. Prefer the
           // value stored in the DB; fall back to live computation if absent.
           const featZone = (p.zone != null && p.zone !== '')
             ? Number(p.zone)
             : getZoneForGeometry(f.geometry);
-          const zoneLabel = (p.source && p.source !== 'community')
-            ? `Helsinki, Vyöhyke ${featZone}`
-            : name;
-          const line1 = kesto ? `${zoneLabel}  |  ${kesto}` : zoneLabel;
-          const srcType = p.source === 'hel_halli' ? 'Pysäköintihalli'
-            : (p.source && p.source.includes('ilmainen')) ? 'Kadunvarsipysäköinti'
-            : 'Kadunvarsipysäköinti';
-          const op = 'Helsingin kaupunki';
+          // Header / type / operator now come straight from the new schema
+          // columns (area_name, parking_type, owner_parking_area). Older or
+          // user-submitted rows without these fall back to derived values.
+          const areaName = (p.area_name && p.area_name !== '')
+            ? p.area_name
+            : ((p.source && p.source !== 'community') ? `Helsinki, Vyöhyke ${featZone}` : name);
+          const line1 = areaName;
+          const srcType = (p.parking_type && p.parking_type !== '')
+            ? p.parking_type
+            : (p.source === 'hel_halli' ? 'Pysäköintihalli' : 'Kadunvarsipysäköinti');
+          const op = (p.owner_parking_area && p.owner_parking_area !== '')
+            ? p.owner_parking_area
+            : 'Helsingin kaupunki';
           // Build details: voimassaoloaika, hinta, lisätiedot
           const isMaksullinen = p.source && (p.source.includes('kertamaksu') || p.source.includes('maksullinen'));
           let detailsHTML = '';
@@ -6503,11 +6507,16 @@
           //       valid_mape_from="9-21", valid_la_from="9-18", su_from=NULL.
           // We handle both by trying to reconstruct the combined raw text
           // and parsing that, falling back to per-column data if needed.
-          const rawHours = reconstructRawHours(p);
-          const parsed = parseScheduleString(rawHours);
-          const vMaPe = parsed.maPe;
-          const vLa   = parsed.la;
-          const vSu   = parsed.su;
+          // Build each day's hours directly from the from/to integer columns
+          // (new schema). Values can legitimately be 0 (e.g. "0–24"), so test
+          // for null/'' rather than falsiness.
+          const fmtRange = (a, b) => {
+            const has = v => v !== null && v !== undefined && v !== '';
+            return (has(a) && has(b)) ? `${a}–${b}` : '';
+          };
+          const vMaPe = fmtRange(p.valid, p.valid_mape_to);
+          const vLa   = fmtRange(p.valid_la_from, p.valid_la_to);
+          const vSu   = fmtRange(p.valid_su_from, p.valid_su_to);
           // Pricing first so we can fold it into the schedule table
           const isHalli = p.source === 'hel_halli';
           let priceText = '';
