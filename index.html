@@ -3040,17 +3040,17 @@
       </svg>
     </button>
     
+    <button class="pill-btn" id="plus-menu-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+    
     <button class="pill-btn" id="filter-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
         <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="#333" stroke="none"/>
         <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="#333" stroke="none"/>
         <line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2" fill="#333" stroke="none"/>
-      </svg>
-    </button>
-    
-    <button class="pill-btn" id="plus-menu-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
     </button>
     
@@ -4123,9 +4123,6 @@
     </div>
   </div>
 
-  <!-- Map info bar: follows bottom sheet top edge -->
-  <span id="osm-attribution" style="position:fixed;left:12px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:19;pointer-events:none;font-size:11px;color:#666;font-family:Arial,sans-serif;letter-spacing:0.1px;">© OpenStreetMap</span>
-  
   <!-- Backdrop for bottom sheet -->
   <div id="sheet-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:19;opacity:0;pointer-events:none;transition:opacity 0.3s ease;"></div>
   
@@ -4149,7 +4146,7 @@
 
   <div id="bottom-sheet">
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
-    <div id="osm-attribution" style="position:absolute;top:-26px;left:16px;z-index:5;font-family:Arial,sans-serif;font-size:12.5px;color:#999;pointer-events:none;transition:opacity 0.2s ease;">© OpenStreetMap</div>
+    <div id="osm-attribution" style="position:absolute;top:-16px;left:8px;z-index:5;font-family:Arial,sans-serif;font-size:11px;color:#999;pointer-events:none;transition:opacity 0.2s ease;">© OpenStreetMap</div>
     <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
     <div id="gps-warning">
