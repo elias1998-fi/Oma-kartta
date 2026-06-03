@@ -4149,7 +4149,7 @@
 
   <div id="bottom-sheet">
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
-    <div id="osm-attribution" style="position:absolute;top:4px;left:16px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#999;pointer-events:none;transition:opacity 0.2s ease;">© OpenStreetMap</div>
+    <div id="osm-attribution" style="position:absolute;top:-26px;left:16px;z-index:5;font-family:Arial,sans-serif;font-size:20px;color:#999;pointer-events:none;transition:opacity 0.2s ease;">© OpenStreetMap</div>
     <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
     <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
     <div id="gps-warning">
@@ -6240,12 +6240,11 @@
         document.getElementById('sheet-details').innerHTML     = '';
         document.getElementById('sheet-divider').style.display = 'none';
       }
-      // Auto-open to the last-used level (default 153px) when P-marker is on area
+      // Auto-open to 153px from bottom when P-marker is on area
       const bs = document.getElementById('bottom-sheet');
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
-      const _peek = _lastSheetPeek || 153;
-      bs.style.transform  = `translateY(calc(100% - ${_peek}px))`;
-      currentY = bs.offsetHeight - _peek;
+      bs.style.transform  = 'translateY(calc(100% - 153px))';
+      currentY = bs.offsetHeight - 153;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       // The nav button uses hoveredPolyId/currentParkingProps to know an
       // area is selected — refresh visibility now that the sheet has moved.
@@ -9002,7 +9001,7 @@
 
     const btn=document.getElementById('action-btn'),summaryHeader=document.getElementById('summary-header'),summaryType=document.getElementById('summary-type'),summaryOperator=document.getElementById('summary-operator'),details=document.getElementById('sheet-details'),divider=document.getElementById('sheet-divider');
     const gpsWarning = document.getElementById('gps-warning');
-    let currentHighlightId=null,currentY=0,currentParkingProps=null,_lastSheetPeek=153;
+    let currentHighlightId=null,currentY=0,currentParkingProps=null;
 
     function highlightParking(){} // removed with helsinki_parkit.geojson
     function getOwnerName(r){if(!r)return'Tuntematon';if(r.includes('KYMP')||r.includes('HEL')||r.includes('Helsinki'))return'Helsinki Vyöhyke 2';return r;}
@@ -10999,36 +10998,29 @@
         return;
       }
       if(currentParkingProps || hoveredPolyId){
-        // P-marker on a parking area: 4-level snap.
-        // top (80%) / 250px intermediate / 153px auto-open / 75px min.
-        const maxY  = sheet.clientHeight - window.innerHeight * 0.8;  // top (highest)
-        const highY = sheet.clientHeight - 250;                       // intermediate step
-        const midY  = sheet.clientHeight - 153;                       // auto-open step
-        const minY  = sheet.clientHeight - 75;                        // min (lowest)
-        let finalT;
+        // P-marker on a parking area: 3-level snap (max 80% / mid 153px / min 75px)
+        const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // top (highest)
+        const midY = sheet.clientHeight - 153;                       // mid step
+        const minY = sheet.clientHeight - 75;                        // min (lowest)
         if(dragFromHandle){
-          finalT = Math.max(maxY, Math.min(minY, currentY));
+          snapTo(Math.max(maxY, Math.min(minY, currentY)));
         } else {
-          const levels = [maxY, highY, midY, minY];   // ordered top → bottom
+          const levels = [maxY, midY, minY];
           let si = 0;
           for(let i=1;i<levels.length;i++){
             if(Math.abs(startTranslate - levels[i]) < Math.abs(startTranslate - levels[si])) si = i;
           }
           let ti = si;
-          if(velocity < -0.6)      ti = 0;                                  // fast swipe up → straight to top
-          else if(velocity < -0.2) ti = Math.max(0, si - 1);               // slow swipe up → one step up (via 250px)
-          else if(velocity > 0.6)  ti = levels.length - 1;                 // fast swipe down → straight to min
-          else if(velocity > 0.2)  ti = Math.min(levels.length - 1, si + 1); // slow swipe down → one step down
+          if(velocity < -0.2)      ti = Math.max(0, si - 1);
+          else if(velocity > 0.2)  ti = Math.min(levels.length - 1, si + 1);
           else {
             ti = 0;
             for(let i=1;i<levels.length;i++){
               if(Math.abs(currentY - levels[i]) < Math.abs(currentY - levels[ti])) ti = i;
             }
           }
-          finalT = levels[ti];
+          snapTo(levels[ti]);
         }
-        snapTo(finalT);
-        _lastSheetPeek = sheet.clientHeight - finalT;   // remember level so re-entry returns here
         return;
       }
       const maxY=sheet.clientHeight-60;
