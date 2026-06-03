@@ -6717,7 +6717,7 @@
             const dayStyle = 'color:#555;padding:3px 0;font-size:14px;';
             const valStyle = 'color:#222;padding:3px 0;font-weight:500;font-size:14px;';
             detailsHTML += '<p class="price-label" style="margin-bottom:0;">&nbsp;</p>'; // small spacer
-            detailsHTML += '<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;">';
+            detailsHTML += '<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;margin-top:-25px;">';
             detailsHTML += `<thead><tr>`
                         + `<th style="${capStyle}width:33%;">Päivät</th>`
                         + `<th style="${capStyle}width:34%;">Tunnit</th>`
@@ -10911,21 +10911,25 @@
         return;
       }
       if(currentParkingProps || hoveredPolyId){
-        // P-marker on a parking area: 3-level snap (max 80% / mid 153px / min 75px)
-        const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // top (highest)
-        const midY = sheet.clientHeight - 153;                       // mid step
-        const minY = sheet.clientHeight - 75;                        // min (lowest)
+        // P-marker on a parking area: 4-level snap.
+        // top (80%) / 210px intermediate / 153px auto-open / 75px min.
+        const maxY  = sheet.clientHeight - window.innerHeight * 0.8;  // top (highest)
+        const highY = sheet.clientHeight - 210;                       // intermediate step
+        const midY  = sheet.clientHeight - 153;                       // auto-open step
+        const minY  = sheet.clientHeight - 75;                        // min (lowest)
         if(dragFromHandle){
           snapTo(Math.max(maxY, Math.min(minY, currentY)));
         } else {
-          const levels = [maxY, midY, minY];
+          const levels = [maxY, highY, midY, minY];   // ordered top → bottom
           let si = 0;
           for(let i=1;i<levels.length;i++){
             if(Math.abs(startTranslate - levels[i]) < Math.abs(startTranslate - levels[si])) si = i;
           }
           let ti = si;
-          if(velocity < -0.2)      ti = Math.max(0, si - 1);
-          else if(velocity > 0.2)  ti = Math.min(levels.length - 1, si + 1);
+          if(velocity < -0.6)      ti = 0;                                  // fast swipe up → straight to top
+          else if(velocity < -0.2) ti = Math.max(0, si - 1);               // slow swipe up → one step up (via 210px)
+          else if(velocity > 0.6)  ti = levels.length - 1;                 // fast swipe down → straight to min
+          else if(velocity > 0.2)  ti = Math.min(levels.length - 1, si + 1); // slow swipe down → one step down
           else {
             ti = 0;
             for(let i=1;i<levels.length;i++){
