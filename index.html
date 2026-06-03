@@ -3502,6 +3502,32 @@
     </div>
   </div>
 
+  <!-- ══ ASIAKASPALVELU: Chat Pertin kanssa ══ -->
+  <div id="support-chat-overlay" class="settings-detail-overlay">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeSupportChat()">←</button>
+      <div class="overlay-title">Asiakaspalvelu</div>
+    </div>
+    <!-- Bot identity strip -->
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:white;border-bottom:1px solid #eee;flex-shrink:0;">
+      <div style="width:42px;height:42px;border-radius:50%;background:#0C0243;color:white;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;flex-shrink:0;">P</div>
+      <div style="font-family:Arial,sans-serif;line-height:1.3;">
+        <div style="font-size:15px;font-weight:700;color:#222;">Pertti</div>
+        <div style="font-size:12px;color:#4caf50;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;"></span>Kouvolasta · paikalla</div>
+      </div>
+    </div>
+    <!-- Messages -->
+    <div id="support-chat-messages" style="flex:1;overflow-y:auto;padding:16px;background:#f5f6f8;font-family:Arial,sans-serif;display:flex;flex-direction:column;gap:10px;"></div>
+    <!-- Input row -->
+    <div style="display:flex;gap:8px;padding:10px 12px;padding-bottom:max(14px,env(safe-area-inset-bottom));background:white;border-top:1px solid #eee;flex-shrink:0;">
+      <input id="support-chat-input" type="text" placeholder="Kirjoita viesti..." autocomplete="off"
+        onkeydown="if(event.key==='Enter'){sendSupportMessage();}"
+        style="flex:1;height:44px;border:1px solid #ddd;border-radius:22px;padding:0 16px;font-size:15px;font-family:Arial,sans-serif;outline:none;">
+      <button onclick="sendSupportMessage()" aria-label="Lähetä"
+        style="width:44px;height:44px;border-radius:50%;background:#0C0243;border:none;color:white;font-size:17px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">➤</button>
+    </div>
+  </div>
+
   <!-- App settings overlay reached via Profiili → Asetukset. -->
   <div id="app-settings-detail" class="settings-detail-overlay">
     <div class="overlay-header">
@@ -8453,7 +8479,53 @@
     map.on('load', updateZoomIndicator);
 
     function openHelpSettings() {
-      alert('Ohje ja tuki - tulossa pian');
+      document.getElementById('support-chat-overlay').classList.add('open');
+      // Seed Pertti's greeting once per session
+      const box = document.getElementById('support-chat-messages');
+      if (box && !box.dataset.seeded) {
+        addSupportMessage('bot', 'Moro! Olen Pertti Kouvolasta, TotalParkingin asiakaspalvelija. Miten voin auttaa sinua tänään?');
+        box.dataset.seeded = '1';
+      }
+      setTimeout(() => { const i = document.getElementById('support-chat-input'); if (i) i.focus(); }, 350);
+    }
+    function closeSupportChat() {
+      document.getElementById('support-chat-overlay').classList.remove('open');
+    }
+    function addSupportMessage(who, text) {
+      const box = document.getElementById('support-chat-messages');
+      if (!box) return;
+      const isBot = who === 'bot';
+      const wrap = document.createElement('div');
+      wrap.style.cssText = `display:flex;justify-content:${isBot ? 'flex-start' : 'flex-end'};`;
+      const bubble = document.createElement('div');
+      bubble.textContent = text;
+      bubble.style.cssText = 'max-width:78%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word;'
+        + (isBot
+            ? 'background:white;color:#222;border-bottom-left-radius:5px;box-shadow:0 1px 2px rgba(0,0,0,0.08);'
+            : 'background:#0C0243;color:white;border-bottom-right-radius:5px;');
+      wrap.appendChild(bubble);
+      box.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+    }
+    function sendSupportMessage() {
+      const input = document.getElementById('support-chat-input');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      addSupportMessage('user', text);
+      input.value = '';
+      // Pertti replies after a short "typing" delay
+      setTimeout(() => addSupportMessage('bot', perttiReply(text)), 700);
+    }
+    function perttiReply(msg) {
+      const m = msg.toLowerCase();
+      if (/(^| )(moro|moi|hei|terve|morjens|moikka)/.test(m)) return 'Moro! Mukava kuulla sinusta. Kerro vain, missä asiassa voin auttaa.';
+      if (/(hinta|maksaa|maksu|euro|veloitus|kallis)/.test(m)) return 'Pysäköinnin hinta määräytyy alueen vyöhykkeen mukaan. Näet aluekohtaisen hinnan, kun viet P-merkin alueen päälle kartalla. Kerro alue, niin autan tarkemmin.';
+      if (/(pysäköi|paikoit|aloita|lopeta|aloitus)/.test(m)) return 'Aloita pysäköinti viemällä P-merkki haluamasi alueen päälle ja paina aloituspainiketta. Voit lopettaa pysäköinnin samasta näkymästä milloin tahansa.';
+      if (/(apple pay|kortti|maksutapa|lasku)/.test(m)) return 'Voit lisätä maksutavan (kortti tai Apple Pay) profiilin maksutapa-asetuksista. Tarvitsetko apua sen lisäämisessä?';
+      if (/(kiitos|kiitti|thanks|thx)/.test(m)) return 'Eipä kestä! Autan mielelläni. Onko vielä jotain muuta?';
+      if (/(näkemiin|heippa|hei hei|kuittaan|moikytä)/.test(m)) return 'Kiitos yhteydenotosta ja oikein mukavaa päivänjatkoa!';
+      return 'Kiitos viestistä! Otan asian hoitooni. Voisitko tarkentaa hieman, niin osaan auttaa sinua paremmin?';
     }
     
     function openAboutSettings() {
@@ -10845,8 +10917,9 @@
       if(filterMode && (sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
       }
-      // Did this touch start on the drag handle (free drag) vs elsewhere (swipe-to-snap)?
-      dragFromHandle = !!(dragHandleArea && dragHandleArea.contains(e.target));
+      // Free positioning via the drag handle is disabled on the parking sheet —
+      // every drag snaps to a defined level. (Still allowed in the filter view.)
+      dragFromHandle = filterMode ? !!(dragHandleArea && dragHandleArea.contains(e.target)) : false;
 
       startY=e.touches[0].clientY;
       lastY=startY;
