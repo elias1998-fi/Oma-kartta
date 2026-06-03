@@ -2555,6 +2555,30 @@
       color: white;
     }
 
+    /* ── Hallinto: Valitse-tila ─────────────────────────────────────── */
+    .admin-select-circle {
+      width: 22px; height: 22px; border: 2px solid #ccc; border-radius: 50%;
+      background: white; flex-shrink: 0; align-self: center; display: none;
+      position: relative; transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    #admin-list-content.select-mode .admin-select-circle { display: block; }
+    .admin-sub-row.selected .admin-select-circle { background: #0C0243; border-color: #0C0243; }
+    .admin-sub-row.selected .admin-select-circle::after {
+      content: ''; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px;
+      border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg);
+    }
+    #admin-action-footer {
+      flex-shrink: 0; background: white; padding: 12px 16px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      border-top: 1px solid #eee; display: none;
+    }
+    #admin-action-footer.visible { display: block; }
+    #admin-approve-btn {
+      width: 100%; height: 54px; background: #0C0243; color: white; border: none;
+      border-radius: 14px; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;
+      cursor: pointer; transition: opacity 0.15s ease;
+    }
+
     /* ── Valitse-tila: vasen ympyrä jokaiselle kortille ─────────────── */
     .event-select-circle {
       width: 22px;
@@ -5706,6 +5730,15 @@
     function openAdminOverlay() {
       document.getElementById('profile-overlay').classList.remove('open');
       document.getElementById('admin-overlay').classList.add('open');
+      // Always start in normal (non-select) mode
+      _adminSelectMode = false;
+      _adminSelectedIds.clear();
+      const sb = document.getElementById('admin-select-btn');
+      if (sb) { sb.textContent = 'Valitse'; sb.classList.remove('active'); }
+      const ab = document.getElementById('admin-select-all-btn');
+      if (ab) ab.style.display = 'none';
+      document.getElementById('admin-list-content').classList.remove('select-mode');
+      document.getElementById('admin-action-footer').classList.remove('visible');
       loadPendingSubmissions();
       adminRefreshInterval = setInterval(loadPendingSubmissions, 30000);
     }
@@ -5713,6 +5746,95 @@
     function closeAdminOverlay() {
       document.getElementById('admin-overlay').classList.remove('open');
       clearInterval(adminRefreshInterval);
+      document.getElementById('profile-overlay').classList.add('open');   // return to profile, not the map
+    }
+
+    // ── Hallinto: Valitse-tila (joukkohyväksyntä) ──────────────────────
+    let _adminSelectMode  = false;
+    let _adminSelectedIds = new Set();
+
+    function toggleAdminSelectMode() {
+      _adminSelectMode = !_adminSelectMode;
+      const btn       = document.getElementById('admin-select-btn');
+      const allBtn    = document.getElementById('admin-select-all-btn');
+      const container = document.getElementById('admin-list-content');
+      const footer    = document.getElementById('admin-action-footer');
+      if (_adminSelectMode) {
+        btn.textContent = 'Valmis';
+        btn.classList.add('active');
+        allBtn.style.display = '';
+        container.classList.add('select-mode');
+      } else {
+        btn.textContent = 'Valitse';
+        btn.classList.remove('active');
+        allBtn.style.display = 'none';
+        container.classList.remove('select-mode');
+        _adminSelectedIds.clear();
+        container.querySelectorAll('.admin-sub-row.selected').forEach(c => c.classList.remove('selected'));
+        footer.classList.remove('visible');
+      }
+    }
+
+    function onAdminRowClick(id) {
+      if (_adminSelectMode) toggleAdminSelection(id);
+      else openSubmissionDetail(id);
+    }
+
+    function toggleAdminSelection(id) {
+      const key = String(id);
+      const row = document.querySelector(`.admin-sub-row[data-sub-id="${CSS.escape(key)}"]`);
+      if (_adminSelectedIds.has(key)) {
+        _adminSelectedIds.delete(key);
+        if (row) row.classList.remove('selected');
+      } else {
+        _adminSelectedIds.add(key);
+        if (row) row.classList.add('selected');
+      }
+      _updateAdminFooter();
+    }
+
+    function adminSelectAll() {
+      const container = document.getElementById('admin-list-content');
+      const rows = Array.from(container.querySelectorAll('.admin-sub-row'));
+      const allSelected = rows.length > 0 && rows.every(r => _adminSelectedIds.has(r.dataset.subId));
+      rows.forEach(r => {
+        if (allSelected) { _adminSelectedIds.delete(r.dataset.subId); r.classList.remove('selected'); }
+        else            { _adminSelectedIds.add(r.dataset.subId);   r.classList.add('selected'); }
+      });
+      _updateAdminFooter();
+    }
+
+    function _updateAdminFooter() {
+      const footer = document.getElementById('admin-action-footer');
+      const btn    = document.getElementById('admin-approve-btn');
+      if (!footer || !btn) return;
+      const n = _adminSelectedIds.size;
+      if (_adminSelectMode && n > 0) {
+        footer.classList.add('visible');
+        btn.textContent = `Hyväksy alueet (${n})`;
+      } else {
+        footer.classList.remove('visible');
+      }
+    }
+
+    async function approveSelectedSubmissions() {
+      const ids = Array.from(_adminSelectedIds);
+      if (!ids.length) return;
+      const btn = document.getElementById('admin-approve-btn');
+      btn.disabled = true; btn.style.opacity = '0.7'; btn.textContent = 'Hyväksytään...';
+      try {
+        for (const id of ids) {
+          await fetch(`${SUPABASE_URL}/rest/v1/rpc/approve_submission`, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+            body: JSON.stringify({ submission_id: isNaN(Number(id)) ? id : Number(id) })
+          });
+        }
+      } catch(e) { console.error(e); alert('Virhe hyväksynnässä: ' + e.message); }
+      if (_adminSelectMode) toggleAdminSelectMode();   // exit select mode + reset UI
+      btn.disabled = false; btn.style.opacity = '1';
+      loadPendingSubmissions();
+      loadApprovedSubmissions();   // refresh main map
     }
 
     async function loadPendingSubmissions() {
@@ -5727,6 +5849,8 @@
 
         if (!rows.length) {
           box.innerHTML = '<div style="padding:48px 20px;text-align:center;color:#bbb;font-size:15px;">Ei odottavia ilmoituksia 🎉</div>';
+          box.classList.remove('select-mode');
+          _updateAdminFooter();
           return;
         }
 
@@ -5737,15 +5861,29 @@
           const dt       = new Date(r.created_at);
           const dateStr  = `${dt.getDate()}.${dt.getMonth()+1}.${dt.getFullYear()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
           return `
-            <div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #f0f0f0;background:white;gap:12px;">
+            <div class="admin-sub-row" data-sub-id="${r.id}" onclick="onAdminRowClick('${r.id}')"
+                 style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #f0f0f0;background:white;gap:12px;cursor:pointer;">
+              <div class="admin-select-circle"></div>
               <div style="flex:1;min-width:0;">
-                <span onclick="openSubmissionDetail('${r.id}')"
-                  style="text-decoration:underline;color:#0C0243;font-weight:700;font-size:15px;font-family:monospace;cursor:pointer;">${shortId}</span>
+                <span style="text-decoration:underline;color:#0C0243;font-weight:700;font-size:15px;font-family:monospace;">${shortId}</span>
                 <span style="margin-left:10px;font-size:13px;color:#555;font-family:Arial,sans-serif;">${typeText}${locText?' · '+locText:''}</span>
               </div>
               <div style="font-size:12px;color:#aaa;font-family:Arial,sans-serif;flex-shrink:0;">${dateStr}</div>
             </div>`;
         }).join('');
+
+        // Restore select-mode visuals after (auto-)refresh re-renders the list
+        if (_adminSelectMode) {
+          box.classList.add('select-mode');
+          const existing = new Set(rows.map(r => String(r.id)));
+          _adminSelectedIds = new Set([..._adminSelectedIds].filter(id => existing.has(id)));
+          box.querySelectorAll('.admin-sub-row').forEach(el => {
+            if (_adminSelectedIds.has(el.dataset.subId)) el.classList.add('selected');
+          });
+        } else {
+          box.classList.remove('select-mode');
+        }
+        _updateAdminFooter();
       } catch(e) {
         box.innerHTML = `<div style="padding:40px 20px;text-align:center;color:#e53935;font-size:14px;">Virhe: ${e.message}</div>`;
       }
@@ -6526,6 +6664,12 @@
           // Build details: voimassaoloaika, hinta, lisätiedot
           const isMaksullinen = p.source && (p.source.includes('kertamaksu') || p.source.includes('maksullinen'));
           let detailsHTML = '';
+          // Max parking time (previously shown in the header). Hours if set,
+          // otherwise minutes for sub-hour limits.
+          let maxTimeText = '';
+          if (p.max_hours !== null && p.max_hours !== undefined && p.max_hours !== '') maxTimeText = `${p.max_hours} h`;
+          else if (p.max_minutes !== null && p.max_minutes !== undefined && p.max_minutes !== '') maxTimeText = `${p.max_minutes} min`;
+          if (maxTimeText) detailsHTML += `<p class="price-label">Max. pysäköintiaika</p><p class="price-value">${escapeHtml(maxTimeText)}</p>`;
           // Validity hours. After the schema split (split_hours.sql), each
           // weekday column holds ONLY that day's hours, so render directly.
           // If Sunday has no data we still show the row with an en-dash to
@@ -6874,6 +7018,7 @@
       editorDrawActive = false;
       _updateBrushBtn();
       if (editorCanvas) editorCanvas.style.pointerEvents = 'none';
+      document.getElementById('profile-overlay').classList.add('open');   // return to profile, not the map
     }
 
     function selectEditorAction(action) {
@@ -10812,7 +10957,11 @@
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
         <div class="overlay-title">Hallinto</div>
       </div>
-      <button onclick="loadPendingSubmissions()" style="width:34px;height:34px;background:#f0f0f0;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;margin-right:4px;" title="Päivitä">↻</button>
+      <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
+        <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
+        <button id="admin-select-btn" class="header-action-btn" onclick="toggleAdminSelectMode()">Valitse</button>
+        <button onclick="loadPendingSubmissions()" style="width:34px;height:34px;background:#f0f0f0;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;" title="Päivitä">↻</button>
+      </div>
     </div>
     <!-- One-shot maintenance actions (separate from the live-refreshed list below) -->
     <div id="admin-actions" style="background:white;padding:14px 16px;border-bottom:1px solid #eee;font-family:Arial,sans-serif;flex-shrink:0;">
@@ -10822,6 +10971,9 @@
     </div>
     <div id="admin-list-content" style="flex:1;overflow-y:auto;font-family:Arial,sans-serif;">
       <div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">Ladataan...</div>
+    </div>
+    <div id="admin-action-footer">
+      <button id="admin-approve-btn" onclick="approveSelectedSubmissions()">Hyväksy alueet</button>
     </div>
   </div>
 
