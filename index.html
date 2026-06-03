@@ -3509,22 +3509,40 @@
       <div class="overlay-title">Asiakaspalvelu</div>
     </div>
     <!-- Bot identity strip -->
-    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:white;border-bottom:1px solid #eee;flex-shrink:0;">
-      <div style="width:42px;height:42px;border-radius:50%;background:#0C0243;color:white;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;flex-shrink:0;">P</div>
-      <div style="font-family:Arial,sans-serif;line-height:1.3;">
-        <div style="font-size:15px;font-weight:700;color:#222;">Pertti</div>
-        <div style="font-size:12px;color:#4caf50;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;"></span>Kouvolasta · paikalla</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:white;border-bottom:1px solid #eee;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:42px;height:42px;border-radius:50%;background:#0C0243;color:white;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;flex-shrink:0;">P</div>
+        <div style="font-family:Arial,sans-serif;line-height:1.3;">
+          <div style="font-size:15px;font-weight:700;color:#222;">Pertti</div>
+          <div style="font-size:12px;color:#4caf50;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;"></span>Kouvolasta · paikalla</div>
+        </div>
       </div>
+      <button onclick="openSupportMenu()" aria-label="Valikko" style="width:36px;height:36px;border:none;background:transparent;color:#555;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;">⋮</button>
     </div>
     <!-- Messages -->
     <div id="support-chat-messages" style="flex:1;overflow-y:auto;padding:16px;background:#f5f6f8;font-family:Arial,sans-serif;display:flex;flex-direction:column;gap:10px;"></div>
     <!-- Input row -->
-    <div style="display:flex;gap:8px;padding:10px 12px;padding-bottom:max(14px,env(safe-area-inset-bottom));background:white;border-top:1px solid #eee;flex-shrink:0;">
-      <input id="support-chat-input" type="text" placeholder="Kirjoita viesti..." autocomplete="off"
-        onkeydown="if(event.key==='Enter'){sendSupportMessage();}"
-        style="flex:1;height:44px;border:1px solid #ddd;border-radius:22px;padding:0 16px;font-size:15px;font-family:Arial,sans-serif;outline:none;">
-      <button onclick="sendSupportMessage()" aria-label="Lähetä"
-        style="width:44px;height:44px;border-radius:50%;background:#0C0243;border:none;color:white;font-size:17px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">➤</button>
+    <div style="display:flex;gap:8px;align-items:center;padding:10px 12px;padding-bottom:max(14px,env(safe-area-inset-bottom));background:white;border-top:1px solid #eee;flex-shrink:0;">
+      <div style="flex:1;display:flex;align-items:center;background:white;border:1px solid #ddd;border-radius:22px;padding:0 4px 0 16px;">
+        <input id="support-chat-input" type="text" placeholder="Kirjoita viesti..." autocomplete="off"
+          oninput="updateSendSupportBtn()"
+          onkeydown="if(event.key==='Enter'){sendSupportMessage();}"
+          style="flex:1;height:42px;border:none;background:transparent;font-size:15px;font-family:Arial,sans-serif;outline:none;min-width:0;">
+        <button onclick="document.getElementById('support-chat-file').click()" aria-label="Lisää liite"
+          style="width:34px;height:34px;border-radius:50%;background:transparent;border:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 9.5 12.5 18a4 4 0 0 1-5.7-5.7l8-8a2.5 2.5 0 0 1 3.5 3.5l-8 8a1 1 0 0 1-1.4-1.4l7.3-7.3"/></svg>
+        </button>
+      </div>
+      <input type="file" id="support-chat-file" style="display:none;" onchange="handleSupportAttachment(this)">
+      <button id="support-send-btn" onclick="sendSupportMessage()" aria-label="Lähetä"
+        style="width:44px;height:44px;border-radius:50%;background:#cfcfcf;border:none;color:white;font-size:17px;cursor:default;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background 0.15s ease;">➤</button>
+    </div>
+    <!-- 3-dots menu modal -->
+    <div id="support-menu-modal" style="display:none;position:absolute;inset:0;z-index:50;align-items:center;justify-content:center;">
+      <div onclick="closeSupportMenu()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>
+      <div style="position:relative;background:white;border-radius:16px;padding:18px;width:min(86vw,320px);box-shadow:0 12px 48px rgba(0,0,0,0.35);">
+        <button onclick="endSupportChat()" style="width:100%;height:48px;background:white;border:1.5px solid #e53935;color:#e53935;border-radius:12px;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;">Lopeta chat</button>
+      </div>
     </div>
   </div>
 
@@ -8476,10 +8494,12 @@
 
     function openHelpSettings() {
       document.getElementById('support-chat-overlay').classList.add('open');
+      updateSendSupportBtn();
       // Seed Pertti's greeting once per session
       const box = document.getElementById('support-chat-messages');
       if (box && !box.dataset.seeded) {
-        addSupportMessage('bot', 'Moro! Olen Pertti Kouvolasta, TotalParkingin asiakaspalvelija. Miten voin auttaa sinua tänään?');
+        const c = addSupportMessage('bot', 'Moro! Olen Pertti Kouvolasta, TotalParkingin asiakaspalvelija. Miten voin auttaa sinua tänään?');
+        setTimeout(() => markSupportRead(c), 600);
         box.dataset.seeded = '1';
       }
       setTimeout(() => { const i = document.getElementById('support-chat-input'); if (i) i.focus(); }, 350);
@@ -8487,31 +8507,92 @@
     function closeSupportChat() {
       document.getElementById('support-chat-overlay').classList.remove('open');
     }
+    function supportNowHHMM() {
+      const d = new Date();
+      return `${String(d.getHours()).padStart(2,'0')}.${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    // Adds a message bubble with timestamp + a WhatsApp-style check mark.
+    // Returns the check element so the caller can flip it to "read" (✓✓).
     function addSupportMessage(who, text) {
       const box = document.getElementById('support-chat-messages');
-      if (!box) return;
+      if (!box) return null;
       const isBot = who === 'bot';
       const wrap = document.createElement('div');
       wrap.style.cssText = `display:flex;justify-content:${isBot ? 'flex-start' : 'flex-end'};`;
       const bubble = document.createElement('div');
-      bubble.textContent = text;
-      bubble.style.cssText = 'max-width:78%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word;'
+      bubble.style.cssText = 'max-width:80%;padding:8px 12px 5px 13px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word;'
         + (isBot
             ? 'background:white;color:#222;border-bottom-left-radius:5px;box-shadow:0 1px 2px rgba(0,0,0,0.08);'
             : 'background:#0C0243;color:white;border-bottom-right-radius:5px;');
+      const msg = document.createElement('div');
+      msg.textContent = text;
+      bubble.appendChild(msg);
+      const meta = document.createElement('div');
+      meta.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:2px;font-size:10px;'
+        + (isBot ? 'color:#999;' : 'color:rgba(255,255,255,0.7);');
+      const time = document.createElement('span');
+      time.textContent = supportNowHHMM();
+      const checks = document.createElement('span');
+      checks.textContent = '✓';                        // single = sent
+      checks.style.cssText = 'font-size:11px;letter-spacing:-3px;padding-right:2px;';
+      meta.appendChild(time);
+      meta.appendChild(checks);
+      bubble.appendChild(meta);
       wrap.appendChild(bubble);
       box.appendChild(wrap);
       box.scrollTop = box.scrollHeight;
+      return checks;
+    }
+    function markSupportRead(checksEl) {
+      if (!checksEl) return;
+      checksEl.textContent = '✓✓';                      // double = read
+      checksEl.style.color = '#34B7F1';                 // WhatsApp read-blue
+    }
+    function updateSendSupportBtn() {
+      const input = document.getElementById('support-chat-input');
+      const btn = document.getElementById('support-send-btn');
+      if (!input || !btn) return;
+      const active = input.value.trim().length > 0;
+      btn.style.background = active ? '#0C0243' : '#cfcfcf';
+      btn.style.cursor = active ? 'pointer' : 'default';
     }
     function sendSupportMessage() {
       const input = document.getElementById('support-chat-input');
       if (!input) return;
       const text = input.value.trim();
       if (!text) return;
-      addSupportMessage('user', text);
+      const userChecks = addSupportMessage('user', text);
       input.value = '';
-      // Pertti replies after a short "typing" delay
-      setTimeout(() => addSupportMessage('bot', perttiReply(text)), 700);
+      updateSendSupportBtn();
+      // Pertti reads the message, then replies after a short "typing" delay
+      setTimeout(() => {
+        markSupportRead(userChecks);
+        const botChecks = addSupportMessage('bot', perttiReply(text));
+        setTimeout(() => markSupportRead(botChecks), 600);
+      }, 800);
+    }
+    function handleSupportAttachment(fileInput) {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      const userChecks = addSupportMessage('user', '📎 ' + f.name);
+      fileInput.value = '';
+      setTimeout(() => {
+        markSupportRead(userChecks);
+        const botChecks = addSupportMessage('bot', 'Kiitos, sain liitteesi! Vilkaisen sen läpi.');
+        setTimeout(() => markSupportRead(botChecks), 600);
+      }, 800);
+    }
+    function openSupportMenu()  { document.getElementById('support-menu-modal').style.display = 'flex'; }
+    function closeSupportMenu() { document.getElementById('support-menu-modal').style.display = 'none'; }
+    function endSupportChat() {
+      closeSupportMenu();
+      closeSupportChat();
+      // Reset the conversation so a fresh greeting shows next time
+      const box = document.getElementById('support-chat-messages');
+      if (box) { box.innerHTML = ''; delete box.dataset.seeded; }
+      const input = document.getElementById('support-chat-input');
+      if (input) input.value = '';
+      updateSendSupportBtn();
     }
     function perttiReply(msg) {
       const m = msg.toLowerCase();
@@ -8520,7 +8601,7 @@
       if (/(pysäköi|paikoit|aloita|lopeta|aloitus)/.test(m)) return 'Aloita pysäköinti viemällä P-merkki haluamasi alueen päälle ja paina aloituspainiketta. Voit lopettaa pysäköinnin samasta näkymästä milloin tahansa.';
       if (/(apple pay|kortti|maksutapa|lasku)/.test(m)) return 'Voit lisätä maksutavan (kortti tai Apple Pay) profiilin maksutapa-asetuksista. Tarvitsetko apua sen lisäämisessä?';
       if (/(kiitos|kiitti|thanks|thx)/.test(m)) return 'Eipä kestä! Autan mielelläni. Onko vielä jotain muuta?';
-      if (/(näkemiin|heippa|hei hei|kuittaan|moikytä)/.test(m)) return 'Kiitos yhteydenotosta ja oikein mukavaa päivänjatkoa!';
+      if (/(näkemiin|heippa|hei hei|kuittaan)/.test(m)) return 'Kiitos yhteydenotosta ja oikein mukavaa päivänjatkoa!';
       return 'Kiitos viestistä! Otan asian hoitooni. Voisitko tarkentaa hieman, niin osaan auttaa sinua paremmin?';
     }
     
