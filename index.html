@@ -6654,7 +6654,12 @@
           const areaName = (p.area_name && p.area_name !== '')
             ? p.area_name
             : ((p.source && p.source !== 'community') ? `Helsinki, Vyöhyke ${featZone}` : name);
-          const line1 = areaName;
+          // Max parking time appended to the first row, right of the area name,
+          // e.g. "Helsinki, Vyöhyke 1  |  Max. 2h" — as it was originally.
+          let maxSuffix = '';
+          if (p.max_hours !== null && p.max_hours !== undefined && p.max_hours !== '') maxSuffix = `  |  Max. ${p.max_hours}h`;
+          else if (p.max_minutes !== null && p.max_minutes !== undefined && p.max_minutes !== '') maxSuffix = `  |  Max. ${p.max_minutes} min`;
+          const line1 = areaName + maxSuffix;
           const srcType = (p.parking_type && p.parking_type !== '')
             ? p.parking_type
             : (p.source === 'hel_halli' ? 'Pysäköintihalli' : 'Kadunvarsipysäköinti');
@@ -6664,12 +6669,6 @@
           // Build details: voimassaoloaika, hinta, lisätiedot
           const isMaksullinen = p.source && (p.source.includes('kertamaksu') || p.source.includes('maksullinen'));
           let detailsHTML = '';
-          // Max parking time (previously shown in the header). Hours if set,
-          // otherwise minutes for sub-hour limits.
-          let maxTimeText = '';
-          if (p.max_hours !== null && p.max_hours !== undefined && p.max_hours !== '') maxTimeText = `${p.max_hours} h`;
-          else if (p.max_minutes !== null && p.max_minutes !== undefined && p.max_minutes !== '') maxTimeText = `${p.max_minutes} min`;
-          if (maxTimeText) detailsHTML += `<p class="price-label">Max. pysäköintiaika</p><p class="price-value">${escapeHtml(maxTimeText)}</p>`;
           // Validity hours. After the schema split (split_hours.sql), each
           // weekday column holds ONLY that day's hours, so render directly.
           // If Sunday has no data we still show the row with an en-dash to
