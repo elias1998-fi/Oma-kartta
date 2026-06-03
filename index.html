@@ -5969,13 +5969,44 @@
     let masterDataLoaded = false;
     let masterRows = [];  // raw rows for group matching
 
+    // ── Parking prices (city + zone) ─────────────────────────────────
+    // Loaded once from the parking_prices table ("Pysäköintien hinnat").
+    // Keyed by `${city_lowercase}|${zone_number}` → display label e.g. "4 €/h".
+    let parkingPrices = null;
+    let pricesLoading = false;
+    async function loadParkingPrices() {
+      if (parkingPrices || pricesLoading) return;
+      pricesLoading = true;
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/parking_prices?select=city,zone_number,price_label,price_per_hour`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const rows = await res.json();
+        const m = {};
+        rows.forEach(r => {
+          const label = r.price_label
+            || (r.price_per_hour != null ? `${String(r.price_per_hour).replace('.', ',')} €/h` : '');
+          m[`${(r.city || '').toLowerCase().trim()}|${r.zone_number}`] = label;
+        });
+        parkingPrices = m;
+      } catch (e) {
+        console.error('loadParkingPrices error:', e);
+        parkingPrices = {};   // cache empty result to avoid retry storms; falls back to "Maksullinen"
+      } finally {
+        pricesLoading = false;
+      }
+    }
+
     async function loadViewportTiles(signal) {
+      loadParkingPrices();          // load city/zone prices once (fire-and-forget)
       if (masterDataLoaded) return;
       masterDataLoaded = true;
 
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,area_name,area_type,parking_type,owner_parking_area,info_additional,max_hours,max_minutes,zone_number,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coordinates&limit=10000`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,area_name,area_type,parking_type,owner_parking_area,location_city,info_additional,max_hours,max_minutes,zone_number,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coordinates&limit=10000`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -6116,7 +6147,7 @@
             type: 'Feature',
             properties: {
               id: r.id, source: legacySourceFor(r.area_type, r.parking_type, r.max_hours), area_type: r.area_type,
-              area_name: r.area_name || '', parking_type: r.parking_type || '', owner_parking_area: r.owner_parking_area || '',
+              area_name: r.area_name || '', parking_type: r.parking_type || '', owner_parking_area: r.owner_parking_area || '', location_city: r.location_city || '',
               extra_info: r.info_additional || '', max_hours: r.max_hours,
               max_minutes: r.max_minutes,
               zone: r.zone_number,
@@ -6520,10 +6551,13 @@
           // Pricing first so we can fold it into the schedule table
           const isHalli = p.source === 'hel_halli';
           let priceText = '';
+          // Price comes from the parking_prices table, matched by this area's
+          // location_city + zone_number. Falls back to "Maksullinen" if the
+          // city/zone isn't in the table (or the table failed to load).
+          const priceKey  = `${(p.location_city || '').toLowerCase().trim()}|${featZone}`;
+          const zonePrice = (parkingPrices && parkingPrices[priceKey]) || null;
           if (isMaksullinen && !isHalli) {
-            priceText = (featZone === 1) ? '4 €/h'
-                      : (featZone === 2) ? '2 €/h'
-                      : 'Maksullinen';
+            priceText = zonePrice || 'Maksullinen';
           } else if (!isHalli) {
             priceText = 'Ilmainen';
           }
