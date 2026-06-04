@@ -3589,7 +3589,7 @@
   <!-- ══ ASIAKASPALVELU: Chat Pertin kanssa ══ -->
   <div id="support-chat-overlay" class="settings-detail-overlay">
     <div class="overlay-header">
-      <button class="overlay-back-btn" onclick="closeSupportChat()">←</button>
+      <button class="overlay-back-btn" onclick="confirmLeaveSupport()">←</button>
       <div class="overlay-title">Asiakaspalvelu</div>
     </div>
     <!-- Bot identity strip -->
@@ -3628,6 +3628,26 @@
         <button onclick="endSupportChat()" style="width:100%;height:48px;background:white;border:1.5px solid #e53935;color:#e53935;border-radius:12px;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;">Lopeta chat</button>
       </div>
     </div>
+    <!-- Leave-confirmation banner (shown from the back arrow) -->
+    <div id="support-leave-modal" style="display:none;position:absolute;inset:0;z-index:55;align-items:center;justify-content:center;">
+      <div onclick="closeLeaveSupport()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>
+      <div style="position:relative;background:white;border-radius:16px;padding:20px;width:min(88vw,360px);box-shadow:0 12px 48px rgba(0,0,0,0.35);font-family:Arial,sans-serif;">
+        <div style="font-size:16px;font-weight:700;color:#222;text-align:center;margin-bottom:18px;">Olet poistumassa keskustelusta</div>
+        <button onclick="minimizeSupportChat()" style="width:100%;min-height:48px;background:#0C0243;border:none;color:white;border-radius:12px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;margin-bottom:10px;padding:9px 12px;line-height:1.3;">Poistu ja pidä keskustelu avoimena taustalla</button>
+        <button onclick="endSupportChat()" style="width:100%;height:48px;background:white;border:1.5px solid #e53935;color:#e53935;border-radius:12px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;">Lopeta keskustelu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating, draggable "minimized chat" bubble (iPhone AssistiveTouch style) -->
+  <div id="support-bubble" style="display:none;position:fixed;right:18px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:96;width:56px;height:56px;border-radius:50%;background:white;border:2.5px solid #0C0243;box-shadow:0 4px 16px rgba(0,0,0,0.28);cursor:pointer;align-items:center;justify-content:center;touch-action:none;">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#0C0243" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;">
+      <path d="M4 13v-1a8 8 0 0 1 16 0v1"/>
+      <rect x="3" y="12.5" width="3.5" height="6.5" rx="1.6"/>
+      <rect x="17.5" y="12.5" width="3.5" height="6.5" rx="1.6"/>
+      <path d="M19.2 19v.6a2.6 2.6 0 0 1-2.6 2.6H13.5"/>
+    </svg>
+    <span style="position:absolute;top:1px;right:1px;width:14px;height:14px;border-radius:50%;background:#4caf50;border:2px solid white;pointer-events:none;"></span>
   </div>
 
   <!-- App settings overlay reached via Profiili → Asetukset. -->
@@ -8602,18 +8622,29 @@
       ongelmat: ['Sovellus kaatuu','Kartta ei lataudu','Paikannus ei toimi','Maksu ei onnistu'],
       muut:     ['Anna palautetta','Yhteistyö','Mediayhteydenotto','Jokin muu asia'],
     };
-    function showSupportChips(items, handler) {
+    function showSupportChips(items, handler, backHandler) {
       const box = document.getElementById('support-chat-messages');
       if (!box) return;
       const wrap = document.createElement('div');
       wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;margin-top:2px;';
+      let n = 0;
+      if (backHandler) {
+        const back = document.createElement('button');
+        back.textContent = '↩ Takaisin';
+        back.style.cssText = 'background:#eef0f4;color:#555;border:1px solid #d6d9e0;border-radius:18px;padding:8px 14px;font-size:13px;font-family:Arial,sans-serif;font-weight:600;cursor:pointer;line-height:1.25;';
+        back.classList.add('sup-pop');
+        back.style.animationDelay = '0s';
+        back.onclick = () => { wrap.remove(); backHandler(); };
+        wrap.appendChild(back);
+        n = 1;
+      }
       items.forEach((it, i) => {
         const label = (typeof it === 'string') ? it : it.label;
         const btn = document.createElement('button');
         btn.textContent = label;
         btn.style.cssText = 'background:white;color:#0C0243;border:1.5px solid #0C0243;border-radius:18px;padding:8px 14px;font-size:13px;font-family:Arial,sans-serif;font-weight:600;cursor:pointer;line-height:1.25;text-align:left;';
         btn.classList.add('sup-pop');
-        btn.style.animationDelay = (i * 0.06) + 's';
+        btn.style.animationDelay = ((i + n) * 0.06) + 's';
         btn.onclick = () => handler(it, wrap);
         wrap.appendChild(btn);
       });
@@ -8626,7 +8657,7 @@
       markSupportRead(c);
       perttiSay('Selvä homma. Tarkennatko mitä asia koskee', () => {
         const subs = SUPPORT_SUBTOPICS[topic.key] || [];
-        if (subs.length) setTimeout(() => showSupportChips(subs, chooseSupportSub), 3000);
+        if (subs.length) setTimeout(() => showSupportChips(subs, chooseSupportSub, () => showSupportChips(SUPPORT_TOPICS, chooseSupportTopic)), 3000);
       });
     }
     function chooseSupportSub(label, chipWrap) {
@@ -8779,8 +8810,26 @@
     }
     function openSupportMenu()  { document.getElementById('support-menu-modal').style.display = 'flex'; }
     function closeSupportMenu() { document.getElementById('support-menu-modal').style.display = 'none'; }
+    function confirmLeaveSupport() { document.getElementById('support-leave-modal').style.display = 'flex'; }
+    function closeLeaveSupport()   { document.getElementById('support-leave-modal').style.display = 'none'; }
+    function showSupportBubble()   { const b = document.getElementById('support-bubble'); if (b) b.style.display = 'flex'; }
+    function hideSupportBubble()   { const b = document.getElementById('support-bubble'); if (b) b.style.display = 'none'; }
+    function reopenSupportChat() {
+      hideSupportBubble();
+      document.getElementById('support-chat-overlay').classList.add('open');
+    }
+    function minimizeSupportChat() {
+      closeLeaveSupport();
+      document.getElementById('support-chat-overlay').classList.remove('open');
+      const landing = document.getElementById('support-landing-overlay');
+      if (landing) landing.classList.remove('open');
+      if (typeof closeProfileOverlay === 'function') closeProfileOverlay();
+      showSupportBubble();
+    }
     function endSupportChat() {
       closeSupportMenu();
+      closeLeaveSupport();
+      hideSupportBubble();
       closeSupportChat();
       // Reset the conversation so a fresh greeting shows next time
       const box = document.getElementById('support-chat-messages');
@@ -8789,6 +8838,50 @@
       if (input) input.value = '';
       updateSendSupportBtn();
     }
+    // Draggable bubble that snaps to the nearest side edge (AssistiveTouch-style)
+    (function initSupportBubbleDrag() {
+      const b = document.getElementById('support-bubble');
+      if (!b) return;
+      let dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
+      const MARGIN = 12;
+      function pt(e) {
+        const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
+        return { x: t.clientX, y: t.clientY };
+      }
+      function onDown(e) {
+        dragging = true; moved = false;
+        const p = pt(e), r = b.getBoundingClientRect();
+        ox = r.left; oy = r.top; sx = p.x; sy = p.y;
+        b.style.transition = 'none';
+        b.style.right = 'auto'; b.style.bottom = 'auto';
+        b.style.left = ox + 'px'; b.style.top = oy + 'px';
+      }
+      function onMove(e) {
+        if (!dragging) return;
+        const p = pt(e), dx = p.x - sx, dy = p.y - sy;
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+        const w = b.offsetWidth, h = b.offsetHeight;
+        let nx = Math.max(MARGIN, Math.min(window.innerWidth  - w - MARGIN, ox + dx));
+        let ny = Math.max(MARGIN, Math.min(window.innerHeight - h - MARGIN, oy + dy));
+        b.style.left = nx + 'px'; b.style.top = ny + 'px';
+        if (e.cancelable) e.preventDefault();
+      }
+      function onUp() {
+        if (!dragging) return;
+        dragging = false;
+        if (!moved) { reopenSupportChat(); return; }   // treated as a tap
+        const w = b.offsetWidth, r = b.getBoundingClientRect();
+        const snapLeft = (r.left + w / 2) < window.innerWidth / 2;
+        b.style.transition = 'left 0.22s cubic-bezier(0.22,1,0.36,1)';
+        b.style.left = (snapLeft ? MARGIN : (window.innerWidth - w - MARGIN)) + 'px';
+      }
+      b.addEventListener('touchstart', onDown, { passive: true });
+      b.addEventListener('touchmove',  onMove, { passive: false });
+      b.addEventListener('touchend',   onUp);
+      b.addEventListener('mousedown',  onDown);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup',   onUp);
+    })();
     function perttiReply(msg) {
       const m = msg.toLowerCase();
       if (/(^| )(moro|moi|hei|terve|morjens|moikka)/.test(m)) return 'Moro! Mukava kuulla sinusta. Kerro vain, missä asiassa voin auttaa.';
