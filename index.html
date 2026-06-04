@@ -379,6 +379,12 @@
       background: #9aa0a6; display: inline-block;
       animation: supTypingBounce 1.2s infinite ease-in-out;
     }
+    /* Pehmeä "pulpahdus" chat-viesteille, indikaattorille ja laatikoille */
+    @keyframes supPop {
+      from { opacity: 0; transform: translateY(10px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+    .sup-pop { animation: supPop 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
     #search-overlay, #plus-overlay {
       position: fixed; inset: 0;
@@ -8601,11 +8607,13 @@
       if (!box) return;
       const wrap = document.createElement('div');
       wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;margin-top:2px;';
-      items.forEach(it => {
+      items.forEach((it, i) => {
         const label = (typeof it === 'string') ? it : it.label;
         const btn = document.createElement('button');
         btn.textContent = label;
         btn.style.cssText = 'background:white;color:#0C0243;border:1.5px solid #0C0243;border-radius:18px;padding:8px 14px;font-size:13px;font-family:Arial,sans-serif;font-weight:600;cursor:pointer;line-height:1.25;text-align:left;';
+        btn.classList.add('sup-pop');
+        btn.style.animationDelay = (i * 0.06) + 's';
         btn.onclick = () => handler(it, wrap);
         wrap.appendChild(btn);
       });
@@ -8633,7 +8641,7 @@
       const box = document.getElementById('support-chat-messages');
       if (box && !box.dataset.seeded) {
         box.dataset.seeded = '1';
-        // Offline + waiting note → after 3s online → typing 3s → greeting → chips
+        // Offline + waiting note → after 2s online → typing 3s → greeting → chips
         setSupportStatus('offline');
         addSupportSystem('Odota, virtuaalinen asiakaspalvelija liittyy keskusteluun.');
         setTimeout(() => {
@@ -8641,7 +8649,7 @@
           perttiSay('Moro! Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Miten voisin autella sinua tänään?', () => {
             setTimeout(() => showSupportChips(SUPPORT_TOPICS, chooseSupportTopic), 3000);
           });
-        }, 3000);
+        }, 2000);
       }
     }
     function closeSupportChat() {
@@ -8658,6 +8666,7 @@
       if (!box) return null;
       const isBot = who === 'bot';
       const wrap = document.createElement('div');
+      wrap.className = 'sup-pop';
       wrap.style.cssText = `display:flex;justify-content:${isBot ? 'flex-start' : 'flex-end'};`;
       const bubble = document.createElement('div');
       bubble.style.cssText = 'max-width:80%;padding:8px 12px 5px 13px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word;'
@@ -8711,6 +8720,7 @@
       const box = document.getElementById('support-chat-messages');
       if (!box) return;
       const wrap = document.createElement('div');
+      wrap.className = 'sup-pop';
       wrap.style.cssText = 'display:flex;justify-content:center;';
       const note = document.createElement('div');
       note.textContent = text;
@@ -8723,6 +8733,7 @@
       const box = document.getElementById('support-chat-messages');
       if (!box) return null;
       const wrap = document.createElement('div');
+      wrap.className = 'sup-pop';
       wrap.style.cssText = 'display:flex;justify-content:flex-start;';
       const bubble = document.createElement('div');
       bubble.style.cssText = 'background:white;border-radius:16px;border-bottom-left-radius:5px;box-shadow:0 1px 2px rgba(0,0,0,0.08);padding:11px 14px;display:flex;align-items:center;gap:4px;';
