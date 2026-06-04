@@ -8618,7 +8618,7 @@
       markSupportRead(c);
       perttiSay('Selvä homma. Tarkennatko mitä asia koskee', () => {
         const subs = SUPPORT_SUBTOPICS[topic.key] || [];
-        if (subs.length) setTimeout(() => showSupportChips(subs, chooseSupportSub), 1500);
+        if (subs.length) setTimeout(() => showSupportChips(subs, chooseSupportSub), 3000);
       });
     }
     function chooseSupportSub(label, chipWrap) {
@@ -8633,15 +8633,15 @@
       const box = document.getElementById('support-chat-messages');
       if (box && !box.dataset.seeded) {
         box.dataset.seeded = '1';
-        // Offline + waiting note → after 1.5s online → typing 1.5s → greeting → chips
+        // Offline + waiting note → after 3s online → typing 3s → greeting → chips
         setSupportStatus('offline');
         addSupportSystem('Odota, virtuaalinen asiakaspalvelija liittyy keskusteluun.');
         setTimeout(() => {
           setSupportStatus('online');
           perttiSay('Moro! Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Miten voisin autella sinua tänään?', () => {
-            setTimeout(() => showSupportChips(SUPPORT_TOPICS, chooseSupportTopic), 1500);
+            setTimeout(() => showSupportChips(SUPPORT_TOPICS, chooseSupportTopic), 3000);
           });
-        }, 1500);
+        }, 3000);
       }
     }
     function closeSupportChat() {
@@ -8737,7 +8737,7 @@
       box.scrollTop = box.scrollHeight;
       return wrap;
     }
-    // Shows a 1.5s "Kirjoittaa…" indicator, then Pertti's message (with read tick).
+    // Shows a 3s "Kirjoittaa…" indicator, then Pertti's message (with read tick).
     function perttiSay(text, onDone) {
       const typing = showSupportTyping();
       setTimeout(() => {
@@ -8745,7 +8745,7 @@
         const checks = addSupportMessage('bot', text);
         setTimeout(() => markSupportRead(checks), 600);
         if (onDone) onDone();
-      }, 1500);
+      }, 3000);
     }
     function sendSupportMessage() {
       const input = document.getElementById('support-chat-input');
