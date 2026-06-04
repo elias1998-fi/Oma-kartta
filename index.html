@@ -3128,10 +3128,8 @@
     <!-- Brand wordmark — placeholder until the logo is ready -->
     <div class="profile-brand">
       <div class="profile-brand-inner">
-        <span class="brand-bracket brand-bracket-tl"></span>
         <div class="profile-brand-text">TotalParking</div>
         <div class="profile-brand-tagline">100% suomalainen</div>
-        <span class="brand-bracket brand-bracket-br"></span>
       </div>
     </div>
     <div class="overlay-content">
@@ -3164,11 +3162,11 @@
         <div class="settings-item" onclick="openPaymentSettings()">
           <div class="settings-item-icon">
             <div style="width:30px;height:20px;display:flex;align-items:center;justify-content:center;background:white;border:1.4px solid #ddd;border-radius:5px;">
-              <svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg" style="width:22px;height:auto;">
-                <rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/>
-                <rect x="1" y="5" width="30" height="3" fill="#555"/>
-                <rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/>
-                <rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/>
+              <svg viewBox="0 0 32 22" xmlns="http://www.w3.org/2000/svg" style="width:23px;height:auto;">
+                <rect x="1.5" y="3.5" width="29" height="15" rx="2.6" fill="none" stroke="#0C0243" stroke-width="1.6"/>
+                <rect x="5" y="8.4" width="5.6" height="4.6" rx="1.1" fill="none" stroke="#0C0243" stroke-width="1.3"/>
+                <path d="M20.8 8.4a4.3 4.3 0 0 1 0 5.6" fill="none" stroke="#0C0243" stroke-width="1.3" stroke-linecap="round"/>
+                <path d="M23.4 6.8a6.6 6.6 0 0 1 0 8.8" fill="none" stroke="#0C0243" stroke-width="1.3" stroke-linecap="round"/>
               </svg>
             </div>
           </div>
@@ -3519,13 +3517,47 @@
         <button class="sheet-close-btn" onclick="closeAddVehicleSheet()">✕</button>
       </div>
       <div class="add-vehicle-body">
-        <label class="add-vehicle-label" for="vehicle-plate-input">Rekisterinumero</label>
-        <input type="text" id="vehicle-plate-input" class="add-vehicle-input"
-               placeholder="ABC-123" autocomplete="off" maxlength="10">
+        <div style="display:flex;gap:10px;align-items:flex-end;">
+          <div style="flex:0 0 44%;display:flex;flex-direction:column;min-width:0;">
+            <label class="add-vehicle-label" for="vehicle-country-input">Rekisteröintimaa</label>
+            <select id="vehicle-country-input" class="add-vehicle-input" onchange="onVehicleCountryChange()" style="appearance:none;-webkit-appearance:none;padding-right:28px;background:#fff url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>&quot;) no-repeat right 10px center;">
+              <option value="FI" selected>🇫🇮 Suomi</option>
+              <option value="SE">🇸🇪 Ruotsi</option>
+              <option value="NO">🇳🇴 Norja</option>
+              <option value="DK">🇩🇰 Tanska</option>
+              <option value="EE">🇪🇪 Viro</option>
+              <option value="LV">🇱🇻 Latvia</option>
+              <option value="LT">🇱🇹 Liettua</option>
+              <option value="DE">🇩🇪 Saksa</option>
+              <option value="PL">🇵🇱 Puola</option>
+              <option value="RU">🇷🇺 Venäjä</option>
+              <option value="FR">🇫🇷 Ranska</option>
+              <option value="ES">🇪🇸 Espanja</option>
+              <option value="IT">🇮🇹 Italia</option>
+              <option value="NL">🇳🇱 Alankomaat</option>
+              <option value="GB">🇬🇧 Iso-Britannia</option>
+              <option value="OTHER">🌍 Muu</option>
+            </select>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+            <label class="add-vehicle-label" for="vehicle-plate-input">Rekisteritunnus</label>
+            <input type="text" id="vehicle-plate-input" class="add-vehicle-input"
+                   placeholder="ABC-123" autocomplete="off" maxlength="12" oninput="onVehiclePlateInput(this)">
+          </div>
+        </div>
 
-        <label class="add-vehicle-label" for="vehicle-name-input">Nimi (valinnainen)</label>
+        <label class="add-vehicle-label" for="vehicle-name-input">Lempinimi (valinnainen)</label>
         <input type="text" id="vehicle-name-input" class="add-vehicle-input"
                placeholder="esim. Oma auto" autocomplete="off" maxlength="40">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0 12px;border-top:1px solid #f0f0f0;margin-top:8px;">
+          <div style="flex:1;font-size:13.5px;color:#333;line-height:1.4;">Aloita pysäköinti automaattisesti kun saavun pysäköintialueelle, jossa on kamera sekä puomi</div>
+          <label class="ios-switch"><input type="checkbox" id="vehicle-autopark"><span class="ios-switch-track"></span></label>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0 4px;border-top:1px solid #f0f0f0;">
+          <div style="flex:1;font-size:13.5px;color:#333;line-height:1.4;">Autoni on sähköauto tai ladattava hybridi</div>
+          <label class="ios-switch"><input type="checkbox" id="vehicle-ev"><span class="ios-switch-track"></span></label>
+        </div>
 
         <button class="add-vehicle-save" onclick="saveNewVehicle()">Tallenna</button>
       </div>
@@ -3746,8 +3778,8 @@
             <div class="settings-row-title">Salli sovelluksen ilmoitukset (pakollinen)</div>
             <div class="settings-row-sub">Sovellus ilmoittaa tärkeistä pysäköintiin liittyvistä asioista</div>
           </div>
-          <label class="ios-switch">
-            <input type="checkbox" id="setting-notif-enabled" checked onchange="onSettingToggle(this)">
+          <label class="ios-switch" style="opacity:0.45;pointer-events:none;">
+            <input type="checkbox" id="setting-notif-enabled" checked disabled>
             <span class="ios-switch-track"></span>
           </label>
         </div>
@@ -6648,7 +6680,7 @@
       if (!masterRows || !masterRows.length) return [];
       return masterRows
         .filter(r =>
-          r.source === props.source &&
+          legacySourceFor(r.area_type, r.parking_type, r.max_hours) === props.source &&
           String(r.max_hours ?? '') === String(props.max_hours ?? '')
         )
         .map(r => String(r.id));
@@ -8385,19 +8417,43 @@
       // Reset fields each time the sheet opens
       const plateInput = document.getElementById('vehicle-plate-input');
       const nameInput  = document.getElementById('vehicle-name-input');
+      const country    = document.getElementById('vehicle-country-input');
+      const autopark   = document.getElementById('vehicle-autopark');
+      const ev         = document.getElementById('vehicle-ev');
       if (plateInput) plateInput.value = '';
       if (nameInput)  nameInput.value  = '';
+      if (country)    country.value    = 'FI';
+      if (autopark)   autopark.checked = false;
+      if (ev)         ev.checked       = false;
       setTimeout(() => { if (plateInput) plateInput.focus(); }, 100);
     }
     function closeAddVehicleSheet() {
       const sheet = document.getElementById('add-vehicle-sheet');
       if (sheet) sheet.classList.remove('visible');
     }
+    // Finnish plates are always uppercase — auto-capitalise as the user types
+    function onVehiclePlateInput(input) {
+      const c = document.getElementById('vehicle-country-input');
+      if (c && c.value === 'FI') {
+        const pos = input.selectionStart;
+        input.value = input.value.toUpperCase();
+        try { input.setSelectionRange(pos, pos); } catch (e) {}
+      }
+    }
+    function onVehicleCountryChange() {
+      const c = document.getElementById('vehicle-country-input');
+      const input = document.getElementById('vehicle-plate-input');
+      if (c && input && c.value === 'FI') input.value = input.value.toUpperCase();
+    }
     function saveNewVehicle() {
-      const plate = (document.getElementById('vehicle-plate-input').value || '').trim().toUpperCase();
+      const country = (document.getElementById('vehicle-country-input') || {}).value || 'FI';
+      let plate = (document.getElementById('vehicle-plate-input').value || '').trim();
+      if (country === 'FI') plate = plate.toUpperCase();   // Finnish plates uppercase only
       const name  = (document.getElementById('vehicle-name-input').value || '').trim();
+      const autopark = !!(document.getElementById('vehicle-autopark') || {}).checked;
+      const ev       = !!(document.getElementById('vehicle-ev') || {}).checked;
       if (!plate) {
-        showCustomToast('Rekisterinumero on pakollinen', 2200);
+        showCustomToast('Rekisteritunnus on pakollinen', 2200);
         return;
       }
       const vehicles = loadVehicles();
@@ -8406,7 +8462,7 @@
         showCustomToast('Tämä ajoneuvo on jo lisätty', 2200);
         return;
       }
-      vehicles.push({ plate, name });
+      vehicles.push({ plate, name, country, autopark, ev });
       saveVehicles(vehicles);
       closeAddVehicleSheet();
       renderVehiclesList();
