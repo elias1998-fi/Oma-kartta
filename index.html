@@ -3526,8 +3526,8 @@
     </div>
     <div class="overlay-content">
       <div class="settings-section">
-        <div class="settings-item" onclick="showCustomToast('Käyttäjätiedot — tulossa pian', 2200)">
-          <div class="settings-item-text"><div class="settings-item-label">Käyttäjätiedot</div></div>
+        <div class="settings-item" onclick="showCustomToast('Käyttöehdot — tulossa pian', 2200)">
+          <div class="settings-item-text"><div class="settings-item-label">Käyttöehdot</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="showCustomToast('Tietosuojaseloste — tulossa pian', 2200)">
@@ -3542,7 +3542,7 @@
           <div class="settings-item-text"><div class="settings-item-label">Sovelluksen versio</div></div>
           <div class="about-version">1.0.0</div>
         </div>
-        <div class="settings-item" onclick="window.open('https://totalparking.fi','_blank')">
+        <div class="settings-item" onclick="confirmOpenExternal('https://totalparking.fi')">
           <div class="settings-item-text"><div class="settings-item-label">Yrityksen kotisivut</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
@@ -3568,17 +3568,17 @@
           <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;">90% tilanteista ratkeavat tätä kautta</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
             <span style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;"></span>
-            <span style="font-size:13px;color:#7ee787;font-weight:600;">Vastausaika n. 0–1 min</span>
+            <span style="font-size:13px;color:#7ee787;font-weight:600;">Vastausaika 0–1 min</span>
           </div>
         </div>
         <div style="color:rgba(255,255,255,0.6);font-size:22px;flex-shrink:0;">›</div>
       </button>
 
       <!-- Deliberately understated option: email -->
-      <button onclick="contactSupportEmail()" style="width:100%;text-align:left;border:none;cursor:pointer;background:#ececec;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+      <button onclick="contactSupportEmail()" style="width:100%;text-align:left;border:none;cursor:pointer;background:#e3e3e3;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:#888;line-height:1.3;">Lähetä sähköposti asiakaspalveluun</div>
-          <div style="font-size:11px;color:#aaa;margin-top:2px;">Vastausaika n. 2–3 työpäivää</div>
+          <div style="font-size:13px;font-weight:600;color:#5f5f5f;line-height:1.3;">Lähetä sähköposti asiakaspalveluun</div>
+          <div style="font-size:11px;color:#888;margin-top:2px;">Vastausaika n. 2–3 työpäivää</div>
           <div style="font-size:11px;color:#aaa;margin-top:2px;">Haastavammat tilanteet</div>
         </div>
         <div style="color:#bbb;font-size:16px;flex-shrink:0;">›</div>
@@ -3648,6 +3648,20 @@
       <path d="M19.2 19v.6a2.6 2.6 0 0 1-2.6 2.6H13.5"/>
     </svg>
     <span style="position:absolute;top:1px;right:1px;width:14px;height:14px;border-radius:50%;background:#4caf50;border:2px solid white;pointer-events:none;"></span>
+  </div>
+
+  <!-- iOS-style "open in external browser?" alert -->
+  <div id="ios-alert" style="display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;background:rgba(0,0,0,0.25);">
+    <div style="width:270px;background:rgba(250,250,250,0.97);border-radius:14px;overflow:hidden;box-shadow:0 12px 44px rgba(0,0,0,0.32);font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;">
+      <div style="padding:18px 16px 14px;text-align:center;">
+        <div style="font-size:16px;font-weight:600;color:#000;margin-bottom:3px;">Avataanko ulkoisessa selaimessa?</div>
+        <div id="ios-alert-msg" style="font-size:12.5px;color:#444;line-height:1.35;word-break:break-all;"></div>
+      </div>
+      <div style="display:flex;border-top:1px solid rgba(60,60,67,0.29);">
+        <button onclick="closeIosAlert()" style="flex:1;height:44px;background:transparent;border:none;border-right:1px solid rgba(60,60,67,0.29);color:#007aff;font-size:17px;cursor:pointer;font-family:inherit;">Peruuta</button>
+        <button onclick="iosAlertConfirm()" style="flex:1;height:44px;background:transparent;border:none;color:#007aff;font-size:17px;font-weight:600;cursor:pointer;font-family:inherit;">Avaa</button>
+      </div>
+    </div>
   </div>
 
   <!-- App settings overlay reached via Profiili → Asetukset. -->
@@ -8607,20 +8621,24 @@
     }
     // Guided topic chips shown after Pertti's greeting
     const SUPPORT_TOPICS = [
-      { key:'tili',     label:'Asiakastilin hallinta' },
-      { key:'pysak',    label:'Pysäköinti' },
-      { key:'lataus',   label:'Sähköauton lataus' },
-      { key:'maksut',   label:'Maksut ja laskut' },
-      { key:'ongelmat', label:'Ongelmat sovelluksen tai palvelun käytössä' },
-      { key:'muut',     label:'Muut asiat' },
+      { key:'tili',       label:'Asiakastilin hallinta' },
+      { key:'pysak',      label:'Pysäköinti' },
+      { key:'lataus',     label:'Sähköauton lataus' },
+      { key:'maksut',     label:'Maksut ja laskut' },
+      { key:'virhemaksu', label:'Sain pysäköintivirhemaksun' },
+      { key:'ongelmat',   label:'Ongelmat sovelluksen tai palvelun käytössä' },
+      { key:'idea',       label:'Kehitysidea sovellukseen' },
+      { key:'muut',       label:'Muut asiat' },
     ];
     const SUPPORT_SUBTOPICS = {
-      tili:     ['Salasanan vaihto','Henkilötietojen muutos','Tilin poistaminen','Kirjautumisongelma'],
-      pysak:    ['Pysäköinnin aloitus','Pysäköinnin lopetus','Alueet ja hinnat','Maksuvyöhykkeet'],
-      lataus:   ['Latauspisteen löytäminen','Latauksen aloitus','Latauksen hinnoittelu','Ongelma latauksessa'],
-      maksut:   ['Maksutavan lisäys','Kuitti tai lasku','Veloitus on epäselvä','Hyvityspyyntö'],
-      ongelmat: ['Sovellus kaatuu','Kartta ei lataudu','Paikannus ei toimi','Maksu ei onnistu'],
-      muut:     ['Anna palautetta','Yhteistyö','Mediayhteydenotto','Jokin muu asia'],
+      tili:       ['Salasanan vaihto','Henkilötietojen muutos','Tilin poistaminen','Kirjautumisongelma'],
+      pysak:      ['Pysäköinnin aloitus','Pysäköinnin lopetus','Alueet ja hinnat','Maksuvyöhykkeet'],
+      lataus:     ['Latauspisteen löytäminen','Latauksen aloitus','Latauksen hinnoittelu','Ongelma latauksessa'],
+      maksut:     ['Maksutavan lisäys','Kuitti tai lasku','Veloitus on epäselvä','Hyvityspyyntö'],
+      virhemaksu: ['Maksu on mielestäni aiheeton','Haluan valittaa maksusta','Maksun maksaminen','Maksun eräpäivä'],
+      ongelmat:   ['Sovellus kaatuu','Kartta ei lataudu','Paikannus ei toimi','Maksu ei onnistu'],
+      idea:       ['Uusi ominaisuus','Parannusehdotus','Muu idea'],
+      muut:       ['Anna palautetta','Yhteistyö','Mediayhteydenotto','Jokin muu asia'],
     };
     function showSupportChips(items, handler, backHandler) {
       const box = document.getElementById('support-chat-messages');
@@ -8674,9 +8692,10 @@
         box.dataset.seeded = '1';
         // Offline + waiting note → after 2s online → typing 3s → greeting → chips
         setSupportStatus('offline');
-        addSupportSystem('Odota, virtuaalinen asiakaspalvelija liittyy keskusteluun.');
+        const joinNote = addSupportSystem('Odota, virtuaalinen asiakaspalvelija liittyy keskusteluun.');
         setTimeout(() => {
           setSupportStatus('online');
+          if (joinNote) joinNote.textContent = 'Virtuaalinen asiakaspalvelija liittyi keskusteluun';
           perttiSay('Moro! Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Miten voisin autella sinua tänään?', () => {
             setTimeout(() => showSupportChips(SUPPORT_TOPICS, chooseSupportTopic), 3000);
           });
@@ -8759,6 +8778,7 @@
       wrap.appendChild(note);
       box.appendChild(wrap);
       box.scrollTop = box.scrollHeight;
+      return note;
     }
     function showSupportTyping() {
       const box = document.getElementById('support-chat-messages');
@@ -8882,6 +8902,16 @@
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup',   onUp);
     })();
+    // iOS-style external-link confirmation
+    let _iosAlertUrl = null;
+    function confirmOpenExternal(url) {
+      _iosAlertUrl = url;
+      const msg = document.getElementById('ios-alert-msg');
+      if (msg) msg.textContent = String(url).replace(/^https?:\/\//, '');
+      document.getElementById('ios-alert').style.display = 'flex';
+    }
+    function closeIosAlert() { document.getElementById('ios-alert').style.display = 'none'; }
+    function iosAlertConfirm() { const u = _iosAlertUrl; closeIosAlert(); if (u) window.open(u, '_blank'); }
     function perttiReply(msg) {
       const m = msg.toLowerCase();
       if (/(^| )(moro|moi|hei|terve|morjens|moikka)/.test(m)) return 'Moro! Mukava kuulla sinusta. Kerro vain, missä asiassa voin auttaa.';
