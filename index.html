@@ -369,6 +369,17 @@
       border-right: 4px solid #7ee787;
     }
 
+    /* Pertti "kirjoittaa" — WhatsApp-tyyliset animoidut pisteet */
+    @keyframes supTypingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+      30% { transform: translateY(-4px); opacity: 1; }
+    }
+    .sup-typing-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #9aa0a6; display: inline-block;
+      animation: supTypingBounce 1.2s infinite ease-in-out;
+    }
+
     #search-overlay, #plus-overlay {
       position: fixed; inset: 0;
       background: #f2f3f5;
@@ -3581,7 +3592,7 @@
         <div style="width:42px;height:42px;border-radius:50%;background:#0C0243;color:white;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;flex-shrink:0;">P</div>
         <div style="font-family:Arial,sans-serif;line-height:1.3;">
           <div style="font-size:15px;font-weight:700;color:#222;">Pertti</div>
-          <div style="font-size:12px;color:#7ee787;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#7ee787;display:inline-block;"></span>Paikalla</div>
+          <div id="support-status" style="font-size:12px;color:#e53935;display:flex;align-items:center;gap:5px;"><span id="support-status-dot" style="width:7px;height:7px;border-radius:50%;background:#e53935;display:inline-block;"></span><span id="support-status-text">Ei linjoilla</span></div>
         </div>
       </div>
       <button onclick="openSupportMenu()" aria-label="Valikko" style="width:36px;height:36px;border:none;background:transparent;color:#555;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;">⋮</button>
@@ -8619,13 +8630,18 @@
     function openSupportChat() {
       document.getElementById('support-chat-overlay').classList.add('open');
       updateSendSupportBtn();
-      // Seed Pertti's greeting (with typing indicator) + topic chips once per session
       const box = document.getElementById('support-chat-messages');
       if (box && !box.dataset.seeded) {
         box.dataset.seeded = '1';
-        perttiSay('Moro! Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Miten voisin autella sinua tänään?', () => {
-          setTimeout(() => showSupportChips(SUPPORT_TOPICS, chooseSupportTopic), 1500);
-        });
+        // Offline + waiting note → after 1.5s online → typing 1.5s → greeting → chips
+        setSupportStatus('offline');
+        addSupportSystem('Odota, virtuaalinen asiakaspalvelija liittyy keskusteluun.');
+        setTimeout(() => {
+          setSupportStatus('online');
+          perttiSay('Moro! Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Miten voisin autella sinua tänään?', () => {
+            setTimeout(() => showSupportChips(SUPPORT_TOPICS, chooseSupportTopic), 1500);
+          });
+        }, 1500);
       }
     }
     function closeSupportChat() {
@@ -8680,14 +8696,42 @@
       btn.style.background = active ? '#0C0243' : '#cfcfcf';
       btn.style.cursor = active ? 'pointer' : 'default';
     }
+    function setSupportStatus(state) {
+      const wrap = document.getElementById('support-status');
+      const dot  = document.getElementById('support-status-dot');
+      const txt  = document.getElementById('support-status-text');
+      if (!wrap || !dot || !txt) return;
+      const online = (state === 'online');
+      const color = online ? '#7ee787' : '#e53935';
+      wrap.style.color = color;
+      dot.style.background = color;
+      txt.textContent = online ? 'Paikalla' : 'Ei linjoilla';
+    }
+    function addSupportSystem(text) {
+      const box = document.getElementById('support-chat-messages');
+      if (!box) return;
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;justify-content:center;';
+      const note = document.createElement('div');
+      note.textContent = text;
+      note.style.cssText = 'background:rgba(0,0,0,0.06);color:#777;font-size:12px;font-family:Arial,sans-serif;padding:6px 12px;border-radius:10px;text-align:center;max-width:85%;';
+      wrap.appendChild(note);
+      box.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+    }
     function showSupportTyping() {
       const box = document.getElementById('support-chat-messages');
       if (!box) return null;
       const wrap = document.createElement('div');
       wrap.style.cssText = 'display:flex;justify-content:flex-start;';
       const bubble = document.createElement('div');
-      bubble.style.cssText = 'background:white;color:#888;border-radius:16px;border-bottom-left-radius:5px;box-shadow:0 1px 2px rgba(0,0,0,0.08);padding:8px 14px;font-size:13px;font-family:Arial,sans-serif;font-style:italic;';
-      bubble.textContent = 'Kirjoittaa…';
+      bubble.style.cssText = 'background:white;border-radius:16px;border-bottom-left-radius:5px;box-shadow:0 1px 2px rgba(0,0,0,0.08);padding:11px 14px;display:flex;align-items:center;gap:4px;';
+      for (let i = 0; i < 3; i++) {
+        const d = document.createElement('span');
+        d.className = 'sup-typing-dot';
+        d.style.animationDelay = (i * 0.15) + 's';
+        bubble.appendChild(d);
+      }
       wrap.appendChild(bubble);
       box.appendChild(wrap);
       box.scrollTop = box.scrollHeight;
