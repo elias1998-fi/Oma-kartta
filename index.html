@@ -3629,11 +3629,31 @@
     </div>
   </div>
 
+  <!-- ══ ASIAKASPALVELU: Chat historia (lista) ══ -->
+  <div id="support-history-overlay" class="settings-detail-overlay" style="z-index:104;">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeSupportHistory()">←</button>
+      <div class="overlay-title">Chat historia</div>
+    </div>
+    <div id="support-history-body" style="flex:1;overflow-y:auto;padding:14px 14px 30px;font-family:Arial,sans-serif;background:#f5f6f8;"></div>
+  </div>
+
+  <!-- ══ ASIAKASPALVELU: Yksittäinen keskustelu ══ -->
+  <div id="support-transcript-overlay" class="settings-detail-overlay" style="z-index:105;">
+    <div class="overlay-header">
+      <button class="overlay-back-btn" onclick="closeSupportTranscript()">←</button>
+      <div class="overlay-title">Keskustelu</div>
+    </div>
+    <div id="support-transcript-meta" style="flex-shrink:0;padding:10px 16px;background:white;border-bottom:1px solid #eee;font-family:Arial,sans-serif;font-size:12px;color:#888;"></div>
+    <div id="support-transcript-body" style="flex:1;overflow-y:auto;padding:14px 14px 30px;font-family:Arial,sans-serif;background:#f5f6f8;"></div>
+  </div>
+
   <!-- ══ ASIAKASPALVELU: Chat Pertin kanssa ══ -->
   <div id="support-chat-overlay" class="settings-detail-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="handleSupportBack()">←</button>
       <div class="overlay-title">Asiakaspalvelu</div>
+      <button onclick="openSupportHistory()" style="margin-left:auto;height:38px;padding:0 14px;background:#f0f0f0;border:none;border-radius:12px;cursor:pointer;font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#0C0243;white-space:nowrap;">Chat historia</button>
     </div>
     <!-- Bot identity strip -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:white;border-bottom:1px solid #eee;flex-shrink:0;">
@@ -8717,6 +8737,7 @@
       box.scrollTop = box.scrollHeight;
     }
     let supportEngaged = false;   // true once the user types something or taps a topic/subtopic
+    let supportLog = [];          // running transcript of the current conversation (for Chat history)
     function supportIsEngaged() {
       if (supportEngaged) return true;
       const input = document.getElementById('support-chat-input');
@@ -8750,6 +8771,7 @@
       if (box && !box.dataset.seeded) {
         box.dataset.seeded = '1';
         supportEngaged = false;
+        supportLog = [];
         // Offline + waiting note → after 2s online → typing 3s → greeting → chips
         setSupportStatus('offline');
         const joinNote = addSupportSystem('Odota, virtuaalinen asiakaspalvelija liittyy keskusteluun.');
@@ -8800,6 +8822,7 @@
       wrap.appendChild(bubble);
       box.appendChild(wrap);
       box.scrollTop = box.scrollHeight;
+      supportLog.push({ w: who, t: text, hm: time.textContent });
       return checks;
     }
     function markSupportRead(checksEl) {
@@ -8914,12 +8937,102 @@
       if (sc) { sc.style.transform = 'translate(0,0) scale(0.2)'; sc.style.opacity = '0'; sc.style.pointerEvents = 'none'; }
       b.classList.remove('sat-open');
     }
+    let _satToggleLock = 0;
     function toggleSupportSatellites() {
+      const now = Date.now();
+      if (now - _satToggleLock < 300) return;   // ignore a duplicate touch/mouse event from the same tap
+      _satToggleLock = now;
       const b = document.getElementById('support-bubble');
       if (b && b.classList.contains('sat-open')) closeSupportSatellites(); else openSupportSatellites();
     }
     function openSupportInbox()  { document.getElementById('support-inbox-overlay').classList.add('open'); }
     function closeSupportInbox() { document.getElementById('support-inbox-overlay').classList.remove('open'); }
+    // ── Chat history (persisted per device via localStorage) ──
+    const SUPPORT_HISTORY_KEY = 'tp_support_chat_history';
+    let _supportHistoryCache = [];
+    function loadSupportHistory() {
+      try { return JSON.parse(localStorage.getItem(SUPPORT_HISTORY_KEY) || '[]') || []; }
+      catch (e) { return []; }
+    }
+    function saveSupportHistory(arr) {
+      try { localStorage.setItem(SUPPORT_HISTORY_KEY, JSON.stringify(arr)); } catch (e) {}
+    }
+    function archiveSupportConversation() {
+      // Only keep conversations where the user actually responded (tapped a topic, sent a message, etc.)
+      if (!supportEngaged || !supportLog.length) return;
+      const firstUser = supportLog.find(m => m.w === 'user');
+      const preview = ((firstUser && firstUser.t) || (supportLog[0] && supportLog[0].t) || 'Keskustelu').slice(0, 90);
+      const arr = loadSupportHistory();
+      arr.unshift({ ts: Date.now(), preview: preview, lines: supportLog.slice() });
+      if (arr.length > 100) arr.length = 100;
+      saveSupportHistory(arr);
+    }
+    function fmtSupportDate(ts) {
+      const d = new Date(ts), p = n => (n < 10 ? '0' : '') + n;
+      return d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear() + ' klo ' + d.getHours() + '.' + p(d.getMinutes());
+    }
+    function openSupportHistory() { renderSupportHistory(); document.getElementById('support-history-overlay').classList.add('open'); }
+    function closeSupportHistory() { document.getElementById('support-history-overlay').classList.remove('open'); }
+    function renderSupportHistory() {
+      const body = document.getElementById('support-history-body');
+      if (!body) return;
+      _supportHistoryCache = loadSupportHistory();
+      if (!_supportHistoryCache.length) {
+        body.innerHTML = '<div style="text-align:center;padding:48px 28px;color:#999;">'
+          + '<div style="font-size:16px;font-weight:700;color:#444;margin-bottom:6px;">Ei aiempia keskusteluja</div>'
+          + '<div style="font-size:13px;line-height:1.4;">Aiemmat keskustelusi Pertin kanssa<br>näkyvät täällä.</div></div>';
+        return;
+      }
+      body.innerHTML = '';
+      _supportHistoryCache.forEach((c, i) => {
+        const card = document.createElement('button');
+        card.style.cssText = 'width:100%;text-align:left;border:none;cursor:pointer;background:white;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.08);display:flex;align-items:center;gap:12px;';
+        card.onclick = () => openSupportTranscript(i);
+        const av = document.createElement('div');
+        av.style.cssText = 'width:40px;height:40px;border-radius:50%;background:#0C0243;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:17px;flex-shrink:0;';
+        av.textContent = 'P';
+        const txt = document.createElement('div');
+        txt.style.cssText = 'flex:1;min-width:0;';
+        const dt = document.createElement('div');
+        dt.style.cssText = 'font-size:12px;color:#888;margin-bottom:2px;';
+        dt.textContent = fmtSupportDate(c.ts);
+        const pv = document.createElement('div');
+        pv.style.cssText = 'font-size:14px;color:#222;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+        pv.textContent = c.preview || 'Keskustelu';
+        txt.appendChild(dt); txt.appendChild(pv);
+        const chev = document.createElement('div');
+        chev.style.cssText = 'color:#bbb;font-size:18px;flex-shrink:0;';
+        chev.textContent = '›';
+        card.appendChild(av); card.appendChild(txt); card.appendChild(chev);
+        body.appendChild(card);
+      });
+    }
+    function openSupportTranscript(i) {
+      const c = _supportHistoryCache[i];
+      if (!c) return;
+      const meta = document.getElementById('support-transcript-meta');
+      if (meta) meta.textContent = fmtSupportDate(c.ts);
+      const body = document.getElementById('support-transcript-body');
+      body.innerHTML = '';
+      (c.lines || []).forEach(m => {
+        const isBot = m.w === 'bot';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;margin:5px 0;justify-content:' + (isBot ? 'flex-start' : 'flex-end') + ';';
+        const bub = document.createElement('div');
+        bub.style.cssText = 'max-width:80%;padding:8px 12px 5px 13px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word;'
+          + (isBot ? 'background:white;color:#222;border-bottom-left-radius:5px;box-shadow:0 1px 2px rgba(0,0,0,0.08);'
+                   : 'background:#0C0243;color:white;border-bottom-right-radius:5px;');
+        const msg = document.createElement('div'); msg.textContent = m.t; bub.appendChild(msg);
+        if (m.hm) {
+          const tm = document.createElement('div');
+          tm.style.cssText = 'text-align:right;margin-top:2px;font-size:10px;' + (isBot ? 'color:#999;' : 'color:rgba(255,255,255,0.7);');
+          tm.textContent = m.hm; bub.appendChild(tm);
+        }
+        row.appendChild(bub); body.appendChild(row);
+      });
+      document.getElementById('support-transcript-overlay').classList.add('open');
+    }
+    function closeSupportTranscript() { document.getElementById('support-transcript-overlay').classList.remove('open'); }
     function reopenSupportChat() {
       hideSupportBubble();
       document.getElementById('support-chat-overlay').classList.add('open');
@@ -8933,6 +9046,7 @@
       showSupportBubble();
     }
     function endSupportChat() {
+      archiveSupportConversation();   // save to Chat history if the user actually engaged
       closeSupportMenu();
       closeLeaveSupport();
       hideSupportBubble();
@@ -8941,6 +9055,7 @@
       const box = document.getElementById('support-chat-messages');
       if (box) { box.innerHTML = ''; delete box.dataset.seeded; }
       supportEngaged = false;
+      supportLog = [];
       const input = document.getElementById('support-chat-input');
       if (input) input.value = '';
       updateSendSupportBtn();
@@ -8996,7 +9111,7 @@
       // Hide the sector buttons on any interaction outside the bubble (map pan, other taps)
       function onOutsideCloseSat(e) {
         if (!b.classList.contains('sat-open')) return;
-        if (e.target && e.target.closest && e.target.closest('#support-bubble')) return;
+        if (b.contains(e.target)) return;   // tap on the bubble or its sector buttons → leave it to the toggle
         closeSupportSatellites();
       }
       document.addEventListener('touchstart', onOutsideCloseSat, { capture: true, passive: true });
