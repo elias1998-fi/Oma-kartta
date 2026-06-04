@@ -347,6 +347,27 @@
       letter-spacing: 0.2px;
       line-height: 1;
     }
+    .profile-brand-inner {
+      display: inline-block;
+      position: relative;
+      padding: 12px 26px;
+    }
+    .brand-bracket {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      pointer-events: none;
+    }
+    .brand-bracket-tl {
+      top: 0; left: 0;
+      border-top: 6px solid #7ee787;
+      border-left: 6px solid #7ee787;
+    }
+    .brand-bracket-br {
+      bottom: 0; right: 0;
+      border-bottom: 6px solid #7ee787;
+      border-right: 6px solid #7ee787;
+    }
 
     #search-overlay, #plus-overlay {
       position: fixed; inset: 0;
@@ -562,8 +583,8 @@
        muted brand color makes the icons feel cohesive with the app's
        header pills and badges. */
     .settings-item-icon {
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       margin-right: 14px;
       display: flex;
       align-items: center;
@@ -572,8 +593,8 @@
       flex-shrink: 0;
     }
     .settings-item-icon svg {
-      width: 22px;
-      height: 22px;
+      width: 25px;
+      height: 25px;
       stroke: currentColor;
       fill: none;
       stroke-width: 1.8;
@@ -3074,8 +3095,12 @@
   <div id="profile-overlay">
     <!-- Brand wordmark — placeholder until the logo is ready -->
     <div class="profile-brand">
-      <div class="profile-brand-text">TotalParking</div>
-      <div class="profile-brand-tagline">100% suomalainen</div>
+      <div class="profile-brand-inner">
+        <span class="brand-bracket brand-bracket-tl"></span>
+        <div class="profile-brand-text">TotalParking</div>
+        <div class="profile-brand-tagline">100% suomalainen</div>
+        <span class="brand-bracket brand-bracket-br"></span>
+      </div>
     </div>
     <div class="overlay-content">
       <!-- Reordered main settings; sub-text removed for visual cleanliness. -->
@@ -3106,9 +3131,11 @@
         </div>
         <div class="settings-item" onclick="openPaymentSettings()">
           <div class="settings-item-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="6" width="18" height="13" rx="2"/>
-              <line x1="3" y1="11" x2="21" y2="11"/>
+            <svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:auto;">
+              <rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/>
+              <rect x="1" y="5" width="30" height="3" fill="#555"/>
+              <rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/>
+              <rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/>
             </svg>
           </div>
           <div class="settings-item-text">
@@ -3119,10 +3146,11 @@
         <div class="settings-item" onclick="openVehiclesSettings()">
           <div class="settings-item-icon">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5 16V12l1.6-4.5A2 2 0 0 1 8.5 6h7a2 2 0 0 1 1.9 1.5L19 12v4"/>
-              <path d="M5 16h14"/>
-              <circle cx="7.5" cy="17" r="1.5"/>
-              <circle cx="16.5" cy="17" r="1.5"/>
+              <path d="M3 13.5l1.5-4A2 2 0 0 1 6.4 8h8.2a2 2 0 0 1 1.6.8l2.4 3.2 1.9.6A1.5 1.5 0 0 1 22 14v1.5a1 1 0 0 1-1 1h-1.5"/>
+              <path d="M4.5 16.5H3.5a1 1 0 0 1-1-1V13.5"/>
+              <line x1="9.5" y1="16.5" x2="14.5" y2="16.5"/>
+              <circle cx="7" cy="16.5" r="2"/>
+              <circle cx="17" cy="16.5" r="2"/>
             </svg>
           </div>
           <div class="settings-item-text">
@@ -3147,7 +3175,10 @@
         <div class="settings-item" onclick="openHelpSettings()">
           <div class="settings-item-icon">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21 12a8 8 0 0 1-12 7l-5 1 1-5a8 8 0 1 1 16-3z"/>
+              <path d="M4 13v-1a8 8 0 0 1 16 0v1"/>
+              <rect x="3" y="12.5" width="3.5" height="6.5" rx="1.6"/>
+              <rect x="17.5" y="12.5" width="3.5" height="6.5" rx="1.6"/>
+              <path d="M19.2 19v.6a2.6 2.6 0 0 1-2.6 2.6H13.5"/>
             </svg>
           </div>
           <div class="settings-item-text">
