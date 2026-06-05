@@ -6101,6 +6101,8 @@
         );
         if (!res.ok) throw new Error(await res.text());
         const rows = await res.json();
+        const _cntEl = document.getElementById('admin-list-count');
+        if (_cntEl) _cntEl.textContent = `Kohteita: ${rows.length}`;
 
         if (!rows.length) {
           box.innerHTML = '<div style="padding:48px 20px;text-align:center;color:#bbb;font-size:15px;">Ei odottavia ilmoituksia 🎉</div>';
@@ -6140,6 +6142,8 @@
         }
         _updateAdminFooter();
       } catch(e) {
+        const _cntEl = document.getElementById('admin-list-count');
+        if (_cntEl) _cntEl.textContent = 'Kohteita: –';
         box.innerHTML = `<div style="padding:40px 20px;text-align:center;color:#e53935;font-size:14px;">Virhe: ${e.message}</div>`;
       }
     }
@@ -11813,6 +11817,7 @@
       <button id="zone-migration-btn" onclick="runZoneMigration()" style="height:42px;padding:0 16px;background:#0C0243;border:none;border-radius:10px;color:white;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;transition:opacity 0.2s;">Päivitä vyöhykkeet</button>
       <div id="zone-migration-status" style="font-size:12px;color:#888;margin-top:8px;min-height:16px;"></div>
     </div>
+    <div id="admin-list-count" style="background:#f7f7f9;padding:10px 16px;border-bottom:1px solid #eee;font-family:Arial,sans-serif;font-size:13px;color:#555;flex-shrink:0;">Kohteita: –</div>
     <div id="admin-list-content" style="flex:1;overflow-y:auto;font-family:Arial,sans-serif;">
       <div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">Ladataan...</div>
     </div>
