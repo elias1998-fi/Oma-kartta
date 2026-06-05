@@ -94,7 +94,7 @@
 
     #cm-code {
       font-family: Arial, sans-serif;
-      font-size: 22px; font-weight: 800;
+      font-size: 19px; font-weight: 800;
       color: #111; letter-spacing: 0.3px;
       line-height: 1;
       max-width: 0;
@@ -150,7 +150,7 @@
     #center-marker.expanded.disc-mode #cm-code {
       color: #ffffff;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 22px;
+      font-size: 19px;
       font-weight: 800;
       letter-spacing: 0.2px;
     }
@@ -11038,7 +11038,7 @@
       svg.style.height = SH + 'px';
       // Single continuous outline: dark-blue border + solid fill (white for
       // paid areas, #005EAA for free/disc areas). No inner frame.
-      const html = `<path d="${bubblePath(W, H, r, tailW, tailDepth, cx)}" fill="${fill}" stroke="#0C0243" stroke-width="2" stroke-linejoin="round"/>`;
+      const html = `<path d="${bubblePath(W, H, r, tailW, tailDepth, cx)}" fill="${fill}" stroke="#0C0243" stroke-width="1.6" stroke-linejoin="round"/>`;
       svg.innerHTML = html;
       svg.style.display = 'block';
     }
