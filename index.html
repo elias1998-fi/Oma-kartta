@@ -10966,6 +10966,7 @@
 
     // ── Parking disc (pysäköintikiekko) view ─────────────────────────
     let discMinutes = 0;          // set arrival time, minutes since midnight
+    let discStyle = 'electronic'; // big-disc style: 'electronic' | 'traditional'
     // (drag-based wheel removed — arrival time is set with +/- 30 min buttons)
 
     function _discFmt(min) {
@@ -11016,10 +11017,11 @@
       }
       return o;
     }
-    // Build the big electronic parking disc (static parts) into #disc-graphic.
-    function _discBuildGraphic() {
+    // Build the big ELECTRONIC parking disc (static parts) into #disc-graphic.
+    function _discBuildElectronic() {
       const svg = document.getElementById('disc-graphic');
       if (!svg) return;
+      svg.setAttribute('viewBox', '0 0 360 320');
       svg.innerHTML =
         `<defs>`
         + `<linearGradient id="discBodyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34579a"/><stop offset="0.5" stop-color="#274a8b"/><stop offset="1" stop-color="#1a3461"/></linearGradient>`
@@ -11036,15 +11038,82 @@
         + `<rect x="156" y="250" width="48" height="48" rx="10" fill="#ffffff" stroke="#1d3f7a" stroke-width="2.6"/>`
         + `<text x="180" y="285" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="38" font-weight="800" fill="#1d3f7a">P</text>`;
     }
-    // Refresh only the LCD digits to the current discMinutes.
+    // Build the big TRADITIONAL Finnish parking disc (blue body, bilingual
+    // text, downward pointer, a rotating 12 h/24 h dial in a fan window, and a
+    // framed "P"). Generic standard-disc design — no brand markings.
+    function _discBuildTraditional() {
+      const svg = document.getElementById('disc-graphic');
+      if (!svg) return;
+      svg.setAttribute('viewBox', '0 0 320 380');
+      const CX = 160, CY = 300, Ri = 72, Ro = 154, SP = 56;
+      const pt = (ang, r) => { const a = ang * Math.PI / 180; return [CX + r * Math.sin(a), CY - r * Math.cos(a)]; };
+      const [ax, ay] = pt(-SP, Ro), [bx, by] = pt(SP, Ro), [cx2, cy2] = pt(SP, Ri), [dx, dy] = pt(-SP, Ri);
+      const fan = `M ${ax.toFixed(1)} ${ay.toFixed(1)} A ${Ro} ${Ro} 0 0 1 ${bx.toFixed(1)} ${by.toFixed(1)} L ${cx2.toFixed(1)} ${cy2.toFixed(1)} A ${Ri} ${Ri} 0 0 0 ${dx.toFixed(1)} ${dy.toFixed(1)} Z`;
+      let dial = '';
+      for (let i = 0; i < 24; i++) {
+        const ang = i * 15, major = (i % 2 === 0), r1 = major ? 134 : 140, r2 = 150;
+        const [x1, y1] = pt(ang, r1), [x2, y2] = pt(ang, r2);
+        dial += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#111111" stroke-width="${major ? 2.4 : 1.1}" stroke-linecap="round"/>`;
+      }
+      for (let h = 1; h <= 12; h++) {
+        const ang = h * 30;
+        const [x, y] = pt(ang, 116);
+        dial += `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-family="Arial" font-size="27" font-weight="800" fill="#111111">${h}</text>`;
+        const [xs, ys] = pt(ang, 88);
+        dial += `<text x="${xs.toFixed(1)}" y="${ys.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-family="Arial" font-size="14" font-weight="700" fill="#333333">${h + 12}</text>`;
+      }
+      let ridges = '';
+      for (let yy = 70; yy < 330; yy += 13) ridges += `<line x1="26" y1="${yy}" x2="46" y2="${yy}" stroke="#12568a" stroke-width="3" stroke-linecap="round" opacity="0.55"/>`;
+      let serr = '';
+      for (let i = 0; i < 8; i++) { const x0 = 70 + i * 26; serr += `<polygon points="${x0},368 ${x0 + 13},368 ${x0 + 6.5},380" fill="#1670b0" stroke="#13598f" stroke-width="0.6"/>`; }
+      svg.innerHTML =
+        `<defs><linearGradient id="tradBodyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b8ad0"/><stop offset="0.5" stop-color="#1c7fc4"/><stop offset="1" stop-color="#1670b0"/></linearGradient><clipPath id="tradWin"><path d="${fan}"/></clipPath></defs>`
+        + `<rect x="18" y="12" width="284" height="356" rx="30" ry="30" fill="url(#tradBodyG)" stroke="#13598f" stroke-width="2"/>`
+        + `<rect x="28" y="20" width="264" height="80" rx="40" fill="#ffffff" opacity="0.10"/>`
+        + ridges + serr
+        + `<text x="160" y="50" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="800" fill="#ffffff" letter-spacing="1">SAAPUMISAIKA</text>`
+        + `<text x="160" y="78" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="800" fill="#eaf4fc" letter-spacing="1">ANKOMSTTID</text>`
+        + `<polygon points="137,100 183,100 160,140" fill="#cfe6f7"/>`
+        + `<path d="${fan}" fill="#ffffff" stroke="#0d4a80" stroke-width="1.6"/>`
+        + `<g clip-path="url(#tradWin)"><g id="disc-trad-dial" transform="rotate(0 160 300)">${dial}</g></g>`
+        + `<rect x="112" y="258" width="96" height="96" rx="14" fill="#1c7fc4" stroke="#ffffff" stroke-width="5"/>`
+        + `<text x="160" y="326" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="66" font-weight="800" fill="#ffffff">P</text>`;
+    }
+    // Build whichever style is currently selected.
+    function _discBuildGraphic() {
+      if (discStyle === 'traditional') _discBuildTraditional();
+      else _discBuildElectronic();
+    }
+    // Show the current discMinutes: electronic updates the LCD digits;
+    // traditional rotates the dial so the time sits under the pointer.
     function _discRender() {
-      const g = document.getElementById('disc-big-digits');
-      if (g) g.innerHTML = _segLcd(_discFmt(discMinutes), 60, 121, 240, 102, 66, 33, 8, '#cdd3d8');
+      if (discStyle === 'traditional') {
+        const dial = document.getElementById('disc-trad-dial');
+        if (dial) dial.setAttribute('transform', `rotate(${(-((discMinutes % 720) / 720 * 360)).toFixed(2)} 160 300)`);
+      } else {
+        const g = document.getElementById('disc-big-digits');
+        if (g) g.innerHTML = _segLcd(_discFmt(discMinutes), 60, 121, 240, 102, 66, 33, 8, '#cdd3d8');
+      }
     }
     // Adjust arrival time in 30-minute steps (wraps within a 24 h day).
     function discStep(delta) {
       discMinutes = ((discMinutes + delta) % 1440 + 1440) % 1440;
       _discRender();
+    }
+    // Switch the big disc between 'electronic' and 'traditional'.
+    function setDiscStyle(style) {
+      if (style !== 'electronic' && style !== 'traditional') return;
+      discStyle = style;
+      _discBuildGraphic();
+      _discRender();
+      const be = document.getElementById('disc-style-el');
+      const bt = document.getElementById('disc-style-tr');
+      if (be && bt) {
+        const base = 'flex:1;height:40px;border:none;border-radius:18px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+        const on = 'background:#0C0243;color:#ffffff;', off = 'background:transparent;color:#0C0243;';
+        be.style.cssText = base + (style === 'electronic' ? on : off);
+        bt.style.cssText = base + (style === 'traditional' ? on : off);
+      }
     }
     function openDiscOverlay() {
       _discBuildGraphic();
@@ -11914,6 +11983,10 @@
     </div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;gap:20px;overflow-y:auto;">
       <div style="font-size:14px;color:#666;font-family:Arial,sans-serif;text-align:center;max-width:320px;line-height:1.45;">Saapumisaika asettuu automaattisesti seuraavaan tasa- tai puolituntiin. Säädä tarvittaessa alla olevilla painikkeilla.</div>
+      <div style="display:flex;gap:4px;background:#eef1f5;border-radius:22px;padding:4px;width:min(80vw,300px);box-sizing:border-box;">
+        <button id="disc-style-el" onclick="setDiscStyle('electronic')" style="flex:1;height:40px;border:none;border-radius:18px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;background:#0C0243;color:#ffffff;">Elektroninen</button>
+        <button id="disc-style-tr" onclick="setDiscStyle('traditional')" style="flex:1;height:40px;border:none;border-radius:18px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;background:transparent;color:#0C0243;">Perinteinen</button>
+      </div>
       <div style="width:min(80vw,300px);">
         <svg id="disc-graphic" viewBox="0 0 360 320" style="width:100%;height:auto;display:block;"></svg>
       </div>
