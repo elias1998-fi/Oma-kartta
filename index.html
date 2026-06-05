@@ -3160,15 +3160,8 @@
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openPaymentSettings()">
-          <div class="settings-item-icon">
-            <div style="width:30px;height:20px;display:flex;align-items:center;justify-content:center;background:white;border:1.4px solid #ddd;border-radius:5px;">
-              <svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg" style="width:23px;height:auto;">
-                <rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/>
-                <rect x="1" y="5" width="30" height="3" fill="#555"/>
-                <rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/>
-                <rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/>
-              </svg>
-            </div>
+          <div class="payment-icon-box">
+            <svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/><rect x="1" y="5" width="30" height="3" fill="#555"/><rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/><rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/></svg>
           </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Maksutavat</div>
@@ -8482,6 +8475,11 @@
       saveVehicles(vehicles);
       closeAddVehicleSheet();
       renderVehiclesList();
+      // Keep the parking view in sync (shared store) and select the new vehicle there
+      selectedVehicleIdx = vehicles.length - 1;
+      if (typeof renderVehicleDisplay === 'function') renderVehicleDisplay();
+      const vSheet = document.getElementById('vehicle-sheet');
+      if (vSheet && vSheet.classList.contains('open')) { renderVehicleOptions(); closeVehicleSheet(); }
       showCustomToast(`Ajoneuvo ${plate} lisätty`, 2200);
     }
     function openAppSettings() {
@@ -10014,26 +10012,31 @@
     window.addEventListener('mouseup',()=>{if(mStartY===null)return;mStartY=null;inertiaVel=mVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);});
     drawDrum();
 
-    let vehicles = [{ reg:'FHY-857', name:'Äitin auto' }];
+    let vehicles = loadVehicles();
+    if (!vehicles.length) { vehicles = [{ plate:'FHY-857', name:'Äitin auto' }]; saveVehicles(vehicles); }
     let selectedVehicleIdx = 0;
 
     function renderVehicleDisplay() {
+      vehicles = loadVehicles();
+      if (!vehicles.length) { vehicles = [{ plate:'FHY-857', name:'Äitin auto' }]; saveVehicles(vehicles); }
+      if (selectedVehicleIdx >= vehicles.length) selectedVehicleIdx = 0;
       const v = vehicles[selectedVehicleIdx];
-      document.getElementById('plate-text').textContent = v.reg;
-      document.getElementById('vehicle-nickname').textContent = v.name;
+      document.getElementById('plate-text').textContent = v.plate;
+      document.getElementById('vehicle-nickname').textContent = v.name || '';
     }
 
     function renderVehicleOptions() {
       const container = document.getElementById('vehicle-options');
       container.innerHTML = '';
+      vehicles = loadVehicles();
       vehicles.forEach((v, i) => {
         const row = document.createElement('div');
         row.className = 'option-row';
         row.innerHTML = `
           <div class="option-check ${i===selectedVehicleIdx?'selected':''}"></div>
           <div>
-            <div class="option-name">${v.name}</div>
-            <div class="option-reg">${v.reg}</div>
+            <div class="option-name">${escapeHtml(v.name || '')}</div>
+            <div class="option-reg">${escapeHtml(v.plate || '')}</div>
           </div>`;
         row.addEventListener('click', () => { selectedVehicleIdx=i; renderVehicleDisplay(); closeVehicleSheet(); });
         container.appendChild(row);
@@ -10046,7 +10049,7 @@
       const addRow = document.createElement('div');
       addRow.className = 'add-option';
       addRow.textContent = '＋ Lisää uusi ajoneuvo...';
-      addRow.addEventListener('click', addVehicle);
+      addRow.addEventListener('click', openAddVehicleSheet);
       container.appendChild(addRow);
     }
 
@@ -10431,7 +10434,8 @@
     }
 
     async function startNewParkingSession() {
-      const v   = vehicles[selectedVehicleIdx];
+      vehicles = loadVehicles();
+      const v   = vehicles[selectedVehicleIdx] || vehicles[0];
       const pm  = paymentMethods[selectedPaymentIdx];
       const areaCode = document.getElementById('p-code').textContent;
       const startTime = new Date();
@@ -10444,7 +10448,7 @@
 
       const payload = {
         start_time:     startTime.toISOString(),
-        license_plate:  v.reg,
+        license_plate:  v.plate,
         area_code:      areaCode,
         location:       { lat: center.lat, lng: center.lng },
         payment_method: pm.name,
@@ -10456,7 +10460,7 @@
         id:            id,
         startTime:     startTime.toISOString(),
         endTime:       plannedEnd.toISOString(),
-        plate:         v.reg,
+        plate:         v.plate,
         nickname:      v.name,
         areaCode:      areaCode,
         paymentMethod: pm.name,
