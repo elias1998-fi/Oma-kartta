@@ -129,27 +129,26 @@
       background: transparent;
       border-color: transparent;
       padding: 2px 8px 2px 4px;
-      gap: 3px;
+      gap: 6px;
     }
-    #center-marker.expanded #cm-pin { width: 26px; height: 26px; }
+    #center-marker.expanded #cm-pin { width: 23px; height: 23px; }
     /* The paid badge's "P" pin renders a touch larger so its symbol reads at
        the same height as the disc icon. transform:scale doesn't change the
        layout box, so the badge height stays identical to the free badge. */
     #center-marker.expanded #cm-pin:not(.parking-disc) { transform: scale(1.12); }
     /* The electronic disc icon uses a wide 340×280 viewBox. It's sized to
-       ~26px tall; width is proportional (26 × 340/280 ≈ 31.5) so the badge
+       ~23px tall; width is proportional (23 × 340/280 ≈ 28) so the badge
        stays the same height as the paid "P" badge but a bit wider. */
-    #center-marker.expanded #cm-pin.parking-disc { width: 31.5px; height: 26px; }
-    #cm-pin.parking-disc { width: 31.5px !important; height: 26px !important; }
+    #center-marker.expanded #cm-pin.parking-disc { width: 28px; height: 23px; }
+    #cm-pin.parking-disc { width: 28px !important; height: 23px !important; }
     #center-marker.expanded #cm-code { max-width: 240px; opacity: 1; }
 
-    /* The duration text on free areas is white, bold, in the sign font.
-       The .disc-mode class is what tells drawCenterBubble() to draw the blue
-       fill + white inner frame; the dark outline + tail are one path. */
+    /* The duration text on free areas: dark navy (readable on the white
+       badge), bold, in the sign font, and a touch smaller than before. */
     #center-marker.expanded.disc-mode #cm-code {
-      color: #ffffff;
+      color: #0C0243;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 800;
       letter-spacing: 0.2px;
     }
@@ -10962,7 +10961,7 @@
     // Self-contained electronic disc icon for the bottom-sheet badge on
     // free/disc areas (same graphic as the on-map P-marker; the navy body is
     // the badge itself, so no separate blue background box is needed).
-    const DISC_BADGE_SVG = `<svg width="40" height="33" viewBox="0 0 340 280" xmlns="http://www.w3.org/2000/svg" style="display:block;">${PIN_SVG_DISC}</svg>`;
+    const DISC_BADGE_SVG = `<svg width="28" height="23" viewBox="0 0 340 280" xmlns="http://www.w3.org/2000/svg" style="display:block;">${PIN_SVG_DISC}</svg>`;
 
     // ── Parking disc (pysäköintikiekko) view ─────────────────────────
     let discMinutes = 0;          // set arrival time, minutes since midnight
@@ -11063,18 +11062,18 @@
         dial += `<text x="${xs.toFixed(1)}" y="${ys.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-family="Arial" font-size="14" font-weight="700" fill="#333333">${h + 12}</text>`;
       }
       let ridges = '';
-      for (let yy = 70; yy < 330; yy += 13) ridges += `<line x1="26" y1="${yy}" x2="46" y2="${yy}" stroke="#12568a" stroke-width="3" stroke-linecap="round" opacity="0.55"/>`;
+      for (let yy = 70; yy < 330; yy += 13) ridges += `<line x1="26" y1="${yy}" x2="46" y2="${yy}" stroke="#9c1521" stroke-width="3" stroke-linecap="round" opacity="0.55"/>`;
       let serr = '';
-      for (let i = 0; i < 8; i++) { const x0 = 70 + i * 26; serr += `<polygon points="${x0},368 ${x0 + 13},368 ${x0 + 6.5},380" fill="#1670b0" stroke="#13598f" stroke-width="0.6"/>`; }
+      for (let i = 0; i < 8; i++) { const x0 = 70 + i * 26; serr += `<polygon points="${x0},368 ${x0 + 13},368 ${x0 + 6.5},380" fill="#b51926" stroke="#8f1420" stroke-width="0.6"/>`; }
       svg.innerHTML =
-        `<defs><linearGradient id="tradBodyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b8ad0"/><stop offset="0.5" stop-color="#1c7fc4"/><stop offset="1" stop-color="#1670b0"/></linearGradient><clipPath id="tradWin"><path d="${fan}"/></clipPath></defs>`
-        + `<rect x="18" y="12" width="284" height="356" rx="30" ry="30" fill="url(#tradBodyG)" stroke="#13598f" stroke-width="2"/>`
+        `<defs><linearGradient id="tradBodyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e23b46"/><stop offset="0.5" stop-color="#d21f2c"/><stop offset="1" stop-color="#b51926"/></linearGradient><clipPath id="tradWin"><path d="${fan}"/></clipPath></defs>`
+        + `<rect x="18" y="12" width="284" height="356" rx="30" ry="30" fill="url(#tradBodyG)" stroke="#8f1420" stroke-width="2"/>`
         + `<rect x="28" y="20" width="264" height="80" rx="40" fill="#ffffff" opacity="0.10"/>`
         + ridges + serr
         + `<text x="160" y="50" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="800" fill="#ffffff" letter-spacing="1">SAAPUMISAIKA</text>`
-        + `<text x="160" y="78" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="800" fill="#eaf4fc" letter-spacing="1">ANKOMSTTID</text>`
-        + `<polygon points="137,100 183,100 160,140" fill="#cfe6f7"/>`
-        + `<path d="${fan}" fill="#ffffff" stroke="#0d4a80" stroke-width="1.6"/>`
+        + `<text x="160" y="78" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="23" font-weight="800" fill="#111111" letter-spacing="0.5">Moronet</text>`
+        + `<polygon points="137,100 183,100 160,140" fill="#f5cdd0"/>`
+        + `<path d="${fan}" fill="#ffffff" stroke="#555555" stroke-width="1.6"/>`
         + `<g clip-path="url(#tradWin)"><g id="disc-trad-dial" transform="rotate(0 160 300)">${dial}</g></g>`
         + `<rect x="112" y="258" width="96" height="96" rx="14" fill="#1c7fc4" stroke="#ffffff" stroke-width="5"/>`
         + `<text x="160" y="326" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="66" font-weight="800" fill="#ffffff">P</text>`;
@@ -11259,16 +11258,15 @@
       const W = body.offsetWidth;    // border-box width (incl. 2px transparent frame)
       const H = body.offsetHeight;   // border-box height
       if (!W || !H) return;
-      const isFree    = marker.classList.contains('disc-mode');
-      const fill      = isFree ? '#005EAA' : '#ffffff';
+      const fill      = '#ffffff';   // white badge background for paid + free/disc areas
       const tailW     = 7, tailDepth = 8, cx = W / 2;
       const r         = Math.max(2, Math.min(9, H / 2 - 1, W / 2 - 1));
       const SH        = H + tailDepth + 2;   // include the tail + a little slack
       svg.setAttribute('viewBox', `0 0 ${W} ${SH}`);
       svg.style.width  = W + 'px';
       svg.style.height = SH + 'px';
-      // Single continuous outline: dark-blue border + solid fill (white for
-      // paid areas, #005EAA for free/disc areas). No inner frame.
+      // Single continuous outline: dark-blue border + solid white fill for
+      // all areas (paid and free/disc). No inner frame.
       const html = `<path d="${bubblePath(W, H, r, tailW, tailDepth, cx)}" fill="${fill}" stroke="#0C0243" stroke-width="2" stroke-linejoin="round"/>`;
       svg.innerHTML = html;
       svg.style.display = 'block';
