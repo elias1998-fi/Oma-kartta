@@ -3160,8 +3160,8 @@
           <div class="settings-item-chevron">›</div>
         </div>
         <div class="settings-item" onclick="openPaymentSettings()">
-          <div class="payment-icon-box">
-            <svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/><rect x="1" y="5" width="30" height="3" fill="#555"/><rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/><rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/></svg>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg" style="width:26px;height:auto;"><rect x="1" y="2" width="30" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.5"/><rect x="1" y="5" width="30" height="3" fill="#555"/><rect x="4" y="11" width="10" height="2" rx="1" fill="#888"/><rect x="4" y="14" width="6" height="2" rx="1" fill="#888"/></svg>
           </div>
           <div class="settings-item-text">
             <div class="settings-item-label">Maksutavat</div>
@@ -4633,7 +4633,10 @@
         <div class="p-card-title">Pysäköintiaika</div>
         <div class="time-card-inner">
           <div class="time-big-display">
-            <div class="time-big-number" id="time-big">0 min</div>
+            <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">
+              <div class="time-big-number" id="time-big">0 min</div>
+              <span class="time-big-unit" id="time-delta" style="margin-top:0;display:none;font-weight:bold;"></span>
+            </div>
             <div id="max-label"></div>
             <div class="time-big-unit" id="time-end-text">Pyöritä rullaa →</div>
           </div>
@@ -9921,6 +9924,21 @@
       if(rounded!==lastDisplayedMinutes){
         el.textContent=formatTimeDisplay(rounded);
         document.getElementById('time-end-text').textContent=formatEndTime(rounded);
+        // Live (+/-) change vs the remaining time when the extend flow opened
+        const deltaEl = document.getElementById('time-delta');
+        if (deltaEl) {
+          if (isExtendingSession) {
+            const d = rounded - extendBaselineMin, neg = d < 0, abs = Math.abs(d);
+            const dh = Math.floor(abs / 60), dm = abs % 60;
+            const dtxt = dh > 0 ? (dm > 0 ? dh + 'h ' + dm + 'min' : dh + 'h') : dm + 'min';
+            deltaEl.textContent = '(' + (neg ? '-' : '+') + dtxt + ')';
+            deltaEl.style.color = neg ? '#e53935' : '#1faa4a';
+            deltaEl.style.display = '';
+          } else {
+            deltaEl.textContent = '';
+            deltaEl.style.display = 'none';
+          }
+        }
         const price = calculatePrice(rounded);
         document.getElementById('p-price').textContent = formatPrice(price.total);
         const startBtn = document.getElementById('start-btn');
@@ -10253,6 +10271,7 @@
     let activeParkingSession = null;
     let activeBannerInterval = null;
     let isExtendingSession   = false;
+    let extendBaselineMin    = 0;   // remaining minutes when the extend flow opened (delta baseline)
 
     // Generic centered toast — used for "Pysäköinti aloitettu!" etc.
     let customToastTimer = null;
@@ -11546,6 +11565,7 @@
       const remMin = Math.max(0, Math.min(parkingMaxMinutes,
                        Math.floor((endMs - Date.now()) / 60000)));
       parkingMinutes = remMin;
+      extendBaselineMin = remMin;
       drumPhase = 0;
       lastDisplayedMinutes = -1;
       updateDisplay();
