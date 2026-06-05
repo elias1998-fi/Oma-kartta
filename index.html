@@ -6392,19 +6392,48 @@
       }
     }
 
+    // Fetch every row of a parking table in pages. PostgREST caps a single
+    // response (db-max-rows), so we page with offset/limit until a short page
+    // comes back — this guarantees all rows load even past 1000.
+    async function fetchAllParkingRows(table, select) {
+      const out = [];
+      const PAGE = 1000;
+      for (let offset = 0; ; offset += PAGE) {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/${table}?select=${select}&order=id.asc&offset=${offset}&limit=${PAGE}`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        if (!res.ok) throw new Error(`${table} HTTP ${res.status}`);
+        const batch = await res.json();
+        out.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      return out;
+    }
+
     async function loadViewportTiles(signal) {
       loadParkingPrices();          // load city/zone prices once (fire-and-forget)
       if (masterDataLoaded) return;
       masterDataLoaded = true;
 
+      const MASTER_SELECT = 'id,area_name,area_type,parking_type,owner_parking_area,location_city,info_additional,max_hours,max_minutes,zone_number,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coordinates';
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,area_name,area_type,parking_type,owner_parking_area,location_city,info_additional,max_hours,max_minutes,zone_number,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,polygon_coordinates&limit=10000`,
-          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const rows = await res.json();
-        console.log('Master rows fetched:', rows.length);
+        // Maksulliset (parking_master) + ilmaiset/kiekkopaikat
+        // (parking_master_ilmaiset) ladataan rinnakkain samaan masterRows-listaan.
+        // Ilmaisten id:t etuliitetään ('ilm_…'): molempien taulujen id-sarja
+        // alkaa 1:stä ja korostus suodattaa ['get','id']-arvolla, joten ilman
+        // etuliitettä maksullinen ja ilmainen alue voisivat jakaa saman id:n ja
+        // korostua yhdessä.
+        const [paidRows, freeRows] = await Promise.all([
+          fetchAllParkingRows('parking_master', MASTER_SELECT),
+          fetchAllParkingRows('parking_master_ilmaiset', MASTER_SELECT).catch(e => {
+            console.error('parking_master_ilmaiset fetch error:', e);
+            return [];   // ilmaisten epäonnistuminen ei kaada maksullisten latausta
+          })
+        ]);
+        freeRows.forEach(r => { r.id = 'ilm_' + r.id; });
+        const rows = paidRows.concat(freeRows);
+        console.log('Master rows fetched: maksulliset', paidRows.length, '+ ilmaiset', freeRows.length);
         masterRows = rows;
         renderMasterRows(rows);
         setTimeout(updateButtonText, 500);
@@ -7358,11 +7387,19 @@
     }
 
     async function loadEditorFeatures() {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/parking_master?select=id,old_polygon_ids,area_name,area_type,parking_type,owner_parking_area,location_city,city_zone,zone_number,estimated_spots_total,area_code,max_hours,max_minutes,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,data_exceptions,info_additional,polygon_coordinates`,
-        { headers: { 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Prefer':'count=none' } }
-      );
-      const rows = await res.json();
+      const EDITOR_SELECT = 'id,old_polygon_ids,area_name,area_type,parking_type,owner_parking_area,location_city,city_zone,zone_number,estimated_spots_total,area_code,max_hours,max_minutes,valid_mape_from,valid_mape_to,valid_la_from,valid_la_to,valid_su_from,valid_su_to,data_exceptions,info_additional,polygon_coordinates';
+      // Editori lataa sekä maksulliset (parking_master) että ilmaiset
+      // (parking_master_ilmaiset). Ilmaisten id:t etuliitetään 'ilm_' samasta
+      // syystä kuin pääkartalla. Yhdistäminen ja poisto reitittävät muutokset
+      // takaisin oikeaan tauluun id:n mukaan.
+      const [paidRows, freeRows] = await Promise.all([
+        fetchAllParkingRows('parking_master', EDITOR_SELECT),
+        fetchAllParkingRows('parking_master_ilmaiset', EDITOR_SELECT).catch(e => {
+          console.error('editor parking_master_ilmaiset fetch error:', e); return [];
+        })
+      ]);
+      freeRows.forEach(r => { r.id = 'ilm_' + r.id; });
+      const rows = paidRows.concat(freeRows);
       editorAllFeatures = rows
         .filter(r => (r.polygon_coordinates?.type==='Polygon' || r.polygon_coordinates?.type==='MultiPolygon') && r.parking_type !== 'Pysäköintihalli')
         .map(r => ({
@@ -7813,9 +7850,19 @@
 
     async function executeMergeEditor() {
       if(!editorPreviewGeom||editorSelected.size<2) return;
-      const ids=Array.from(editorSelected);
+      const sids=Array.from(editorSelected).map(String);
+      const freeCount=sids.filter(s=>s.startsWith('ilm_')).length;
+      // Maksullisia ja ilmaisia ei voi yhdistää keskenään (eri taulut). Valinta
+      // estää tämän jo (area_type eroaa) — tämä on lisävarmistus.
+      if(freeCount!==0 && freeCount!==sids.length){
+        alert('Maksullisia ja ilmaisia alueita ei voi yhdistää keskenään.');
+        return;
+      }
+      const isFree=freeCount===sids.length;
+      const rpc=isFree?'merge_parking_areas_ilmaiset':'merge_parking_areas';
+      const ids=sids.map(s=>parseInt(isFree?s.slice(4):s,10));
       try {
-        const ir=await fetch(`${SUPABASE_URL}/rest/v1/rpc/merge_parking_areas`,{
+        const ir=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${rpc}`,{
           method:'POST',
           headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json'},
           body:JSON.stringify({ source_ids: ids, merged_geom: editorPreviewGeom })
@@ -7836,7 +7883,11 @@
       if(!ids.length) return;
       try {
         for(const id of ids){
-          const r=await fetch(`${SUPABASE_URL}/rest/v1/parking_master?id=eq.${id}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'}});
+          const sid=String(id);
+          const isFree=sid.startsWith('ilm_');
+          const table=isFree?'parking_master_ilmaiset':'parking_master';
+          const realId=isFree?sid.slice(4):sid;
+          const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${realId}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'}});
           if(!r.ok) throw new Error('Delete '+r.status);
         }
         _hidePreviewButtons();
