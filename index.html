@@ -2128,8 +2128,8 @@
       transition: opacity 0.15s ease;
     }
     #ed-support-btn:active { opacity: 0.7; }
-    #ed-receipt-sheet.visible { display: block !important; }
-    #ed-receipt-email-input {
+    #receipt-sheet.visible { display: block !important; }
+    #receipt-email-input {
       width: 100%;
       height: 44px;
       border: 1.5px solid #ddd;
@@ -2143,7 +2143,7 @@
       color: #222;
       transition: border-color 0.2s;
     }
-    #ed-receipt-email-input:focus { border-color: #0C0243; }
+    #receipt-email-input:focus { border-color: #0C0243; }
     .summary-footer {
       background: white;
       padding: 12px 16px;
@@ -3416,7 +3416,7 @@
     </div>
     <!-- Bottom action bar — appears only in select mode with ≥1 selection. -->
     <div id="history-action-footer">
-      <button id="send-receipts-btn" onclick="sendReceiptsAndExitSelectMode()">Lähetä kuitit sähköpostilla</button>
+      <button id="send-receipts-btn" onclick="openHistoryReceiptSheet()">Lähetä kuitit sähköpostiin</button>
     </div>
   </div>
 
@@ -3489,15 +3489,20 @@
         <div class="summary-card">
           <div class="summary-row" style="align-items:flex-start;">
             <span class="summary-label">Tapahtumatunniste</span>
-            <span class="summary-value" id="ed-event-id" style="font-size:11px;font-family:monospace;color:#777;font-weight:400;word-break:break-all;text-align:right;max-width:60%;">—</span>
+            <span style="display:flex;align-items:flex-start;gap:8px;max-width:62%;justify-content:flex-end;">
+              <span class="summary-value" id="ed-event-id" style="font-size:11px;font-family:monospace;color:#777;font-weight:400;word-break:break-all;text-align:right;">—</span>
+              <button onclick="copyEventId()" aria-label="Kopioi leikepöydälle" style="flex-shrink:0;background:none;border:none;padding:1px;cursor:pointer;color:#aaa;line-height:0;margin-top:1px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              </button>
+            </span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Pysäköintialue</span>
+            <span class="summary-value" id="ed-operator">—</span>
           </div>
           <div class="summary-row">
             <span class="summary-label">Aluekoodi</span>
             <span class="summary-value" id="ed-code">—</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-label">Pysäköintialueen omistaja</span>
-            <span class="summary-value" id="ed-operator">—</span>
           </div>
           <div class="summary-row">
             <span class="summary-label">Ajoneuvo</span>
@@ -3529,27 +3534,30 @@
           <textarea id="ed-notes-input" placeholder="Esimerkiksi: Työmatka Helsinkiin" style="min-height:40px;"></textarea>
         </div>
       </div>
-      <div style="padding:12px 16px calc(14px + env(safe-area-inset-bottom));font-family:Arial,sans-serif;">
+      <div style="padding:12px 16px max(24px, env(safe-area-inset-bottom));font-family:Arial,sans-serif;">
         <button id="ed-support-btn" onclick="openSupportChatForEvent()">Asiakaspalvelu</button>
         <button id="ed-send-receipt-btn" onclick="openReceiptSheet()">Lähetä kuitti sähköpostiin</button>
       </div>
     </div>
   </div>
 
-  <!-- Bottom sheet for emailing the receipt. Opened from the event-detail
-       view so the page itself never needs to scroll to reveal the field.
-       Kept OUTSIDE the (transformed) overlay so position:fixed works. -->
-  <div id="ed-receipt-sheet" style="position:fixed;inset:0;z-index:220;display:none;">
+  <!-- Bottom sheet for emailing a receipt. Reused by both the event-detail
+       view (single receipt) and the history list (one or more receipts).
+       Kept OUTSIDE any transformed overlay so position:fixed works. -->
+  <div id="receipt-sheet" style="position:fixed;inset:0;z-index:220;display:none;">
     <div class="sheet-backdrop" onclick="closeReceiptSheet()"></div>
     <div class="sheet-panel">
       <div class="sheet-header">
-        <div class="sheet-title">Lähetä kuitti</div>
+        <div class="sheet-title" id="receipt-sheet-title">Lähetä kuitti</div>
         <button class="sheet-close-btn" onclick="closeReceiptSheet()">✕</button>
       </div>
       <div style="padding:0 20px;font-family:Arial,sans-serif;">
-        <label for="ed-receipt-email-input" style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:10px;">Sähköposti</label>
-        <input type="email" id="ed-receipt-email-input" autocomplete="email" placeholder="nimi@example.com" style="width:100%;height:44px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:0 12px;outline:none;box-sizing:border-box;background:white;color:#222;">
-        <button onclick="confirmSendReceipt()" style="width:100%;height:52px;margin-top:18px;background:#0C0243;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:Arial,sans-serif;cursor:pointer;">Lähetä</button>
+        <label for="receipt-email-input" style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:10px;">Sähköposti</label>
+        <div style="position:relative;">
+          <input type="email" id="receipt-email-input" autocomplete="email" placeholder="nimi@example.com" style="width:100%;height:44px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:0 40px 0 12px;outline:none;box-sizing:border-box;background:white;color:#222;">
+          <button type="button" onclick="clearReceiptEmail()" aria-label="Tyhjennä kenttä" style="position:absolute;top:50%;right:8px;transform:translateY(-50%);width:22px;height:22px;border:none;background:#e6e6e6;color:#888;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>
+        </div>
+        <button onclick="confirmReceiptSend()" style="width:100%;height:52px;margin-top:18px;background:#0C0243;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:Arial,sans-serif;cursor:pointer;">Lähetä</button>
       </div>
     </div>
   </div>
@@ -11169,25 +11177,80 @@
       return email;
     }
 
-    // Open the receipt bottom sheet, pre-filling the account email. Using a
-    // sheet means the event-detail page never has to scroll to show the field.
+    // Receipt sheet is shared between the event-detail view ('event') and the
+    // history list's bulk send ('history').
+    let _receiptContext = 'event';
+    // Open the receipt sheet for the single event currently in detail view.
     function openReceiptSheet() {
-      const sheet = document.getElementById('ed-receipt-sheet');
-      const input = document.getElementById('ed-receipt-email-input');
+      _receiptContext = 'event';
+      const title = document.getElementById('receipt-sheet-title');
+      if (title) title.textContent = 'Lähetä kuitti';
+      _showReceiptSheet();
+    }
+    // Open the receipt sheet for the events selected in the history list.
+    function openHistoryReceiptSheet() {
+      if (_selectedEventIds.size === 0) return;
+      _receiptContext = 'history';
+      const title = document.getElementById('receipt-sheet-title');
+      if (title) title.textContent = (_selectedEventIds.size === 1) ? 'Lähetä kuitti' : 'Lähetä kuitit';
+      _showReceiptSheet();
+    }
+    function _showReceiptSheet() {
+      const sheet = document.getElementById('receipt-sheet');
+      const input = document.getElementById('receipt-email-input');
       if (input) input.value = edDefaultReceiptEmail();
       if (sheet) sheet.classList.add('visible');
       if (input) setTimeout(() => input.focus(), 60);
     }
     function closeReceiptSheet() {
-      const sheet = document.getElementById('ed-receipt-sheet');
+      const sheet = document.getElementById('receipt-sheet');
       if (sheet) sheet.classList.remove('visible');
     }
-    // "Lähetä": save any comment edits, confirm with a toast, close the sheet,
-    // and stay on the event-detail view.
-    function confirmSendReceipt() {
-      edSaveCommentIfChanged();
-      showCustomToast('Kuitti lähetetty sähköpostiin', 4000);
-      closeReceiptSheet();
+    // The field's clear "✕": wipe it and re-focus so the keyboard opens.
+    function clearReceiptEmail() {
+      const input = document.getElementById('receipt-email-input');
+      if (!input) return;
+      input.value = '';
+      input.focus();
+    }
+    // "Lähetä": confirm with a toast and close. In the event context we also
+    // persist any comment edits; in the history context we exit select mode.
+    function confirmReceiptSend() {
+      if (_receiptContext === 'history') {
+        const n = _selectedEventIds.size;
+        closeReceiptSheet();
+        showCustomToast(n === 1 ? 'Kuitti lähetetty sähköpostiin' : 'Kuitit lähetetty sähköpostiin', 4000);
+        if (_selectMode) toggleSelectMode();
+      } else {
+        edSaveCommentIfChanged();
+        closeReceiptSheet();
+        showCustomToast('Kuitti lähetetty sähköpostiin', 4000);
+      }
+    }
+    // Copy the current event's transaction id to the clipboard.
+    function copyEventId() {
+      const ev = _currentDetailEvent;
+      const el = document.getElementById('ed-event-id');
+      const id = (ev && ev.id) ? ev.id : (el ? (el.textContent || '').trim() : '');
+      if (!id || id === '—') return;
+      const done = () => showCustomToast('Tapahtumatunniste kopioitu leikepöydälle', 2500);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(id).then(done).catch(() => { _fallbackCopy(id); done(); });
+      } else {
+        _fallbackCopy(id); done();
+      }
+    }
+    function _fallbackCopy(text) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) { /* clipboard not available */ }
     }
 
     // ── History: card click dispatcher ─────────────────────────────────
@@ -11231,10 +11294,17 @@
         _selectedEventIds.add(id);
         card.classList.add('selected');
       }
-      // Show the bottom send-receipts button whenever ≥1 events are selected
+      // Show the bottom send-receipts button whenever ≥1 events are selected,
+      // with singular/plural wording based on the count.
       const footer = document.getElementById('history-action-footer');
-      if (_selectedEventIds.size > 0) footer.classList.add('visible');
-      else                            footer.classList.remove('visible');
+      const n = _selectedEventIds.size;
+      if (n > 0) {
+        footer.classList.add('visible');
+        const sbtn = document.getElementById('send-receipts-btn');
+        if (sbtn) sbtn.textContent = (n === 1) ? 'Lähetä kuitti sähköpostiin' : 'Lähetä kuitit sähköpostiin';
+      } else {
+        footer.classList.remove('visible');
+      }
     }
     // Action button at bottom — shows confirmation toast, then exits select mode.
     // ── Sheet "Open directions" button + maps app picker ──────────────
