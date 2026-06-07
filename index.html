@@ -1552,7 +1552,7 @@
     .hours-time { font-weight: 500; }
     .price-label { font-size: 13px; color: #888; margin-top: 18px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
-    #sheet-filter { display: none; flex-direction: column; padding: 4px 18px 16px 24px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 18px); overflow-y: scroll; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #c4c4cc transparent; }
+    #sheet-filter { display: none; flex-direction: column; padding: 4px 18px 16px 24px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 18px); overflow-y: scroll; overflow-x: hidden; touch-action: none; scrollbar-width: thin; scrollbar-color: #c4c4cc transparent; }
     #sheet-filter.visible { display: flex; }
     #sheet-filter::-webkit-scrollbar { width: 6px; }
     #sheet-filter::-webkit-scrollbar-thumb { background: #c4c4cc; border-radius: 3px; }
@@ -4550,8 +4550,7 @@
              range stays in effect even when hidden; the toggle only hides
              these controls, it does not clear the filter. -->
         <div id="maxtime-controls" style="display:none;">
-          <div id="filter-subtitle" style="margin-top:12px;">Näytä alueet, joilla sallittu max. pysäköintiaika on valitulla välillä</div>
-          <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
+          <div id="slider-label" style="margin-top:14px;">Aikaväli: <span id="slider-value">Kaikki</span></div>
           <div class="range-container">
             <div class="range-track"></div><div class="range-fill" id="range-fill"></div>
             <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0"/>
@@ -12463,33 +12462,28 @@
       if(!isDragging)return;
       isDragging=false;
       if(filterMode){
-        const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // max size (80% of viewport)
-        const midY = window.innerHeight * 0.6;                       // mid level = filter open height
-        const minY = sheet.clientHeight - 70;                        // min size (70px from bottom)
-        if(dragFromHandle){
-          // Free positioning when dragged from the handle — stay where dropped
-          snapTo(Math.max(maxY, Math.min(minY, currentY)));
-        } else {
-          // Levels ordered top→bottom: max (highest), mid, min (lowest)
-          const levels = [maxY, midY, minY];
-          // Find nearest level to where the drag started
-          let si = 0;
-          for(let i=1;i<levels.length;i++){
-            if(Math.abs(startTranslate - levels[i]) < Math.abs(startTranslate - levels[si])) si = i;
-          }
-          // Any swipe steps exactly one level toward swipe direction (always via mid)
-          let ti = si;
-          if(velocity < -0.2) ti = Math.max(0, si - 1);       // swipe up → one level up
-          else if(velocity > 0.2) ti = Math.min(levels.length - 1, si + 1); // swipe down → one level down
-          else {
-            // Gentle move with no clear velocity → snap to nearest level to current position
-            ti = 0;
-            for(let i=1;i<levels.length;i++){
-              if(Math.abs(currentY - levels[i]) < Math.abs(currentY - levels[ti])) ti = i;
-            }
-          }
-          snapTo(levels[ti]);
+        const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // top (full)
+        const midY = window.innerHeight * 0.6;                       // mid level
+        const minY = sheet.clientHeight - 70;                        // bottom (collapsed)
+        const levels = [maxY, midY, minY];                            // top → mid → bottom
+        // Nearest level to where the drag started
+        let si = 0;
+        for(let i=1;i<levels.length;i++){
+          if(Math.abs(startTranslate - levels[i]) < Math.abs(startTranslate - levels[si])) si = i;
         }
+        let ti;
+        if(velocity < -0.8)      ti = 0;                       // hard flick up → full size directly
+        else if(velocity > 0.8)  ti = 2;                       // hard flick down → collapsed directly
+        else if(velocity < -0.2) ti = Math.max(0, si - 1);     // gentle up → one level up (e.g. mid)
+        else if(velocity > 0.2)  ti = Math.min(2, si + 1);     // gentle down → one level down
+        else {
+          // No clear velocity → snap to nearest level to current position
+          ti = 0;
+          for(let i=1;i<levels.length;i++){
+            if(Math.abs(currentY - levels[i]) < Math.abs(currentY - levels[ti])) ti = i;
+          }
+        }
+        snapTo(levels[ti]);
         return;
       }
       if(currentParkingProps || hoveredPolyId){
