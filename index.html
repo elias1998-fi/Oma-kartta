@@ -2097,6 +2097,53 @@
       transition: border-color 0.2s;
     }
     .summary-notes-section textarea:focus { border-color: #0C0243; }
+    /* Event-detail: dark-blue "send receipt" action button + the email field
+       that slides in above it when the button is first tapped. */
+    #ed-send-receipt-btn {
+      width: 100%;
+      height: 52px;
+      margin-top: 16px;
+      background: #0C0243;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    #ed-send-receipt-btn:active { opacity: 0.88; }
+    #ed-receipt-email-wrap {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+    #ed-receipt-email-wrap label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 10px;
+    }
+    #ed-receipt-email-input {
+      width: 100%;
+      height: 44px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      padding: 0 12px;
+      outline: none;
+      box-sizing: border-box;
+      background: white;
+      color: #222;
+      transition: border-color 0.2s;
+    }
+    #ed-receipt-email-input:focus { border-color: #0C0243; }
     .summary-footer {
       background: white;
       padding: 12px 16px;
@@ -3384,13 +3431,12 @@
         <div class="filter-date-col">
           <label for="filter-start-date">Alkupäivä</label>
           <input type="date" id="filter-start-date" oninput="updateFilterDateLabel('start')">
-          <div class="filter-date-fi" id="filter-start-date-fi">–</div>
+          <div class="filter-date-fi" id="filter-start-date-fi"></div>
         </div>
-        <div class="filter-date-sep">–</div>
         <div class="filter-date-col">
           <label for="filter-end-date">Loppupäivä</label>
           <input type="date" id="filter-end-date" oninput="updateFilterDateLabel('end')">
-          <div class="filter-date-fi" id="filter-end-date-fi">–</div>
+          <div class="filter-date-fi" id="filter-end-date-fi"></div>
         </div>
       </div>
 
@@ -3477,11 +3523,20 @@
             <span class="summary-label">Hinta</span>
             <span class="summary-value summary-price" id="ed-price">—</span>
           </div>
+          <div class="summary-row" style="border-bottom:none;align-items:flex-start;">
+            <span class="summary-label">Tapahtumatunniste</span>
+            <span class="summary-value" id="ed-event-id" style="font-size:11px;font-family:monospace;color:#777;font-weight:400;word-break:break-all;text-align:right;max-width:60%;">—</span>
+          </div>
         </div>
-        <div class="summary-notes-section" id="ed-notes-section" style="display:none;">
-          <label>Kommentti</label>
-          <div id="ed-notes-text" style="font-size:14px;color:#222;line-height:1.5;white-space:pre-wrap;word-break:break-word;padding:8px 0 0 0;"></div>
+        <div class="summary-notes-section">
+          <label for="ed-notes-input">Kommentti (valinnainen)</label>
+          <textarea id="ed-notes-input" placeholder="Esimerkiksi: Työmatka Helsinkiin"></textarea>
         </div>
+        <div id="ed-receipt-email-wrap" style="display:none;">
+          <label for="ed-receipt-email-input">Sähköposti</label>
+          <input type="email" id="ed-receipt-email-input" autocomplete="email" placeholder="nimi@example.com">
+        </div>
+        <button id="ed-send-receipt-btn" onclick="edReceiptButtonClick()">Lähetä kuitti sähköpostiin</button>
       </div>
     </div>
   </div>
@@ -8457,11 +8512,12 @@
         list.innerHTML = '';
         return;
       }
-      const carIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M5 16V12l1.6-4.5A2 2 0 0 1 8.5 6h7a2 2 0 0 1 1.9 1.5L19 12v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-        <path d="M5 16h14" fill="none" stroke="currentColor" stroke-width="1.8"/>
-        <circle cx="7.5" cy="17" r="1.5" fill="currentColor"/>
-        <circle cx="16.5" cy="17" r="1.5" fill="currentColor"/>
+      const carIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 13.5l1.5-4A2 2 0 0 1 6.4 8h8.2a2 2 0 0 1 1.6.8l2.4 3.2 1.9.6A1.5 1.5 0 0 1 22 14v1.5a1 1 0 0 1-1 1h-1.5"/>
+        <path d="M4.5 16.5H3.5a1 1 0 0 1-1-1V13.5"/>
+        <line x1="9.5" y1="16.5" x2="14.5" y2="16.5"/>
+        <circle cx="7" cy="16.5" r="2"/>
+        <circle cx="17" cy="16.5" r="2"/>
       </svg>`;
       list.innerHTML = vehicles.map((v, i) => `
         <div class="vehicle-row" onclick="openEditVehicleSheet(${i})">
@@ -10956,6 +11012,8 @@
 
     // ── Single-event detail view ───────────────────────────────────────
     let _eventsById = new Map();
+    let _currentDetailEvent = null;
+    let _edReceiptMode = false;
 
     function formatFullDateTime(d) {
       const day  = d.getDate();
@@ -10987,22 +11045,81 @@
       document.getElementById('ed-payment').textContent      = ev.payment_method || '—';
       document.getElementById('ed-payment-type').textContent = 'Henkilökohtainen';
       document.getElementById('ed-price').textContent        = formatPrice(price.total);
+      document.getElementById('ed-event-id').textContent     = ev.id || '—';
 
-      // Notes section is hidden if empty, shown with full (untruncated) text otherwise
-      const notesSection = document.getElementById('ed-notes-section');
-      const notesText    = document.getElementById('ed-notes-text');
-      if (ev.notes && ev.notes.trim()) {
-        notesText.textContent  = ev.notes;
-        notesSection.style.display = '';
-      } else {
-        notesSection.style.display = 'none';
-      }
+      _currentDetailEvent = ev;
+
+      // Editable comment, pre-filled with the saved note for this event
+      const notesInput = document.getElementById('ed-notes-input');
+      if (notesInput) notesInput.value = ev.notes || '';
+
+      // Always start the receipt action in its collapsed (initial) state
+      const remail = document.getElementById('ed-receipt-email-input');
+      if (remail) remail.value = '';
+      edResetReceiptUI();
 
       document.getElementById('parking-event-detail').classList.add('open');
     }
 
     function closeEventDetail() {
       document.getElementById('parking-event-detail').classList.remove('open');
+      edResetReceiptUI();
+      edSaveCommentIfChanged();   // persist any comment edits in the background
+    }
+
+    // Save the edited comment for the current event if it differs from what
+    // is stored, and keep the local cache + history list in sync.
+    function edSaveCommentIfChanged() {
+      const ev = _currentDetailEvent;
+      if (!ev) return;
+      const ta = document.getElementById('ed-notes-input');
+      if (!ta) return;
+      const newNotes = (ta.value || '').trim();
+      const oldNotes = (ev.notes || '').trim();
+      if (newNotes === oldNotes) return;
+      ev.notes = newNotes;
+      if (ev.id) parkkihubiUpdate(ev.id, { notes: newNotes });
+      if (typeof renderFilteredHistory === 'function') renderFilteredHistory();
+    }
+
+    // Default receipt recipient = the email saved on the user's account.
+    function edDefaultReceiptEmail() {
+      const acc = document.getElementById('account-value-email');
+      let email = acc ? (acc.textContent || '').trim() : '';
+      if (!email) {
+        const setting = document.getElementById('setting-receipt-email');
+        if (setting && setting.value) email = setting.value.trim();
+      }
+      return email;
+    }
+
+    // Reset the receipt action back to its initial state (email field hidden,
+    // button reads "Lähetä kuitti sähköpostiin").
+    function edResetReceiptUI() {
+      const wrap = document.getElementById('ed-receipt-email-wrap');
+      const btn  = document.getElementById('ed-send-receipt-btn');
+      if (wrap) wrap.style.display = 'none';
+      if (btn)  btn.textContent = 'Lähetä kuitti sähköpostiin';
+      _edReceiptMode = false;
+    }
+
+    // First tap reveals the (pre-filled) email field and flips the button to
+    // "Lähetä". Second tap confirms, shows the toast, and resets the view.
+    function edReceiptButtonClick() {
+      const wrap  = document.getElementById('ed-receipt-email-wrap');
+      const input = document.getElementById('ed-receipt-email-input');
+      const btn   = document.getElementById('ed-send-receipt-btn');
+      if (!_edReceiptMode) {
+        if (input && !input.value) input.value = edDefaultReceiptEmail();
+        if (wrap) wrap.style.display = '';
+        if (btn)  btn.textContent = 'Lähetä';
+        _edReceiptMode = true;
+        if (input) setTimeout(() => input.focus(), 50);
+      } else {
+        edSaveCommentIfChanged();
+        showCustomToast('Kuitti lähetetty sähköpostiin', 4000);
+        edResetReceiptUI();
+      }
     }
 
     // ── History: card click dispatcher ─────────────────────────────────
@@ -11732,7 +11849,7 @@
     function updateFilterDateLabel(which) {
       const input = document.getElementById(`filter-${which}-date`);
       const label = document.getElementById(`filter-${which}-date-fi`);
-      if (input && label) label.textContent = isoToFinnishDate(input.value);
+      if (input && label) label.textContent = input.value ? isoToFinnishDate(input.value) : '';
     }
     function closeFilterModal() {
       document.getElementById('filter-modal').classList.remove('visible');
