@@ -1552,7 +1552,7 @@
     .hours-time { font-weight: 500; }
     .price-label { font-size: 13px; color: #888; margin-top: 18px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
-    #sheet-filter { display: none; flex-direction: column; padding: 4px 18px 24px 24px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 40px); overflow-y: scroll; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #c4c4cc transparent; }
+    #sheet-filter { display: none; flex-direction: column; padding: 4px 18px 16px 24px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 18px); overflow-y: scroll; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #c4c4cc transparent; }
     #sheet-filter.visible { display: flex; }
     #sheet-filter::-webkit-scrollbar { width: 6px; }
     #sheet-filter::-webkit-scrollbar-thumb { background: #c4c4cc; border-radius: 3px; }
@@ -4813,6 +4813,7 @@
     });
     window.addEventListener('resize', () => {
       if (typeof map !== 'undefined' && map.resize) map.resize();
+      if (typeof filterMode !== 'undefined' && filterMode && typeof sizeFilterSheet === 'function') sizeFilterSheet();
     });
 
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
@@ -10016,10 +10017,18 @@
       releaseMasterLock();
       sheetNormal.style.display='none';
       sheetFilter.classList.add('visible');
+      sizeFilterSheet();
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
       sheet.style.transform=`translateY(${window.innerHeight*0.6}px)`;
       currentY=window.innerHeight*0.6;
       btnContainer.classList.add('hidden');
+    }
+    // Size the filter scroll area so, when the sheet is at its top position
+    // (80% of the viewport), the content fills exactly down to the screen
+    // bottom — no leftover white strip — while keeping all content reachable.
+    function sizeFilterSheet(){
+      const handle = dragHandleArea ? dragHandleArea.offsetHeight : 18;
+      sheetFilter.style.maxHeight = (window.innerHeight * 0.8 - handle) + 'px';
     }
     function closeFilter(){
       filterMode=false;
@@ -12320,7 +12329,7 @@
       el.style.opacity = Math.max(0, Math.min(1, o));
     }
     let dragFromHandle=false;
-    let filterContentScroll=false, _startScrollTop=0;
+    let filterContentScroll=false, _startScrollTop=0, fcDragging=false;
     const dragHandleArea=document.getElementById('drag-handle-area');
     sheet.addEventListener('touchstart',(e)=>{
       // Estä drag jos ei ole pysäköintialuetta valittuna — paitsi filter-näkymässä, jossa drag aina sallittu
@@ -12331,19 +12340,26 @@
       if(filterMode && (sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
       }
-      // When the filter sheet is at its top position and its content overflows,
-      // let a finger drag inside the content scroll it (instead of dragging the
-      // whole sheet). Dragging the handle still collapses the sheet.
+      // When the filter sheet is at its top position, a finger drag inside the
+      // content first scrolls the content; once the content reaches its top and
+      // the finger keeps moving down, the gesture hands off to dragging the
+      // whole sheet down (with velocity-based snapping on release).
       if(filterMode && sheetFilter.contains(e.target) && !(dragHandleArea && dragHandleArea.contains(e.target))){
         const m = new DOMMatrix(getComputedStyle(sheet).transform);
         const topY = sheet.clientHeight - window.innerHeight*0.8;
         const atTop = m.m42 <= topY + 4;
-        const canScroll = sheetFilter.scrollHeight > sheetFilter.clientHeight + 1;
-        if(atTop && canScroll){
+        if(atTop){
           filterContentScroll = true;
+          fcDragging = false;
           startY = e.touches[0].clientY;
+          lastY = startY;
+          lastTime = Date.now();
+          velocity = 0;
           _startScrollTop = sheetFilter.scrollTop;
+          startTranslate = topY;
+          currentY = topY;
           isDragging = false;
+          sheet.style.transition = 'none';
           return;
         }
       }
@@ -12364,7 +12380,31 @@
     
     sheet.addEventListener('touchmove',(e)=>{
       if(filterContentScroll){
-        sheetFilter.scrollTop = _startScrollTop - (e.touches[0].clientY - startY);
+        const touch = e.touches[0].clientY;
+        const now = Date.now();
+        const dt = now - lastTime; if(dt>0) velocity=(touch-lastY)/dt; lastY=touch; lastTime=now;
+        const delta = touch - startY;            // >0 = finger moved down
+        if(!fcDragging){
+          const desired = _startScrollTop - delta;
+          if(desired > 0){
+            sheetFilter.scrollTop = desired;     // still scrolling content
+            return;
+          }
+          // Content reached its top → hand off to dragging the sheet down.
+          sheetFilter.scrollTop = 0;
+          fcDragging = true;
+          isDragging = true;
+          startY = touch;                         // rebase so the sheet doesn't jump
+          startTranslate = sheet.clientHeight - window.innerHeight*0.8;
+        }
+        const minY = sheet.clientHeight - window.innerHeight*0.8;
+        const maxY = sheet.clientHeight - 70;
+        currentY = Math.max(minY, Math.min(maxY, startTranslate + (touch - startY)));
+        sheet.style.transform = `translateY(${currentY}px)`;
+        const op = 1 - (currentY / (sheet.clientHeight - 60));
+        sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (op - 0.5) * 2));
+        updateNavBtnVisibility();
+        updateOsmOpacity(currentY);
         return;
       }
       if(!isDragging)return;
@@ -12400,7 +12440,26 @@
     },{passive:true});
     
     sheet.addEventListener('touchend',()=>{
-      if(filterContentScroll){ filterContentScroll=false; return; }
+      if(filterContentScroll){
+        const wasDrag = fcDragging;
+        filterContentScroll = false;
+        fcDragging = false;
+        if(!wasDrag) return;                       // pure content scroll — nothing to snap
+        isDragging = false;
+        const maxY = sheet.clientHeight - window.innerHeight*0.8;   // top
+        const midY = window.innerHeight * 0.6;                      // mid
+        const minY = sheet.clientHeight - 70;                       // bottom (collapsed)
+        let target;
+        if(velocity > 0.8){
+          target = minY;                           // quick flick down → all the way down
+        } else {
+          const lv = [maxY, midY, minY];           // gentle → nearest level to release point
+          target = lv[0];
+          for(const y of lv) if(Math.abs(currentY - y) < Math.abs(currentY - target)) target = y;
+        }
+        snapTo(target);
+        return;
+      }
       if(!isDragging)return;
       isDragging=false;
       if(filterMode){
