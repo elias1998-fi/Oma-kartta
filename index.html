@@ -10026,8 +10026,11 @@
     // (80% of the viewport), the content fills exactly down to the screen
     // bottom — no leftover white strip — while keeping all content reachable.
     function sizeFilterSheet(){
-      const handle = dragHandleArea ? dragHandleArea.offsetHeight : 18;
-      sheetFilter.style.maxHeight = (window.innerHeight * 0.8 - handle) + 'px';
+      // Fill the content area exactly to the screen bottom when the sheet is at
+      // its top position. The sheet's top edge then sits at 20% of the viewport,
+      // so the content height is 80% of the viewport minus the handle offset.
+      const top = sheetFilter.offsetTop || (dragHandleArea ? dragHandleArea.offsetHeight : 18);
+      sheetFilter.style.maxHeight = (window.innerHeight * 0.8 - top) + 'px';
     }
     function closeFilter(){
       filterMode=false;
@@ -12316,6 +12319,20 @@
       sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
       updateNavBtnVisibility();
       updateOsmOpacity(t);
+
+      // When the filter sheet settles at the top, measure its real on-screen
+      // position after the animation and size the content so it fills exactly
+      // to the screen bottom (no leftover white strip).
+      if(filterMode){
+        const topY = sheet.clientHeight - window.innerHeight * 0.8;
+        if(Math.abs(t - topY) < 2){
+          setTimeout(() => {
+            const rectTop = sheetFilter.getBoundingClientRect().top;
+            const h = window.innerHeight - rectTop;
+            if(h > 120) sheetFilter.style.maxHeight = h + 'px';
+          }, 370);
+        }
+      }
     }
     // © OpenStreetMap attribution: child of the sheet (moves with it), fades out
     // once the sheet's top edge passes the screen midpoint, fully hidden when open.
@@ -12328,19 +12345,19 @@
       el.style.opacity = Math.max(0, Math.min(1, o));
     }
     let dragFromHandle=false;
-    let filterContentScroll=false, _startScrollTop=0, fcDragging=false, _momentumRAF=null;
+    let filterContentScroll=false, _startScrollTop=0, fcDragging=false, _momentumRAF=null, _gestureStartY=0, _filterMoved=false;
     const dragHandleArea=document.getElementById('drag-handle-area');
     // Inertial (momentum) scrolling for the filter content: after the finger
     // lifts, keep scrolling with the last velocity, gradually decelerating.
     function startContentMomentum(v0){
-      let vel = Math.max(-3, Math.min(3, v0));   // px/ms of scrollTop change, clamped
+      let vel = Math.max(-3.5, Math.min(3.5, v0));   // px/ms of scrollTop change, clamped
       let last = performance.now();
       const maxScroll = sheetFilter.scrollHeight - sheetFilter.clientHeight;
       function step(now){
         const dt = now - last; last = now;
-        vel *= Math.pow(0.95, dt / 16.67);       // friction
+        vel *= Math.pow(0.965, dt / 16.67);      // friction (gentle glide)
         sheetFilter.scrollTop = sheetFilter.scrollTop + vel * dt;
-        if(Math.abs(vel) < 0.015 || sheetFilter.scrollTop <= 0 || sheetFilter.scrollTop >= maxScroll){
+        if(Math.abs(vel) < 0.012 || sheetFilter.scrollTop <= 0 || sheetFilter.scrollTop >= maxScroll){
           _momentumRAF = null;
           return;
         }
@@ -12348,6 +12365,12 @@
       }
       _momentumRAF = requestAnimationFrame(step);
     }
+    // Suppress the click that follows a drag, so dragging across a button /
+    // toggle / charger tile scrolls instead of activating it. A real tap (no
+    // movement) leaves _filterMoved false and activates the control normally.
+    sheetFilter.addEventListener('click', (e) => {
+      if(_filterMoved){ e.stopPropagation(); e.preventDefault(); _filterMoved = false; }
+    }, true);
     sheet.addEventListener('touchstart',(e)=>{
       // Stop any in-progress momentum scroll so a new touch catches it
       if(_momentumRAF){ cancelAnimationFrame(_momentumRAF); _momentumRAF = null; }
@@ -12359,9 +12382,14 @@
       if(filterMode && (sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
       }
-      // In filter mode, don't scroll the content (or drag the sheet) when the
-      // touch lands on an interactive control — let the control handle it.
-      if(filterMode && e.target.closest && e.target.closest('input, button, .range-container, .charger-type-tile, .toggle-switch, .seg-track')){
+      // Track the gesture so we can tell a tap (activate a control) from a
+      // drag (scroll / move the sheet) — see the click suppressor below.
+      if(filterMode){ _gestureStartY = (e.touches[0]||{}).clientY || 0; _filterMoved = false; }
+      // Sliders need drag-to-adjust, so a touch on them never scrolls/moves
+      // the sheet. Other controls (buttons, toggles, charger tiles) only block
+      // on a real tap — a drag that starts on them still scrolls (the click is
+      // suppressed afterwards).
+      if(filterMode && e.target.closest && e.target.closest('.range-container')){
         return;
       }
       // When the filter sheet is at its top position, a finger drag inside the
@@ -12403,6 +12431,9 @@
     },{passive:true});
     
     sheet.addEventListener('touchmove',(e)=>{
+      if(filterMode && !_filterMoved && Math.abs((((e.touches[0]||{}).clientY)||0) - _gestureStartY) > 8){
+        _filterMoved = true;   // moved enough to count as a drag, not a tap
+      }
       if(filterContentScroll){
         const touch = e.touches[0].clientY;
         const now = Date.now();
