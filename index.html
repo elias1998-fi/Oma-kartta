@@ -3551,11 +3551,11 @@
         <div class="sheet-title" id="receipt-sheet-title">Lähetä kuitti</div>
         <button class="sheet-close-btn" onclick="closeReceiptSheet()">✕</button>
       </div>
-      <div style="padding:0 20px;font-family:Arial,sans-serif;">
+      <div style="padding:0 16px;font-family:Arial,sans-serif;">
         <label for="receipt-email-input" style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:10px;">Sähköposti</label>
         <div style="position:relative;">
-          <input type="email" id="receipt-email-input" autocomplete="email" placeholder="nimi@example.com" style="width:100%;height:44px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:0 40px 0 12px;outline:none;box-sizing:border-box;background:white;color:#222;">
-          <button type="button" onclick="clearReceiptEmail()" aria-label="Tyhjennä kenttä" style="position:absolute;top:50%;right:8px;transform:translateY(-50%);width:22px;height:22px;border:none;background:#e6e6e6;color:#888;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>
+          <input type="email" id="receipt-email-input" autocomplete="email" placeholder="nimi@example.com" style="width:100%;height:44px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:0 38px 0 12px;outline:none;box-sizing:border-box;background:white;color:#222;">
+          <button type="button" onclick="clearReceiptEmail()" aria-label="Tyhjennä kenttä" style="position:absolute;top:50%;right:6px;transform:translateY(-50%);width:26px;height:26px;border:none;background:none;color:#aaa;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>
         </div>
         <button onclick="confirmReceiptSend()" style="width:100%;height:52px;margin-top:18px;background:#0C0243;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:Arial,sans-serif;cursor:pointer;">Lähetä</button>
       </div>
@@ -11110,6 +11110,23 @@
       return `${day}.${mon}.${year} klo ${hh}:${mm}`;
     }
 
+    // Build the "Pysäköintialue" line the same way the base view's header
+    // does: the DB area_name (or a derived zone label) plus a "| Max. Xh"
+    // suffix from the event's max_hours / max_minutes when present.
+    function buildEventAreaLine(ev, zone) {
+      let areaName = (ev.area_name && ev.area_name !== '') ? ev.area_name : '';
+      if (!areaName) {
+        areaName = zone ? `Helsinki, Vyöhyke ${zone[1]}` : 'Helsingin kaupunki';
+      }
+      let maxSuffix = '';
+      if (ev.max_hours !== null && ev.max_hours !== undefined && ev.max_hours !== '') {
+        maxSuffix = `  |  Max. ${ev.max_hours}h`;
+      } else if (ev.max_minutes !== null && ev.max_minutes !== undefined && ev.max_minutes !== '') {
+        maxSuffix = `  |  Max. ${ev.max_minutes} min`;
+      }
+      return areaName + (/Max\./.test(areaName) ? '' : maxSuffix);
+    }
+
     function showEventDetail(id) {
       const ev = _eventsById.get(id);
       if (!ev) return;
@@ -11118,12 +11135,13 @@
       const durMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
       const price  = calculatePrice(durMin);
       const zone   = String(ev.area_code || '').match(/^(\d)/);
-      const operator = zone
-        ? `Helsingin kaupunki, Vyöhyke ${zone[1]}`
-        : 'Helsingin kaupunki';
+      // "Pysäköintialue" row: same format as the base view's header —
+      // the DB area_name plus a "| Max. Xh" suffix. Falls back to a derived
+      // zone label if the event row has no area_name.
+      const areaLine = buildEventAreaLine(ev, zone);
 
       document.getElementById('ed-code').textContent         = ev.area_code || '—';
-      document.getElementById('ed-operator').textContent     = operator;
+      document.getElementById('ed-operator').textContent     = areaLine;
       document.getElementById('ed-plate').textContent        = ev.license_plate || '—';
       document.getElementById('ed-start').textContent        = formatFullDateTime(start);
       document.getElementById('ed-end').textContent          = formatFullDateTime(end);
