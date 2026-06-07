@@ -12445,8 +12445,15 @@
             sheetFilter.scrollTop = desired;     // still scrolling content
             return;
           }
-          // Content reached its top → hand off to dragging the sheet down.
+          // Content has reached its top.
           sheetFilter.scrollTop = 0;
+          if(_startScrollTop > 0.5){
+            // This gesture started while the content was scrolled, so it only
+            // returns the content to the top — it does NOT drag the sheet down.
+            // Collapsing the sheet needs a fresh swipe from the content top.
+            return;
+          }
+          // Gesture started at the content top → hand off to dragging the sheet.
           fcDragging = true;
           isDragging = true;
           startY = touch;                         // rebase so the sheet doesn't jump
