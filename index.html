@@ -4623,6 +4623,25 @@
             <span class="charger-type-name">CHAdeMO</span>
           </div>
         </div>
+        <!-- Latausteho (charging power) range slider — same style as the
+             max-parking-time slider above; UI only for now. -->
+        <div class="charger-type-label" style="margin-top:18px;">Latausteho</div>
+        <div class="range-container">
+          <div class="range-track"></div><div class="range-fill" id="power-range-fill"></div>
+          <input type="range" class="range-input" id="power-slider-min" min="0" max="3" step="1" value="0"/>
+          <input type="range" class="range-input" id="power-slider-max" min="0" max="3" step="1" value="3"/>
+        </div>
+        <div class="slider-ticks"><span>100kW</span><span>220kW</span><span>300kW</span><span>400kW</span></div>
+        <!-- Voltage segmented control — dark-blue indicator only. -->
+        <div class="charger-type-label" style="margin-top:18px;">Latausjännite</div>
+        <div id="voltage-segmented" style="margin-top:10px;">
+          <div class="seg-track">
+            <div class="seg-thumb" id="voltage-seg-thumb" style="background:#0C0243;"></div>
+            <button class="seg-option" data-volt="400" onclick="setVoltageMode('400')">400V</button>
+            <button class="seg-option" data-volt="both" onclick="setVoltageMode('both')">400V ja 800V</button>
+            <button class="seg-option" data-volt="800" onclick="setVoltageMode('800')">800V</button>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -9891,6 +9910,35 @@
       // TODO: when the EV-charging map layer exists, push this selection
       // into a Mapbox filter expression so only the chosen plug types show.
     }
+    // Voltage segmented control under the charger picker. Indicator is always
+    // dark blue (no light-blue / lilac like the parking segmented control).
+    function setVoltageMode(mode) {
+      const idx = mode === '400' ? 0 : mode === '800' ? 2 : 1;
+      const thumb = document.getElementById('voltage-seg-thumb');
+      if (thumb) thumb.style.transform = `translateX(${idx * 100}%)`;
+      document.querySelectorAll('#voltage-segmented .seg-option').forEach(b => {
+        b.classList.toggle('active', b.dataset.volt === mode);
+      });
+      // TODO: when the EV-charging map layer exists, apply the voltage filter.
+    }
+    // Latausteho dual-range slider (UI only): updates the fill between the two
+    // handles and stops them from crossing. Ticks: 100 / 220 / 300 / 400 kW.
+    (function initPowerSlider() {
+      const pmin = document.getElementById('power-slider-min');
+      const pmax = document.getElementById('power-slider-max');
+      const pfill = document.getElementById('power-range-fill');
+      if (!pmin || !pmax || !pfill) return;
+      const MAXI = 3;
+      function upd() {
+        const a = parseInt(pmin.value), b = parseInt(pmax.value);
+        pfill.style.left  = (a / MAXI * 100) + '%';
+        pfill.style.width  = ((b - a) / MAXI * 100) + '%';
+      }
+      pmin.addEventListener('input', () => { if (parseInt(pmin.value) > parseInt(pmax.value)) pmin.value = pmax.value; upd(); });
+      pmax.addEventListener('input', () => { if (parseInt(pmax.value) < parseInt(pmin.value)) pmax.value = pmin.value; upd(); });
+      upd();
+      setVoltageMode('both');   // default voltage selection (centered)
+    })();
 
     function acceptFreeTerms() {
       freeTermsAccepted = true;
