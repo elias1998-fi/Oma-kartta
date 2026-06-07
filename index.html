@@ -1103,6 +1103,23 @@
       cursor: pointer;
     }
     .add-vehicle-save:active { opacity: 0.88; }
+    .add-vehicle-save:disabled { opacity: 0.4; cursor: default; }
+    /* Delete-vehicle button shown above the save button in edit mode. Same
+       size as the save button but white with a red outline + red text,
+       matching the destructive action style used in the Tili overlay. */
+    .vehicle-delete-action {
+      height: 52px;
+      background: white;
+      color: #d92626;
+      border: 1.5px solid #f3c0c0;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      margin-top: 22px;
+    }
+    .vehicle-delete-action:active { background: #fdebeb; border-color: #d92626; }
     /* Stacked action buttons at the bottom of the Tili overlay. Logout
        is the primary "neutral" action; delete is destructive and shown
        in red below it. */
@@ -3504,7 +3521,7 @@
     <div class="sheet-backdrop" onclick="closeAddVehicleSheet()"></div>
     <div class="sheet-panel">
       <div class="sheet-header">
-        <div class="sheet-title">Uusi ajoneuvo</div>
+        <div class="sheet-title" id="vehicle-sheet-title">Uusi ajoneuvo</div>
         <button class="sheet-close-btn" onclick="closeAddVehicleSheet()">✕</button>
       </div>
       <div class="add-vehicle-body">
@@ -3550,7 +3567,8 @@
           <label class="ios-switch"><input type="checkbox" id="vehicle-ev"><span class="ios-switch-track"></span></label>
         </div>
 
-        <button class="add-vehicle-save" onclick="saveNewVehicle()">Tallenna</button>
+        <button id="vehicle-delete-action-btn" class="vehicle-delete-action" style="display:none;" onclick="deleteVehicleFromSheet()">Poista ajoneuvo</button>
+        <button id="vehicle-sheet-save-btn" class="add-vehicle-save" onclick="saveVehicleSheet()">Tallenna</button>
       </div>
     </div>
   </div>
@@ -8446,13 +8464,13 @@
         <circle cx="16.5" cy="17" r="1.5" fill="currentColor"/>
       </svg>`;
       list.innerHTML = vehicles.map((v, i) => `
-        <div class="vehicle-row">
+        <div class="vehicle-row" onclick="openEditVehicleSheet(${i})">
           <div class="vehicle-icon">${carIcon}</div>
           <div class="vehicle-text">
             <div class="vehicle-plate">${escapeHtml(v.plate)}</div>
             ${v.name ? `<div class="vehicle-name">${escapeHtml(v.name)}</div>` : ''}
           </div>
-          <button class="vehicle-delete" onclick="deleteVehicle(${i});event.stopPropagation();" aria-label="Poista">✕</button>
+          <div class="settings-item-chevron" aria-hidden="true">›</div>
         </div>
       `).join('');
     }
@@ -8465,11 +8483,25 @@
       renderVehiclesList();
     }
 
-    // ── Add-vehicle sheet ──────────────────────────────────────────────
+    // ── Add / edit vehicle sheet ───────────────────────────────────────
+    // The same bottom sheet is reused for adding a new vehicle and editing
+    // an existing one. _editVehicleIndex is null in add mode, or the index
+    // of the vehicle being edited.
+    let _editVehicleIndex = null;
+    let _editVehicleSnapshot = null;
     function openAddVehicleSheet() {
       const sheet = document.getElementById('add-vehicle-sheet');
       if (!sheet) return;
       sheet.classList.add('visible');
+      _editVehicleIndex = null;
+      _editVehicleSnapshot = null;
+      // Add mode: default title, hidden delete button, ready-to-use save button
+      const titleEl = document.getElementById('vehicle-sheet-title');
+      if (titleEl) titleEl.textContent = 'Uusi ajoneuvo';
+      const delBtn = document.getElementById('vehicle-delete-action-btn');
+      if (delBtn) delBtn.style.display = 'none';
+      const saveBtn = document.getElementById('vehicle-sheet-save-btn');
+      if (saveBtn) { saveBtn.textContent = 'Tallenna'; saveBtn.disabled = false; saveBtn.style.marginTop = ''; }
       // Reset fields each time the sheet opens
       const plateInput = document.getElementById('vehicle-plate-input');
       const nameInput  = document.getElementById('vehicle-name-input');
@@ -8488,6 +8520,107 @@
     function closeAddVehicleSheet() {
       const sheet = document.getElementById('add-vehicle-sheet');
       if (sheet) sheet.classList.remove('visible');
+    }
+    // Open the sheet pre-filled with an existing vehicle's data so the user
+    // can edit it. The save button stays dimmed until something changes.
+    function openEditVehicleSheet(index) {
+      const vehicles = loadVehicles();
+      if (index < 0 || index >= vehicles.length) return;
+      const v = vehicles[index];
+      const sheet = document.getElementById('add-vehicle-sheet');
+      if (!sheet) return;
+      sheet.classList.add('visible');
+      _editVehicleIndex = index;
+      const titleEl = document.getElementById('vehicle-sheet-title');
+      if (titleEl) titleEl.textContent = 'Muokkaa ajoneuvoa';
+      const plateInput = document.getElementById('vehicle-plate-input');
+      const nameInput  = document.getElementById('vehicle-name-input');
+      const country    = document.getElementById('vehicle-country-input');
+      const autopark   = document.getElementById('vehicle-autopark');
+      const ev         = document.getElementById('vehicle-ev');
+      if (country)    country.value    = v.country || 'FI';
+      if (plateInput) { plateInput.value = v.plate || ''; plateInput.dataset.prev = v.plate || ''; }
+      _plateHyphenRemoved = true;   // existing plate already formatted — don't re-offer the hyphen
+      if (nameInput)  nameInput.value  = v.name || '';
+      if (autopark)   autopark.checked = !!v.autopark;
+      if (ev)         ev.checked       = !!v.ev;
+      // Snapshot the starting values so we can detect edits
+      _editVehicleSnapshot = _readVehicleSheetFields();
+      // Show the delete button above the save button (stacked, 12px apart)
+      const delBtn = document.getElementById('vehicle-delete-action-btn');
+      if (delBtn) delBtn.style.display = 'block';
+      const saveBtn = document.getElementById('vehicle-sheet-save-btn');
+      if (saveBtn) { saveBtn.textContent = 'Tallenna muutokset'; saveBtn.disabled = true; saveBtn.style.marginTop = '12px'; }
+      _attachVehicleSheetDirtyListener();
+    }
+    // Read the current sheet field values into a comparable object.
+    function _readVehicleSheetFields() {
+      const country = (document.getElementById('vehicle-country-input') || {}).value || 'FI';
+      let plate = ((document.getElementById('vehicle-plate-input') || {}).value || '').trim();
+      if (country === 'FI') plate = plate.toUpperCase();
+      const name = ((document.getElementById('vehicle-name-input') || {}).value || '').trim();
+      const autopark = !!(document.getElementById('vehicle-autopark') || {}).checked;
+      const ev       = !!(document.getElementById('vehicle-ev') || {}).checked;
+      return { plate, name, country, autopark, ev };
+    }
+    // Enable/dim the save button based on whether anything changed (edit mode only).
+    function checkVehicleSheetDirty() {
+      if (_editVehicleIndex === null || !_editVehicleSnapshot) return;
+      const saveBtn = document.getElementById('vehicle-sheet-save-btn');
+      if (!saveBtn) return;
+      const cur = _readVehicleSheetFields();
+      const dirty = JSON.stringify(cur) !== JSON.stringify(_editVehicleSnapshot);
+      saveBtn.disabled = !dirty;
+    }
+    let _vehicleSheetDirtyAttached = false;
+    function _attachVehicleSheetDirtyListener() {
+      if (_vehicleSheetDirtyAttached) return;
+      const body = document.querySelector('#add-vehicle-sheet .add-vehicle-body');
+      if (!body) return;
+      body.addEventListener('input', checkVehicleSheetDirty);
+      body.addEventListener('change', checkVehicleSheetDirty);
+      _vehicleSheetDirtyAttached = true;
+    }
+    // Save button dispatcher — adds a new vehicle or saves edits.
+    function saveVehicleSheet() {
+      if (_editVehicleIndex === null) { saveNewVehicle(); return; }
+      const vehicles = loadVehicles();
+      if (_editVehicleIndex < 0 || _editVehicleIndex >= vehicles.length) { closeAddVehicleSheet(); return; }
+      const fields = _readVehicleSheetFields();
+      if (!fields.plate) { showCustomToast('Rekisteritunnus on pakollinen', 2200); return; }
+      // Reject a plate that already belongs to a different vehicle
+      if (vehicles.some((v, i) => i !== _editVehicleIndex && v.plate === fields.plate)) {
+        showCustomToast('Tämä ajoneuvo on jo lisätty', 2200);
+        return;
+      }
+      vehicles[_editVehicleIndex] = fields;
+      saveVehicles(vehicles);
+      closeAddVehicleSheet();
+      renderVehiclesList();
+      // Keep the parking view in sync
+      if (typeof renderVehicleDisplay === 'function') renderVehicleDisplay();
+      const vSheet = document.getElementById('vehicle-sheet');
+      if (vSheet && vSheet.classList.contains('open') && typeof renderVehicleOptions === 'function') renderVehicleOptions();
+      showCustomToast('Ajoneuvon tiedot päivitetty', 2200);
+    }
+    // Delete the vehicle currently being edited (triggered from the sheet).
+    function deleteVehicleFromSheet() {
+      if (_editVehicleIndex === null) return;
+      const vehicles = loadVehicles();
+      if (_editVehicleIndex < 0 || _editVehicleIndex >= vehicles.length) return;
+      const plate = vehicles[_editVehicleIndex].plate;
+      if (!confirm(`Poista ajoneuvo ${plate}?`)) return;
+      vehicles.splice(_editVehicleIndex, 1);
+      saveVehicles(vehicles);
+      closeAddVehicleSheet();
+      renderVehiclesList();
+      if (typeof selectedVehicleIdx !== 'undefined' && selectedVehicleIdx >= vehicles.length) {
+        selectedVehicleIdx = vehicles.length ? vehicles.length - 1 : 0;
+      }
+      if (typeof renderVehicleDisplay === 'function') renderVehicleDisplay();
+      const vSheet = document.getElementById('vehicle-sheet');
+      if (vSheet && vSheet.classList.contains('open') && typeof renderVehicleOptions === 'function') renderVehicleOptions();
+      showCustomToast(`Ajoneuvo ${plate} poistettu`, 2200);
     }
     // Finnish plates: uppercase + auto-offer a hyphen after the first 3 letters.
     // If the user deletes the hyphen once, stop re-offering it for this add.
