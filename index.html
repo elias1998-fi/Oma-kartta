@@ -2102,7 +2102,7 @@
     #ed-send-receipt-btn {
       width: 100%;
       height: 52px;
-      margin-top: 16px;
+      margin-top: 10px;
       background: #0C0243;
       color: white;
       border: none;
@@ -2114,6 +2114,20 @@
       transition: opacity 0.15s ease;
     }
     #ed-send-receipt-btn:active { opacity: 0.88; }
+    #ed-support-btn {
+      width: 100%;
+      height: 52px;
+      background: #f0f0f0;
+      color: #0C0243;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    #ed-support-btn:active { opacity: 0.7; }
     #ed-receipt-email-wrap {
       background: white;
       border-radius: 14px;
@@ -3485,11 +3499,15 @@
       <div class="overlay-title">Pysäköintitapahtuma</div>
     </div>
     <div class="overlay-content" style="background:#f2f3f5;">
-      <div style="padding:20px 16px;font-family:Arial,sans-serif;">
+      <div style="padding:20px 16px 8px;font-family:Arial,sans-serif;flex:1;">
         <div class="summary-card">
+          <div class="summary-row" style="align-items:flex-start;">
+            <span class="summary-label">Tapahtumatunniste</span>
+            <span class="summary-value" id="ed-event-id" style="font-size:11px;font-family:monospace;color:#777;font-weight:400;word-break:break-all;text-align:right;max-width:60%;">—</span>
+          </div>
           <div class="summary-row">
-            <span class="summary-label">Alue</span>
-            <span class="summary-value"><span class="confirm-badge" id="ed-code">—</span></span>
+            <span class="summary-label">Aluekoodi</span>
+            <span class="summary-value" id="ed-code">—</span>
           </div>
           <div class="summary-row">
             <span class="summary-label">Pysäköintialueen omistaja</span>
@@ -3515,23 +3533,18 @@
             <span class="summary-label">Maksutapa</span>
             <span class="summary-value" id="ed-payment">—</span>
           </div>
-          <div class="summary-row">
-            <span class="summary-label">Maksun tyyppi</span>
-            <span class="summary-value" id="ed-payment-type">—</span>
-          </div>
           <div class="summary-row summary-total-row">
-            <span class="summary-label">Hinta</span>
+            <span class="summary-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail(_edPriceMinutes)">i</span></span>
             <span class="summary-value summary-price" id="ed-price">—</span>
-          </div>
-          <div class="summary-row" style="border-bottom:none;align-items:flex-start;">
-            <span class="summary-label">Tapahtumatunniste</span>
-            <span class="summary-value" id="ed-event-id" style="font-size:11px;font-family:monospace;color:#777;font-weight:400;word-break:break-all;text-align:right;max-width:60%;">—</span>
           </div>
         </div>
         <div class="summary-notes-section">
           <label for="ed-notes-input">Kommentti (valinnainen)</label>
-          <textarea id="ed-notes-input" placeholder="Esimerkiksi: Työmatka Helsinkiin"></textarea>
+          <textarea id="ed-notes-input" placeholder="Esimerkiksi: Työmatka Helsinkiin" style="min-height:40px;"></textarea>
         </div>
+      </div>
+      <div style="padding:12px 16px calc(14px + env(safe-area-inset-bottom));font-family:Arial,sans-serif;">
+        <button id="ed-support-btn" onclick="openSupportChatForEvent()">Asiakaspalvelu</button>
         <div id="ed-receipt-email-wrap" style="display:none;">
           <label for="ed-receipt-email-input">Sähköposti</label>
           <input type="email" id="ed-receipt-email-input" autocomplete="email" placeholder="nimi@example.com">
@@ -9109,6 +9122,70 @@
     function closeSupportChat() {
       document.getElementById('support-chat-overlay').classList.remove('open');
     }
+    // Apple-style rounded preview card of the parking event, shown as the
+    // user's "attachment" at the top of the support conversation.
+    function addSupportEventPreview(ev) {
+      const box = document.getElementById('support-chat-messages');
+      if (!box || !ev) return;
+      const start  = new Date(ev.start_time);
+      const end    = new Date(ev.end_time);
+      const durMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+      const price  = calculatePrice(durMin);
+      const row = (l, v) => `<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;"><span style="color:#888;">${l}</span><span style="color:#222;font-weight:500;text-align:right;">${v}</span></div>`;
+      const wrap = document.createElement('div');
+      wrap.className = 'sup-pop';
+      wrap.style.cssText = 'display:flex;justify-content:flex-end;';
+      const card = document.createElement('div');
+      card.style.cssText = 'max-width:82%;background:white;border-radius:18px;border-bottom-right-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.14);overflow:hidden;font-family:Arial,sans-serif;';
+      card.innerHTML =
+        '<div style="background:#0C0243;color:#fff;padding:8px 14px;font-size:12px;font-weight:bold;">Pysäköintitapahtuma</div>'
+        + '<div style="padding:11px 14px;display:flex;flex-direction:column;gap:6px;">'
+          + row('Aluekoodi', escapeHtml(ev.area_code || '—'))
+          + row('Ajoneuvo', escapeHtml(ev.license_plate || '—'))
+          + row('Pysäköinti alkoi', formatFullDateTime(start))
+          + row('Hinta', formatPrice(price.total))
+        + '</div>';
+      wrap.appendChild(card);
+      box.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+    }
+    // Opens the support chat from the event-detail view: attaches the event as
+    // a preview, Pertti joins and greets, then two guided options appear.
+    function openSupportChatForEvent() {
+      const ev = _currentDetailEvent;
+      const overlay = document.getElementById('support-chat-overlay');
+      const box = document.getElementById('support-chat-messages');
+      if (!overlay || !box) return;
+      overlay.classList.add('open');
+      updateSendSupportBtn();
+      box.innerHTML = '';
+      box.dataset.seeded = '1';
+      supportEngaged = false;
+      supportLog = [];
+      setSupportStatus('offline');
+      addSupportEventPreview(ev);
+      const joinNote = addSupportSystem('Odota, virtuaalinen asiakaspalvelija liittyy keskusteluun.');
+      setTimeout(() => {
+        setSupportStatus('online');
+        if (joinNote) joinNote.textContent = 'Virtuaalinen asiakaspalvelija liittyi keskusteluun';
+        perttiSay('Moro. Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Onko sinulla jotain kysyttävää liitettyyn pysäköintitapahtumaan liittyen, vai tarvitsetko apua jossain muussa asiassa.', () => {
+          setTimeout(() => showSupportChips(['Kysymys pysäköintitapahtumaan liittyen', 'Muu asia'], chooseEventSupportOption), 3000);
+        });
+      }, 1200);
+    }
+    function chooseEventSupportOption(label, chipWrap) {
+      supportEngaged = true;
+      if (chipWrap) chipWrap.remove();
+      const c = addSupportMessage('user', label);
+      markSupportRead(c);
+      if (typeof label === 'string' && label.indexOf('Kysymys') === 0) {
+        perttiSay('Selvä, autan mielelläni. Kerro lyhyesti omin sanoin, mitä haluaisit kysyä tästä pysäköintitapahtumasta.');
+      } else {
+        perttiSay('Selvä. Mitä asia koskee?', () => {
+          setTimeout(() => showSupportChips(SUPPORT_TOPICS, chooseSupportTopic), 3000);
+        });
+      }
+    }
     function supportNowHHMM() {
       const d = new Date();
       return `${String(d.getHours()).padStart(2,'0')}.${String(d.getMinutes()).padStart(2,'0')}`;
@@ -10214,8 +10291,9 @@
       drawDrum();
     }
 
-    function openPriceDetail() {
-      const price = calculatePrice(parkingMinutes);
+    function openPriceDetail(minutes) {
+      const mins  = (typeof minutes === 'number') ? minutes : parkingMinutes;
+      const price = calculatePrice(mins);
       document.getElementById('detail-parking').textContent = formatPrice(price.parking);
       document.getElementById('detail-service').textContent = formatPrice(price.service);
       document.getElementById('detail-subtotal').textContent = formatPrice(price.subtotal);
@@ -11014,6 +11092,7 @@
     let _eventsById = new Map();
     let _currentDetailEvent = null;
     let _edReceiptMode = false;
+    let _edPriceMinutes = 0;
 
     function formatFullDateTime(d) {
       const day  = d.getDate();
@@ -11043,9 +11122,9 @@
       document.getElementById('ed-end').textContent          = formatFullDateTime(end);
       document.getElementById('ed-duration').textContent     = formatDuration(durMin);
       document.getElementById('ed-payment').textContent      = ev.payment_method || '—';
-      document.getElementById('ed-payment-type').textContent = 'Henkilökohtainen';
       document.getElementById('ed-price').textContent        = formatPrice(price.total);
       document.getElementById('ed-event-id').textContent     = ev.id || '—';
+      _edPriceMinutes = durMin;
 
       _currentDetailEvent = ev;
 
