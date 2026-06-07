@@ -1552,8 +1552,11 @@
     .hours-time { font-weight: 500; }
     .price-label { font-size: 13px; color: #888; margin-top: 18px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
-    #sheet-filter { display: none; flex-direction: column; padding: 4px 24px 24px 24px; flex: 1; font-family: Arial, sans-serif; }
+    #sheet-filter { display: none; flex-direction: column; padding: 4px 18px 24px 24px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 40px); overflow-y: scroll; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #c4c4cc transparent; }
     #sheet-filter.visible { display: flex; }
+    #sheet-filter::-webkit-scrollbar { width: 6px; }
+    #sheet-filter::-webkit-scrollbar-thumb { background: #c4c4cc; border-radius: 3px; }
+    #sheet-filter::-webkit-scrollbar-track { background: transparent; }
     #filter-title { font-size: 16px; font-weight: bold; color: #222; margin-top: 8px; margin-bottom: 16px; }
     
     .filter-group {
@@ -1719,7 +1722,7 @@
     #free-terms-reject { background: #f0f0f0; color: #555; }
     #free-terms-accept { background: #0C0243; color: white; }
     
-    #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 16px; }
+    #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 10px; }
 
     /* Three-way segmented control */
     #free-mode-segmented { margin: 14px 0 0 0; }
@@ -1762,7 +1765,7 @@
       line-height: 1.4;
     }
 
-    #slider-label { font-size: 15px; color: #222; margin-bottom: 16px; text-align: center; }
+    #slider-label { font-size: 15px; color: #222; margin-bottom: 10px; text-align: center; }
     #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
     .range-container { position: relative; height: 40px; display: flex; align-items: center; margin-bottom: 8px; }
     .range-track { position: absolute; width: 100%; height: 4px; background: #ddd; border-radius: 2px; }
@@ -1770,7 +1773,7 @@
     .range-input { position: absolute; width: 100%; height: 4px; background: transparent; -webkit-appearance: none; appearance: none; outline: none; pointer-events: none; }
     .range-input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #0C0243; cursor: pointer; pointer-events: all; box-shadow: 0 2px 6px rgba(0,0,0,0.25); border: 3px solid white; }
     .slider-ticks { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-top: 4px; }
-    #filter-result { margin-top: 16px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
+    #filter-result { margin-top: 4px; font-size: 13px; color: #555; text-align: center; min-height: 0; }
     
     #btn-container { 
       position: fixed; 
@@ -4534,17 +4537,29 @@
         </div>
       </div>
 
-      <!-- Group 2: max parking time range -->
+      <!-- Group 2: max parking time range (collapsible via its own toggle) -->
       <div class="filter-group">
-        <div id="filter-subtitle">Näytä alueet, joilla sallittu max. pysäköintiaika on valitulla välillä</div>
-        <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
-        <div class="range-container">
-          <div class="range-track"></div><div class="range-fill" id="range-fill"></div>
-          <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0"/>
-          <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26"/>
+        <div class="filter-toggle-row">
+          <span class="filter-toggle-label">Rajaa alueita max. pysäköintiajan mukaan</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-maxtime-filter" onchange="toggleMaxTimeFilter()">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <div class="slider-ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span></div>
-        <div id="filter-result"></div>
+        <!-- Slider controls — shown only when the toggle is on. The selected
+             range stays in effect even when hidden; the toggle only hides
+             these controls, it does not clear the filter. -->
+        <div id="maxtime-controls" style="display:none;">
+          <div id="filter-subtitle" style="margin-top:12px;">Näytä alueet, joilla sallittu max. pysäköintiaika on valitulla välillä</div>
+          <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
+          <div class="range-container">
+            <div class="range-track"></div><div class="range-fill" id="range-fill"></div>
+            <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0"/>
+            <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26"/>
+          </div>
+          <div class="slider-ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span></div>
+          <div id="filter-result"></div>
+        </div>
       </div>
 
       <!-- Group 3: public EV charging points -->
@@ -9884,6 +9899,15 @@
       const seg = document.getElementById('free-mode-segmented');
       if (seg) seg.style.display = 'none';
     }
+    // Show/hide the max-time slider controls. The selected range stays applied
+    // either way — this toggle only reveals or hides the slider UI, it never
+    // clears or resets the filter.
+    function toggleMaxTimeFilter() {
+      const on = document.getElementById('toggle-maxtime-filter').checked;
+      const controls = document.getElementById('maxtime-controls');
+      if (controls) controls.style.display = on ? 'block' : 'none';
+      if (on) updateSliderUI();
+    }
 
     // Public EV charging points toggle (placeholder — data layer to be added later)
     let showEvCharging = false;
@@ -12296,6 +12320,7 @@
       el.style.opacity = Math.max(0, Math.min(1, o));
     }
     let dragFromHandle=false;
+    let filterContentScroll=false, _startScrollTop=0;
     const dragHandleArea=document.getElementById('drag-handle-area');
     sheet.addEventListener('touchstart',(e)=>{
       // Estä drag jos ei ole pysäköintialuetta valittuna — paitsi filter-näkymässä, jossa drag aina sallittu
@@ -12305,6 +12330,22 @@
       // In filter mode, ignore drags that start on the slider thumbs
       if(filterMode && (sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
+      }
+      // When the filter sheet is at its top position and its content overflows,
+      // let a finger drag inside the content scroll it (instead of dragging the
+      // whole sheet). Dragging the handle still collapses the sheet.
+      if(filterMode && sheetFilter.contains(e.target) && !(dragHandleArea && dragHandleArea.contains(e.target))){
+        const m = new DOMMatrix(getComputedStyle(sheet).transform);
+        const topY = sheet.clientHeight - window.innerHeight*0.8;
+        const atTop = m.m42 <= topY + 4;
+        const canScroll = sheetFilter.scrollHeight > sheetFilter.clientHeight + 1;
+        if(atTop && canScroll){
+          filterContentScroll = true;
+          startY = e.touches[0].clientY;
+          _startScrollTop = sheetFilter.scrollTop;
+          isDragging = false;
+          return;
+        }
       }
       // Free positioning via the drag handle is disabled on the parking sheet —
       // every drag snaps to a defined level. (Still allowed in the filter view.)
@@ -12322,6 +12363,10 @@
     },{passive:true});
     
     sheet.addEventListener('touchmove',(e)=>{
+      if(filterContentScroll){
+        sheetFilter.scrollTop = _startScrollTop - (e.touches[0].clientY - startY);
+        return;
+      }
       if(!isDragging)return;
       const touch=e.touches[0].clientY;
       const now=Date.now();
@@ -12355,6 +12400,7 @@
     },{passive:true});
     
     sheet.addEventListener('touchend',()=>{
+      if(filterContentScroll){ filterContentScroll=false; return; }
       if(!isDragging)return;
       isDragging=false;
       if(filterMode){
