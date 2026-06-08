@@ -129,27 +129,26 @@
       background: transparent;
       border-color: transparent;
       padding: 2px 8px 2px 4px;
-      gap: 3px;
+      gap: 6px;
     }
-    #center-marker.expanded #cm-pin { width: 26px; height: 26px; }
+    #center-marker.expanded #cm-pin { width: 23px; height: 23px; }
     /* The paid badge's "P" pin renders a touch larger so its symbol reads at
        the same height as the disc icon. transform:scale doesn't change the
        layout box, so the badge height stays identical to the free badge. */
     #center-marker.expanded #cm-pin:not(.parking-disc) { transform: scale(1.12); }
     /* The electronic disc icon uses a wide 340×280 viewBox. It's sized to
-       ~26px tall; width is proportional (26 × 340/280 ≈ 31.5) so the badge
+       ~23px tall; width is proportional (23 × 340/280 ≈ 28) so the badge
        stays the same height as the paid "P" badge but a bit wider. */
-    #center-marker.expanded #cm-pin.parking-disc { width: 31.5px; height: 26px; }
-    #cm-pin.parking-disc { width: 31.5px !important; height: 26px !important; }
+    #center-marker.expanded #cm-pin.parking-disc { width: 28px; height: 23px; }
+    #cm-pin.parking-disc { width: 28px !important; height: 23px !important; }
     #center-marker.expanded #cm-code { max-width: 240px; opacity: 1; }
 
-    /* The duration text on free areas is white, bold, in the sign font.
-       The .disc-mode class is what tells drawCenterBubble() to draw the blue
-       fill + white inner frame; the dark outline + tail are one path. */
+    /* The duration text on free areas: dark navy (readable on the white
+       badge), bold, in the sign font, and a touch smaller than before. */
     #center-marker.expanded.disc-mode #cm-code {
-      color: #ffffff;
+      color: #0C0243;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 800;
       letter-spacing: 0.2px;
     }
@@ -1104,6 +1103,23 @@
       cursor: pointer;
     }
     .add-vehicle-save:active { opacity: 0.88; }
+    .add-vehicle-save:disabled { opacity: 0.4; cursor: default; }
+    /* Delete-vehicle button shown above the save button in edit mode. Same
+       size as the save button but white with a red outline + red text,
+       matching the destructive action style used in the Tili overlay. */
+    .vehicle-delete-action {
+      height: 52px;
+      background: white;
+      color: #d92626;
+      border: 1.5px solid #f3c0c0;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      margin-top: 22px;
+    }
+    .vehicle-delete-action:active { background: #fdebeb; border-color: #d92626; }
     /* Stacked action buttons at the bottom of the Tili overlay. Logout
        is the primary "neutral" action; delete is destructive and shown
        in red below it. */
@@ -1536,13 +1552,16 @@
     .hours-time { font-weight: 500; }
     .price-label { font-size: 13px; color: #888; margin-top: 18px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
-    #sheet-filter { display: none; flex-direction: column; padding: 4px 24px 24px 24px; flex: none; font-family: Arial, sans-serif; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior-y: contain; }
+    #sheet-filter { display: none; flex-direction: column; padding: 0 18px 16px 24px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 18px); overflow-y: scroll; overflow-x: hidden; touch-action: none; scrollbar-width: thin; scrollbar-color: #c4c4cc transparent; }
+    #filter-scroll-inner { flex: 0 0 auto; will-change: transform; }
     #sheet-filter.visible { display: flex; }
-    #filter-title { font-size: 16px; font-weight: bold; color: #222; margin-top: 8px; margin-bottom: 16px; }
+    #sheet-filter::-webkit-scrollbar { width: 6px; }
+    #sheet-filter::-webkit-scrollbar-thumb { background: #c4c4cc; border-radius: 3px; }
+    #sheet-filter::-webkit-scrollbar-track { background: transparent; }
+    #filter-title { position: sticky; top: 0; z-index: 3; background: white; font-size: 16px; font-weight: bold; color: #222; margin: 0 -18px 10px -24px; padding: 12px 24px 12px 24px; border-bottom: 1px solid #eee; }
     
     .filter-group {
       background: #f5f5f5;
-      border: 1px solid #0C0243;
       border-radius: 14px;
       padding: 14px 16px;
       margin-bottom: 14px;
@@ -1704,7 +1723,7 @@
     #free-terms-reject { background: #f0f0f0; color: #555; }
     #free-terms-accept { background: #0C0243; color: white; }
     
-    #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 16px; }
+    #filter-subtitle { font-size: 13px; color: #888; margin-bottom: 10px; }
 
     /* Three-way segmented control */
     #free-mode-segmented { margin: 14px 0 0 0; }
@@ -1747,7 +1766,7 @@
       line-height: 1.4;
     }
 
-    #slider-label { font-size: 15px; color: #222; margin-bottom: 16px; text-align: center; }
+    #slider-label { font-size: 15px; color: #222; margin-bottom: 10px; text-align: center; }
     #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
     .range-container { position: relative; height: 40px; display: flex; align-items: center; margin-bottom: 8px; }
     .range-track { position: absolute; width: 100%; height: 4px; background: #ddd; border-radius: 2px; }
@@ -1755,7 +1774,7 @@
     .range-input { position: absolute; width: 100%; height: 4px; background: transparent; -webkit-appearance: none; appearance: none; outline: none; pointer-events: none; }
     .range-input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #0C0243; cursor: pointer; pointer-events: all; box-shadow: 0 2px 6px rgba(0,0,0,0.25); border: 3px solid white; }
     .slider-ticks { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-top: 4px; }
-    #filter-result { margin-top: 16px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
+    #filter-result { margin-top: 4px; font-size: 13px; color: #555; text-align: center; min-height: 0; }
     
     #btn-container { 
       position: fixed; 
@@ -2082,6 +2101,53 @@
       transition: border-color 0.2s;
     }
     .summary-notes-section textarea:focus { border-color: #0C0243; }
+    /* Event-detail: dark-blue "send receipt" action button + the email field
+       that slides in above it when the button is first tapped. */
+    #ed-send-receipt-btn {
+      width: 100%;
+      height: 52px;
+      margin-top: 10px;
+      background: #0C0243;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    #ed-send-receipt-btn:active { opacity: 0.88; }
+    #ed-support-btn {
+      width: 100%;
+      height: 52px;
+      background: white;
+      color: #0C0243;
+      border: 1.5px solid #0C0243;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    #ed-support-btn:active { opacity: 0.7; }
+    #receipt-sheet.visible { display: block !important; }
+    #receipt-email-input {
+      width: 100%;
+      height: 44px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      padding: 0 12px;
+      outline: none;
+      box-sizing: border-box;
+      background: white;
+      color: #222;
+      transition: border-color 0.2s;
+    }
+    #receipt-email-input:focus { border-color: #0C0243; }
     .summary-footer {
       background: white;
       padding: 12px 16px;
@@ -3101,9 +3167,9 @@
     
     <button class="pill-btn" id="filter-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round">
-        <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="#333" stroke="none"/>
-        <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="#333" stroke="none"/>
-        <line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2" fill="#333" stroke="none"/>
+        <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="3.5" x2="8" y2="8.5" stroke-width="3"/>
+        <line x1="4" y1="12" x2="20" y2="12"/><line x1="16" y1="9.5" x2="16" y2="14.5" stroke-width="3"/>
+        <line x1="4" y1="18" x2="20" y2="18"/><line x1="10" y1="15.5" x2="10" y2="20.5" stroke-width="3"/>
       </svg>
     </button>
     
@@ -3354,7 +3420,7 @@
     </div>
     <!-- Bottom action bar — appears only in select mode with ≥1 selection. -->
     <div id="history-action-footer">
-      <button id="send-receipts-btn" onclick="sendReceiptsAndExitSelectMode()">Lähetä kuitit sähköpostilla</button>
+      <button id="send-receipts-btn" onclick="openHistoryReceiptSheet()">Lähetä kuitit sähköpostiin</button>
     </div>
   </div>
 
@@ -3369,13 +3435,12 @@
         <div class="filter-date-col">
           <label for="filter-start-date">Alkupäivä</label>
           <input type="date" id="filter-start-date" oninput="updateFilterDateLabel('start')">
-          <div class="filter-date-fi" id="filter-start-date-fi">–</div>
+          <div class="filter-date-fi" id="filter-start-date-fi"></div>
         </div>
-        <div class="filter-date-sep">–</div>
         <div class="filter-date-col">
           <label for="filter-end-date">Loppupäivä</label>
           <input type="date" id="filter-end-date" oninput="updateFilterDateLabel('end')">
-          <div class="filter-date-fi" id="filter-end-date-fi">–</div>
+          <div class="filter-date-fi" id="filter-end-date-fi"></div>
         </div>
       </div>
 
@@ -3424,15 +3489,24 @@
       <div class="overlay-title">Pysäköintitapahtuma</div>
     </div>
     <div class="overlay-content" style="background:#f2f3f5;">
-      <div style="padding:20px 16px;font-family:Arial,sans-serif;">
+      <div style="padding:20px 16px 8px;font-family:Arial,sans-serif;flex:1;">
         <div class="summary-card">
-          <div class="summary-row">
-            <span class="summary-label">Alue</span>
-            <span class="summary-value"><span class="confirm-badge" id="ed-code">—</span></span>
+          <div class="summary-row" style="align-items:flex-start;">
+            <span class="summary-label">Tapahtumatunniste</span>
+            <span style="display:flex;align-items:flex-start;gap:8px;max-width:62%;justify-content:flex-end;">
+              <span class="summary-value" id="ed-event-id" style="font-size:11px;font-family:monospace;color:#777;font-weight:400;word-break:break-all;text-align:right;">—</span>
+              <button onclick="copyEventId()" aria-label="Kopioi leikepöydälle" style="flex-shrink:0;background:none;border:none;padding:1px;cursor:pointer;color:#aaa;line-height:0;margin-top:1px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              </button>
+            </span>
           </div>
           <div class="summary-row">
-            <span class="summary-label">Pysäköintialueen omistaja</span>
+            <span class="summary-label">Pysäköintialue</span>
             <span class="summary-value" id="ed-operator">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Aluekoodi</span>
+            <span class="summary-value" id="ed-code">—</span>
           </div>
           <div class="summary-row">
             <span class="summary-label">Ajoneuvo</span>
@@ -3454,19 +3528,40 @@
             <span class="summary-label">Maksutapa</span>
             <span class="summary-value" id="ed-payment">—</span>
           </div>
-          <div class="summary-row">
-            <span class="summary-label">Maksun tyyppi</span>
-            <span class="summary-value" id="ed-payment-type">—</span>
-          </div>
           <div class="summary-row summary-total-row">
-            <span class="summary-label">Hinta</span>
+            <span class="summary-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail(_edPriceMinutes)">i</span></span>
             <span class="summary-value summary-price" id="ed-price">—</span>
           </div>
         </div>
-        <div class="summary-notes-section" id="ed-notes-section" style="display:none;">
-          <label>Kommentti</label>
-          <div id="ed-notes-text" style="font-size:14px;color:#222;line-height:1.5;white-space:pre-wrap;word-break:break-word;padding:8px 0 0 0;"></div>
+        <div class="summary-notes-section">
+          <label for="ed-notes-input">Kommentti (valinnainen)</label>
+          <textarea id="ed-notes-input" placeholder="Esimerkiksi: Työmatka Helsinkiin" style="min-height:40px;"></textarea>
         </div>
+      </div>
+      <div style="padding:12px 16px max(24px, env(safe-area-inset-bottom));font-family:Arial,sans-serif;">
+        <button id="ed-support-btn" onclick="openSupportChatForEvent()">Asiakaspalvelu</button>
+        <button id="ed-send-receipt-btn" onclick="openReceiptSheet()">Lähetä kuitti sähköpostiin</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom sheet for emailing a receipt. Reused by both the event-detail
+       view (single receipt) and the history list (one or more receipts).
+       Kept OUTSIDE any transformed overlay so position:fixed works. -->
+  <div id="receipt-sheet" style="position:fixed;inset:0;z-index:220;display:none;">
+    <div class="sheet-backdrop" onclick="closeReceiptSheet()"></div>
+    <div class="sheet-panel">
+      <div class="sheet-header">
+        <div class="sheet-title" id="receipt-sheet-title">Lähetä kuitti</div>
+        <button class="sheet-close-btn" onclick="closeReceiptSheet()">✕</button>
+      </div>
+      <div style="padding:0 16px;font-family:Arial,sans-serif;">
+        <label for="receipt-email-input" style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:10px;">Sähköposti</label>
+        <div style="position:relative;">
+          <input type="email" id="receipt-email-input" autocomplete="email" placeholder="nimi@example.com" style="width:100%;height:44px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:0 38px 0 12px;outline:none;box-sizing:border-box;background:white;color:#222;">
+          <button type="button" onclick="clearReceiptEmail()" aria-label="Tyhjennä kenttä" style="position:absolute;top:50%;right:6px;transform:translateY(-50%);width:26px;height:26px;border:none;background:none;color:#aaa;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>
+        </div>
+        <button onclick="confirmReceiptSend()" style="width:100%;height:52px;margin-top:18px;background:#0C0243;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:Arial,sans-serif;cursor:pointer;">Lähetä</button>
       </div>
     </div>
   </div>
@@ -3506,7 +3601,7 @@
     <div class="sheet-backdrop" onclick="closeAddVehicleSheet()"></div>
     <div class="sheet-panel">
       <div class="sheet-header">
-        <div class="sheet-title">Uusi ajoneuvo</div>
+        <div class="sheet-title" id="vehicle-sheet-title">Uusi ajoneuvo</div>
         <button class="sheet-close-btn" onclick="closeAddVehicleSheet()">✕</button>
       </div>
       <div class="add-vehicle-body">
@@ -3552,7 +3647,8 @@
           <label class="ios-switch"><input type="checkbox" id="vehicle-ev"><span class="ios-switch-track"></span></label>
         </div>
 
-        <button class="add-vehicle-save" onclick="saveNewVehicle()">Tallenna</button>
+        <button id="vehicle-delete-action-btn" class="vehicle-delete-action" style="display:none;" onclick="deleteVehicleFromSheet()">Poista ajoneuvo</button>
+        <button id="vehicle-sheet-save-btn" class="add-vehicle-save" onclick="saveVehicleSheet()">Tallenna</button>
       </div>
     </div>
   </div>
@@ -3728,7 +3824,7 @@
   </div>
 
   <!-- Floating, draggable "minimized chat" bubble (iPhone AssistiveTouch style) -->
-  <div id="support-bubble" style="display:none;position:fixed;right:18px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:96;width:56px;height:56px;border-radius:50%;background:white;border:2.5px solid #0C0243;box-shadow:0 4px 16px rgba(0,0,0,0.28);cursor:pointer;align-items:center;justify-content:center;touch-action:none;">
+  <div id="support-bubble" style="display:none;position:fixed;right:18px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:160;width:56px;height:56px;border-radius:50%;background:white;border:2.5px solid #0C0243;box-shadow:0 4px 16px rgba(0,0,0,0.28);cursor:pointer;align-items:center;justify-content:center;touch-action:none;">
     <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#0C0243" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;">
       <path d="M4 13v-1a8 8 0 0 1 16 0v1"/>
       <rect x="3" y="12.5" width="3.5" height="6.5" rx="1.6"/>
@@ -4418,6 +4514,7 @@
       </button>
     </div>
     <div id="sheet-filter">
+      <div id="filter-scroll-inner">
       <div id="filter-title">Suodata karttanäkymää</div>
       
       <!-- Group 1: free parking visibility + segmented control -->
@@ -4442,17 +4539,28 @@
         </div>
       </div>
 
-      <!-- Group 2: max parking time range -->
+      <!-- Group 2: max parking time range (collapsible via its own toggle) -->
       <div class="filter-group">
-        <div id="filter-subtitle">Näytä alueet, joilla sallittu max. pysäköintiaika on valitulla välillä</div>
-        <div id="slider-label">Aikaväli: <span id="slider-value">Kaikki</span></div>
-        <div class="range-container">
-          <div class="range-track"></div><div class="range-fill" id="range-fill"></div>
-          <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0"/>
-          <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26"/>
+        <div class="filter-toggle-row">
+          <span class="filter-toggle-label">Rajaa alueita max. pysäköintiajan mukaan</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-maxtime-filter" onchange="toggleMaxTimeFilter()">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <div class="slider-ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span></div>
-        <div id="filter-result"></div>
+        <!-- Slider controls — shown only when the toggle is on. The selected
+             range stays in effect even when hidden; the toggle only hides
+             these controls, it does not clear the filter. -->
+        <div id="maxtime-controls" style="display:none;">
+          <div id="slider-label" style="margin-top:14px;">Aikaväli: <span id="slider-value">Kaikki</span></div>
+          <div class="range-container">
+            <div class="range-track"></div><div class="range-fill" id="range-fill"></div>
+            <input type="range" class="range-input" id="slider-min" min="0" max="26" step="1" value="0"/>
+            <input type="range" class="range-input" id="slider-max" min="0" max="26" step="1" value="26"/>
+          </div>
+          <div class="slider-ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h+</span></div>
+          <div id="filter-result"></div>
+        </div>
       </div>
 
       <!-- Group 3: public EV charging points -->
@@ -4531,7 +4639,27 @@
             <span class="charger-type-name">CHAdeMO</span>
           </div>
         </div>
+        <!-- Latausteho (charging power) range slider — same style as the
+             max-parking-time slider above; UI only for now. -->
+        <div class="charger-type-label" style="margin-top:18px;">Latausteho</div>
+        <div class="range-container">
+          <div class="range-track"></div><div class="range-fill" id="power-range-fill"></div>
+          <input type="range" class="range-input" id="power-slider-min" min="0" max="3" step="1" value="0"/>
+          <input type="range" class="range-input" id="power-slider-max" min="0" max="3" step="1" value="3"/>
         </div>
+        <div class="slider-ticks"><span>100kW</span><span>200kW</span><span>300kW</span><span>400kW</span></div>
+        <!-- Voltage segmented control — dark-blue indicator only. -->
+        <div class="charger-type-label" style="margin-top:18px;">Latausjännite</div>
+        <div id="voltage-segmented" style="margin-top:10px;">
+          <div class="seg-track">
+            <div class="seg-thumb" id="voltage-seg-thumb" style="background:#0C0243;"></div>
+            <button class="seg-option" data-volt="400" onclick="setVoltageMode('400')">400V</button>
+            <button class="seg-option" data-volt="both" onclick="setVoltageMode('both')">400V ja 800V</button>
+            <button class="seg-option" data-volt="800" onclick="setVoltageMode('800')">800V</button>
+          </div>
+        </div>
+        </div>
+      </div>
       </div>
     </div>
   </div>
@@ -4687,6 +4815,7 @@
     });
     window.addEventListener('resize', () => {
       if (typeof map !== 'undefined' && map.resize) map.resize();
+      if (typeof filterMode !== 'undefined' && filterMode && typeof sizeFilterSheet === 'function') sizeFilterSheet();
     });
 
     const API_KEY = 'a002614565b24559b3feddfca8d01918';
@@ -8441,20 +8570,21 @@
         list.innerHTML = '';
         return;
       }
-      const carIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M5 16V12l1.6-4.5A2 2 0 0 1 8.5 6h7a2 2 0 0 1 1.9 1.5L19 12v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-        <path d="M5 16h14" fill="none" stroke="currentColor" stroke-width="1.8"/>
-        <circle cx="7.5" cy="17" r="1.5" fill="currentColor"/>
-        <circle cx="16.5" cy="17" r="1.5" fill="currentColor"/>
+      const carIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 13.5l1.5-4A2 2 0 0 1 6.4 8h8.2a2 2 0 0 1 1.6.8l2.4 3.2 1.9.6A1.5 1.5 0 0 1 22 14v1.5a1 1 0 0 1-1 1h-1.5"/>
+        <path d="M4.5 16.5H3.5a1 1 0 0 1-1-1V13.5"/>
+        <line x1="9.5" y1="16.5" x2="14.5" y2="16.5"/>
+        <circle cx="7" cy="16.5" r="2"/>
+        <circle cx="17" cy="16.5" r="2"/>
       </svg>`;
       list.innerHTML = vehicles.map((v, i) => `
-        <div class="vehicle-row">
+        <div class="vehicle-row" onclick="openEditVehicleSheet(${i})">
           <div class="vehicle-icon">${carIcon}</div>
           <div class="vehicle-text">
             <div class="vehicle-plate">${escapeHtml(v.plate)}</div>
             ${v.name ? `<div class="vehicle-name">${escapeHtml(v.name)}</div>` : ''}
           </div>
-          <button class="vehicle-delete" onclick="deleteVehicle(${i});event.stopPropagation();" aria-label="Poista">✕</button>
+          <div class="settings-item-chevron" aria-hidden="true">›</div>
         </div>
       `).join('');
     }
@@ -8467,11 +8597,25 @@
       renderVehiclesList();
     }
 
-    // ── Add-vehicle sheet ──────────────────────────────────────────────
+    // ── Add / edit vehicle sheet ───────────────────────────────────────
+    // The same bottom sheet is reused for adding a new vehicle and editing
+    // an existing one. _editVehicleIndex is null in add mode, or the index
+    // of the vehicle being edited.
+    let _editVehicleIndex = null;
+    let _editVehicleSnapshot = null;
     function openAddVehicleSheet() {
       const sheet = document.getElementById('add-vehicle-sheet');
       if (!sheet) return;
       sheet.classList.add('visible');
+      _editVehicleIndex = null;
+      _editVehicleSnapshot = null;
+      // Add mode: default title, hidden delete button, ready-to-use save button
+      const titleEl = document.getElementById('vehicle-sheet-title');
+      if (titleEl) titleEl.textContent = 'Uusi ajoneuvo';
+      const delBtn = document.getElementById('vehicle-delete-action-btn');
+      if (delBtn) delBtn.style.display = 'none';
+      const saveBtn = document.getElementById('vehicle-sheet-save-btn');
+      if (saveBtn) { saveBtn.textContent = 'Tallenna'; saveBtn.disabled = false; saveBtn.style.marginTop = ''; }
       // Reset fields each time the sheet opens
       const plateInput = document.getElementById('vehicle-plate-input');
       const nameInput  = document.getElementById('vehicle-name-input');
@@ -8490,6 +8634,107 @@
     function closeAddVehicleSheet() {
       const sheet = document.getElementById('add-vehicle-sheet');
       if (sheet) sheet.classList.remove('visible');
+    }
+    // Open the sheet pre-filled with an existing vehicle's data so the user
+    // can edit it. The save button stays dimmed until something changes.
+    function openEditVehicleSheet(index) {
+      const vehicles = loadVehicles();
+      if (index < 0 || index >= vehicles.length) return;
+      const v = vehicles[index];
+      const sheet = document.getElementById('add-vehicle-sheet');
+      if (!sheet) return;
+      sheet.classList.add('visible');
+      _editVehicleIndex = index;
+      const titleEl = document.getElementById('vehicle-sheet-title');
+      if (titleEl) titleEl.textContent = 'Muokkaa ajoneuvoa';
+      const plateInput = document.getElementById('vehicle-plate-input');
+      const nameInput  = document.getElementById('vehicle-name-input');
+      const country    = document.getElementById('vehicle-country-input');
+      const autopark   = document.getElementById('vehicle-autopark');
+      const ev         = document.getElementById('vehicle-ev');
+      if (country)    country.value    = v.country || 'FI';
+      if (plateInput) { plateInput.value = v.plate || ''; plateInput.dataset.prev = v.plate || ''; }
+      _plateHyphenRemoved = true;   // existing plate already formatted — don't re-offer the hyphen
+      if (nameInput)  nameInput.value  = v.name || '';
+      if (autopark)   autopark.checked = !!v.autopark;
+      if (ev)         ev.checked       = !!v.ev;
+      // Snapshot the starting values so we can detect edits
+      _editVehicleSnapshot = _readVehicleSheetFields();
+      // Show the delete button above the save button (stacked, 12px apart)
+      const delBtn = document.getElementById('vehicle-delete-action-btn');
+      if (delBtn) delBtn.style.display = 'block';
+      const saveBtn = document.getElementById('vehicle-sheet-save-btn');
+      if (saveBtn) { saveBtn.textContent = 'Tallenna muutokset'; saveBtn.disabled = true; saveBtn.style.marginTop = '12px'; }
+      _attachVehicleSheetDirtyListener();
+    }
+    // Read the current sheet field values into a comparable object.
+    function _readVehicleSheetFields() {
+      const country = (document.getElementById('vehicle-country-input') || {}).value || 'FI';
+      let plate = ((document.getElementById('vehicle-plate-input') || {}).value || '').trim();
+      if (country === 'FI') plate = plate.toUpperCase();
+      const name = ((document.getElementById('vehicle-name-input') || {}).value || '').trim();
+      const autopark = !!(document.getElementById('vehicle-autopark') || {}).checked;
+      const ev       = !!(document.getElementById('vehicle-ev') || {}).checked;
+      return { plate, name, country, autopark, ev };
+    }
+    // Enable/dim the save button based on whether anything changed (edit mode only).
+    function checkVehicleSheetDirty() {
+      if (_editVehicleIndex === null || !_editVehicleSnapshot) return;
+      const saveBtn = document.getElementById('vehicle-sheet-save-btn');
+      if (!saveBtn) return;
+      const cur = _readVehicleSheetFields();
+      const dirty = JSON.stringify(cur) !== JSON.stringify(_editVehicleSnapshot);
+      saveBtn.disabled = !dirty;
+    }
+    let _vehicleSheetDirtyAttached = false;
+    function _attachVehicleSheetDirtyListener() {
+      if (_vehicleSheetDirtyAttached) return;
+      const body = document.querySelector('#add-vehicle-sheet .add-vehicle-body');
+      if (!body) return;
+      body.addEventListener('input', checkVehicleSheetDirty);
+      body.addEventListener('change', checkVehicleSheetDirty);
+      _vehicleSheetDirtyAttached = true;
+    }
+    // Save button dispatcher — adds a new vehicle or saves edits.
+    function saveVehicleSheet() {
+      if (_editVehicleIndex === null) { saveNewVehicle(); return; }
+      const vehicles = loadVehicles();
+      if (_editVehicleIndex < 0 || _editVehicleIndex >= vehicles.length) { closeAddVehicleSheet(); return; }
+      const fields = _readVehicleSheetFields();
+      if (!fields.plate) { showCustomToast('Rekisteritunnus on pakollinen', 2200); return; }
+      // Reject a plate that already belongs to a different vehicle
+      if (vehicles.some((v, i) => i !== _editVehicleIndex && v.plate === fields.plate)) {
+        showCustomToast('Tämä ajoneuvo on jo lisätty', 2200);
+        return;
+      }
+      vehicles[_editVehicleIndex] = fields;
+      saveVehicles(vehicles);
+      closeAddVehicleSheet();
+      renderVehiclesList();
+      // Keep the parking view in sync
+      if (typeof renderVehicleDisplay === 'function') renderVehicleDisplay();
+      const vSheet = document.getElementById('vehicle-sheet');
+      if (vSheet && vSheet.classList.contains('open') && typeof renderVehicleOptions === 'function') renderVehicleOptions();
+      showCustomToast('Ajoneuvon tiedot päivitetty', 2200);
+    }
+    // Delete the vehicle currently being edited (triggered from the sheet).
+    function deleteVehicleFromSheet() {
+      if (_editVehicleIndex === null) return;
+      const vehicles = loadVehicles();
+      if (_editVehicleIndex < 0 || _editVehicleIndex >= vehicles.length) return;
+      const plate = vehicles[_editVehicleIndex].plate;
+      if (!confirm(`Poista ajoneuvo ${plate}?`)) return;
+      vehicles.splice(_editVehicleIndex, 1);
+      saveVehicles(vehicles);
+      closeAddVehicleSheet();
+      renderVehiclesList();
+      if (typeof selectedVehicleIdx !== 'undefined' && selectedVehicleIdx >= vehicles.length) {
+        selectedVehicleIdx = vehicles.length ? vehicles.length - 1 : 0;
+      }
+      if (typeof renderVehicleDisplay === 'function') renderVehicleDisplay();
+      const vSheet = document.getElementById('vehicle-sheet');
+      if (vSheet && vSheet.classList.contains('open') && typeof renderVehicleOptions === 'function') renderVehicleOptions();
+      showCustomToast(`Ajoneuvo ${plate} poistettu`, 2200);
     }
     // Finnish plates: uppercase + auto-offer a hyphen after the first 3 letters.
     // If the user deletes the hyphen once, stop re-offering it for this add.
@@ -8921,6 +9166,70 @@
     }
     function closeSupportChat() {
       document.getElementById('support-chat-overlay').classList.remove('open');
+    }
+    // Apple-style rounded preview card of the parking event, shown as the
+    // user's "attachment" at the top of the support conversation.
+    function addSupportEventPreview(ev) {
+      const box = document.getElementById('support-chat-messages');
+      if (!box || !ev) return;
+      const start  = new Date(ev.start_time);
+      const end    = new Date(ev.end_time);
+      const durMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+      const price  = calculatePrice(durMin);
+      const row = (l, v) => `<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;"><span style="color:#888;">${l}</span><span style="color:#222;font-weight:500;text-align:right;">${v}</span></div>`;
+      const wrap = document.createElement('div');
+      wrap.className = 'sup-pop';
+      wrap.style.cssText = 'display:flex;justify-content:flex-end;';
+      const card = document.createElement('div');
+      card.style.cssText = 'max-width:82%;background:white;border-radius:18px;border-bottom-right-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.14);overflow:hidden;font-family:Arial,sans-serif;';
+      card.innerHTML =
+        '<div style="background:#0C0243;color:#fff;padding:8px 14px;font-size:12px;font-weight:bold;">Pysäköintitapahtuma</div>'
+        + '<div style="padding:11px 14px;display:flex;flex-direction:column;gap:6px;">'
+          + row('Aluekoodi', escapeHtml(ev.area_code || '—'))
+          + row('Ajoneuvo', escapeHtml(ev.license_plate || '—'))
+          + row('Pysäköinti alkoi', formatFullDateTime(start))
+          + row('Hinta', formatPrice(price.total))
+        + '</div>';
+      wrap.appendChild(card);
+      box.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+    }
+    // Opens the support chat from the event-detail view: attaches the event as
+    // a preview, Pertti joins and greets, then two guided options appear.
+    function openSupportChatForEvent() {
+      const ev = _currentDetailEvent;
+      const overlay = document.getElementById('support-chat-overlay');
+      const box = document.getElementById('support-chat-messages');
+      if (!overlay || !box) return;
+      overlay.classList.add('open');
+      updateSendSupportBtn();
+      box.innerHTML = '';
+      box.dataset.seeded = '1';
+      supportEngaged = false;
+      supportLog = [];
+      setSupportStatus('offline');
+      addSupportEventPreview(ev);
+      const joinNote = addSupportSystem('Odota, virtuaalinen asiakaspalvelija liittyy keskusteluun.');
+      setTimeout(() => {
+        setSupportStatus('online');
+        if (joinNote) joinNote.textContent = 'Virtuaalinen asiakaspalvelija liittyi keskusteluun';
+        perttiSay('Moro. Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Onko sinulla jotain kysyttävää liitettyyn pysäköintitapahtumaan liittyen, vai tarvitsetko apua jossain muussa asiassa.', () => {
+          setTimeout(() => showSupportChips(['Kysymys pysäköintitapahtumaan liittyen', 'Muu asia'], chooseEventSupportOption), 3000);
+        });
+      }, 1200);
+    }
+    function chooseEventSupportOption(label, chipWrap) {
+      supportEngaged = true;
+      if (chipWrap) chipWrap.remove();
+      const c = addSupportMessage('user', label);
+      markSupportRead(c);
+      if (typeof label === 'string' && label.indexOf('Kysymys') === 0) {
+        perttiSay('Selvä, autan mielelläni. Kerro lyhyesti omin sanoin, mitä haluaisit kysyä tästä pysäköintitapahtumasta.');
+      } else {
+        perttiSay('Selvä. Mitä asia koskee?', () => {
+          setTimeout(() => showSupportChips(SUPPORT_TOPICS, chooseSupportTopic), 3000);
+        });
+      }
     }
     function supportNowHHMM() {
       const d = new Date();
@@ -9593,6 +9902,15 @@
       const seg = document.getElementById('free-mode-segmented');
       if (seg) seg.style.display = 'none';
     }
+    // Show/hide the max-time slider controls. The selected range stays applied
+    // either way — this toggle only reveals or hides the slider UI, it never
+    // clears or resets the filter.
+    function toggleMaxTimeFilter() {
+      const on = document.getElementById('toggle-maxtime-filter').checked;
+      const controls = document.getElementById('maxtime-controls');
+      if (controls) controls.style.display = on ? 'block' : 'none';
+      if (on) updateSliderUI();
+    }
 
     // Public EV charging points toggle (placeholder — data layer to be added later)
     let showEvCharging = false;
@@ -9619,6 +9937,35 @@
       // TODO: when the EV-charging map layer exists, push this selection
       // into a Mapbox filter expression so only the chosen plug types show.
     }
+    // Voltage segmented control under the charger picker. Indicator is always
+    // dark blue (no light-blue / lilac like the parking segmented control).
+    function setVoltageMode(mode) {
+      const idx = mode === '400' ? 0 : mode === '800' ? 2 : 1;
+      const thumb = document.getElementById('voltage-seg-thumb');
+      if (thumb) thumb.style.transform = `translateX(${idx * 100}%)`;
+      document.querySelectorAll('#voltage-segmented .seg-option').forEach(b => {
+        b.classList.toggle('active', b.dataset.volt === mode);
+      });
+      // TODO: when the EV-charging map layer exists, apply the voltage filter.
+    }
+    // Latausteho dual-range slider (UI only): updates the fill between the two
+    // handles and stops them from crossing. Ticks: 100 / 220 / 300 / 400 kW.
+    (function initPowerSlider() {
+      const pmin = document.getElementById('power-slider-min');
+      const pmax = document.getElementById('power-slider-max');
+      const pfill = document.getElementById('power-range-fill');
+      if (!pmin || !pmax || !pfill) return;
+      const MAXI = 3;
+      function upd() {
+        const a = parseInt(pmin.value), b = parseInt(pmax.value);
+        pfill.style.left  = (a / MAXI * 100) + '%';
+        pfill.style.width  = ((b - a) / MAXI * 100) + '%';
+      }
+      pmin.addEventListener('input', () => { if (parseInt(pmin.value) > parseInt(pmax.value)) pmin.value = pmax.value; upd(); });
+      pmax.addEventListener('input', () => { if (parseInt(pmax.value) < parseInt(pmin.value)) pmax.value = pmin.value; upd(); });
+      upd();
+      setVoltageMode('both');   // default voltage selection (centered)
+    })();
 
     function acceptFreeTerms() {
       freeTermsAccepted = true;
@@ -9672,13 +10019,21 @@
       releaseMasterLock();
       sheetNormal.style.display='none';
       sheetFilter.classList.add('visible');
+      sizeFilterSheet();
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
       sheet.style.transform=`translateY(${window.innerHeight*0.6}px)`;
       currentY=window.innerHeight*0.6;
       btnContainer.classList.add('hidden');
-      // Once the open transition has finished, size the scroll viewport so the
-      // content scrolls within the sheet (and bounces at the edges).
-      setTimeout(sizeFilterScroll, 380);
+    }
+    // Size the filter scroll area so, when the sheet is at its top position
+    // (80% of the viewport), the content fills exactly down to the screen
+    // bottom — no leftover white strip — while keeping all content reachable.
+    function sizeFilterSheet(){
+      // Fill the content area exactly to the screen bottom when the sheet is at
+      // its top position. The sheet's top edge then sits at 20% of the viewport,
+      // so the content height is 80% of the viewport minus the handle offset.
+      const top = sheetFilter.offsetTop || (dragHandleArea ? dragHandleArea.offsetHeight : 18);
+      sheetFilter.style.maxHeight = (window.innerHeight * 0.8 - top) + 'px';
     }
     function closeFilter(){
       filterMode=false;
@@ -10030,8 +10385,9 @@
       drawDrum();
     }
 
-    function openPriceDetail() {
-      const price = calculatePrice(parkingMinutes);
+    function openPriceDetail(minutes) {
+      const mins  = (typeof minutes === 'number') ? minutes : parkingMinutes;
+      const price = calculatePrice(mins);
       document.getElementById('detail-parking').textContent = formatPrice(price.parking);
       document.getElementById('detail-service').textContent = formatPrice(price.service);
       document.getElementById('detail-subtotal').textContent = formatPrice(price.subtotal);
@@ -10828,6 +11184,8 @@
 
     // ── Single-event detail view ───────────────────────────────────────
     let _eventsById = new Map();
+    let _currentDetailEvent = null;
+    let _edPriceMinutes = 0;
 
     function formatFullDateTime(d) {
       const day  = d.getDate();
@@ -10838,6 +11196,23 @@
       return `${day}.${mon}.${year} klo ${hh}:${mm}`;
     }
 
+    // Build the "Pysäköintialue" line the same way the base view's header
+    // does: the DB area_name (or a derived zone label) plus a "| Max. Xh"
+    // suffix from the event's max_hours / max_minutes when present.
+    function buildEventAreaLine(ev, zone) {
+      let areaName = (ev.area_name && ev.area_name !== '') ? ev.area_name : '';
+      if (!areaName) {
+        areaName = zone ? `Helsinki, Vyöhyke ${zone[1]}` : 'Helsingin kaupunki';
+      }
+      let maxSuffix = '';
+      if (ev.max_hours !== null && ev.max_hours !== undefined && ev.max_hours !== '') {
+        maxSuffix = `  |  Max. ${ev.max_hours}h`;
+      } else if (ev.max_minutes !== null && ev.max_minutes !== undefined && ev.max_minutes !== '') {
+        maxSuffix = `  |  Max. ${ev.max_minutes} min`;
+      }
+      return areaName + (/Max\./.test(areaName) ? '' : maxSuffix);
+    }
+
     function showEventDetail(id) {
       const ev = _eventsById.get(id);
       if (!ev) return;
@@ -10846,35 +11221,140 @@
       const durMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
       const price  = calculatePrice(durMin);
       const zone   = String(ev.area_code || '').match(/^(\d)/);
-      const operator = zone
-        ? `Helsingin kaupunki, Vyöhyke ${zone[1]}`
-        : 'Helsingin kaupunki';
+      // "Pysäköintialue" row: same format as the base view's header —
+      // the DB area_name plus a "| Max. Xh" suffix. Falls back to a derived
+      // zone label if the event row has no area_name.
+      const areaLine = buildEventAreaLine(ev, zone);
 
       document.getElementById('ed-code').textContent         = ev.area_code || '—';
-      document.getElementById('ed-operator').textContent     = operator;
+      document.getElementById('ed-operator').textContent     = areaLine;
       document.getElementById('ed-plate').textContent        = ev.license_plate || '—';
       document.getElementById('ed-start').textContent        = formatFullDateTime(start);
       document.getElementById('ed-end').textContent          = formatFullDateTime(end);
       document.getElementById('ed-duration').textContent     = formatDuration(durMin);
       document.getElementById('ed-payment').textContent      = ev.payment_method || '—';
-      document.getElementById('ed-payment-type').textContent = 'Henkilökohtainen';
       document.getElementById('ed-price').textContent        = formatPrice(price.total);
+      document.getElementById('ed-event-id').textContent     = ev.id || '—';
+      _edPriceMinutes = durMin;
 
-      // Notes section is hidden if empty, shown with full (untruncated) text otherwise
-      const notesSection = document.getElementById('ed-notes-section');
-      const notesText    = document.getElementById('ed-notes-text');
-      if (ev.notes && ev.notes.trim()) {
-        notesText.textContent  = ev.notes;
-        notesSection.style.display = '';
-      } else {
-        notesSection.style.display = 'none';
-      }
+      _currentDetailEvent = ev;
+
+      // Editable comment, pre-filled with the saved note for this event
+      const notesInput = document.getElementById('ed-notes-input');
+      if (notesInput) notesInput.value = ev.notes || '';
+
+      // Make sure the receipt sheet starts closed
+      closeReceiptSheet();
 
       document.getElementById('parking-event-detail').classList.add('open');
     }
 
     function closeEventDetail() {
       document.getElementById('parking-event-detail').classList.remove('open');
+      closeReceiptSheet();
+      edSaveCommentIfChanged();   // persist any comment edits in the background
+    }
+
+    // Save the edited comment for the current event if it differs from what
+    // is stored, and keep the local cache + history list in sync.
+    function edSaveCommentIfChanged() {
+      const ev = _currentDetailEvent;
+      if (!ev) return;
+      const ta = document.getElementById('ed-notes-input');
+      if (!ta) return;
+      const newNotes = (ta.value || '').trim();
+      const oldNotes = (ev.notes || '').trim();
+      if (newNotes === oldNotes) return;
+      ev.notes = newNotes;
+      if (ev.id) parkkihubiUpdate(ev.id, { notes: newNotes });
+      if (typeof renderFilteredHistory === 'function') renderFilteredHistory();
+    }
+
+    // Default receipt recipient = the email saved on the user's account.
+    function edDefaultReceiptEmail() {
+      const acc = document.getElementById('account-value-email');
+      let email = acc ? (acc.textContent || '').trim() : '';
+      if (!email) {
+        const setting = document.getElementById('setting-receipt-email');
+        if (setting && setting.value) email = setting.value.trim();
+      }
+      return email;
+    }
+
+    // Receipt sheet is shared between the event-detail view ('event') and the
+    // history list's bulk send ('history').
+    let _receiptContext = 'event';
+    // Open the receipt sheet for the single event currently in detail view.
+    function openReceiptSheet() {
+      _receiptContext = 'event';
+      const title = document.getElementById('receipt-sheet-title');
+      if (title) title.textContent = 'Lähetä kuitti';
+      _showReceiptSheet();
+    }
+    // Open the receipt sheet for the events selected in the history list.
+    function openHistoryReceiptSheet() {
+      if (_selectedEventIds.size === 0) return;
+      _receiptContext = 'history';
+      const title = document.getElementById('receipt-sheet-title');
+      if (title) title.textContent = (_selectedEventIds.size === 1) ? 'Lähetä kuitti' : 'Lähetä kuitit';
+      _showReceiptSheet();
+    }
+    function _showReceiptSheet() {
+      const sheet = document.getElementById('receipt-sheet');
+      const input = document.getElementById('receipt-email-input');
+      if (input) input.value = edDefaultReceiptEmail();
+      if (sheet) sheet.classList.add('visible');
+      if (input) setTimeout(() => input.focus(), 60);
+    }
+    function closeReceiptSheet() {
+      const sheet = document.getElementById('receipt-sheet');
+      if (sheet) sheet.classList.remove('visible');
+    }
+    // The field's clear "✕": wipe it and re-focus so the keyboard opens.
+    function clearReceiptEmail() {
+      const input = document.getElementById('receipt-email-input');
+      if (!input) return;
+      input.value = '';
+      input.focus();
+    }
+    // "Lähetä": confirm with a toast and close. In the event context we also
+    // persist any comment edits; in the history context we exit select mode.
+    function confirmReceiptSend() {
+      if (_receiptContext === 'history') {
+        const n = _selectedEventIds.size;
+        closeReceiptSheet();
+        showCustomToast(n === 1 ? 'Kuitti lähetetty sähköpostiin' : 'Kuitit lähetetty sähköpostiin', 4000);
+        if (_selectMode) toggleSelectMode();
+      } else {
+        edSaveCommentIfChanged();
+        closeReceiptSheet();
+        showCustomToast('Kuitti lähetetty sähköpostiin', 4000);
+      }
+    }
+    // Copy the current event's transaction id to the clipboard.
+    function copyEventId() {
+      const ev = _currentDetailEvent;
+      const el = document.getElementById('ed-event-id');
+      const id = (ev && ev.id) ? ev.id : (el ? (el.textContent || '').trim() : '');
+      if (!id || id === '—') return;
+      const done = () => showCustomToast('Tapahtumatunniste kopioitu leikepöydälle', 2500);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(id).then(done).catch(() => { _fallbackCopy(id); done(); });
+      } else {
+        _fallbackCopy(id); done();
+      }
+    }
+    function _fallbackCopy(text) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) { /* clipboard not available */ }
     }
 
     // ── History: card click dispatcher ─────────────────────────────────
@@ -10918,10 +11398,17 @@
         _selectedEventIds.add(id);
         card.classList.add('selected');
       }
-      // Show the bottom send-receipts button whenever ≥1 events are selected
+      // Show the bottom send-receipts button whenever ≥1 events are selected,
+      // with singular/plural wording based on the count.
       const footer = document.getElementById('history-action-footer');
-      if (_selectedEventIds.size > 0) footer.classList.add('visible');
-      else                            footer.classList.remove('visible');
+      const n = _selectedEventIds.size;
+      if (n > 0) {
+        footer.classList.add('visible');
+        const sbtn = document.getElementById('send-receipts-btn');
+        if (sbtn) sbtn.textContent = (n === 1) ? 'Lähetä kuitti sähköpostiin' : 'Lähetä kuitit sähköpostiin';
+      } else {
+        footer.classList.remove('visible');
+      }
     }
     // Action button at bottom — shows confirmation toast, then exits select mode.
     // ── Sheet "Open directions" button + maps app picker ──────────────
@@ -10966,10 +11453,11 @@
     // Self-contained electronic disc icon for the bottom-sheet badge on
     // free/disc areas (same graphic as the on-map P-marker; the navy body is
     // the badge itself, so no separate blue background box is needed).
-    const DISC_BADGE_SVG = `<svg width="40" height="33" viewBox="0 0 340 280" xmlns="http://www.w3.org/2000/svg" style="display:block;">${PIN_SVG_DISC}</svg>`;
+    const DISC_BADGE_SVG = `<svg width="28" height="23" viewBox="0 0 340 280" xmlns="http://www.w3.org/2000/svg" style="display:block;">${PIN_SVG_DISC}</svg>`;
 
     // ── Parking disc (pysäköintikiekko) view ─────────────────────────
     let discMinutes = 0;          // set arrival time, minutes since midnight
+    let discStyle = 'electronic'; // big-disc style: 'electronic' | 'traditional'
     // (drag-based wheel removed — arrival time is set with +/- 30 min buttons)
 
     function _discFmt(min) {
@@ -11020,10 +11508,11 @@
       }
       return o;
     }
-    // Build the big electronic parking disc (static parts) into #disc-graphic.
-    function _discBuildGraphic() {
+    // Build the big ELECTRONIC parking disc (static parts) into #disc-graphic.
+    function _discBuildElectronic() {
       const svg = document.getElementById('disc-graphic');
       if (!svg) return;
+      svg.setAttribute('viewBox', '0 0 360 320');
       svg.innerHTML =
         `<defs>`
         + `<linearGradient id="discBodyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34579a"/><stop offset="0.5" stop-color="#274a8b"/><stop offset="1" stop-color="#1a3461"/></linearGradient>`
@@ -11040,15 +11529,82 @@
         + `<rect x="156" y="250" width="48" height="48" rx="10" fill="#ffffff" stroke="#1d3f7a" stroke-width="2.6"/>`
         + `<text x="180" y="285" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="38" font-weight="800" fill="#1d3f7a">P</text>`;
     }
-    // Refresh only the LCD digits to the current discMinutes.
+    // Build the big TRADITIONAL Finnish parking disc (blue body, bilingual
+    // text, downward pointer, a rotating 12 h/24 h dial in a fan window, and a
+    // framed "P"). Generic standard-disc design — no brand markings.
+    function _discBuildTraditional() {
+      const svg = document.getElementById('disc-graphic');
+      if (!svg) return;
+      svg.setAttribute('viewBox', '0 0 320 380');
+      const CX = 160, CY = 300, Ri = 72, Ro = 154, SP = 56;
+      const pt = (ang, r) => { const a = ang * Math.PI / 180; return [CX + r * Math.sin(a), CY - r * Math.cos(a)]; };
+      const [ax, ay] = pt(-SP, Ro), [bx, by] = pt(SP, Ro), [cx2, cy2] = pt(SP, Ri), [dx, dy] = pt(-SP, Ri);
+      const fan = `M ${ax.toFixed(1)} ${ay.toFixed(1)} A ${Ro} ${Ro} 0 0 1 ${bx.toFixed(1)} ${by.toFixed(1)} L ${cx2.toFixed(1)} ${cy2.toFixed(1)} A ${Ri} ${Ri} 0 0 0 ${dx.toFixed(1)} ${dy.toFixed(1)} Z`;
+      let dial = '';
+      for (let i = 0; i < 24; i++) {
+        const ang = i * 15, major = (i % 2 === 0), r1 = major ? 134 : 140, r2 = 150;
+        const [x1, y1] = pt(ang, r1), [x2, y2] = pt(ang, r2);
+        dial += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#111111" stroke-width="${major ? 2.4 : 1.1}" stroke-linecap="round"/>`;
+      }
+      for (let h = 1; h <= 12; h++) {
+        const ang = h * 30;
+        const [x, y] = pt(ang, 116);
+        dial += `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-family="Arial" font-size="27" font-weight="800" fill="#111111">${h}</text>`;
+        const [xs, ys] = pt(ang, 88);
+        dial += `<text x="${xs.toFixed(1)}" y="${ys.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-family="Arial" font-size="14" font-weight="700" fill="#333333">${h + 12}</text>`;
+      }
+      let ridges = '';
+      for (let yy = 70; yy < 330; yy += 13) ridges += `<line x1="26" y1="${yy}" x2="46" y2="${yy}" stroke="#9c1521" stroke-width="3" stroke-linecap="round" opacity="0.55"/>`;
+      let serr = '';
+      for (let i = 0; i < 8; i++) { const x0 = 70 + i * 26; serr += `<polygon points="${x0},368 ${x0 + 13},368 ${x0 + 6.5},380" fill="#b51926" stroke="#8f1420" stroke-width="0.6"/>`; }
+      svg.innerHTML =
+        `<defs><linearGradient id="tradBodyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e23b46"/><stop offset="0.5" stop-color="#d21f2c"/><stop offset="1" stop-color="#b51926"/></linearGradient><clipPath id="tradWin"><path d="${fan}"/></clipPath></defs>`
+        + `<rect x="18" y="12" width="284" height="356" rx="30" ry="30" fill="url(#tradBodyG)" stroke="#8f1420" stroke-width="2"/>`
+        + `<rect x="28" y="20" width="264" height="80" rx="40" fill="#ffffff" opacity="0.10"/>`
+        + ridges + serr
+        + `<text x="160" y="50" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="800" fill="#ffffff" letter-spacing="1">SAAPUMISAIKA</text>`
+        + `<text x="160" y="78" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="23" font-weight="800" fill="#111111" letter-spacing="0.5">Moronet</text>`
+        + `<polygon points="137,100 183,100 160,140" fill="#f5cdd0"/>`
+        + `<path d="${fan}" fill="#ffffff" stroke="#555555" stroke-width="1.6"/>`
+        + `<g clip-path="url(#tradWin)"><g id="disc-trad-dial" transform="rotate(0 160 300)">${dial}</g></g>`
+        + `<rect x="112" y="258" width="96" height="96" rx="14" fill="#1c7fc4" stroke="#ffffff" stroke-width="5"/>`
+        + `<text x="160" y="326" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="66" font-weight="800" fill="#ffffff">P</text>`;
+    }
+    // Build whichever style is currently selected.
+    function _discBuildGraphic() {
+      if (discStyle === 'traditional') _discBuildTraditional();
+      else _discBuildElectronic();
+    }
+    // Show the current discMinutes: electronic updates the LCD digits;
+    // traditional rotates the dial so the time sits under the pointer.
     function _discRender() {
-      const g = document.getElementById('disc-big-digits');
-      if (g) g.innerHTML = _segLcd(_discFmt(discMinutes), 60, 121, 240, 102, 66, 33, 8, '#cdd3d8');
+      if (discStyle === 'traditional') {
+        const dial = document.getElementById('disc-trad-dial');
+        if (dial) dial.setAttribute('transform', `rotate(${(-((discMinutes % 720) / 720 * 360)).toFixed(2)} 160 300)`);
+      } else {
+        const g = document.getElementById('disc-big-digits');
+        if (g) g.innerHTML = _segLcd(_discFmt(discMinutes), 60, 121, 240, 102, 66, 33, 8, '#cdd3d8');
+      }
     }
     // Adjust arrival time in 30-minute steps (wraps within a 24 h day).
     function discStep(delta) {
       discMinutes = ((discMinutes + delta) % 1440 + 1440) % 1440;
       _discRender();
+    }
+    // Switch the big disc between 'electronic' and 'traditional'.
+    function setDiscStyle(style) {
+      if (style !== 'electronic' && style !== 'traditional') return;
+      discStyle = style;
+      _discBuildGraphic();
+      _discRender();
+      const be = document.getElementById('disc-style-el');
+      const bt = document.getElementById('disc-style-tr');
+      if (be && bt) {
+        const base = 'flex:1;height:40px;border:none;border-radius:18px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+        const on = 'background:#0C0243;color:#ffffff;', off = 'background:transparent;color:#0C0243;';
+        be.style.cssText = base + (style === 'electronic' ? on : off);
+        bt.style.cssText = base + (style === 'traditional' ? on : off);
+      }
     }
     function openDiscOverlay() {
       _discBuildGraphic();
@@ -11194,16 +11750,15 @@
       const W = body.offsetWidth;    // border-box width (incl. 2px transparent frame)
       const H = body.offsetHeight;   // border-box height
       if (!W || !H) return;
-      const isFree    = marker.classList.contains('disc-mode');
-      const fill      = isFree ? '#005EAA' : '#ffffff';
+      const fill      = '#ffffff';   // white badge background for paid + free/disc areas
       const tailW     = 7, tailDepth = 8, cx = W / 2;
       const r         = Math.max(2, Math.min(9, H / 2 - 1, W / 2 - 1));
       const SH        = H + tailDepth + 2;   // include the tail + a little slack
       svg.setAttribute('viewBox', `0 0 ${W} ${SH}`);
       svg.style.width  = W + 'px';
       svg.style.height = SH + 'px';
-      // Single continuous outline: dark-blue border + solid fill (white for
-      // paid areas, #005EAA for free/disc areas). No inner frame.
+      // Single continuous outline: dark-blue border + solid white fill for
+      // all areas (paid and free/disc). No inner frame.
       const html = `<path d="${bubblePath(W, H, r, tailW, tailDepth, cx)}" fill="${fill}" stroke="#0C0243" stroke-width="2" stroke-linejoin="round"/>`;
       svg.innerHTML = html;
       svg.style.display = 'block';
@@ -11536,7 +12091,7 @@
     function updateFilterDateLabel(which) {
       const input = document.getElementById(`filter-${which}-date`);
       const label = document.getElementById(`filter-${which}-date-fi`);
-      if (input && label) label.textContent = isoToFinnishDate(input.value);
+      if (input && label) label.textContent = input.value ? isoToFinnishDate(input.value) : '';
     }
     function closeFilterModal() {
       document.getElementById('filter-modal').classList.remove('visible');
@@ -11767,23 +12322,21 @@
       sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
       updateNavBtnVisibility();
       updateOsmOpacity(t);
-      // After the sheet settles at a new level, resize the filter scroll area so
-      // its bottom sits at the screen edge (keeps native scroll + bounce correct).
-      if (filterMode) setTimeout(sizeFilterScroll, 360);
+
+      // When the filter sheet settles at the top, measure its real on-screen
+      // position after the animation and size the content so it fills exactly
+      // to the screen bottom (no leftover white strip).
+      if(filterMode){
+        const topY = sheet.clientHeight - window.innerHeight * 0.8;
+        if(Math.abs(t - topY) < 2){
+          setTimeout(() => {
+            const rectTop = sheetFilter.getBoundingClientRect().top;
+            const h = window.innerHeight - rectTop;
+            if(h > 120) sheetFilter.style.maxHeight = h + 'px';
+          }, 370);
+        }
+      }
     }
-    // Size the filter sheet's scroll viewport to the currently-visible area
-    // (from the content's top edge down to the bottom of the screen). Combined
-    // with overflow-y:auto this lets the content scroll inside the sheet and
-    // produces the native iOS rubber-band bounce at the top and bottom.
-    // Recomputed on open, on level changes, on resize, and at each scroll start.
-    function sizeFilterScroll(){
-      const el = document.getElementById('sheet-filter');
-      if (!el || !el.classList.contains('visible')) return;
-      const top = el.getBoundingClientRect().top;
-      const h = Math.max(120, Math.round(window.innerHeight - top));
-      el.style.height = h + 'px';
-    }
-    window.addEventListener('resize', sizeFilterScroll);
     // © OpenStreetMap attribution: child of the sheet (moves with it), fades out
     // once the sheet's top edge passes the screen midpoint, fully hidden when open.
     function updateOsmOpacity(ty){
@@ -11795,9 +12348,42 @@
       el.style.opacity = Math.max(0, Math.min(1, o));
     }
     let dragFromHandle=false;
+    let filterContentScroll=false, _startScrollTop=0, fcDragging=false, _momentumRAF=null, _gestureStartY=0, _filterMoved=false;
     const dragHandleArea=document.getElementById('drag-handle-area');
-    const sheetFilterEl=document.getElementById('sheet-filter');
+    // Inner wrapper that holds the filter content. We translate it for the
+    // iOS-style rubber-band bounce when the content is over-pulled past its
+    // bottom edge; the scroll container (#sheet-filter) itself is left alone.
+    const filterInner=document.getElementById('filter-scroll-inner');
+    let _fcOver=0;   // current rubber-band offset (px the content is lifted)
+    // Progressive resistance: the further past the end, the less it moves.
+    function fcRubber(over){ const d = sheetFilter.clientHeight || 400; return (1 - 1/((over*0.55/d) + 1)) * d; }
+    // Inertial (momentum) scrolling for the filter content: after the finger
+    // lifts, keep scrolling with the last velocity, gradually decelerating.
+    function startContentMomentum(v0){
+      let vel = Math.max(-3.5, Math.min(3.5, v0));   // px/ms of scrollTop change, clamped
+      let last = performance.now();
+      const maxScroll = sheetFilter.scrollHeight - sheetFilter.clientHeight;
+      function step(now){
+        const dt = now - last; last = now;
+        vel *= Math.pow(0.965, dt / 16.67);      // friction (gentle glide)
+        sheetFilter.scrollTop = sheetFilter.scrollTop + vel * dt;
+        if(Math.abs(vel) < 0.012 || sheetFilter.scrollTop <= 0 || sheetFilter.scrollTop >= maxScroll){
+          _momentumRAF = null;
+          return;
+        }
+        _momentumRAF = requestAnimationFrame(step);
+      }
+      _momentumRAF = requestAnimationFrame(step);
+    }
+    // Suppress the click that follows a drag, so dragging across a button /
+    // toggle / charger tile scrolls instead of activating it. A real tap (no
+    // movement) leaves _filterMoved false and activates the control normally.
+    sheetFilter.addEventListener('click', (e) => {
+      if(_filterMoved){ e.stopPropagation(); e.preventDefault(); _filterMoved = false; }
+    }, true);
     sheet.addEventListener('touchstart',(e)=>{
+      // Stop any in-progress momentum scroll so a new touch catches it
+      if(_momentumRAF){ cancelAnimationFrame(_momentumRAF); _momentumRAF = null; }
       // Estä drag jos ei ole pysäköintialuetta valittuna — paitsi filter-näkymässä, jossa drag aina sallittu
       if(!filterMode && ((!currentParkingProps && !hoveredPolyId) || sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
@@ -11806,13 +12392,40 @@
       if(filterMode && (sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
       }
-      // Filter view: touches that start on the scrollable filter content should
-      // scroll the content natively (with the iOS rubber-band bounce) rather
-      // than drag the sheet. Sheet resizing stays on the drag handle at the top.
-      if(filterMode && sheetFilterEl && sheetFilterEl.contains(e.target)
-         && !(dragHandleArea && dragHandleArea.contains(e.target))){
-        sizeFilterScroll();
+      // Track the gesture so we can tell a tap (activate a control) from a
+      // drag (scroll / move the sheet) — see the click suppressor below.
+      if(filterMode){ _gestureStartY = (e.touches[0]||{}).clientY || 0; _filterMoved = false; }
+      // Sliders need drag-to-adjust, so a touch on them never scrolls/moves
+      // the sheet. Other controls (buttons, toggles, charger tiles) only block
+      // on a real tap — a drag that starts on them still scrolls (the click is
+      // suppressed afterwards).
+      if(filterMode && e.target.closest && e.target.closest('.range-container')){
         return;
+      }
+      // When the filter sheet is at its top position, a finger drag inside the
+      // content first scrolls the content; once the content reaches its top and
+      // the finger keeps moving down, the gesture hands off to dragging the
+      // whole sheet down (with velocity-based snapping on release).
+      if(filterMode && sheetFilter.contains(e.target) && !(dragHandleArea && dragHandleArea.contains(e.target))){
+        const m = new DOMMatrix(getComputedStyle(sheet).transform);
+        const topY = sheet.clientHeight - window.innerHeight*0.8;
+        const atTop = m.m42 <= topY + 4;
+        if(atTop){
+          filterContentScroll = true;
+          fcDragging = false;
+          startY = e.touches[0].clientY;
+          lastY = startY;
+          lastTime = Date.now();
+          velocity = 0;
+          _startScrollTop = sheetFilter.scrollTop;
+          _fcOver = 0;
+          if(filterInner){ filterInner.style.transition='none'; filterInner.style.transform=''; }
+          startTranslate = topY;
+          currentY = topY;
+          isDragging = false;
+          sheet.style.transition = 'none';
+          return;
+        }
       }
       // Free positioning via the drag handle is disabled on the parking sheet —
       // every drag snaps to a defined level. (Still allowed in the filter view.)
@@ -11830,6 +12443,55 @@
     },{passive:true});
     
     sheet.addEventListener('touchmove',(e)=>{
+      if(filterMode && !_filterMoved && Math.abs((((e.touches[0]||{}).clientY)||0) - _gestureStartY) > 8){
+        _filterMoved = true;   // moved enough to count as a drag, not a tap
+      }
+      if(filterContentScroll){
+        const touch = e.touches[0].clientY;
+        const now = Date.now();
+        const dt = now - lastTime; if(dt>0) velocity=(touch-lastY)/dt; lastY=touch; lastTime=now;
+        const delta = touch - startY;            // >0 = finger moved down
+        if(!fcDragging){
+          const desired = _startScrollTop - delta;
+          const maxScroll = sheetFilter.scrollHeight - sheetFilter.clientHeight;
+          if(desired > maxScroll){
+            // Over-pulling past the BOTTOM → rubber-band: pin the scroll at the
+            // end and lift the content with progressive resistance. Springs
+            // back when the finger lifts (handled in touchend).
+            sheetFilter.scrollTop = maxScroll;
+            _fcOver = fcRubber(desired - maxScroll);
+            if(filterInner){ filterInner.style.transition='none'; filterInner.style.transform = `translateY(${-_fcOver}px)`; }
+            return;
+          }
+          if(_fcOver !== 0 && filterInner){ filterInner.style.transform=''; _fcOver = 0; }  // back within range
+          if(desired > 0){
+            sheetFilter.scrollTop = desired;     // still scrolling content
+            return;
+          }
+          // Content has reached its top.
+          sheetFilter.scrollTop = 0;
+          if(_startScrollTop > 0.5){
+            // This gesture started while the content was scrolled, so it only
+            // returns the content to the top — it does NOT drag the sheet down.
+            // Collapsing the sheet needs a fresh swipe from the content top.
+            return;
+          }
+          // Gesture started at the content top → hand off to dragging the sheet.
+          fcDragging = true;
+          isDragging = true;
+          startY = touch;                         // rebase so the sheet doesn't jump
+          startTranslate = sheet.clientHeight - window.innerHeight*0.8;
+        }
+        const minY = sheet.clientHeight - window.innerHeight*0.8;
+        const maxY = sheet.clientHeight - 70;
+        currentY = Math.max(minY, Math.min(maxY, startTranslate + (touch - startY)));
+        sheet.style.transform = `translateY(${currentY}px)`;
+        const op = 1 - (currentY / (sheet.clientHeight - 60));
+        sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (op - 0.5) * 2));
+        updateNavBtnVisibility();
+        updateOsmOpacity(currentY);
+        return;
+      }
       if(!isDragging)return;
       const touch=e.touches[0].clientY;
       const now=Date.now();
@@ -11863,36 +12525,63 @@
     },{passive:true});
     
     sheet.addEventListener('touchend',()=>{
+      if(filterContentScroll){
+        const wasDrag = fcDragging;
+        filterContentScroll = false;
+        fcDragging = false;
+        if(!wasDrag){
+          if(_fcOver !== 0 && filterInner){
+            // The content was over-pulled past the bottom → spring it back to rest.
+            filterInner.style.transition = 'transform 0.42s cubic-bezier(0.22,1,0.36,1)';
+            filterInner.style.transform = 'translateY(0)';
+            _fcOver = 0;
+            return;
+          }
+          // Pure content scroll → keep gliding with inertia if the flick was recent
+          const recent = (Date.now() - lastTime) < 90;
+          if(recent && Math.abs(velocity) > 0.04) startContentMomentum(-velocity);
+          return;
+        }
+        isDragging = false;
+        const maxY = sheet.clientHeight - window.innerHeight*0.8;   // top
+        const midY = window.innerHeight * 0.6;                      // mid
+        const minY = sheet.clientHeight - 70;                       // bottom (collapsed)
+        let target;
+        if(velocity > 0.8){
+          target = minY;                           // quick flick down → all the way down
+        } else {
+          const lv = [maxY, midY, minY];           // gentle → nearest level to release point
+          target = lv[0];
+          for(const y of lv) if(Math.abs(currentY - y) < Math.abs(currentY - target)) target = y;
+        }
+        snapTo(target);
+        return;
+      }
       if(!isDragging)return;
       isDragging=false;
       if(filterMode){
-        const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // max size (80% of viewport)
-        const midY = window.innerHeight * 0.6;                       // mid level = filter open height
-        const minY = sheet.clientHeight - 70;                        // min size (70px from bottom)
-        if(dragFromHandle){
-          // Free positioning when dragged from the handle — stay where dropped
-          snapTo(Math.max(maxY, Math.min(minY, currentY)));
-        } else {
-          // Levels ordered top→bottom: max (highest), mid, min (lowest)
-          const levels = [maxY, midY, minY];
-          // Find nearest level to where the drag started
-          let si = 0;
-          for(let i=1;i<levels.length;i++){
-            if(Math.abs(startTranslate - levels[i]) < Math.abs(startTranslate - levels[si])) si = i;
-          }
-          // Any swipe steps exactly one level toward swipe direction (always via mid)
-          let ti = si;
-          if(velocity < -0.2) ti = Math.max(0, si - 1);       // swipe up → one level up
-          else if(velocity > 0.2) ti = Math.min(levels.length - 1, si + 1); // swipe down → one level down
-          else {
-            // Gentle move with no clear velocity → snap to nearest level to current position
-            ti = 0;
-            for(let i=1;i<levels.length;i++){
-              if(Math.abs(currentY - levels[i]) < Math.abs(currentY - levels[ti])) ti = i;
-            }
-          }
-          snapTo(levels[ti]);
+        const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // top (full)
+        const midY = window.innerHeight * 0.6;                       // mid level
+        const minY = sheet.clientHeight - 70;                        // bottom (collapsed)
+        const levels = [maxY, midY, minY];                            // top → mid → bottom
+        // Nearest level to where the drag started
+        let si = 0;
+        for(let i=1;i<levels.length;i++){
+          if(Math.abs(startTranslate - levels[i]) < Math.abs(startTranslate - levels[si])) si = i;
         }
+        let ti;
+        if(velocity < -0.8)      ti = 0;                       // hard flick up → full size directly
+        else if(velocity > 0.8)  ti = 2;                       // hard flick down → collapsed directly
+        else if(velocity < -0.2) ti = Math.max(0, si - 1);     // gentle up → one level up (e.g. mid)
+        else if(velocity > 0.2)  ti = Math.min(2, si + 1);     // gentle down → one level down
+        else {
+          // No clear velocity → snap to nearest level to current position
+          ti = 0;
+          for(let i=1;i<levels.length;i++){
+            if(Math.abs(currentY - levels[i]) < Math.abs(currentY - levels[ti])) ti = i;
+          }
+        }
+        snapTo(levels[ti]);
         return;
       }
       if(currentParkingProps || hoveredPolyId){
@@ -11943,6 +12632,10 @@
     </div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;gap:20px;overflow-y:auto;">
       <div style="font-size:14px;color:#666;font-family:Arial,sans-serif;text-align:center;max-width:320px;line-height:1.45;">Saapumisaika asettuu automaattisesti seuraavaan tasa- tai puolituntiin. Säädä tarvittaessa alla olevilla painikkeilla.</div>
+      <div style="display:flex;gap:4px;background:#eef1f5;border-radius:22px;padding:4px;width:min(80vw,300px);box-sizing:border-box;">
+        <button id="disc-style-el" onclick="setDiscStyle('electronic')" style="flex:1;height:40px;border:none;border-radius:18px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;background:#0C0243;color:#ffffff;">Elektroninen</button>
+        <button id="disc-style-tr" onclick="setDiscStyle('traditional')" style="flex:1;height:40px;border:none;border-radius:18px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;background:transparent;color:#0C0243;">Perinteinen</button>
+      </div>
       <div style="width:min(80vw,300px);">
         <svg id="disc-graphic" viewBox="0 0 360 320" style="width:100%;height:auto;display:block;"></svg>
       </div>
