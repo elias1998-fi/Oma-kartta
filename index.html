@@ -1593,6 +1593,9 @@
       color: #888;
       font-weight: 500;
     }
+    /* Selected-count badge next to the charger-type label ("2/4"). Inherits the
+       label's font; stays empty (so nothing shows) when none are selected. */
+    #charger-count-badge { margin-left: 6px; }
     .charger-type-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -4577,7 +4580,7 @@
              above is on. Multi-select so users can show several plug types
              at once. Each tile flips to dark-blue (selected) on tap. -->
         <div id="charger-picker" class="charger-picker">
-          <div class="charger-type-label">Valitse latauspistokkeen malli</div>
+          <div class="charger-type-label">Valitse latauspistokkeen malli<span id="charger-count-badge"></span></div>
           <div class="charger-type-grid">
           <div class="charger-type-tile" data-charger="schuko" onclick="toggleChargerType('schuko', this)">
             <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -9922,6 +9925,7 @@
       if (picker) picker.classList.toggle('visible', showEvCharging);
       // TODO: when an EV-charging data source/layer exists, toggle its visibility here.
       // e.g. if (map.getLayer('ev-charging')) map.setLayoutProperty('ev-charging','visibility', showEvCharging ? 'visible' : 'none');
+      updateChargerCount();
     }
     // Tracks which plug types the user wants visible on the map. Multi-select.
     // No data layer yet — when EV-charging features get rendered later, this
@@ -9937,6 +9941,16 @@
       }
       // TODO: when the EV-charging map layer exists, push this selection
       // into a Mapbox filter expression so only the chosen plug types show.
+      updateChargerCount();
+    }
+    // Shows "N/total" beside the charger-type label as plug types are picked;
+    // hidden (empty) when none are selected. Same font as the label (inherited).
+    function updateChargerCount(){
+      const badge = document.getElementById('charger-count-badge');
+      if(!badge) return;
+      const total = document.querySelectorAll('.charger-type-grid .charger-type-tile').length || 4;
+      const n = _selectedChargerTypes.size;
+      badge.textContent = n > 0 ? (n + '/' + total) : '';
     }
     // Voltage segmented control under the charger picker. Indicator is always
     // dark blue (no light-blue / lilac like the parking segmented control).
@@ -12550,8 +12564,8 @@
         const midY = window.innerHeight * 0.6;                      // mid
         const minY = sheet.clientHeight - 70;                       // bottom (collapsed)
         let target;
-        if(velocity > 0.8){
-          target = minY;                           // quick flick down → all the way down
+        if(velocity > 1.5){
+          target = minY;                           // hard flick down → all the way down
         } else {
           const lv = [maxY, midY, minY];           // gentle → nearest level to release point
           target = lv[0];
@@ -12573,8 +12587,8 @@
           if(Math.abs(startTranslate - levels[i]) < Math.abs(startTranslate - levels[si])) si = i;
         }
         let ti;
-        if(velocity < -0.8)      ti = 0;                       // hard flick up → full size directly
-        else if(velocity > 0.8)  ti = 2;                       // hard flick down → collapsed directly
+        if(velocity < -1.5)      ti = 0;                       // hard flick up → full size directly
+        else if(velocity > 1.5)  ti = 2;                       // hard flick down → collapsed directly
         else if(velocity < -0.2) ti = Math.max(0, si - 1);     // gentle up → one level up (e.g. mid)
         else if(velocity > 0.2)  ti = Math.min(2, si + 1);     // gentle down → one level down
         else {
