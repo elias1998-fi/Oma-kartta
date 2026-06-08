@@ -1629,6 +1629,40 @@
       color: #0C0243;
       font-weight: 600;
     }
+    /* ── Operator filter dropdown ───────────────────────────────────────── */
+    .op-dropdown { margin-top: 10px; }
+    .op-trigger {
+      width: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      background: white; border: 1.5px solid #ddd; border-radius: 10px;
+      padding: 12px 14px; font-size: 14px; font-weight: 500; color: #0C0243;
+      font-family: Arial, sans-serif; cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+    .op-dropdown.open .op-trigger { border-color: #0C0243; }
+    .op-chevron { color: #888; transition: transform 0.2s ease; }
+    .op-dropdown.open .op-chevron { transform: rotate(180deg); }
+    .op-list { display: none; margin-top: 8px; }
+    .op-dropdown.open .op-list { display: block; }
+    .op-row {
+      display: flex; align-items: center; gap: 12px;
+      background: white; border: 1.5px solid #ddd; border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 8px; cursor: pointer; color: #888;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .op-row:active { background: #f0f0f0; }
+    .op-row .op-name { font-size: 14px; font-weight: 500; }
+    .op-row.selected { border-color: #0C0243; background: #f4f4ff; color: #0C0243; }
+    .op-row.selected .op-name { color: #0C0243; font-weight: 600; }
+    /* Logo placeholder chip. To show a real operator logo, replace the chip's
+       text with <img src="..."> using a logo file you have the right to use. */
+    .op-logo {
+      width: 40px; height: 26px; flex-shrink: 0; border-radius: 5px;
+      background: #eef0f4; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #555; overflow: hidden;
+    }
+    .op-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .op-logo-all { background: #0C0243; color: #fff; }
     .toggle-switch {
       position: relative;
       display: inline-block;
@@ -1807,7 +1841,7 @@
       font-family: Arial, sans-serif; 
       color: white; 
       background: #0C0243; 
-      opacity: 0.90; 
+      opacity: 1; 
       cursor: pointer; 
       transition: opacity 0.3s ease; 
       text-align: center; 
@@ -4570,7 +4604,7 @@
       <!-- Group 3: public EV charging points -->
       <div class="filter-group">
         <div class="filter-toggle-row">
-          <span class="filter-toggle-label">Näytä julkiset sähkölatauspisteet</span>
+          <span class="filter-toggle-label">Näytä vain julkiset sähkölatauspisteet</span>
           <label class="toggle-switch">
             <input type="checkbox" id="toggle-ev-charging" onchange="toggleEvCharging()">
             <span class="toggle-slider"></span>
@@ -4660,6 +4694,33 @@
             <button class="seg-option" data-volt="400" onclick="setVoltageMode('400')">400V</button>
             <button class="seg-option" data-volt="both" onclick="setVoltageMode('both')">400V ja 800V</button>
             <button class="seg-option" data-volt="800" onclick="setVoltageMode('800')">800V</button>
+          </div>
+        </div>
+
+        <!-- Operator filter (last item in the EV box). Logos are placeholder
+             chips — replace a chip's text with <img src="..."> to show the
+             real operator logo (using files you have the right to use). -->
+        <div class="charger-type-label" style="margin-top:18px;">Operaattori<span id="operator-count-badge">13/13</span></div>
+        <div id="operator-dropdown" class="op-dropdown">
+          <button type="button" id="operator-trigger" class="op-trigger" onclick="toggleOperatorDropdown()">
+            <span id="operator-trigger-label">Kaikki</span>
+            <span class="op-chevron" id="operator-chevron">▾</span>
+          </button>
+          <div id="operator-list" class="op-list">
+            <div class="op-row selected" data-op="__all__" onclick="toggleOperator('__all__', this)"><div class="op-logo op-logo-all">★</div><span class="op-name">Kaikki</span></div>
+            <div class="op-row selected" data-op="ionity" onclick="toggleOperator('ionity', this)"><div class="op-logo">IO</div><span class="op-name">IONITY</span></div>
+            <div class="op-row selected" data-op="autoliitto" onclick="toggleOperator('autoliitto', this)"><div class="op-logo">AL</div><span class="op-name">Autoliitto</span></div>
+            <div class="op-row selected" data-op="st1" onclick="toggleOperator('st1', this)"><div class="op-logo">St1</div><span class="op-name">St1</span></div>
+            <div class="op-row selected" data-op="helen" onclick="toggleOperator('helen', this)"><div class="op-logo">HE</div><span class="op-name">Helen</span></div>
+            <div class="op-row selected" data-op="faast" onclick="toggleOperator('faast', this)"><div class="op-logo">FA</div><span class="op-name">FAAST Charging Point</span></div>
+            <div class="op-row selected" data-op="neste" onclick="toggleOperator('neste', this)"><div class="op-logo">NE</div><span class="op-name">Neste</span></div>
+            <div class="op-row selected" data-op="recharge" onclick="toggleOperator('recharge', this)"><div class="op-logo">RE</div><span class="op-name">Recharge</span></div>
+            <div class="op-row selected" data-op="abc" onclick="toggleOperator('abc', this)"><div class="op-logo">ABC</div><span class="op-name">ABC Lataus</span></div>
+            <div class="op-row selected" data-op="klataus" onclick="toggleOperator('klataus', this)"><div class="op-logo">K</div><span class="op-name">K-Lataus</span></div>
+            <div class="op-row selected" data-op="plugit" onclick="toggleOperator('plugit', this)"><div class="op-logo">PL</div><span class="op-name">Plugit Lataus</span></div>
+            <div class="op-row selected" data-op="virta" onclick="toggleOperator('virta', this)"><div class="op-logo">VI</div><span class="op-name">Virta</span></div>
+            <div class="op-row selected" data-op="lidl" onclick="toggleOperator('lidl', this)"><div class="op-logo">Li</div><span class="op-name">Lidl</span></div>
+            <div class="op-row selected" data-op="tesla" onclick="toggleOperator('tesla', this)"><div class="op-logo">T</div><span class="op-name">Tesla</span></div>
           </div>
         </div>
         </div>
@@ -9952,6 +10013,48 @@
       const n = _selectedChargerTypes.size;
       badge.textContent = n > 0 ? (n + '/' + total) : '';
     }
+    // ── Operator filter (multi-select dropdown) ─────────────────────────────
+    // Default: all selected ("Kaikki"). The "__all__" row toggles select-all.
+    // Counter "N/13" sits beside the "Operaattori" label. No real data layer
+    // yet — _selectedOperators is the filter to apply once charging features
+    // get rendered. Logos are placeholder chips; drop in <img> for real ones.
+    const OPERATORS = ['ionity','autoliitto','st1','helen','faast','neste','recharge','abc','klataus','plugit','virta','lidl','tesla'];
+    const OPERATOR_NAMES = { ionity:'IONITY', autoliitto:'Autoliitto', st1:'St1', helen:'Helen', faast:'FAAST Charging Point', neste:'Neste', recharge:'Recharge', abc:'ABC Lataus', klataus:'K-Lataus', plugit:'Plugit Lataus', virta:'Virta', lidl:'Lidl', tesla:'Tesla' };
+    const _selectedOperators = new Set(OPERATORS);
+    function toggleOperatorDropdown(){
+      const dd = document.getElementById('operator-dropdown');
+      if(dd) dd.classList.toggle('open');
+    }
+    function toggleOperator(key, el){
+      if(key === '__all__'){
+        if(_selectedOperators.size === OPERATORS.length) _selectedOperators.clear();
+        else OPERATORS.forEach(o => _selectedOperators.add(o));
+      } else if(_selectedOperators.has(key)){
+        _selectedOperators.delete(key);
+      } else {
+        _selectedOperators.add(key);
+      }
+      updateOperatorUI();
+    }
+    function updateOperatorUI(){
+      const total = OPERATORS.length;
+      const n = _selectedOperators.size;
+      document.querySelectorAll('#operator-list .op-row').forEach(row => {
+        const k = row.getAttribute('data-op');
+        const on = (k === '__all__') ? (n === total) : _selectedOperators.has(k);
+        row.classList.toggle('selected', on);
+      });
+      const badge = document.getElementById('operator-count-badge');
+      if(badge) badge.textContent = n + '/' + total;
+      const lbl = document.getElementById('operator-trigger-label');
+      if(lbl){
+        if(n === total) lbl.textContent = 'Kaikki';
+        else if(n === 0) lbl.textContent = 'Ei valintoja';
+        else if(n === 1) lbl.textContent = OPERATOR_NAMES[[..._selectedOperators][0]] || '1 valittu';
+        else lbl.textContent = n + ' valittu';
+      }
+    }
+    updateOperatorUI();
     // Voltage segmented control under the charger picker. Indicator is always
     // dark blue (no light-blue / lilac like the parking segmented control).
     function setVoltageMode(mode) {
