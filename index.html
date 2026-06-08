@@ -10054,6 +10054,19 @@
                 'icon-size': 0.5, 'icon-allow-overlap': true, 'icon-anchor': 'center'
               }
             });
+            // Tap a charging marker → leave filter view, zoom to 16 centred on
+            // the station, and show its details in the sheet (like halli markers).
+            map.on('mouseenter', 'charging-icons', () => { map.getCanvas().style.cursor = 'pointer'; });
+            map.on('mouseleave', 'charging-icons', () => { map.getCanvas().style.cursor = ''; });
+            map.on('click', 'charging-icons', (e) => {
+              const ft = e.features && e.features[0];
+              if(!ft) return;
+              const coords = (ft.geometry && ft.geometry.coordinates) ? ft.geometry.coordinates.slice() : null;
+              if(filterMode && typeof closeFilter === 'function') closeFilter();
+              hoveredChargingId = ft.properties.id;
+              showChargingInSheet(ft.properties);
+              if(coords) map.flyTo({ center: coords, zoom: 16, duration: 800 });
+            });
           }
           setChargingVisibility(showEvCharging);
           if (map.getLayer('charging-icons')) map.moveLayer('charging-icons');
@@ -10191,6 +10204,9 @@
         '<p class="price-label">Teho</p><p class="price-value">' + power + '</p>' +
         '<p class="price-label">Jännite</p><p class="price-value">' + volt + '</p>'
       );
+      // Match the parking-area look: no "GPS may be inaccurate" notice taking
+      // space, so the station details aren't pushed partly out of the sheet.
+      document.getElementById('gps-warning').classList.remove('visible');
     }
     // Tracks which plug types the user wants visible on the map. Multi-select.
     // No data layer yet — when EV-charging features get rendered later, this
@@ -10366,7 +10382,9 @@
       }
       function update(){
         const m = metrics();
-        if(m.scrollH <= m.clientH + 2 || m.trackH <= 4){ bar.classList.remove('visible'); return; }
+        // Always show the scrollbar while the filter view is open; only skip
+        // drawing when there is essentially no visible track (sheet collapsed).
+        if(m.trackH <= 4){ bar.classList.remove('visible'); return; }
         bar.style.top = (m.st + m.titleH) + 'px';   // just below the sticky title (on screen)
         bar.style.height = m.trackH + 'px';          // = visible sheet content height
         let thumbTop = (m.st / m.contentH) * m.trackH;
