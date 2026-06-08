@@ -4708,19 +4708,7 @@
           </button>
           <div id="operator-list" class="op-list">
             <div class="op-row selected" data-op="__all__" onclick="toggleOperator('__all__', this)"><div class="op-logo op-logo-all">★</div><span class="op-name">Kaikki</span></div>
-            <div class="op-row selected" data-op="ionity" onclick="toggleOperator('ionity', this)"><div class="op-logo"><img src="logos/ionity.png" alt="IONITY" onerror="this.replaceWith('IO')"></div><span class="op-name">IONITY</span></div>
-            <div class="op-row selected" data-op="autoliitto" onclick="toggleOperator('autoliitto', this)"><div class="op-logo"><img src="logos/autoliitto.png" alt="Autoliitto" onerror="this.replaceWith('AL')"></div><span class="op-name">Autoliitto</span></div>
-            <div class="op-row selected" data-op="st1" onclick="toggleOperator('st1', this)"><div class="op-logo"><img src="logos/st1.png" alt="St1" onerror="this.replaceWith('St1')"></div><span class="op-name">St1</span></div>
-            <div class="op-row selected" data-op="helen" onclick="toggleOperator('helen', this)"><div class="op-logo"><img src="logos/helen.png" alt="Helen" onerror="this.replaceWith('HE')"></div><span class="op-name">Helen</span></div>
-            <div class="op-row selected" data-op="faast" onclick="toggleOperator('faast', this)"><div class="op-logo"><img src="logos/faast.png" alt="FAAST Charging Point" onerror="this.replaceWith('FA')"></div><span class="op-name">FAAST Charging Point</span></div>
-            <div class="op-row selected" data-op="neste" onclick="toggleOperator('neste', this)"><div class="op-logo"><img src="logos/neste.png" alt="Neste" onerror="this.replaceWith('NE')"></div><span class="op-name">Neste</span></div>
-            <div class="op-row selected" data-op="recharge" onclick="toggleOperator('recharge', this)"><div class="op-logo"><img src="logos/recharge.png" alt="Recharge" onerror="this.replaceWith('RE')"></div><span class="op-name">Recharge</span></div>
-            <div class="op-row selected" data-op="abc" onclick="toggleOperator('abc', this)"><div class="op-logo"><img src="logos/abc.png" alt="ABC Lataus" onerror="this.replaceWith('ABC')"></div><span class="op-name">ABC Lataus</span></div>
-            <div class="op-row selected" data-op="klataus" onclick="toggleOperator('klataus', this)"><div class="op-logo"><img src="logos/klataus.png" alt="K-Lataus" onerror="this.replaceWith('K')"></div><span class="op-name">K-Lataus</span></div>
-            <div class="op-row selected" data-op="plugit" onclick="toggleOperator('plugit', this)"><div class="op-logo"><img src="logos/plugit.png" alt="Plugit Lataus" onerror="this.replaceWith('PL')"></div><span class="op-name">Plugit Lataus</span></div>
-            <div class="op-row selected" data-op="virta" onclick="toggleOperator('virta', this)"><div class="op-logo"><img src="logos/virta.png" alt="Virta" onerror="this.replaceWith('VI')"></div><span class="op-name">Virta</span></div>
-            <div class="op-row selected" data-op="lidl" onclick="toggleOperator('lidl', this)"><div class="op-logo"><img src="logos/lidl.png" alt="Lidl" onerror="this.replaceWith('Li')"></div><span class="op-name">Lidl</span></div>
-            <div class="op-row selected" data-op="tesla" onclick="toggleOperator('tesla', this)"><div class="op-logo"><img src="logos/tesla.png" alt="Tesla" onerror="this.replaceWith('T')"></div><span class="op-name">Tesla</span></div>
+            <!-- operator rows are injected dynamically by buildOperatorList() -->
           </div>
         </div>
         </div>
@@ -6904,6 +6892,7 @@
     // ── Master polygon hover/click — defined outside renderMasterRows ──
     // so they survive source setData() calls
     let hoveredPolyId = null;
+    let hoveredChargingId = null;   // charging station currently under the P-marker
 
     // Returns all feature IDs that share the same "group" as the given props
     function getSameGroupIds(props) {
@@ -10102,11 +10091,88 @@
         chargingLoaded = true;
         console.log('Latauspisteet ladattu:', _chargingFeatures.length);
         addChargingLayer();
+        buildOperatorList();
+        applyChargingFilters();
       } catch (e) {
         console.error('Latauspisteiden lataus epäonnistui:', e);
       } finally {
         chargingLoading = false;
       }
+    }
+    // Friendly label for an AFIR connector standard.
+    function stdLabel(s){
+      if(!s) return '';
+      if(s === 'IEC_62196_T2') return 'Type 2';
+      if(s.indexOf('T2_COMBO') >= 0 || s.indexOf('T1_COMBO') >= 0) return 'CCS';
+      if(s === 'CHADEMO') return 'CHAdeMO';
+      if(s.indexOf('DOMESTIC') >= 0) return 'Schuko';
+      if(s === 'IEC_62196_T1') return 'Type 1';
+      return s;
+    }
+    // Does an AFIR standard match one of our plug-type filter buttons?
+    function stdMatches(type, std){
+      if(!std) return false;
+      if(type === 'type2')   return std === 'IEC_62196_T2';
+      if(type === 'ccs')     return std.indexOf('T2_COMBO') >= 0 || std.indexOf('T1_COMBO') >= 0;
+      if(type === 'chademo') return std === 'CHADEMO';
+      if(type === 'schuko')  return std.indexOf('DOMESTIC') >= 0;
+      return false;
+    }
+    // Re-filter the loaded charging stations by the EV controls and push the
+    // result to the map source. No-op until the data + layer exist.
+    function applyChargingFilters(){
+      if(!map.getSource('charging-points')) return;
+      const types = _selectedChargerTypes;
+      const tickKw = [100,200,300,400];
+      const pminEl = document.getElementById('power-slider-min');
+      const pmaxEl = document.getElementById('power-slider-max');
+      const pmin = pminEl ? parseInt(pminEl.value) : 0;
+      const pmax = pmaxEl ? parseInt(pmaxEl.value) : 3;
+      const lowerKw = pmin === 0 ? 0 : tickKw[pmin];
+      const upperKw = pmax === 3 ? Infinity : tickKw[pmax];
+      const powerActive = !(lowerKw === 0 && upperKw === Infinity);
+      const voltBtn = document.querySelector('#voltage-segmented .seg-option.active');
+      const voltMode = voltBtn ? voltBtn.dataset.volt : 'both';
+      const opActive = OPERATORS.length > 0 && _selectedOperators.size < OPERATORS.length;
+      const feats = _chargingFeatures.filter(f => {
+        const p = f.properties;
+        if(types.size > 0){
+          const stds = (p.standards||'').split(',');
+          if(![...types].some(t => stds.some(s => stdMatches(t, s)))) return false;
+        }
+        if(powerActive){
+          if(!(p.maxKw >= lowerKw && p.maxKw <= upperKw)) return false;
+        }
+        if(voltMode === '400'){ if(!(p.maxVoltage && p.maxVoltage <= 500)) return false; }
+        else if(voltMode === '800'){ if(!(p.maxVoltage && p.maxVoltage >= 700)) return false; }
+        if(opActive){ if(!_selectedOperators.has(p.operatorName)) return false; }
+        return true;
+      });
+      map.getSource('charging-points').setData({ type:'FeatureCollection', features: feats });
+    }
+    // Show a charging station's details in the bottom sheet — same presentation
+    // as a parking area under the P-marker.
+    function showChargingInSheet(p){
+      const stds = (p.standards||'').split(',').filter(Boolean).map(stdLabel).filter(Boolean);
+      const stdText = stds.length ? [...new Set(stds)].join(', ') : '–';
+      const power = (p.maxKw && +p.maxKw > 0) ? (p.maxKw + ' kW') : '–';
+      const volt  = (p.maxVoltage && +p.maxVoltage > 0) ? (p.maxVoltage + ' V') : '–';
+      const isAvail = (p.available === true || p.available === 'true');
+      const tot = (p.evseCount != null && p.evseCount !== '') ? p.evseCount : '';
+      const free = (p.availCount != null && p.availCount !== '') ? p.availCount : (isAvail ? 1 : 0);
+      const cnt = (tot !== '') ? (' (' + free + '/' + tot + ')') : '';
+      const availTxt = isAvail
+        ? '<span style="color:#1faa4a;font-weight:700;">Vapaana</span>' + cnt
+        : '<span style="color:#c0392b;font-weight:700;">Varattu</span>' + cnt;
+      showMasterFeatureInSheet(
+        p.name || 'Latausasema',
+        p.address || 'Sähkölatausasema',
+        p.operatorName || 'Latausoperaattori',
+        '<p class="price-label">Tila</p><p class="price-value">' + availTxt + '</p>' +
+        '<p class="price-label">Pistokkeet</p><p class="price-value">' + stdText + '</p>' +
+        '<p class="price-label">Teho</p><p class="price-value">' + power + '</p>' +
+        '<p class="price-label">Jännite</p><p class="price-value">' + volt + '</p>'
+      );
     }
     // Tracks which plug types the user wants visible on the map. Multi-select.
     // No data layer yet — when EV-charging features get rendered later, this
@@ -10123,6 +10189,7 @@
       // TODO: when the EV-charging map layer exists, push this selection
       // into a Mapbox filter expression so only the chosen plug types show.
       updateChargerCount();
+      applyChargingFilters();
     }
     // Shows "N/total" beside the charger-type label as plug types are picked;
     // hidden (empty) when none are selected. Same font as the label (inherited).
@@ -10138,12 +10205,54 @@
     // Counter "N/13" sits beside the "Operaattori" label. No real data layer
     // yet — _selectedOperators is the filter to apply once charging features
     // get rendered. Logos are placeholder chips; drop in <img> for real ones.
-    const OPERATORS = ['ionity','autoliitto','st1','helen','faast','neste','recharge','abc','klataus','plugit','virta','lidl','tesla'];
-    const OPERATOR_NAMES = { ionity:'IONITY', autoliitto:'Autoliitto', st1:'St1', helen:'Helen', faast:'FAAST Charging Point', neste:'Neste', recharge:'Recharge', abc:'ABC Lataus', klataus:'K-Lataus', plugit:'Plugit Lataus', virta:'Virta', lidl:'Lidl', tesla:'Tesla' };
-    const _selectedOperators = new Set(OPERATORS);
+    // Operator list is built dynamically from the operators actually present
+    // in the loaded charging data (see buildOperatorList, called after load).
+    let OPERATORS = [];                    // operator display names present in data
+    let OPERATOR_LOGOS = {};               // name -> logo url (from the API data)
+    let _selectedOperators = new Set();    // default: all present
     function toggleOperatorDropdown(){
       const dd = document.getElementById('operator-dropdown');
       if(dd) dd.classList.toggle('open');
+    }
+    function opInitials(nm){
+      const s = (nm||'').replace(/[^A-Za-zÀ-ÿ0-9 ]/g,'').split(/\s+/).filter(Boolean).map(w=>w[0]).join('').slice(0,3).toUpperCase();
+      return s || '?';
+    }
+    // Rebuild the dropdown rows from the operators found in the loaded data.
+    function buildOperatorList(){
+      const names = new Set();
+      _chargingFeatures.forEach(f => {
+        const nm = f.properties.operatorName;
+        if(nm){ names.add(nm); if(!OPERATOR_LOGOS[nm] && f.properties.logoUrl) OPERATOR_LOGOS[nm] = f.properties.logoUrl; }
+      });
+      OPERATORS = [...names].sort((a,b)=>a.localeCompare(b,'fi'));
+      _selectedOperators = new Set(OPERATORS);
+      const list = document.getElementById('operator-list');
+      if(!list) return;
+      list.querySelectorAll('.op-row').forEach(r => { if(r.getAttribute('data-op') !== '__all__') r.remove(); });
+      OPERATORS.forEach(nm => {
+        const row = document.createElement('div');
+        row.className = 'op-row selected';
+        row.setAttribute('data-op', nm);
+        const logoDiv = document.createElement('div');
+        logoDiv.className = 'op-logo';
+        const initials = opInitials(nm);
+        if(OPERATOR_LOGOS[nm]){
+          const im = document.createElement('img');
+          im.alt = ''; im.src = OPERATOR_LOGOS[nm];
+          im.onerror = () => im.replaceWith(document.createTextNode(initials));
+          logoDiv.appendChild(im);
+        } else {
+          logoDiv.textContent = initials;
+        }
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'op-name';
+        nameSpan.textContent = nm;
+        row.appendChild(logoDiv); row.appendChild(nameSpan);
+        row.addEventListener('click', () => toggleOperator(nm, row));
+        list.appendChild(row);
+      });
+      updateOperatorUI();
     }
     function toggleOperator(key, el){
       if(key === '__all__'){
@@ -10155,22 +10264,21 @@
         _selectedOperators.add(key);
       }
       updateOperatorUI();
+      applyChargingFilters();
     }
     function updateOperatorUI(){
       const total = OPERATORS.length;
       const n = _selectedOperators.size;
       document.querySelectorAll('#operator-list .op-row').forEach(row => {
         const k = row.getAttribute('data-op');
-        const on = (k === '__all__') ? (n === total) : _selectedOperators.has(k);
+        const on = (k === '__all__') ? (total>0 && n === total) : _selectedOperators.has(k);
         row.classList.toggle('selected', on);
       });
-      const badge = document.getElementById('operator-count-badge');
-      if(badge) badge.textContent = n + '/' + total;
       const lbl = document.getElementById('operator-trigger-label');
       if(lbl){
-        if(n === total) lbl.textContent = 'Kaikki';
+        if(total === 0 || n === total) lbl.textContent = 'Kaikki';
         else if(n === 0) lbl.textContent = 'Ei valintoja';
-        else if(n === 1) lbl.textContent = OPERATOR_NAMES[[..._selectedOperators][0]] || '1 valittu';
+        else if(n === 1) lbl.textContent = [..._selectedOperators][0];
         else lbl.textContent = n + ' valittu';
       }
     }
@@ -10185,6 +10293,7 @@
         b.classList.toggle('active', b.dataset.volt === mode);
       });
       // TODO: when the EV-charging map layer exists, apply the voltage filter.
+      applyChargingFilters();
     }
     // Latausteho dual-range slider (UI only): updates the fill between the two
     // handles and stops them from crossing. Ticks: 100 / 220 / 300 / 400 kW.
@@ -10199,8 +10308,8 @@
         pfill.style.left  = (a / MAXI * 100) + '%';
         pfill.style.width  = ((b - a) / MAXI * 100) + '%';
       }
-      pmin.addEventListener('input', () => { if (parseInt(pmin.value) > parseInt(pmax.value)) pmin.value = pmax.value; upd(); });
-      pmax.addEventListener('input', () => { if (parseInt(pmax.value) < parseInt(pmin.value)) pmax.value = pmin.value; upd(); });
+      pmin.addEventListener('input', () => { if (parseInt(pmin.value) > parseInt(pmax.value)) pmin.value = pmax.value; upd(); applyChargingFilters(); });
+      pmax.addEventListener('input', () => { if (parseInt(pmax.value) < parseInt(pmin.value)) pmax.value = pmin.value; upd(); applyChargingFilters(); });
       upd();
       setVoltageMode('both');   // default voltage selection (centered)
     })();
@@ -10375,6 +10484,32 @@
         centerPointerEl.classList.add('hidden');
       } else {
         centerPointerEl.classList.remove('hidden');
+      }
+
+      // A charging station directly under the P-marker takes priority and
+      // shows its details in the sheet (same behaviour as a parking area).
+      if(zoom>=13.9 && showEvCharging && map.getLayer('charging-icons')){
+        const ccpt = map.project(map.getCenter());
+        const cr = 15;
+        const cb = [[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]];
+        const chits = map.queryRenderedFeatures(cb, { layers:['charging-icons'] });
+        if(chits.length){
+          let best = chits[0], bestD = Infinity;
+          chits.forEach(f => {
+            const pt = map.project(f.geometry.coordinates);
+            const d = (pt.x-ccpt.x)*(pt.x-ccpt.x) + (pt.y-ccpt.y)*(pt.y-ccpt.y);
+            if(d < bestD){ bestD = d; best = f; }
+          });
+          const cp = best.properties;
+          if(cp.id !== hoveredChargingId){
+            hoveredChargingId = cp.id;
+            if(hoveredPolyId){ clearHoverHighlight(); hoveredPolyId = null; window._badgeAreaId = null; hideCenterBadge(); }
+            showChargingInSheet(cp);
+          }
+          return;
+        } else if(hoveredChargingId){
+          hoveredChargingId = null;   // moved off the station — fall through
+        }
       }
 
       // Highlight parking area under map center (works on mobile & desktop)
