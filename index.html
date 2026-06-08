@@ -1657,7 +1657,7 @@
     /* Logo placeholder chip. To show a real operator logo, replace the chip's
        text with <img src="..."> using a logo file you have the right to use. */
     .op-logo {
-      width: 40px; height: 26px; flex-shrink: 0; border-radius: 5px;
+      width: 54px; height: 30px; flex-shrink: 0; border-radius: 5px;
       background: #eef0f4; display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 700; color: #555; overflow: hidden;
     }
@@ -4700,7 +4700,7 @@
         <!-- Operator filter (last item in the EV box). Logos are placeholder
              chips — replace a chip's text with <img src="..."> to show the
              real operator logo (using files you have the right to use). -->
-        <div class="charger-type-label" style="margin-top:18px;">Operaattori<span id="operator-count-badge">13/13</span></div>
+        <div class="charger-type-label" style="margin-top:18px;">Operaattori</div>
         <div id="operator-dropdown" class="op-dropdown">
           <button type="button" id="operator-trigger" class="op-trigger" onclick="toggleOperatorDropdown()">
             <span id="operator-trigger-label">Kaikki</span>
@@ -4708,19 +4708,19 @@
           </button>
           <div id="operator-list" class="op-list">
             <div class="op-row selected" data-op="__all__" onclick="toggleOperator('__all__', this)"><div class="op-logo op-logo-all">★</div><span class="op-name">Kaikki</span></div>
-            <div class="op-row selected" data-op="ionity" onclick="toggleOperator('ionity', this)"><div class="op-logo">IO</div><span class="op-name">IONITY</span></div>
-            <div class="op-row selected" data-op="autoliitto" onclick="toggleOperator('autoliitto', this)"><div class="op-logo">AL</div><span class="op-name">Autoliitto</span></div>
-            <div class="op-row selected" data-op="st1" onclick="toggleOperator('st1', this)"><div class="op-logo">St1</div><span class="op-name">St1</span></div>
-            <div class="op-row selected" data-op="helen" onclick="toggleOperator('helen', this)"><div class="op-logo">HE</div><span class="op-name">Helen</span></div>
-            <div class="op-row selected" data-op="faast" onclick="toggleOperator('faast', this)"><div class="op-logo">FA</div><span class="op-name">FAAST Charging Point</span></div>
-            <div class="op-row selected" data-op="neste" onclick="toggleOperator('neste', this)"><div class="op-logo">NE</div><span class="op-name">Neste</span></div>
-            <div class="op-row selected" data-op="recharge" onclick="toggleOperator('recharge', this)"><div class="op-logo">RE</div><span class="op-name">Recharge</span></div>
-            <div class="op-row selected" data-op="abc" onclick="toggleOperator('abc', this)"><div class="op-logo">ABC</div><span class="op-name">ABC Lataus</span></div>
-            <div class="op-row selected" data-op="klataus" onclick="toggleOperator('klataus', this)"><div class="op-logo">K</div><span class="op-name">K-Lataus</span></div>
-            <div class="op-row selected" data-op="plugit" onclick="toggleOperator('plugit', this)"><div class="op-logo">PL</div><span class="op-name">Plugit Lataus</span></div>
-            <div class="op-row selected" data-op="virta" onclick="toggleOperator('virta', this)"><div class="op-logo">VI</div><span class="op-name">Virta</span></div>
-            <div class="op-row selected" data-op="lidl" onclick="toggleOperator('lidl', this)"><div class="op-logo">Li</div><span class="op-name">Lidl</span></div>
-            <div class="op-row selected" data-op="tesla" onclick="toggleOperator('tesla', this)"><div class="op-logo">T</div><span class="op-name">Tesla</span></div>
+            <div class="op-row selected" data-op="ionity" onclick="toggleOperator('ionity', this)"><div class="op-logo"><img src="logos/ionity.png" alt="IONITY" onerror="this.replaceWith('IO')"></div><span class="op-name">IONITY</span></div>
+            <div class="op-row selected" data-op="autoliitto" onclick="toggleOperator('autoliitto', this)"><div class="op-logo"><img src="logos/autoliitto.png" alt="Autoliitto" onerror="this.replaceWith('AL')"></div><span class="op-name">Autoliitto</span></div>
+            <div class="op-row selected" data-op="st1" onclick="toggleOperator('st1', this)"><div class="op-logo"><img src="logos/st1.png" alt="St1" onerror="this.replaceWith('St1')"></div><span class="op-name">St1</span></div>
+            <div class="op-row selected" data-op="helen" onclick="toggleOperator('helen', this)"><div class="op-logo"><img src="logos/helen.png" alt="Helen" onerror="this.replaceWith('HE')"></div><span class="op-name">Helen</span></div>
+            <div class="op-row selected" data-op="faast" onclick="toggleOperator('faast', this)"><div class="op-logo"><img src="logos/faast.png" alt="FAAST Charging Point" onerror="this.replaceWith('FA')"></div><span class="op-name">FAAST Charging Point</span></div>
+            <div class="op-row selected" data-op="neste" onclick="toggleOperator('neste', this)"><div class="op-logo"><img src="logos/neste.png" alt="Neste" onerror="this.replaceWith('NE')"></div><span class="op-name">Neste</span></div>
+            <div class="op-row selected" data-op="recharge" onclick="toggleOperator('recharge', this)"><div class="op-logo"><img src="logos/recharge.png" alt="Recharge" onerror="this.replaceWith('RE')"></div><span class="op-name">Recharge</span></div>
+            <div class="op-row selected" data-op="abc" onclick="toggleOperator('abc', this)"><div class="op-logo"><img src="logos/abc.png" alt="ABC Lataus" onerror="this.replaceWith('ABC')"></div><span class="op-name">ABC Lataus</span></div>
+            <div class="op-row selected" data-op="klataus" onclick="toggleOperator('klataus', this)"><div class="op-logo"><img src="logos/klataus.png" alt="K-Lataus" onerror="this.replaceWith('K')"></div><span class="op-name">K-Lataus</span></div>
+            <div class="op-row selected" data-op="plugit" onclick="toggleOperator('plugit', this)"><div class="op-logo"><img src="logos/plugit.png" alt="Plugit Lataus" onerror="this.replaceWith('PL')"></div><span class="op-name">Plugit Lataus</span></div>
+            <div class="op-row selected" data-op="virta" onclick="toggleOperator('virta', this)"><div class="op-logo"><img src="logos/virta.png" alt="Virta" onerror="this.replaceWith('VI')"></div><span class="op-name">Virta</span></div>
+            <div class="op-row selected" data-op="lidl" onclick="toggleOperator('lidl', this)"><div class="op-logo"><img src="logos/lidl.png" alt="Lidl" onerror="this.replaceWith('Li')"></div><span class="op-name">Lidl</span></div>
+            <div class="op-row selected" data-op="tesla" onclick="toggleOperator('tesla', this)"><div class="op-logo"><img src="logos/tesla.png" alt="Tesla" onerror="this.replaceWith('T')"></div><span class="op-name">Tesla</span></div>
           </div>
         </div>
         </div>
@@ -9984,9 +9984,129 @@
       // Show the plug-type picker only when the master toggle is on.
       const picker = document.getElementById('charger-picker');
       if (picker) picker.classList.toggle('visible', showEvCharging);
-      // TODO: when an EV-charging data source/layer exists, toggle its visibility here.
-      // e.g. if (map.getLayer('ev-charging')) map.setLayoutProperty('ev-charging','visibility', showEvCharging ? 'visible' : 'none');
+      // Lazily load the public charging stations on first enable, then just
+      // toggle their visibility. (Filters + sheet-on-center come next.)
+      if (showEvCharging) loadChargingStations();
+      setChargingVisibility(showEvCharging);
       updateChargerCount();
+    }
+    // ── Public charging stations (AFIR / Digitraffic open data) ──────────────
+    // Renders charging-point locations as map markers, coloured by real-time
+    // availability (green = at least one free EVSE, grey = otherwise). Loaded
+    // lazily the first time the EV toggle is switched on. The derived per-feature
+    // props (standards, kW, voltage, operator, status) are kept so the filters
+    // and the P-marker→sheet view can use them in the next steps.
+    const AFIR_BASE = 'https://afir.digitraffic.fi/api/charging-network/v1';
+    let chargingLoaded = false, chargingLoading = false;
+    let _chargingFeatures = [];
+
+    function chargingIconSvg(bg){
+      return 'data:image/svg+xml;base64,' + btoa(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">' +
+        '<rect x="0" y="0" width="128" height="128" rx="26" fill="#1a1a1a"/>' +
+        '<rect x="10" y="10" width="108" height="108" rx="17" fill="' + bg + '"/>' +
+        '<rect x="31" y="30" width="35" height="68" rx="5" fill="#1a1a1a"/>' +
+        '<path d="M90 52 C 90 74 84 92 66 92" fill="none" stroke="#1a1a1a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<rect x="82" y="40" width="16" height="13" rx="3" fill="#1a1a1a"/>' +
+        '<rect x="86" y="33" width="3.6" height="8" rx="1.8" fill="#1a1a1a"/>' +
+        '<rect x="92.4" y="33" width="3.6" height="8" rx="1.8" fill="#1a1a1a"/>' +
+        '<rect x="37" y="36" width="23" height="15" rx="2.5" fill="' + bg + '"/>' +
+        '<path d="M53 55 L40 80 L49 80 L45 99 L62 71 L52 71 Z" fill="' + bg + '"/>' +
+        '</svg>'
+      );
+    }
+    function ensureChargingImage(name, bg, cb){
+      if (map.hasImage(name)) { cb(); return; }
+      const img = new Image(128, 128);
+      img.onload = () => { if (!map.hasImage(name)) map.addImage(name, img, { pixelRatio: 2 }); cb(); };
+      img.onerror = cb;
+      img.src = chargingIconSvg(bg);
+    }
+    function setChargingVisibility(on){
+      if (map.getLayer('charging-icons')) map.setLayoutProperty('charging-icons', 'visibility', on ? 'visible' : 'none');
+    }
+    // Cursor-paginated fetch of an AFIR list endpoint (key = 'features' | 'statuses').
+    async function _afirPaged(path, key){
+      const out = [];
+      let url = AFIR_BASE + path;
+      for (let i = 0; i < 60; i++){
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(path + ' HTTP ' + res.status);
+        const data = await res.json();
+        if (Array.isArray(data[key])) out.push(...data[key]);
+        const nc = data.pagination && data.pagination.nextCursor;
+        if (!nc) break;
+        url = AFIR_BASE + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'cursor=' + encodeURIComponent(nc);
+      }
+      return out;
+    }
+    function addChargingLayer(){
+      ensureChargingImage('charging-green', '#4caf50', () => {
+        ensureChargingImage('charging-gray', '#b4b7bd', () => {
+          const geojson = { type: 'FeatureCollection', features: _chargingFeatures };
+          if (map.getSource('charging-points')) {
+            map.getSource('charging-points').setData(geojson);
+          } else {
+            map.addSource('charging-points', { type: 'geojson', data: geojson });
+            map.addLayer({
+              id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13.9,
+              layout: {
+                'icon-image': ['case', ['get', 'available'], 'charging-green', 'charging-gray'],
+                'icon-size': 0.5, 'icon-allow-overlap': true, 'icon-anchor': 'center'
+              }
+            });
+          }
+          setChargingVisibility(showEvCharging);
+          if (map.getLayer('charging-icons')) map.moveLayer('charging-icons');
+        });
+      });
+    }
+    async function loadChargingStations(){
+      if (chargingLoaded || chargingLoading) return;
+      chargingLoading = true;
+      try {
+        const [locs, stats] = await Promise.all([
+          _afirPaged('/locations', 'features'),
+          _afirPaged('/locations/statuses', 'statuses')
+        ]);
+        const statusMap = {};
+        stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
+        _chargingFeatures = locs
+          .filter(f => f && f.geometry && f.geometry.coordinates)
+          .map(f => {
+            const p = f.properties || {};
+            const evses = Array.isArray(p.evses) ? p.evses : [];
+            const standards = new Set();
+            let maxKw = 0, maxV = 0, anyAvail = false, total = 0, avail = 0;
+            evses.forEach(ev => {
+              total++;
+              if (statusMap[ev.id] === 'AVAILABLE') { anyAvail = true; avail++; }
+              (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
+                if (c.standard) standards.add(c.standard);
+                if (c.maxElectricPower) maxKw = Math.max(maxKw, c.maxElectricPower / 1000);
+                if (c.maxVoltage) maxV = Math.max(maxV, c.maxVoltage);
+              });
+            });
+            const op = p.operator || {};
+            const det = op.details || {};
+            return { type: 'Feature', geometry: f.geometry, properties: {
+              id: p.id || '', name: p.name || 'Latausasema',
+              operatorId: op.id || '', operatorName: det.name || '',
+              logoUrl: (det.logo && det.logo.url) || '',
+              address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
+              standards: [...standards].join(','),
+              maxKw: Math.round(maxKw), maxVoltage: maxV,
+              evseCount: total, availCount: avail, available: anyAvail
+            }};
+          });
+        chargingLoaded = true;
+        console.log('Latauspisteet ladattu:', _chargingFeatures.length);
+        addChargingLayer();
+      } catch (e) {
+        console.error('Latauspisteiden lataus epäonnistui:', e);
+      } finally {
+        chargingLoading = false;
+      }
     }
     // Tracks which plug types the user wants visible on the map. Multi-select.
     // No data layer yet — when EV-charging features get rendered later, this
