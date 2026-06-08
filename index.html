@@ -10385,7 +10385,15 @@
       function trackLoop(){
         if(!sf.classList.contains('visible')){ trackingRAF = null; _lastTop = null; return; }
         const top = sf.getBoundingClientRect().top;
-        if(top !== _lastTop){ _lastTop = top; update(); }
+        if(top !== _lastTop){
+          _lastTop = top;
+          // Shrink the content box to the visible on-screen height so the whole
+          // content stays reachable even when the sheet is only partway up the
+          // screen (otherwise the bottom of the content sits below the screen).
+          const visH = Math.max(40, Math.min(window.innerHeight, window.innerHeight - top));
+          sf.style.maxHeight = visH + 'px';
+          update();
+        }
         trackingRAF = requestAnimationFrame(trackLoop);
       }
       window._trackFilterScrollbar = function(){ if(trackingRAF == null){ _lastTop = null; trackingRAF = requestAnimationFrame(trackLoop); } };
