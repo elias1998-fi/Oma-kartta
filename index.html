@@ -12389,20 +12389,22 @@
       if(!filterMode && ((!currentParkingProps && !hoveredPolyId) || sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
       }
-      // In filter mode, ignore drags that start on the slider thumbs
-      if(filterMode && (sliderTouching || e.target===sliderMin || e.target===sliderMax)){
+      // In filter mode, ignore drags that start on a slider thumb (the ball).
+      // Only the thumb has pointer-events, so e.target is the range-input only
+      // when the thumb itself is grabbed — touching the track passes through
+      // (e.target becomes the track/container) and is allowed to scroll. This
+      // covers BOTH the max-time and the charging-power sliders.
+      if(filterMode && (sliderTouching || (e.target && e.target.classList && e.target.classList.contains('range-input')))){
         return;
       }
       // Track the gesture so we can tell a tap (activate a control) from a
       // drag (scroll / move the sheet) — see the click suppressor below.
       if(filterMode){ _gestureStartY = (e.touches[0]||{}).clientY || 0; _filterMoved = false; }
-      // Sliders need drag-to-adjust, so a touch on them never scrolls/moves
-      // the sheet. Other controls (buttons, toggles, charger tiles) only block
-      // on a real tap — a drag that starts on them still scrolls (the click is
-      // suppressed afterwards).
-      if(filterMode && e.target.closest && e.target.closest('.range-container')){
-        return;
-      }
+      // Note: the slider TRACK is intentionally NOT blocked here — a drag that
+      // starts on the track (not the thumb) scrolls the content / moves the
+      // sheet like anywhere else. Only the thumb (handled above) is excluded.
+      // Other controls (buttons, toggles, charger tiles) only block on a real
+      // tap — a drag across them still scrolls (the click is suppressed below).
       // When the filter sheet is at its top position, a finger drag inside the
       // content first scrolls the content; once the content reaches its top and
       // the finger keeps moving down, the gesture hands off to dragging the
