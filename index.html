@@ -1554,10 +1554,10 @@
     .price-value { font-size: 14px; color: #333; }
     #sheet-filter { display: none; flex-direction: column; padding: 0 18px 16px 24px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 18px); overflow-y: scroll; overflow-x: hidden; touch-action: none; position: relative; scrollbar-width: none; }
     #sheet-filter::-webkit-scrollbar { width: 0; height: 0; display: none; }
-    #filter-scrollbar { position: absolute; right: 3px; width: 6px; z-index: 6; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    #filter-scrollbar { position: absolute; right: 4px; width: 11px; z-index: 6; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     #filter-scrollbar.visible { opacity: 1; }
-    #filter-scrollbar-thumb { position: absolute; left: 0; width: 100%; min-height: 30px; background: rgba(60,60,67,0.32); border-radius: 3px; pointer-events: auto; cursor: grab; }
-    #filter-scrollbar-thumb:active { background: rgba(60,60,67,0.55); cursor: grabbing; }
+    #filter-scrollbar-thumb { position: absolute; left: 0; width: 100%; min-height: 34px; background: rgba(60,60,67,0.4); border-radius: 5.5px; pointer-events: auto; cursor: grab; }
+    #filter-scrollbar-thumb:active { background: rgba(60,60,67,0.6); cursor: grabbing; }
     #filter-scroll-inner { flex: 0 0 auto; will-change: transform; }
     #sheet-filter.visible { display: flex; }
     #sheet-filter::-webkit-scrollbar { width: 6px; }
@@ -10350,21 +10350,27 @@
       const titleEl = document.getElementById('filter-title');
       const inner = document.getElementById('filter-scroll-inner');
       if(!sf || !bar || !thumb) return;
+      // The track length follows the VISIBLE height of the sheet on screen, so
+      // when the sheet is at mid-height the scrollbar spans only the visible
+      // part, and grows to full length as the sheet is expanded.
       function metrics(){
-        const ch = sf.clientHeight, sh = sf.scrollHeight, st = sf.scrollTop;
         const titleH = titleEl ? titleEl.offsetHeight : 0;
-        const trackH = Math.max(0, ch - titleH);
-        const contentH = Math.max(1, sh - titleH);
-        let thumbH = Math.max(30, trackH * (trackH / contentH));
-        thumbH = Math.min(thumbH, trackH);
-        return { ch, sh, st, titleH, trackH, thumbH, maxScroll: Math.max(0, sh - ch) };
+        const clientH = sf.clientHeight, scrollH = sf.scrollHeight, st = sf.scrollTop;
+        const rectTop = sf.getBoundingClientRect().top;
+        const visibleH = Math.max(0, Math.min(clientH, window.innerHeight - rectTop));
+        const trackH = Math.max(0, visibleH - titleH);
+        const contentH = Math.max(1, scrollH - titleH);
+        let thumbH = trackH > 0 ? (trackH * trackH) / contentH : 0;   // visible / total, scaled to track
+        thumbH = Math.min(trackH, Math.max(Math.min(34, trackH), thumbH));
+        return { st, titleH, clientH, scrollH, trackH, contentH, thumbH };
       }
       function update(){
         const m = metrics();
-        if(m.sh <= m.ch + 2 || m.trackH <= 0){ bar.classList.remove('visible'); return; }
-        bar.style.top = (m.st + m.titleH) + 'px';
-        bar.style.height = m.trackH + 'px';
-        const thumbTop = m.maxScroll > 0 ? (m.st / m.maxScroll) * (m.trackH - m.thumbH) : 0;
+        if(m.scrollH <= m.clientH + 2 || m.trackH <= 4){ bar.classList.remove('visible'); return; }
+        bar.style.top = (m.st + m.titleH) + 'px';   // just below the sticky title (on screen)
+        bar.style.height = m.trackH + 'px';          // = visible sheet content height
+        let thumbTop = (m.st / m.contentH) * m.trackH;
+        thumbTop = Math.max(0, Math.min(m.trackH - m.thumbH, thumbTop));
         thumb.style.height = m.thumbH + 'px';
         thumb.style.top = thumbTop + 'px';
         bar.classList.add('visible');
@@ -10372,14 +10378,25 @@
       sf.addEventListener('scroll', update, { passive: true });
       window.addEventListener('resize', () => setTimeout(update, 50));
       window._updateFilterScrollbar = update;
+      // While the filter sheet is visible, follow its on-screen position each
+      // frame (covers the open animation, dragging and snapping) so the track
+      // length tracks the visible sheet height. Auto-stops when the sheet hides.
+      let trackingRAF = null, _lastTop = null;
+      function trackLoop(){
+        if(!sf.classList.contains('visible')){ trackingRAF = null; _lastTop = null; return; }
+        const top = sf.getBoundingClientRect().top;
+        if(top !== _lastTop){ _lastTop = top; update(); }
+        trackingRAF = requestAnimationFrame(trackLoop);
+      }
+      window._trackFilterScrollbar = function(){ if(trackingRAF == null){ _lastTop = null; trackingRAF = requestAnimationFrame(trackLoop); } };
       let dragging = false, startY = 0, startScroll = 0;
       function down(y){ dragging = true; startY = y; startScroll = sf.scrollTop; if(inner){ inner.style.transition='none'; inner.style.transform=''; } }
       function moveTo(y){
         if(!dragging) return;
         const m = metrics();
-        const denom = (m.trackH - m.thumbH) || 1;
-        let ns = startScroll + ((y - startY) / denom) * m.maxScroll;
-        ns = Math.max(0, Math.min(m.maxScroll, ns));
+        const maxScroll = Math.max(0, m.scrollH - m.clientH);
+        let ns = startScroll + ((y - startY) * m.contentH / (m.trackH || 1));
+        ns = Math.max(0, Math.min(maxScroll, ns));
         sf.scrollTop = ns;   // fires 'scroll' -> update()
       }
       function endDrag(){ dragging = false; }
@@ -10447,7 +10464,7 @@
       sheetNormal.style.display='none';
       sheetFilter.classList.add('visible');
       sizeFilterSheet();
-      if(window._updateFilterScrollbar) setTimeout(window._updateFilterScrollbar, 60);
+      if(window._trackFilterScrollbar) window._trackFilterScrollbar();
       sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
       sheet.style.transform=`translateY(${window.innerHeight*0.6}px)`;
       currentY=window.innerHeight*0.6;
