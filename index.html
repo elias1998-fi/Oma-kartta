@@ -10088,6 +10088,15 @@
     }
     function setChargingVisibility(on){
       if (map.getLayer('charging-icons')) map.setLayoutProperty('charging-icons', 'visibility', on ? 'visible' : 'none');
+      // Isot alueiden nimet + kadunnimet eivät saa "väistää" latausikoneita:
+      // pakotetaan ne piirtymään vaikka latausikoni osuisi päälle (ikoni on jo
+      // päällimmäisenä moveLayerillä → nimi näkyy sen alta). POI-/liikelabelit
+      // jätetään väistämään ennallaan. Sidottu lataus-näkyvyyteen, jottei
+      // näiden nimien keskinäistä törmäystä löysätä turhaan kun lataus on pois.
+      ['label_place_city','label_place_town','label_place_other','label_place_island','label_country',
+       'label_road_street','label_road_primary','label_road_path_cycleway_track_service'].forEach(function(id){
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'text-allow-overlap', on);
+      });
     }
     // Cursor-paginated fetch of an AFIR list endpoint (key = 'features' | 'statuses').
     async function _afirPaged(path, key){
