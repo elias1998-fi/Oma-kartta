@@ -161,9 +161,9 @@
     }
     /* The old SVG tail is invisible but kept in the layout (this margin) so
        the badge's on-map position is unchanged; the visible tail is part of
-       the #cm-bubble path. Reservation = tailDepth + 1 (depth 13 → 14px) so
-       the deeper sweeping tail keeps its tip on the exact same map point. */
-    #center-marker.expanded #cm-tail { margin-top: 1px; }
+       the #cm-bubble path. Reservation = tailDepth + 1 (depth 11 → 12px) so
+       the sweeping tail keeps its tip on the exact same map point. */
+    #center-marker.expanded #cm-tail { margin-top: -1px; }
 
     /* MapLibre DOM markers (e.g. the red search-result pin) sit below the
        P-marker so they can't peek out from behind it. */
@@ -12474,11 +12474,11 @@
       if (!W || !H) return;
       const fill      = '#ffffff';   // white badge background for paid + free/disc areas
       const cx        = W / 2;
-      const tailDepth = 13;                  // tail depth (fixed → #cm-tail margin stays valid)
+      const tailDepth = 11;                  // tail depth (fixed → #cm-tail margin stays valid)
       const r         = Math.max(2, Math.min(9, H / 2 - 1, W / 2 - 1));
       // Wide, shallow speech-bubble tail that sweeps to a soft centre point.
       // Half-span scales with badge width but stays on the straight bottom edge.
-      const tailW     = Math.max(8, Math.min(W * 0.22, 60, W / 2 - r - 4));
+      const tailW     = Math.max(8, Math.min(W * 0.11, 60, W / 2 - r - 4));
       const SH        = H + tailDepth + 2;   // include the tail + a little slack
       svg.setAttribute('viewBox', `0 0 ${W} ${SH}`);
       svg.style.width  = W + 'px';
