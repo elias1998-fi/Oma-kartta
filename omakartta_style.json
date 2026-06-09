@@ -400,7 +400,7 @@
       "type": "line",
       "source": "vector",
       "source-layer": "transportation",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": [
         "all",
         ["==", "$type", "LineString"],
@@ -659,7 +659,7 @@
       "type": "line",
       "source": "vector",
       "source-layer": "transportation",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": [
         "all",
         ["==", "$type", "LineString"],
@@ -864,7 +864,7 @@
           "interpolate",
           ["exponential", 1.55],
           ["zoom"],
-          14,
+          13,
           0.5,
           20,
           4
@@ -873,7 +873,7 @@
           "interpolate",
           ["exponential", 1.55],
           ["zoom"],
-          14,
+          13,
           2,
           20,
           32
@@ -901,12 +901,12 @@
           "interpolate",
           ["exponential", 1.55],
           ["zoom"],
-          14,
+          13,
           1.5,
           20,
           40
         ],
-        "line-dasharray": {"stops": [[14, [0.125, 0.125]], [20, [0.125, 0.25]]]}
+        "line-dasharray": {"stops": [[13, [0.125, 0.125]], [20, [0.125, 0.25]]]}
       }
     },
     {
@@ -914,7 +914,7 @@
       "type": "line",
       "source": "vector",
       "source-layer": "transportation",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": [
         "all",
         ["==", "$type", "LineString"],
@@ -1161,7 +1161,7 @@
       ],
       "paint": {
         "line-color": "#bbb",
-        "line-width": {"stops": [[14, 1], [22, 8]]}
+        "line-width": {"stops": [[13, 1], [22, 8]]}
       }
     },
     {
@@ -1309,7 +1309,7 @@
       "type": "line",
       "source": "vector",
       "source-layer": "transportation",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": [
         "all",
         ["==", "$type", "LineString"],
@@ -1339,7 +1339,7 @@
       "type": "line",
       "source": "vector",
       "source-layer": "transportation",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": [
         "all",
         ["==", "$type", "LineString"],
@@ -1365,7 +1365,7 @@
       "type": "line",
       "source": "vector",
       "source-layer": "transportation",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": [
         "all",
         ["==", "$type", "LineString"],
@@ -1775,7 +1775,7 @@
       ],
       "paint": {
         "line-color": "#bbb",
-        "line-width": {"stops": [[14, 1], [22, 8]]}
+        "line-width": {"stops": [[13, 1], [22, 8]]}
       }
     },
     {
@@ -2262,7 +2262,7 @@
       "type": "symbol",
       "source": "parkandride",
       "source-layer": "vehicleParking",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": ["==", ["get", "carPlaces"], true],
       "layout": {
         "icon-image": "icon-park-and-ride",
@@ -2296,7 +2296,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "housenumber",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": ["all", ["==", "$type", "Point"], ["==", "entrance", ""]],
       "layout": {
         "text-field": "{housenumber}",
@@ -2311,7 +2311,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": [
         "all",
         ["==", "$type", "Point"],
@@ -2363,7 +2363,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "park",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": ["all", ["==", "$type", "Point"], ["in", "class", "park"]],
       "layout": {
         "text-size": 11,
@@ -2383,7 +2383,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": [
         "all",
         ["==", "$type", "Point"],
@@ -3161,7 +3161,7 @@
       "type": "circle",
       "source": "stops",
       "source-layer": "stops",
-      "minzoom": 14,
+      "minzoom": 13,
       "filter": ["!=", ["get", "mode"], "RAIL"],
       "layout": {"visibility": "none"},
       "paint": {
@@ -3170,7 +3170,7 @@
           "interpolate",
           ["exponential", 1.15],
           ["zoom"],
-          14,
+          13,
           2,
           22,
           20
@@ -3191,7 +3191,7 @@
           "interpolate",
           ["exponential", 1.15],
           ["zoom"],
-          14,
+          13,
           2,
           22,
           20
@@ -3233,7 +3233,7 @@
       "source": "citybike",
       "source-layer": "rentalStations",
       "minzoom": 13,
-      "maxzoom": 14,
+      "maxzoom": 13,
       "layout": {"visibility": "none"},
       "paint": {
         "circle-color": "#fff",
@@ -3254,7 +3254,7 @@
       "source": "citybike",
       "source-layer": "rentalStations",
       "minzoom": 13,
-      "maxzoom": 14,
+      "maxzoom": 13,
       "layout": {"visibility": "none"},
       "paint": {
         "circle-color": "#fcbc19",
@@ -3274,7 +3274,7 @@
       "type": "symbol",
       "source": "citybike",
       "source-layer": "rentalStations",
-      "minzoom": 14,
+      "minzoom": 13,
       "layout": {
         "icon-offset": [0, -6],
         "icon-image": "icon-citybike-station",
