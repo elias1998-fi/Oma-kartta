@@ -161,8 +161,9 @@
     }
     /* The old SVG tail is invisible but kept in the layout (this margin) so
        the badge's on-map position is unchanged; the visible tail is part of
-       the #cm-bubble path. */
-    #center-marker.expanded #cm-tail { margin-top: -4px; }
+       the #cm-bubble path. Reservation = tailDepth + 1 (depth 13 → 14px) so
+       the deeper sweeping tail keeps its tip on the exact same map point. */
+    #center-marker.expanded #cm-tail { margin-top: 1px; }
 
     /* MapLibre DOM markers (e.g. the red search-result pin) sit below the
        P-marker so they can't peek out from behind it. */
@@ -10088,13 +10089,6 @@
     }
     function setChargingVisibility(on){
       if (map.getLayer('charging-icons')) map.setLayoutProperty('charging-icons', 'visibility', on ? 'visible' : 'none');
-      // VAIN isot alueiden/paikkojen nimet (Helsinki, Kamppi, Punavuori, ...)
-      // eivät saa "väistää" latauspiste-ikoneita: pakotetaan ne näkyviin vaikka
-      // latausikoni osuisi päälle. Katujen nimet ja kaikki muut labelit
-      // väistävät taas normaalisti kuten ennen. Sidottu lataus-näkyvyyteen.
-      ['label_place_city','label_place_town','label_place_other','label_place_island','label_country'].forEach(function(id){
-        if (map.getLayer(id)) map.setLayoutProperty(id, 'text-allow-overlap', on);
-      });
     }
     // Cursor-paginated fetch of an AFIR list endpoint (key = 'features' | 'statuses').
     async function _afirPaged(path, key){
@@ -12457,8 +12451,8 @@
         `V ${H - r}`,
         `A ${r} ${r} 0 0 1 ${W - r} ${H}`,
         `H ${cx + tailW}`,
-        `L ${cx} ${H + tailDepth}`,
-        `L ${cx - tailW} ${H}`,
+        `Q ${cx + tailW * 0.45} ${H} ${cx} ${H + tailDepth}`,
+        `Q ${cx - tailW * 0.45} ${H} ${cx - tailW} ${H}`,
         `H ${r}`,
         `A ${r} ${r} 0 0 1 0 ${H - r}`,
         `V ${r}`,
@@ -12479,8 +12473,12 @@
       const H = body.offsetHeight;   // border-box height
       if (!W || !H) return;
       const fill      = '#ffffff';   // white badge background for paid + free/disc areas
-      const tailW     = 7, tailDepth = 8, cx = W / 2;
+      const cx        = W / 2;
+      const tailDepth = 13;                  // tail depth (fixed → #cm-tail margin stays valid)
       const r         = Math.max(2, Math.min(9, H / 2 - 1, W / 2 - 1));
+      // Wide, shallow speech-bubble tail that sweeps to a soft centre point.
+      // Half-span scales with badge width but stays on the straight bottom edge.
+      const tailW     = Math.max(8, Math.min(W * 0.22, 60, W / 2 - r - 4));
       const SH        = H + tailDepth + 2;   // include the tail + a little slack
       svg.setAttribute('viewBox', `0 0 ${W} ${SH}`);
       svg.style.width  = W + 'px';
