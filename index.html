@@ -133,6 +133,9 @@
     }
     #center-marker.expanded #cm-pin { width: 23px; height: 23px; }
     #center-marker.charging-mode #cm-pin { display: none !important; }
+    /* Charging extended marker: keep the 20px icon, but tighten the white pill
+       a touch (less padding + smaller gap) so it reads a bit smaller. */
+    #center-marker.charging-mode.expanded #cm-body { padding: 1px 8px 1px 6px; gap: 4px; }
     /* The paid badge's "P" pin renders a touch larger so its symbol reads at
        the same height as the disc icon. transform:scale doesn't change the
        layout box, so the badge height stays identical to the free badge. */
@@ -7083,6 +7086,7 @@
       // Add .expanded — CSS transitions animate the morph
       centerPointerEl.classList.add('expanded');
       centerPointerEl.classList.remove('charging-mode');   // parking → show the "P" pin again
+      window._chargingContext = false;                     // back to parking context
       // After writing the area code, give the disc-mode pin a chance to
       // overwrite the text with the parking duration ("2h", "30 min", …).
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
@@ -7100,9 +7104,10 @@
       const id7 = (idText == null ? '' : String(idText)).slice(0, 7);
       centerBadgeCode.innerHTML =
         '<img src="' + chargingIconSvg('#4caf50') + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        (id7 ? '<span style="vertical-align:middle;margin-left:4px;">' + escapeHtml(id7) + '</span>' : '');
+        (id7 ? '<span style="vertical-align:middle;margin-left:4px;font-size:0.75em;">' + escapeHtml(id7) + '</span>' : '');
       centerPointerEl.classList.add('expanded');
       centerPointerEl.classList.add('charging-mode');   // CSS hides the small "P" pin
+      window._chargingContext = true;                   // empty-state prompt → "latauspisteet"
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
     }
 
@@ -7316,8 +7321,22 @@
         return;
       }
       if (cm && !inNav && !inFilter) cm.classList.remove('hidden');
+      // A charging station under the P-marker always wins — keep "Lataa täällä"
+      // even after the finger lifts (moveend fires updateButtonText).
+      if (typeof hoveredChargingId !== 'undefined' && hoveredChargingId) {
+        btn.textContent = 'Lataa täällä';
+        btn.classList.add('active');
+        return;
+      }
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
+      // Moved off a charging station (we were last in charging context) → the
+      // empty-state prompt should talk about charging points, not parking.
+      if (window._chargingContext) {
+        btn.textContent = 'Siirrä karttaa nähdäksesi latauspisteet';
+        btn.classList.remove('active');
+        return;
+      }
       if (!map.getLayer('master-poly-fill')) {
         btn.textContent = 'Siirrä karttaa nähdäksesi pysäköintialueet';
         btn.classList.remove('active');
@@ -10246,12 +10265,10 @@
       const availTxt = isAvail
         ? '<span style="color:#1faa4a;font-weight:700;">Vapaana</span>' + cnt
         : '<span style="color:#c0392b;font-weight:700;">Varattu</span>' + cnt;
-      const addrRow = p.address ? ('<p class="price-label">Osoite</p><p class="price-value">' + p.address + '</p>') : '';
       showMasterFeatureInSheet(
         p.name || 'Latausasema',
         'Sähkölatauspiste',
         p.operatorName || 'Latausoperaattori',
-        addrRow +
         '<p class="price-label">Tila</p><p class="price-value">' + availTxt + '</p>' +
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + stdText + '</p>' +
         '<p class="price-label">Teho</p><p class="price-value">' + power + '</p>' +
@@ -10263,15 +10280,21 @@
       // for free parking areas).
       const cbadge = document.getElementById('area-code-badge');
       if (cbadge) {
-        cbadge.innerHTML = '<img src="' + chargingIconSvg('#4caf50') + '" style="width:22px;height:22px;display:block;">';
+        const code7 = (p.id == null ? '' : String(p.id)).slice(0, 7);
+        cbadge.innerHTML = '<img src="' + chargingIconSvg('#4caf50') + '" style="width:22px;height:22px;display:inline-block;vertical-align:middle;">' +
+          (code7 ? '<span style="vertical-align:middle;margin-left:5px;color:#0C0243;font-size:14px;font-weight:800;letter-spacing:0.3px;">' + escapeHtml(code7) + '</span>' : '');
         cbadge.style.display = 'inline-block';
         cbadge.style.background = 'transparent';
         cbadge.style.padding = '0';
         cbadge.style.borderRadius = '0';
+        cbadge.style.color = '#0C0243';
       }
       // Match the parking-area look: no "GPS may be inaccurate" notice taking
       // space, so the station details aren't pushed partly out of the sheet.
       document.getElementById('gps-warning').classList.remove('visible');
+      // Show the Directions / "Jaa kaverille" row for charging stations too —
+      // same buttons, same behaviour as a parking area (appears at max height).
+      if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
     // "Lataus" view — slides in when the user taps the "Lataa täällä" button.
     function closeChargingOverlay(){
@@ -12051,7 +12074,7 @@
       // parking area is currently under the P-marker.
       const row = document.getElementById('sheet-nav-row');
       if (!row) return;
-      const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
+      const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId) || (typeof hoveredChargingId !== 'undefined' && hoveredChargingId));
       row.classList.toggle('visible', hasArea);
       // Whenever the area-under-marker state changes, also refresh the
       // center pin's icon — areas that are free or disc-required show a
@@ -12456,7 +12479,7 @@
     function onSheetNavBtnClick() {
       console.log('[nav-btn] clicked. currentParkingProps:', currentParkingProps,
                   'hoveredPolyId:', (typeof hoveredPolyId !== 'undefined' ? hoveredPolyId : 'undef'));
-      const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId));
+      const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId) || (typeof hoveredChargingId !== 'undefined' && hoveredChargingId));
       if (!hasArea) {
         console.warn('[nav-btn] no parking area selected — aborting');
         return;
@@ -12592,8 +12615,14 @@
       // Title + text deliberately compact. Most messaging apps (WhatsApp,
       // iMessage, etc.) display "title + url" or "text + url"; we keep
       // the text short to avoid awkward truncation.
-      const title = code ? `TotalParking — alue ${code}` : 'TotalParking';
-      const text  = code ? `Pysäköintialue ${code}: ${name}` : `Pysäköinti: ${name}`;
+      const typeEl = document.getElementById('summary-type');
+      const isCharging = !!(typeEl && /Sähkölatauspiste/.test(typeEl.textContent || ''));
+      const title = code
+        ? (isCharging ? `TotalParking — latauspiste ${code}` : `TotalParking — alue ${code}`)
+        : 'TotalParking';
+      const text  = code
+        ? (isCharging ? `Latauspiste ${code}: ${name}` : `Pysäköintialue ${code}: ${name}`)
+        : (isCharging ? `Lataus: ${name}` : `Pysäköinti: ${name}`);
 
       if (navigator.share) {
         navigator.share({ title, text, url: shareUrl }).catch(err => {
