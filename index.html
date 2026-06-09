@@ -12478,7 +12478,7 @@
       const r         = Math.max(2, Math.min(9, H / 2 - 1, W / 2 - 1));
       // Wide, shallow speech-bubble tail that sweeps to a soft centre point.
       // Half-span scales with badge width but stays on the straight bottom edge.
-      const tailW     = Math.max(8, Math.min(W * 0.11, 60, W / 2 - r - 4));
+      const tailW     = Math.max(8, Math.min(W * 0.06, 60, W / 2 - r - 4));
       const SH        = H + tailDepth + 2;   // include the tail + a little slack
       svg.setAttribute('viewBox', `0 0 ${W} ${SH}`);
       svg.style.width  = W + 'px';
