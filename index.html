@@ -135,7 +135,7 @@
     #center-marker.charging-mode #cm-pin { display: none !important; }
     /* Charging extended marker: keep the 20px icon, but tighten the white pill
        a touch (less padding + smaller gap) so it reads a bit smaller. */
-    #center-marker.charging-mode.expanded #cm-body { padding: 4px 8px 4px 4px; gap: 4px; align-items: center; }
+    #center-marker.charging-mode.expanded #cm-body { padding: 2px 7px 2px 3px; gap: 3px; align-items: center; }
     /* Center the charging icon (and status text) vertically inside #cm-code so
        it sits in the middle of the pill instead of riding the text baseline. */
     #center-marker.charging-mode #cm-code { display: flex; align-items: center; }
@@ -7110,7 +7110,7 @@
       const labelColor = '#111';   // status text in black (icon still shows green/gray)
       centerBadgeCode.innerHTML =
         '<img src="' + chargingIconSvg(iconColor) + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        '<span style="vertical-align:middle;margin-left:4px;font-size:0.75em;color:' + labelColor + ';">' + label + '</span>';
+        '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:' + labelColor + ';">' + label + '</span>';
       centerPointerEl.classList.add('expanded');
       centerPointerEl.classList.add('charging-mode');   // CSS hides the small "P" pin
       window._chargingContext = true;                   // empty-state prompt → "latauspisteet"
@@ -10187,9 +10187,16 @@
               evseCount: total, availCount: avail, available: anyAvail,
               price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
             }};
-          });
+          })
+          // Drop "shell" locations that have no actual EVSEs (no real chargers).
+          // These registered-but-empty sites otherwise surface phantom operators
+          // (e.g. "Helen" with no charging points) in the operator filter list.
+          // Only stations with at least one EVSE are kept.
+          .filter(ft => ft.properties.evseCount > 0);
         chargingLoaded = true;
         console.log('Latauspisteet ladattu:', _chargingFeatures.length);
+        const _opCounts = {}; _chargingFeatures.forEach(f => { const o = f.properties.operatorName || '(tyhjä)'; _opCounts[o] = (_opCounts[o] || 0) + 1; });
+        console.log('Operaattorit (latauspisteiden määrä):', _opCounts);
         addChargingLayer();
         buildOperatorList();
         applyChargingFilters();
@@ -10458,11 +10465,15 @@
     // Rebuild the dropdown rows from the operators found in the loaded data.
     function buildOperatorList(){
       const names = new Set();
+      const counts = {};
       _chargingFeatures.forEach(f => {
         const nm = f.properties.operatorName;
-        if(nm){ names.add(nm); if(!OPERATOR_LOGOS[nm] && f.properties.logoUrl) OPERATOR_LOGOS[nm] = f.properties.logoUrl; }
+        if(nm){ names.add(nm); counts[nm] = (counts[nm] || 0) + 1; if(!OPERATOR_LOGOS[nm] && f.properties.logoUrl) OPERATOR_LOGOS[nm] = f.properties.logoUrl; }
       });
-      OPERATORS = [...names].sort((a,b)=>a.localeCompare(b,'fi'));
+      // Order by charging-point coverage (most stations first) so the biggest
+      // operators in Finland (Tesla, K-Lataus, …) sit at the top; alphabetical
+      // as a tiebreaker for operators with the same number of stations.
+      OPERATORS = [...names].sort((a,b) => (counts[b] - counts[a]) || a.localeCompare(b,'fi'));
       _selectedOperators = new Set(OPERATORS);
       const list = document.getElementById('operator-list');
       if(!list) return;
