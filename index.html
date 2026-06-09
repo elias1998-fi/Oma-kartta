@@ -7099,12 +7099,15 @@
     }
     // Expand the on-map P-marker and show the charging-station icon in place of
     // the area-code badge (used when the marker is over a charging station).
-    function showChargingCenterBadge(idText) {
+    function showChargingCenterBadge(avail) {
       if (window._navigationInProgress) return;
-      const id7 = (idText == null ? '' : String(idText)).slice(0, 7);
+      const isAvail = (avail === true || avail === 'true');
+      const iconColor  = isAvail ? '#4caf50' : '#b4b7bd';   // gray icon when not available
+      const label      = isAvail ? 'Vapaana' : 'Ei vapaana';
+      const labelColor = isAvail ? '#1faa4a' : '#c0392b';
       centerBadgeCode.innerHTML =
-        '<img src="' + chargingIconSvg('#4caf50') + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        (id7 ? '<span style="vertical-align:middle;margin-left:4px;font-size:0.75em;">' + escapeHtml(id7) + '</span>' : '');
+        '<img src="' + chargingIconSvg(iconColor) + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
+        '<span style="vertical-align:middle;margin-left:4px;font-size:0.75em;color:' + labelColor + ';">' + label + '</span>';
       centerPointerEl.classList.add('expanded');
       centerPointerEl.classList.add('charging-mode');   // CSS hides the small "P" pin
       window._chargingContext = true;                   // empty-state prompt → "latauspisteet"
@@ -7133,7 +7136,7 @@
             window._badgeAreaId = null;
             showChargingInSheet(cp);
             releaseMasterLock();          // real-time hover → don't hold the 4s lock
-            showChargingCenterBadge(cp.id);   // P-marker → extended: charging icon + 7-char id
+            showChargingCenterBadge(cp.available);   // P-marker → extended: icon + Vapaana/Ei vapaana
           }
           return;   // charging takes priority; skip parking detection
         }
@@ -10178,7 +10181,8 @@
               address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
               standards: [...standards].join(','),
               maxKw: Math.round(maxKw), maxVoltage: maxV,
-              evseCount: total, availCount: avail, available: anyAvail
+              evseCount: total, availCount: avail, available: anyAvail,
+              price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
             }};
           });
         chargingLoaded = true;
@@ -10270,6 +10274,7 @@
         'Sähkölatauspiste',
         p.operatorName || 'Latausoperaattori',
         '<p class="price-label">Tila</p><p class="price-value">' + availTxt + '</p>' +
+        '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + stdText + '</p>' +
         '<p class="price-label">Teho</p><p class="price-value">' + power + '</p>' +
         '<p class="price-label">Jännite</p><p class="price-value">' + volt + '</p>'
@@ -10280,14 +10285,16 @@
       // for free parking areas).
       const cbadge = document.getElementById('area-code-badge');
       if (cbadge) {
-        const code7 = (p.id == null ? '' : String(p.id)).slice(0, 7);
-        cbadge.innerHTML = '<img src="' + chargingIconSvg('#4caf50') + '" style="width:22px;height:22px;display:inline-block;vertical-align:middle;">' +
-          (code7 ? '<span style="vertical-align:middle;margin-left:5px;color:#0C0243;font-size:14px;font-weight:800;letter-spacing:0.3px;">' + escapeHtml(code7) + '</span>' : '');
+        const stTxt = isAvail ? 'Vapaana' : 'Ei vapaana';
+        const stCol = isAvail ? '#1faa4a' : '#c0392b';
+        const icCol = isAvail ? '#4caf50' : '#b4b7bd';   // gray icon when not available
+        cbadge.innerHTML = '<img src="' + chargingIconSvg(icCol) + '" style="width:22px;height:22px;display:inline-block;vertical-align:middle;">' +
+          '<span style="vertical-align:middle;margin-left:5px;color:' + stCol + ';font-size:14px;font-weight:800;letter-spacing:0.3px;">' + stTxt + '</span>';
         cbadge.style.display = 'inline-block';
         cbadge.style.background = 'transparent';
         cbadge.style.padding = '0';
         cbadge.style.borderRadius = '0';
-        cbadge.style.color = '#0C0243';
+        cbadge.style.color = stCol;
       }
       // Match the parking-area look: no "GPS may be inaccurate" notice taking
       // space, so the station details aren't pushed partly out of the sheet.
@@ -10329,12 +10336,13 @@
         const row = (l,v) => '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #e3e3ea;"><span style="color:#666;">'+l+'</span><span style="font-weight:600;color:#0C0243;text-align:right;">'+v+'</span></div>';
         body.innerHTML =
           '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
-            '<img src="' + chargingIconSvg('#4caf50') + '" style="width:42px;height:42px;flex-shrink:0;">' +
+            '<img src="' + chargingIconSvg(isAvail ? '#4caf50' : '#b4b7bd') + '" style="width:42px;height:42px;flex-shrink:0;">' +
             '<div><h2 style="margin:0;font-size:21px;color:#0C0243;">' + (cp.name||'Latausasema') + '</h2>' +
             (cp.address ? '<p style="margin:2px 0 0;color:#666;font-size:14px;">'+cp.address+'</p>' : '') + '</div>' +
           '</div>' +
           row('Operaattori', cp.operatorName||'\u2013') +
           row('Tila', availTxt) +
+          row('Hinta', (cp.price || '\u2013')) +
           row('Pistokkeet', stdText) +
           row('Teho', power) +
           row('J\u00e4nnite', volt) +
@@ -10771,7 +10779,7 @@
             hoveredChargingId = cp.id;
             if(hoveredPolyId){ clearHoverHighlight(); hoveredPolyId = null; window._badgeAreaId = null; hideCenterBadge(); }
             showChargingInSheet(cp);
-            showChargingCenterBadge(cp.id);
+            showChargingCenterBadge(cp.available);
           }
           return;
         } else if(hoveredChargingId){
@@ -12598,7 +12606,11 @@
       const headerEl = document.getElementById('summary-header');
       const codeEl   = document.getElementById('area-code-badge');
       const name     = (headerEl && headerEl.textContent || 'Pysäköintialue').trim();
-      const code     = (codeEl && codeEl.textContent || '').trim();
+      const typeEl   = document.getElementById('summary-type');
+      const isCharging = !!(typeEl && /Sähkölatauspiste/.test(typeEl.textContent || ''));
+      // The charging badge now shows availability ("Vapaana"/"Ei vapaana"), not
+      // an area code — so there's no code to embed in the share link.
+      const code     = isCharging ? '' : (codeEl && codeEl.textContent || '').trim();
 
       // Build a link back to the app itself, encoded as URL parameters.
       // `ll`, `z`, `c` are short keys so the URL stays compact enough to
@@ -12615,13 +12627,9 @@
       // Title + text deliberately compact. Most messaging apps (WhatsApp,
       // iMessage, etc.) display "title + url" or "text + url"; we keep
       // the text short to avoid awkward truncation.
-      const typeEl = document.getElementById('summary-type');
-      const isCharging = !!(typeEl && /Sähkölatauspiste/.test(typeEl.textContent || ''));
-      const title = code
-        ? (isCharging ? `TotalParking — latauspiste ${code}` : `TotalParking — alue ${code}`)
-        : 'TotalParking';
+      const title = code ? `TotalParking — alue ${code}` : 'TotalParking';
       const text  = code
-        ? (isCharging ? `Latauspiste ${code}: ${name}` : `Pysäköintialue ${code}: ${name}`)
+        ? `Pysäköintialue ${code}: ${name}`
         : (isCharging ? `Lataus: ${name}` : `Pysäköinti: ${name}`);
 
       if (navigator.share) {
