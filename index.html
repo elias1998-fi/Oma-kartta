@@ -10026,6 +10026,17 @@
     }
     // Cursor-paginated fetch of an AFIR list endpoint (key = 'features' | 'statuses').
     async function _afirPaged(path, key){
+      // Fast path: grab the whole dataset in ONE snapshot request (limit=ALL).
+      // This is dramatically faster than walking the cursor page-by-page.
+      try {
+        const res = await fetch(AFIR_BASE + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'limit=ALL');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data[key]) && (!data.pagination || !data.pagination.nextCursor)) return data[key];
+          if (Array.isArray(data[key])) { /* snapshot still paginated → fall back below */ }
+        }
+      } catch (e) { /* fall through to cursor paging */ }
+      // Fallback: cursor pagination (limit 500 per page).
       const out = [];
       let url = AFIR_BASE + path;
       for (let i = 0; i < 60; i++){
@@ -10051,7 +10062,7 @@
               id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
               layout: {
                 'icon-image': ['case', ['get', 'available'], 'charging-green', 'charging-gray'],
-                'icon-size': 0.5, 'icon-allow-overlap': true, 'icon-anchor': 'center'
+                'icon-size': 0.35, 'icon-allow-overlap': true, 'icon-anchor': 'center'
               }
             });
             // Tap a charging marker → leave filter view, zoom to 16 centred on
@@ -10195,15 +10206,29 @@
       const availTxt = isAvail
         ? '<span style="color:#1faa4a;font-weight:700;">Vapaana</span>' + cnt
         : '<span style="color:#c0392b;font-weight:700;">Varattu</span>' + cnt;
+      const addrRow = p.address ? ('<p class="price-label">Osoite</p><p class="price-value">' + p.address + '</p>') : '';
       showMasterFeatureInSheet(
         p.name || 'Latausasema',
-        p.address || 'Sähkölatausasema',
+        'Sähkölatauspiste',
         p.operatorName || 'Latausoperaattori',
+        addrRow +
         '<p class="price-label">Tila</p><p class="price-value">' + availTxt + '</p>' +
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + stdText + '</p>' +
         '<p class="price-label">Teho</p><p class="price-value">' + power + '</p>' +
         '<p class="price-label">Jännite</p><p class="price-value">' + volt + '</p>'
       );
+      // Big action button label for a charging station.
+      document.getElementById('action-btn').textContent = 'Lataa täällä';
+      // Top-left sheet badge = the charging-station icon (like the disc badge
+      // for free parking areas).
+      const cbadge = document.getElementById('area-code-badge');
+      if (cbadge) {
+        cbadge.innerHTML = '<img src="' + chargingIconSvg('#4caf50') + '" style="width:22px;height:22px;display:block;">';
+        cbadge.style.display = 'inline-block';
+        cbadge.style.background = 'transparent';
+        cbadge.style.padding = '0';
+        cbadge.style.borderRadius = '0';
+      }
       // Match the parking-area look: no "GPS may be inaccurate" notice taking
       // space, so the station details aren't pushed partly out of the sheet.
       document.getElementById('gps-warning').classList.remove('visible');
@@ -10573,6 +10598,10 @@
     });
     map.on('moveend', onMapIdle);
     map.on('zoomend', onMapIdle);
+    // When the user starts dragging the map, drop the 4s "feature locked" hold
+    // so that panning the P-marker off an area clears the sheet immediately
+    // (instead of lingering until the lock expires).
+    map.on('dragstart', () => { releaseMasterLock(); });
 
     const btn=document.getElementById('action-btn'),summaryHeader=document.getElementById('summary-header'),summaryType=document.getElementById('summary-type'),summaryOperator=document.getElementById('summary-operator'),details=document.getElementById('sheet-details'),divider=document.getElementById('sheet-divider');
     const gpsWarning = document.getElementById('gps-warning');
@@ -10733,6 +10762,7 @@
         updateNavBtnVisibility();
       } else if (!masterFeatureLocked) {
         currentParkingProps = null;
+        const acbReset = document.getElementById('area-code-badge'); if(acbReset) acbReset.style.display = 'none';
         summaryHeader.textContent = '';
         summaryType.textContent = '';
         summaryOperator.textContent = '';
