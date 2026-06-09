@@ -135,7 +135,10 @@
     #center-marker.charging-mode #cm-pin { display: none !important; }
     /* Charging extended marker: keep the 20px icon, but tighten the white pill
        a touch (less padding + smaller gap) so it reads a bit smaller. */
-    #center-marker.charging-mode.expanded #cm-body { padding: 1px 8px 1px 6px; gap: 4px; }
+    #center-marker.charging-mode.expanded #cm-body { padding: 4px 8px 4px 4px; gap: 4px; align-items: center; }
+    /* Center the charging icon (and status text) vertically inside #cm-code so
+       it sits in the middle of the pill instead of riding the text baseline. */
+    #center-marker.charging-mode #cm-code { display: flex; align-items: center; }
     /* The paid badge's "P" pin renders a touch larger so its symbol reads at
        the same height as the disc icon. transform:scale doesn't change the
        layout box, so the badge height stays identical to the free badge. */
@@ -7104,7 +7107,7 @@
       const isAvail = (avail === true || avail === 'true');
       const iconColor  = isAvail ? '#4caf50' : '#b4b7bd';   // gray icon when not available
       const label      = isAvail ? 'Vapaana' : 'Ei vapaana';
-      const labelColor = isAvail ? '#1faa4a' : '#c0392b';
+      const labelColor = '#111';   // status text in black (icon still shows green/gray)
       centerBadgeCode.innerHTML =
         '<img src="' + chargingIconSvg(iconColor) + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
         '<span style="vertical-align:middle;margin-left:4px;font-size:0.75em;color:' + labelColor + ';">' + label + '</span>';
@@ -10286,7 +10289,7 @@
       const cbadge = document.getElementById('area-code-badge');
       if (cbadge) {
         const stTxt = isAvail ? 'Vapaana' : 'Ei vapaana';
-        const stCol = isAvail ? '#1faa4a' : '#c0392b';
+        const stCol = '#111';   // status text in black (icon still shows green/gray)
         const icCol = isAvail ? '#4caf50' : '#b4b7bd';   // gray icon when not available
         cbadge.innerHTML = '<img src="' + chargingIconSvg(icCol) + '" style="width:22px;height:22px;display:inline-block;vertical-align:middle;">' +
           '<span style="vertical-align:middle;margin-left:5px;color:' + stCol + ';font-size:14px;font-weight:800;letter-spacing:0.3px;">' + stTxt + '</span>';
@@ -10307,6 +10310,8 @@
     function closeChargingOverlay(){
       const ov = document.getElementById('charging-overlay');
       if(ov) ov.style.transform = 'translateX(100%)';
+      const bc = document.getElementById('btn-container');
+      if(bc) bc.classList.remove('hidden');
     }
     function openChargingOverlay(cp){
       let ov = document.getElementById('charging-overlay');
@@ -10314,44 +10319,88 @@
         ov = document.createElement('div');
         ov.id = 'charging-overlay';
         ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:130;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);';
-        ov.innerHTML =
-          '<div style="display:flex;align-items:center;gap:10px;padding:16px 16px;background:#0C0243;color:#fff;flex-shrink:0;">' +
-            '<button id="charging-overlay-back" style="background:none;border:none;color:#fff;font-size:26px;line-height:1;cursor:pointer;padding:2px 6px;">\u2039</button>' +
-            '<span style="font-size:20px;font-weight:700;">Lataus</span>' +
-          '</div>' +
-          '<div id="charging-overlay-body" style="flex:1;overflow-y:auto;padding:18px;"></div>';
         document.body.appendChild(ov);
-        ov.querySelector('#charging-overlay-back').addEventListener('click', closeChargingOverlay);
       }
-      const body = ov.querySelector('#charging-overlay-body');
-      if(cp){
-        const stds = (cp.standards||'').split(',').filter(Boolean).map(stdLabel).filter(Boolean);
-        const stdText = stds.length ? [...new Set(stds)].join(', ') : '\u2013';
-        const power = (cp.maxKw && +cp.maxKw > 0) ? (cp.maxKw + ' kW') : '\u2013';
-        const volt  = (cp.maxVoltage && +cp.maxVoltage > 0) ? (cp.maxVoltage + ' V') : '\u2013';
-        const isAvail = (cp.available === true || cp.available === 'true');
-        const availTxt = isAvail
-          ? '<span style="color:#1faa4a;font-weight:700;">Vapaana</span>'
-          : '<span style="color:#c0392b;font-weight:700;">Varattu</span>';
-        const row = (l,v) => '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #e3e3ea;"><span style="color:#666;">'+l+'</span><span style="font-weight:600;color:#0C0243;text-align:right;">'+v+'</span></div>';
-        body.innerHTML =
-          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
-            '<img src="' + chargingIconSvg(isAvail ? '#4caf50' : '#b4b7bd') + '" style="width:42px;height:42px;flex-shrink:0;">' +
-            '<div><h2 style="margin:0;font-size:21px;color:#0C0243;">' + (cp.name||'Latausasema') + '</h2>' +
-            (cp.address ? '<p style="margin:2px 0 0;color:#666;font-size:14px;">'+cp.address+'</p>' : '') + '</div>' +
+      const headerHtml =
+        '<div style="display:flex;align-items:center;padding:max(14px,env(safe-area-inset-top)) 16px 12px 16px;background:white;border-bottom:1px solid #eee;flex-shrink:0;">' +
+          '<button id="c-back-btn" style="width:34px;height:34px;background:#f0f0f0;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:#333;margin-right:10px;">\u2190</button>' +
+          '<div style="font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#222;">Lataus</div>' +
+        '</div>';
+      if(!cp){
+        ov.innerHTML = headerHtml + '<div style="flex:1;padding:18px;"><p style="color:#666;font-family:Arial,sans-serif;">Latausaseman tietoja ei ole saatavilla.</p></div>';
+        ov.querySelector('#c-back-btn').addEventListener('click', closeChargingOverlay);
+        requestAnimationFrame(() => { ov.style.transform = 'translateX(0)'; });
+        return;
+      }
+      const isAvail = (cp.available === true || cp.available === 'true');
+      const stds = (cp.standards||'').split(',').filter(Boolean).map(stdLabel).filter(Boolean);
+      const stdText = stds.length ? [...new Set(stds)].join(', ') : '\u2013';
+      const power = (cp.maxKw && +cp.maxKw > 0) ? (cp.maxKw + ' kW') : '\u2013';
+      const volt  = (cp.maxVoltage && +cp.maxVoltage > 0) ? (cp.maxVoltage + ' V') : '\u2013';
+      const statusTxt = isAvail
+        ? '<span style="color:#1faa4a;font-weight:700;">Vapaana</span>'
+        : '<span style="color:#c0392b;font-weight:700;">Ei vapaana</span>';
+      const iconUrl = chargingIconSvg(isAvail ? '#4caf50' : '#b4b7bd');
+      const veh = (typeof vehicles !== 'undefined' && vehicles[selectedVehicleIdx]) ? vehicles[selectedVehicleIdx] : { plate:'', name:'' };
+      const pay = (typeof paymentMethods !== 'undefined' && paymentMethods[selectedPaymentIdx]) ? paymentMethods[selectedPaymentIdx] : { name:'', icon:'' };
+      const payIcon = (typeof getPaymentIcon === 'function') ? getPaymentIcon(pay.icon) : '';
+      const specs = [['Tila', statusTxt], ['Pistokkeet', stdText], ['Teho', power], ['J\u00e4nnite', volt]];
+      const specsHtml = specs.map((s,i) =>
+        '<div style="display:flex;justify-content:space-between;padding:11px 0;' + (i < specs.length-1 ? 'border-bottom:1px solid #eef0f2;' : '') + '">' +
+          '<span style="color:#666;font-size:14px;">' + s[0] + '</span>' +
+          '<span style="font-weight:600;color:#0C0243;font-size:14px;text-align:right;">' + s[1] + '</span></div>').join('');
+      ov.innerHTML = headerHtml +
+        '<div class="p-cards-container">' +
+          '<div class="p-card">' +
+            '<div class="p-card-title">Valittu latauspiste</div>' +
+            '<div class="area-select-row" id="c-area-row">' +
+              '<div style="flex:1;display:flex;flex-direction:column;gap:4px;">' +
+                '<div><span class="area-code-badge" style="background:transparent;padding:0;border-radius:0;display:inline-flex;align-items:center;"><img src="' + iconUrl + '" style="width:26px;height:26px;display:block;"></span></div>' +
+                '<div class="area-name">' + escapeHtml(cp.name||'Latausasema') + '</div>' +
+                '<div class="area-meta">' + (cp.address ? escapeHtml(cp.address) : '\u2013') + '</div>' +
+                '<div class="area-meta">' + escapeHtml(cp.operatorName||'Latausoperaattori') + ' \u00b7 ' + statusTxt + '</div>' +
+              '</div>' +
+              '<div class="area-chevron">\u2304</div>' +
+            '</div>' +
           '</div>' +
-          row('Operaattori', cp.operatorName||'\u2013') +
-          row('Tila', availTxt) +
-          row('Hinta', (cp.price || '\u2013')) +
-          row('Pistokkeet', stdText) +
-          row('Teho', power) +
-          row('J\u00e4nnite', volt) +
-          '<button id="charging-start-btn" style="width:100%;margin-top:24px;padding:16px;background:#0C0243;color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;">Aloita lataus</button>';
-        const sb = body.querySelector('#charging-start-btn');
-        if(sb) sb.addEventListener('click', () => { if(typeof showCustomToast==='function') showCustomToast('Lataus aloitettu!'); });
-      } else {
-        body.innerHTML = '<p style="color:#666;">Latausaseman tietoja ei ole saatavilla.</p>';
-      }
+          '<div class="p-card">' +
+            '<div class="p-card-title">Ajoneuvo</div>' +
+            '<div class="vehicle-display" onclick="openVehicleSheet()">' +
+              '<div class="plate"><div class="plate-eu"><div class="eu-stars">\u2605\u2605\u2605</div><div class="eu-fi">FI</div></div>' +
+              '<div class="plate-text" id="c-plate-text">' + escapeHtml(veh.plate||'') + '</div></div>' +
+              '<div class="vehicle-nickname" id="c-vehicle-nickname">' + escapeHtml(veh.name||'') + '</div>' +
+              '<div class="vehicle-chevron">\u2304</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="p-card">' +
+            '<div class="p-card-title">Maksutapa</div>' +
+            '<div class="payment-display" onclick="openPaymentSheet()">' +
+              '<div class="payment-icon-box" id="c-payment-icon">' + payIcon + '</div>' +
+              '<div class="payment-name" id="c-payment-name">' + escapeHtml(pay.name||'') + '</div>' +
+              '<div class="payment-chevron">\u2304</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="p-card">' +
+            '<div class="p-card-title">Latauksen tiedot</div>' +
+            '<div style="font-family:Arial,sans-serif;">' + specsHtml + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="total-price-container" style="padding:12px 14px 0 14px;flex-shrink:0;">' +
+          '<div class="total-price-row">' +
+            '<span class="total-price-label">Hinta</span>' +
+            '<span class="total-price-val" style="font-size:16px;">' + (cp.price || 'K\u00e4yt\u00f6n mukaan') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="padding:10px 14px;padding-bottom:max(20px,env(safe-area-inset-bottom));flex-shrink:0;">' +
+          '<button id="c-start-btn" style="width:100%;height:58px;border:none;border-radius:16px;font-size:17px;font-weight:bold;font-family:Arial,sans-serif;color:white;background:#0C0243;cursor:pointer;">Aloita lataus</button>' +
+        '</div>';
+      ov.querySelector('#c-back-btn').addEventListener('click', closeChargingOverlay);
+      const arow = ov.querySelector('#c-area-row');
+      if(arow) arow.addEventListener('click', closeChargingOverlay);
+      const cstart = ov.querySelector('#c-start-btn');
+      if(cstart) cstart.addEventListener('click', () => { if(typeof showCustomToast==='function') showCustomToast('Lataus aloitettu!'); });
+      const bc = document.getElementById('btn-container');
+      if(bc) bc.classList.add('hidden');
       requestAnimationFrame(() => { ov.style.transform = 'translateX(0)'; });
     }
     // Tracks which plug types the user wants visible on the map. Multi-select.
@@ -11111,6 +11160,8 @@
       const v = vehicles[selectedVehicleIdx];
       document.getElementById('plate-text').textContent = v.plate;
       document.getElementById('vehicle-nickname').textContent = v.name || '';
+      const _cpt = document.getElementById('c-plate-text'); if (_cpt) _cpt.textContent = v.plate;
+      const _cnk = document.getElementById('c-vehicle-nickname'); if (_cnk) _cnk.textContent = v.name || '';
     }
 
     function renderVehicleOptions() {
@@ -11187,6 +11238,8 @@
       const p = paymentMethods[selectedPaymentIdx];
       document.getElementById('payment-icon').innerHTML = getPaymentIcon(p.icon);
       document.getElementById('payment-name').textContent = p.name;
+      const _cpi = document.getElementById('c-payment-icon'); if (_cpi) _cpi.innerHTML = getPaymentIcon(p.icon);
+      const _cpn = document.getElementById('c-payment-name'); if (_cpn) _cpn.textContent = p.name;
     }
 
     function renderPaymentOptions() {
