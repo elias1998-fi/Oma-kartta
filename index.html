@@ -132,6 +132,7 @@
       gap: 6px;
     }
     #center-marker.expanded #cm-pin { width: 23px; height: 23px; }
+    #center-marker.charging-mode #cm-pin { display: none !important; }
     /* The paid badge's "P" pin renders a touch larger so its symbol reads at
        the same height as the disc icon. transform:scale doesn't change the
        layout box, so the badge height stays identical to the free badge. */
@@ -7081,6 +7082,7 @@
       if (code) centerBadgeCode.textContent = code;
       // Add .expanded — CSS transitions animate the morph
       centerPointerEl.classList.add('expanded');
+      centerPointerEl.classList.remove('charging-mode');   // parking → show the "P" pin again
       // After writing the area code, give the disc-mode pin a chance to
       // overwrite the text with the parking duration ("2h", "30 min", …).
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
@@ -7088,14 +7090,19 @@
     }
     function hideCenterBadge() {
       centerPointerEl.classList.remove('expanded');
+      centerPointerEl.classList.remove('charging-mode');
       if (typeof drawCenterBubble === 'function') drawCenterBubble();
     }
     // Expand the on-map P-marker and show the charging-station icon in place of
     // the area-code badge (used when the marker is over a charging station).
-    function showChargingCenterBadge() {
+    function showChargingCenterBadge(idText) {
       if (window._navigationInProgress) return;
-      centerBadgeCode.innerHTML = '<img src="' + chargingIconSvg('#4caf50') + '" style="width:20px;height:20px;display:block;margin:0 auto;">';
+      const id7 = (idText == null ? '' : String(idText)).slice(0, 7);
+      centerBadgeCode.innerHTML =
+        '<img src="' + chargingIconSvg('#4caf50') + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
+        (id7 ? '<span style="vertical-align:middle;margin-left:4px;">' + escapeHtml(id7) + '</span>' : '');
       centerPointerEl.classList.add('expanded');
+      centerPointerEl.classList.add('charging-mode');   // CSS hides the small "P" pin
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
     }
 
@@ -7121,7 +7128,7 @@
             window._badgeAreaId = null;
             showChargingInSheet(cp);
             releaseMasterLock();          // real-time hover → don't hold the 4s lock
-            showChargingCenterBadge();    // P-marker → extended, charging icon badge
+            showChargingCenterBadge(cp.id);   // P-marker → extended: charging icon + 7-char id
           }
           return;   // charging takes priority; skip parking detection
         }
@@ -10095,7 +10102,7 @@
               id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
               layout: {
                 'icon-image': ['case', ['get', 'available'], 'charging-green', 'charging-gray'],
-                'icon-size': 0.35, 'icon-allow-overlap': true, 'icon-anchor': 'center'
+                'icon-size': 0.25, 'icon-allow-overlap': true, 'icon-anchor': 'center'
               }
             });
             // Tap a charging marker → leave filter view, zoom to 16 centred on
@@ -10741,6 +10748,7 @@
             hoveredChargingId = cp.id;
             if(hoveredPolyId){ clearHoverHighlight(); hoveredPolyId = null; window._badgeAreaId = null; hideCenterBadge(); }
             showChargingInSheet(cp);
+            showChargingCenterBadge(cp.id);
           }
           return;
         } else if(hoveredChargingId){
