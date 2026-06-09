@@ -7090,6 +7090,14 @@
       centerPointerEl.classList.remove('expanded');
       if (typeof drawCenterBubble === 'function') drawCenterBubble();
     }
+    // Expand the on-map P-marker and show the charging-station icon in place of
+    // the area-code badge (used when the marker is over a charging station).
+    function showChargingCenterBadge() {
+      if (window._navigationInProgress) return;
+      centerBadgeCode.innerHTML = '<img src="' + chargingIconSvg('#4caf50') + '" style="width:20px;height:20px;display:block;margin:0 auto;">';
+      centerPointerEl.classList.add('expanded');
+      if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
+    }
 
     function checkCenterHighlight() {
       if (filterMode) return; // No P-marker detection / badge in filter view
@@ -7097,6 +7105,29 @@
       // hidden and we mustn't re-trigger its expanded/badge state from the
       // map's move events.
       if (window._navigationInProgress) return;
+      // A charging station under the P-marker takes priority and reacts in real
+      // time during the drag (no finger-lift needed), like parking areas.
+      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= 13) {
+        const ccpt = map.project(map.getCenter());
+        const cr = 15;
+        const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
+        if (chits.length) {
+          let best = chits[0], bestD = Infinity;
+          chits.forEach(ff => { const pt = map.project(ff.geometry.coordinates); const d = (pt.x-ccpt.x)*(pt.x-ccpt.x) + (pt.y-ccpt.y)*(pt.y-ccpt.y); if(d < bestD){ bestD = d; best = ff; } });
+          const cp = best.properties;
+          if (cp.id !== hoveredChargingId) {
+            hoveredChargingId = cp.id;
+            if (hoveredPolyId) { clearHoverHighlight(); hoveredPolyId = null; }
+            window._badgeAreaId = null;
+            showChargingInSheet(cp);
+            releaseMasterLock();          // real-time hover → don't hold the 4s lock
+            showChargingCenterBadge();    // P-marker → extended, charging icon badge
+          }
+          return;   // charging takes priority; skip parking detection
+        }
+        // no charging under the marker → fall through (the parking / no-area
+        // branch below clears hoveredChargingId and collapses if needed).
+      }
       if (!map.getLayer('master-poly-fill')) { updateButtonText(); return; }
       const cpt = map.project(map.getCenter());
       // Create detection area: 5px radius circle around center (easier targeting)
@@ -7118,6 +7149,7 @@
         }
         if (f.properties.id !== hoveredPolyId) {
           hoveredPolyId = f.properties.id;
+          hoveredChargingId = null;   // over a parking area now, not a station
           applyHoverHighlight(f.properties);
           // Refresh the center pin icon — Helsinki's free purple zones
           // flow through this code path (not checkParking), so we must
@@ -7243,9 +7275,10 @@
         btn.classList.add('active');
       } else {
         // No area under center — clear immediately
-        if (hoveredPolyId) {
+        if (hoveredPolyId || hoveredChargingId) {
           clearHoverHighlight();
           hoveredPolyId = null;
+          hoveredChargingId = null;
           window._badgeAreaId = null;
           collapseCenterSheet();
           if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
@@ -10233,6 +10266,56 @@
       // space, so the station details aren't pushed partly out of the sheet.
       document.getElementById('gps-warning').classList.remove('visible');
     }
+    // "Lataus" view — slides in when the user taps the "Lataa täällä" button.
+    function closeChargingOverlay(){
+      const ov = document.getElementById('charging-overlay');
+      if(ov) ov.style.transform = 'translateX(100%)';
+    }
+    function openChargingOverlay(cp){
+      let ov = document.getElementById('charging-overlay');
+      if(!ov){
+        ov = document.createElement('div');
+        ov.id = 'charging-overlay';
+        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:130;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);';
+        ov.innerHTML =
+          '<div style="display:flex;align-items:center;gap:10px;padding:16px 16px;background:#0C0243;color:#fff;flex-shrink:0;">' +
+            '<button id="charging-overlay-back" style="background:none;border:none;color:#fff;font-size:26px;line-height:1;cursor:pointer;padding:2px 6px;">\u2039</button>' +
+            '<span style="font-size:20px;font-weight:700;">Lataus</span>' +
+          '</div>' +
+          '<div id="charging-overlay-body" style="flex:1;overflow-y:auto;padding:18px;"></div>';
+        document.body.appendChild(ov);
+        ov.querySelector('#charging-overlay-back').addEventListener('click', closeChargingOverlay);
+      }
+      const body = ov.querySelector('#charging-overlay-body');
+      if(cp){
+        const stds = (cp.standards||'').split(',').filter(Boolean).map(stdLabel).filter(Boolean);
+        const stdText = stds.length ? [...new Set(stds)].join(', ') : '\u2013';
+        const power = (cp.maxKw && +cp.maxKw > 0) ? (cp.maxKw + ' kW') : '\u2013';
+        const volt  = (cp.maxVoltage && +cp.maxVoltage > 0) ? (cp.maxVoltage + ' V') : '\u2013';
+        const isAvail = (cp.available === true || cp.available === 'true');
+        const availTxt = isAvail
+          ? '<span style="color:#1faa4a;font-weight:700;">Vapaana</span>'
+          : '<span style="color:#c0392b;font-weight:700;">Varattu</span>';
+        const row = (l,v) => '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #e3e3ea;"><span style="color:#666;">'+l+'</span><span style="font-weight:600;color:#0C0243;text-align:right;">'+v+'</span></div>';
+        body.innerHTML =
+          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
+            '<img src="' + chargingIconSvg('#4caf50') + '" style="width:42px;height:42px;flex-shrink:0;">' +
+            '<div><h2 style="margin:0;font-size:21px;color:#0C0243;">' + (cp.name||'Latausasema') + '</h2>' +
+            (cp.address ? '<p style="margin:2px 0 0;color:#666;font-size:14px;">'+cp.address+'</p>' : '') + '</div>' +
+          '</div>' +
+          row('Operaattori', cp.operatorName||'\u2013') +
+          row('Tila', availTxt) +
+          row('Pistokkeet', stdText) +
+          row('Teho', power) +
+          row('J\u00e4nnite', volt) +
+          '<button id="charging-start-btn" style="width:100%;margin-top:24px;padding:16px;background:#0C0243;color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;">Aloita lataus</button>';
+        const sb = body.querySelector('#charging-start-btn');
+        if(sb) sb.addEventListener('click', () => { if(typeof showCustomToast==='function') showCustomToast('Lataus aloitettu!'); });
+      } else {
+        body.innerHTML = '<p style="color:#666;">Latausaseman tietoja ei ole saatavilla.</p>';
+      }
+      requestAnimationFrame(() => { ov.style.transform = 'translateX(0)'; });
+    }
     // Tracks which plug types the user wants visible on the map. Multi-select.
     // No data layer yet — when EV-charging features get rendered later, this
     // set will be the filter applied to that layer.
@@ -11196,6 +11279,14 @@
       // be out of sync after fast pans, and a single-pixel query can miss the area
       // by a hair. Use the same 5px detection radius as the highlight logic.
       if (!btn.classList.contains('active')) return;
+      // Charging station under the P-marker → open the "Lataus" view.
+      if (hoveredChargingId) {
+        const ccpt = map.project(map.getCenter());
+        const cr = 15;
+        const ch = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
+        openChargingOverlay(ch.length ? ch[0].properties : null);
+        return;
+      }
       if (!map.getLayer('master-poly-fill')) return;
       const cpt = map.project(map.getCenter());
       const r = 5;
@@ -12912,7 +13003,7 @@
       // Stop any in-progress momentum scroll so a new touch catches it
       if(_momentumRAF){ cancelAnimationFrame(_momentumRAF); _momentumRAF = null; }
       // Estä drag jos ei ole pysäköintialuetta valittuna — paitsi filter-näkymässä, jossa drag aina sallittu
-      if(!filterMode && ((!currentParkingProps && !hoveredPolyId) || sliderTouching || e.target===sliderMin || e.target===sliderMax)){
+      if(!filterMode && ((!currentParkingProps && !hoveredPolyId && !hoveredChargingId) || sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
       }
       // In filter mode, ignore drags that start on a slider thumb (the ball).
@@ -13033,7 +13124,7 @@
         // Filter view: translateY between 80% (max size, highest) and 70px-from-bottom (min size, lowest)
         minY = sheet.clientHeight - window.innerHeight * 0.8;
         maxY = sheet.clientHeight - 70;
-      } else if(currentParkingProps || hoveredPolyId){
+      } else if(currentParkingProps || hoveredPolyId || hoveredChargingId){
         // P-marker on a parking area: max 80% from bottom, min 75px from bottom
         minY = sheet.clientHeight - window.innerHeight * 0.8;
         maxY = sheet.clientHeight - 75;
@@ -13113,7 +13204,7 @@
         snapTo(levels[ti]);
         return;
       }
-      if(currentParkingProps || hoveredPolyId){
+      if(currentParkingProps || hoveredPolyId || hoveredChargingId){
         // P-marker on a parking area: 3-level snap (max 80% / mid 153px / min 75px)
         const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // top (highest)
         const midY = sheet.clientHeight - 153;                       // mid step
