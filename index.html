@@ -1661,7 +1661,7 @@
     .op-list { display: none; margin-top: 8px; }
     .op-dropdown.open .op-list { display: block; }
     .op-row {
-      display: flex; align-items: center; justify-content: center; gap: 12px;
+      display: flex; align-items: center; gap: 12px;
       background: white; border: 1.5px solid #ddd; border-radius: 10px;
       padding: 10px 12px; margin-bottom: 8px; cursor: pointer; color: #888;
       transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -1673,7 +1673,7 @@
     /* Logo placeholder chip. To show a real operator logo, replace the chip's
        text with <img src="..."> using a logo file you have the right to use. */
     .op-logo {
-      width: 72px; height: 40px; flex-shrink: 0; border-radius: 5px;
+      width: 54px; height: 30px; flex-shrink: 0; border-radius: 5px;
       background: #eef0f4; display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 700; color: #555; overflow: hidden;
     }
@@ -10111,7 +10111,9 @@
       { re: /taskuparkki/i,                                 name: 'Taskuparkki',      domain: 'taskuparkki.fi' },
       { re: /parkkis(ä|a)hk(ö|o)/i,                         name: 'Parkkisähkö',      domain: 'parkkisahko.fi' },
       { re: /\bdefa\b/i,                                    name: 'DEFA',             domain: 'defa.com' },
-      { re: /autoliitto/i,                                  name: 'Autoliitto',       domain: 'autoliitto.fi' },
+      { re: /autoliitto|al[\s-]*lataus/i,                   name: 'Autoliitto',       domain: 'autoliitto.fi' },
+      { re: /\bst1\b/i,                                     name: 'St1',              domain: 'st1.fi' },
+      { re: /faast/i,                                       name: 'Faast',            domain: 'faast.fi' },
       { re: /tokmanni/i,                                    name: 'Tokmanni',         domain: 'tokmanni.fi' }
     ];
     function brandFor(name){
@@ -10127,6 +10129,20 @@
         .replace(/\b(oy ab|oyj|oy|ab|ltd|inc|gmbh)\b/g, '')
         .replace(/[^a-z0-9]/g, '');
       return slug ? slug + '.fi' : 'ev.fi';
+    }
+    // Full operator logos come from logo.dev — the official successor to
+    // Clearbit's logo API, which shut down on 8 Dec 2025. It needs a free
+    // "publishable" token: sign up at https://logo.dev, copy the token, and
+    // paste it below. With a token, every operator shows its real full logo by
+    // domain. Without one we fall back to Google's favicon (small icons).
+    const LOGO_DEV_TOKEN = '';   // <-- paste your free logo.dev publishable token here
+    function operatorLogoUrl(name){
+      const dom = operatorDomain(name);
+      if (LOGO_DEV_TOKEN) {
+        return 'https://img.logo.dev/' + encodeURIComponent(dom) +
+          '?token=' + encodeURIComponent(LOGO_DEV_TOKEN) + '&size=128&format=png&retina=true';
+      }
+      return operatorFavicon(name);
     }
     // A logo for ANY operator via Google's favicon service (resolved by domain).
     function operatorFavicon(name){
@@ -10861,13 +10877,15 @@
         const favicon = operatorFavicon(nm);
         const im = document.createElement('img');
         im.alt = ''; im.referrerPolicy = 'no-referrer'; im.loading = 'lazy';
-        // Prefer the feed's own logo; if it's missing or fails to load, fall
-        // back to the operator's logo via Google (favicon by domain) so EVERY
-        // operator shows a logo. The list shows logos only — no names.
-        im.src = OPERATOR_LOGOS[nm] || favicon;
+        // Prefer the feed's own logo; then logo.dev (the real full logo); if
+        // that fails fall back to the favicon so every operator shows something.
+        im.src = OPERATOR_LOGOS[nm] || operatorLogoUrl(nm);
         im.onerror = () => { if (im.src !== favicon) im.src = favicon; };
         logoDiv.appendChild(im);
-        row.appendChild(logoDiv);
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'op-name';
+        nameSpan.textContent = nm;   // recognized brand name (Virta, K-Lataus, …)
+        row.appendChild(logoDiv); row.appendChild(nameSpan);
         row.addEventListener('click', () => toggleOperator(nm, row));
         list.appendChild(row);
       });
