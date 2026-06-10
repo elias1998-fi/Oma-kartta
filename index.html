@@ -10070,7 +10070,6 @@
     const CHARGING_STATUS_REFRESH_MS = 30000;  // how often to re-poll live availability
     let _chargingStatusMap = {};          // latest evseId -> status (used by the connector picker)
     let _connectorPickerOpen = false;     // is the "Valitse pistoke" view currently open
-    let _chRawLocs = [];                  // raw per-location snapshot (pre-merge) for the temp diagnostic
 
     // Operator names from the AFIR feed are inconsistent (e.g. "Helen" vs
     // "Helen Oy", trailing company forms, stray whitespace), which produces
@@ -10184,13 +10183,12 @@
         stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
         _chargingStatusMap = statusMap;
         _chargingEvseIndex = {};
-        _chRawLocs = [];   // raw per-location snapshot (pre-merge) for the temp diagnostic
         // Merge co-located locations of the SAME operator into one site. Some
         // operators split one physical site into separate AFIR locations for AC
         // vs DC. We cluster by ACTUAL DISTANCE (not a coordinate grid, which can
         // split two nearby points across a cell boundary). One marker per site;
         // the sheet/picker then list ALL connectors from the merged locations.
-        const MERGE_RADIUS_M = 120;   // same-operator locations within this distance merge into one
+        const MERGE_RADIUS_M = 25;    // same-operator locations within this distance merge into one
         const _chDistM = (a, b) => {  // haversine metres between [lng,lat] points
           const R = 6371000, r = Math.PI / 180;
           const dLat = (b[1]-a[1]) * r, dLng = (b[0]-a[0]) * r;
@@ -10207,7 +10205,6 @@
           const opName = normalizeOperator(det.name);
           const _logoObj = det.logo || op.logo;   // logo may sit under details or operator, as {url} or a bare string
           const logoUrl = !_logoObj ? '' : (typeof _logoObj === 'string' ? _logoObj : (_logoObj.url || ''));
-          _chRawLocs.push({ id: p.id || '', name: p.name || '', op: opName, lat: +coords[1], lng: +coords[0], evses: (Array.isArray(p.evses) ? p.evses : []).length });
           const clusters = _chByOp[opName] || (_chByOp[opName] = []);
           let g = null;
           for (let i = 0; i < clusters.length; i++) { if (_chDistM(clusters[i].coords, coords) <= MERGE_RADIUS_M) { g = clusters[i]; break; } }
@@ -10288,51 +10285,12 @@
           _chargingStatusTimer = setInterval(refreshChargingStatuses, CHARGING_STATUS_REFRESH_MS);
           document.addEventListener('visibilitychange', function(){ if (!document.hidden) refreshChargingStatuses(); });
         }
-        _ensureChDebugBtn();   // TEMP diagnostic button (remove after AC/DC merge confirmed)
       } catch (e) {
         console.error('Latauspisteiden lataus epäonnistui:', e);
       } finally {
         chargingLoading = false;
       }
     }
-    // ── TEMP DIAGNOSTIC (remove after the AC/DC merge is confirmed) ───────────
-    // A small 🐞 button lists the RAW (pre-merge) charging locations currently in
-    // the map view — name, operator and coordinates — so we can see exactly why
-    // two locations (e.g. an AC + DC "Sähkötalo Kamppi") do or don't merge.
-    function _ensureChDebugBtn(){
-      if (document.getElementById('ch-debug-btn')) return;
-      const btn = document.createElement('button');
-      btn.id = 'ch-debug-btn';
-      btn.type = 'button';
-      btn.textContent = '\uD83D\uDC1E';
-      btn.style.cssText = 'position:fixed;left:12px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:9991;width:42px;height:42px;border-radius:50%;border:none;background:rgba(12,2,67,0.85);color:#fff;font-size:18px;box-shadow:0 3px 10px rgba(0,0,0,0.3);cursor:pointer;';
-      btn.addEventListener('click', _chDebugPanel);
-      document.body.appendChild(btn);
-    }
-    function _chDebugPanel(){
-      if (!(window.map && map.getBounds)) { alert('Kartta ei ole viel\u00e4 valmis.'); return; }
-      const b = map.getBounds();
-      const N = b.getNorth(), S = b.getSouth(), E = b.getEast(), W = b.getWest();
-      const inView = (_chRawLocs || []).filter(L => L.lat <= N && L.lat >= S && L.lng <= E && L.lng >= W);
-      inView.sort((a, b2) => (a.name||'').localeCompare(b2.name||'', 'fi') || (a.op||'').localeCompare(b2.op||'', 'fi'));
-      const cap = inView.slice(0, 80);
-      const old = document.getElementById('ch-debug-box'); if (old) old.remove();
-      const box = document.createElement('div');
-      box.id = 'ch-debug-box';
-      box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;';
-      let html = '<div style="background:#0C0243;color:#fff;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;padding:max(14px,env(safe-area-inset-top)) 16px 14px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">' +
-        '<span>DEBUG \u00b7 raakapisteet n\u00e4kym\u00e4ss\u00e4 (' + inView.length + ')</span>' +
-        '<button id="ch-debug-close" type="button" style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-weight:bold;cursor:pointer;">Sulje</button></div>' +
-        '<div style="flex:1;overflow:auto;background:#fff;font-family:monospace;font-size:12px;padding:12px 14px;line-height:1.5;color:#111;">';
-      if (!cap.length) html += 'Ei pisteit\u00e4 t\u00e4ss\u00e4 karttan\u00e4kym\u00e4ss\u00e4. Keskit\u00e4 ja zoomaa asemalle, ja avaa uudelleen.';
-      else html += cap.map(L => '\u2022 <b>' + (L.name || '(nimet\u00f6n)') + '</b><br>operaattori: ' + (L.op || '(tyhj\u00e4)') + ' &nbsp;|&nbsp; evse: ' + L.evses + '<br>lat ' + L.lat.toFixed(6) + ', lng ' + L.lng.toFixed(6)).join('<hr style="border:none;border-top:1px solid #eee;margin:8px 0;">');
-      if (inView.length > cap.length) html += '<hr style="border:none;border-top:1px solid #eee;margin:8px 0;"><i>\u2026 ja ' + (inView.length - cap.length) + ' lis\u00e4\u00e4 (n\u00e4ytet\u00e4\u00e4n 80).</i>';
-      html += '</div>';
-      box.innerHTML = html;
-      document.body.appendChild(box);
-      box.querySelector('#ch-debug-close').addEventListener('click', () => box.remove());
-    }
-    // ─────────────────────────────────────────────────────────────────────────
     // Recompute each station's availability from a fresh per-EVSE status map,
     // using the cached EVSE→labels index. Mutates available / availCount and the
     // per-connector avail counts on _chargingFeatures in place.
@@ -10468,11 +10426,10 @@
                  '<span style="display:flex;align-items:center;min-width:0;">' +
                    '<span style="display:inline-flex;align-items:center;gap:4px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:4px 6px;margin-right:8px;flex:none;">' +
                      plugIcon(String(c.name || ''), '#0C0243', 20) +
-                     '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">\u00d7 ' + total + '</span>' +
+                     '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;min-width:26px;">\u00d7 ' + total + '</span>' +
                    '</span>' +
-                   '<span>' + escapeHtml(String(c.name || '')) +
-                     ' \u00b7 <span style="color:' + col + ';font-weight:700;">Vapaana: ' + free + '</span>' +
-                   '</span>' +
+                   '<span style="min-width:66px;white-space:nowrap;flex:none;">' + escapeHtml(String(c.name || '')) + '</span>' +
+                   '<span style="color:' + col + ';font-weight:700;white-space:nowrap;">Vapaana: ' + free + '</span>' +
                  '</span>' +
                  '<span style="display:flex;align-items:center;gap:7px;flex:none;">' +
                    (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
@@ -10723,6 +10680,7 @@
             '<span style="flex:1;min-width:0;padding:11px 12px;display:flex;flex-direction:column;gap:5px;justify-content:center;">' +
               '<span style="display:flex;align-items:center;gap:6px;">'+plugIcon(it.label,'#0C0243',18)+'<span style="font-family:Arial,sans-serif;font-size:14px;font-weight:600;color:#0C0243;white-space:nowrap;">'+escapeHtml(it.label)+'</span></span>' +
               '<span style="display:flex;align-items:center;gap:6px;">'+lightning('#0C0243')+'<span style="font-family:Arial,sans-serif;font-size:13px;color:#444;white-space:nowrap;">'+kwTxt+'</span></span>' +
+              '<span style="font-family:Arial,sans-serif;font-size:12px;color:#888;padding-left:19px;white-space:nowrap;">Toimivuus: \u2013</span>' +
             '</span>' +
           '</button>';
         }).join('');
