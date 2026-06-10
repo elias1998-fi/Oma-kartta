@@ -7107,7 +7107,7 @@
       if (window._navigationInProgress) return;
       const isAvail = (avail === true || avail === 'true');
       const iconColor  = isAvail ? '#4caf50' : '#b4b7bd';   // gray icon when not available
-      const label      = isAvail ? 'Vapaana' : 'Ei vapaana';
+      const label      = isAvail ? 'Tilaa' : 'Täynnä';
       const labelColor = '#111';   // status text in black (icon still shows green/gray)
       centerBadgeCode.innerHTML =
         '<img src="' + chargingIconSvg(iconColor) + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
@@ -7140,7 +7140,7 @@
             window._badgeAreaId = null;
             showChargingInSheet(cp);
             releaseMasterLock();          // real-time hover → don't hold the 4s lock
-            showChargingCenterBadge(cp.available);   // P-marker → extended: icon + Vapaana/Ei vapaana
+            showChargingCenterBadge(cp.available);   // P-marker → extended: icon + Tilaa/Täynnä
           }
           return;   // charging takes priority; skip parking detection
         }
@@ -10065,6 +10065,21 @@
     let chargingLoaded = false, chargingLoading = false;
     let _chargingFeatures = [];
 
+    // Operator names from the AFIR feed are inconsistent (e.g. "Helen" vs
+    // "Helen Oy", trailing company forms, stray whitespace), which produces
+    // duplicate rows in the operator filter. normalizeOperator() trims and
+    // strips a trailing company suffix so close variants collapse into one.
+    // OPERATOR_ALIASES maps a cleaned name to a preferred display name
+    // (e.g. a legal name to a brand); add real entries as needed.
+    const OPERATOR_ALIASES = {
+      // 'K-auto': 'K-Lataus',
+    };
+    function normalizeOperator(name){
+      let s = String(name || '').replace(/\s+/g, ' ').trim();
+      s = s.replace(/[\s,]+(oy ab|oyj|oy|ab|ltd\.?|inc\.?|gmbh)\.?$/i, '').trim();
+      return OPERATOR_ALIASES[s] || s;
+    }
+
     function chargingIconSvg(bg){
       return 'data:image/svg+xml;base64,' + btoa(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">' +
@@ -10180,7 +10195,7 @@
             const det = op.details || {};
             return { type: 'Feature', geometry: f.geometry, properties: {
               id: p.id || '', name: p.name || 'Latausasema',
-              operatorId: op.id || '', operatorName: det.name || '',
+              operatorId: op.id || '', operatorName: normalizeOperator(det.name),
               logoUrl: (det.logo && det.logo.url) || '',
               address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
               standards: [...standards].join(','),
@@ -10278,8 +10293,8 @@
       const free = (p.availCount != null && p.availCount !== '') ? p.availCount : (isAvail ? 1 : 0);
       const cnt = (tot !== '') ? (' (' + free + '/' + tot + ')') : '';
       const availTxt = isAvail
-        ? '<span style="color:#1faa4a;font-weight:700;">Vapaana</span>' + cnt
-        : '<span style="color:#c0392b;font-weight:700;">Varattu</span>' + cnt;
+        ? '<span style="color:#1faa4a;font-weight:700;">Tilaa</span>' + cnt
+        : '<span style="color:#c0392b;font-weight:700;">Täynnä</span>' + cnt;
       showMasterFeatureInSheet(
         p.name || 'Latausasema',
         'Sähkölatauspiste',
@@ -10296,7 +10311,7 @@
       // for free parking areas).
       const cbadge = document.getElementById('area-code-badge');
       if (cbadge) {
-        const stTxt = isAvail ? 'Vapaana' : 'Ei vapaana';
+        const stTxt = isAvail ? 'Tilaa' : 'Täynnä';
         const stCol = '#111';   // status text in black (icon still shows green/gray)
         const icCol = isAvail ? '#4caf50' : '#b4b7bd';   // gray icon when not available
         cbadge.innerHTML = '<img src="' + chargingIconSvg(icCol) + '" style="width:22px;height:22px;display:inline-block;vertical-align:middle;">' +
@@ -10346,8 +10361,8 @@
       const power = (cp.maxKw && +cp.maxKw > 0) ? (cp.maxKw + ' kW') : '\u2013';
       const volt  = (cp.maxVoltage && +cp.maxVoltage > 0) ? (cp.maxVoltage + ' V') : '\u2013';
       const statusTxt = isAvail
-        ? '<span style="color:#1faa4a;font-weight:700;">Vapaana</span>'
-        : '<span style="color:#c0392b;font-weight:700;">Ei vapaana</span>';
+        ? '<span style="color:#1faa4a;font-weight:700;">Tilaa</span>'
+        : '<span style="color:#c0392b;font-weight:700;">Täynnä</span>';
       const iconUrl = chargingIconSvg(isAvail ? '#4caf50' : '#b4b7bd');
       const veh = (typeof vehicles !== 'undefined' && vehicles[selectedVehicleIdx]) ? vehicles[selectedVehicleIdx] : { plate:'', name:'' };
       const pay = (typeof paymentMethods !== 'undefined' && paymentMethods[selectedPaymentIdx]) ? paymentMethods[selectedPaymentIdx] : { name:'', icon:'' };
@@ -12677,7 +12692,7 @@
       const name     = (headerEl && headerEl.textContent || 'Pysäköintialue').trim();
       const typeEl   = document.getElementById('summary-type');
       const isCharging = !!(typeEl && /Sähkölatauspiste/.test(typeEl.textContent || ''));
-      // The charging badge now shows availability ("Vapaana"/"Ei vapaana"), not
+      // The charging badge now shows availability ("Tilaa"/"Täynnä"), not
       // an area code — so there's no code to embed in the share link.
       const code     = isCharging ? '' : (codeEl && codeEl.textContent || '').trim();
 
