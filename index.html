@@ -10070,6 +10070,7 @@
     const CHARGING_STATUS_REFRESH_MS = 30000;  // how often to re-poll live availability
     let _chargingStatusMap = {};          // latest evseId -> status (used by the connector picker)
     let _connectorPickerOpen = false;     // is the "Valitse pistoke" view currently open
+    let _chRawLocs = [];                  // raw per-location snapshot (pre-merge) for the temp diagnostic
 
     // Operator names from the AFIR feed are inconsistent (e.g. "Helen" vs
     // "Helen Oy", trailing company forms, stray whitespace), which produces
@@ -10183,12 +10184,21 @@
         stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
         _chargingStatusMap = statusMap;
         _chargingEvseIndex = {};
-        // Group co-located charging locations (same operator + same coordinates,
-        // rounded to ~11 m) into a SINGLE feature. Some operators split one
-        // physical site into separate AFIR locations for AC vs DC; merging them
-        // shows one map marker whose sheet lists ALL connectors from both.
-        const _chGroups = {};
-        const _chOrder = [];
+        _chRawLocs = [];   // raw per-location snapshot (pre-merge) for the temp diagnostic
+        // Merge co-located locations of the SAME operator into one site. Some
+        // operators split one physical site into separate AFIR locations for AC
+        // vs DC. We cluster by ACTUAL DISTANCE (not a coordinate grid, which can
+        // split two nearby points across a cell boundary). One marker per site;
+        // the sheet/picker then list ALL connectors from the merged locations.
+        const MERGE_RADIUS_M = 120;   // same-operator locations within this distance merge into one
+        const _chDistM = (a, b) => {  // haversine metres between [lng,lat] points
+          const R = 6371000, r = Math.PI / 180;
+          const dLat = (b[1]-a[1]) * r, dLng = (b[0]-a[0]) * r;
+          const h = Math.sin(dLat/2)**2 + Math.cos(a[1]*r) * Math.cos(b[1]*r) * Math.sin(dLng/2)**2;
+          return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+        };
+        const _chByOp = {};   // operatorName -> array of cluster groups
+        const _chOrder = [];  // all cluster groups, first-seen order
         locs.filter(f => f && f.geometry && f.geometry.coordinates).forEach(f => {
           const p = f.properties || {};
           const op = p.operator || {};
@@ -10197,18 +10207,20 @@
           const opName = normalizeOperator(det.name);
           const _logoObj = det.logo || op.logo;   // logo may sit under details or operator, as {url} or a bare string
           const logoUrl = !_logoObj ? '' : (typeof _logoObj === 'string' ? _logoObj : (_logoObj.url || ''));
-          const key = opName + '@' + (+coords[1]).toFixed(4) + ',' + (+coords[0]).toFixed(4);
-          let g = _chGroups[key];
+          _chRawLocs.push({ id: p.id || '', name: p.name || '', op: opName, lat: +coords[1], lng: +coords[0], evses: (Array.isArray(p.evses) ? p.evses : []).length });
+          const clusters = _chByOp[opName] || (_chByOp[opName] = []);
+          let g = null;
+          for (let i = 0; i < clusters.length; i++) { if (_chDistM(clusters[i].coords, coords) <= MERGE_RADIUS_M) { g = clusters[i]; break; } }
           if (!g) {
-            g = _chGroups[key] = {
-              id: p.id || key, name: p.name || 'Latausasema',
+            g = {
+              id: p.id || (opName + '@' + coords.join(',')), name: p.name || 'Latausasema',
               operatorId: op.id || '', operatorName: opName,
               logoUrl: logoUrl,
               address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
               coords: coords, standards: new Set(), byLbl: {},
               maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
             };
-            _chOrder.push(key);
+            clusters.push(g); _chOrder.push(g);
           }
           (Array.isArray(p.evses) ? p.evses : []).forEach(ev => {
             g.total++;
@@ -10242,8 +10254,7 @@
             g.evList.push({ id: ev.id, labels: [...lblsHere] });
           });
         });
-        _chargingFeatures = _chOrder.map(key => {
-          const g = _chGroups[key];
+        _chargingFeatures = _chOrder.map(g => {
           // Per plug-type availability rows for the detail view, stored as a
           // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
           const connectors = Object.keys(g.byLbl).map(l => ({ name: l, total: g.byLbl[l].total, avail: g.byLbl[l].avail, kw: Math.round(g.byLbl[l].kw), volt: Math.round(g.byLbl[l].volt) }));
@@ -10277,12 +10288,51 @@
           _chargingStatusTimer = setInterval(refreshChargingStatuses, CHARGING_STATUS_REFRESH_MS);
           document.addEventListener('visibilitychange', function(){ if (!document.hidden) refreshChargingStatuses(); });
         }
+        _ensureChDebugBtn();   // TEMP diagnostic button (remove after AC/DC merge confirmed)
       } catch (e) {
         console.error('Latauspisteiden lataus epäonnistui:', e);
       } finally {
         chargingLoading = false;
       }
     }
+    // ── TEMP DIAGNOSTIC (remove after the AC/DC merge is confirmed) ───────────
+    // A small 🐞 button lists the RAW (pre-merge) charging locations currently in
+    // the map view — name, operator and coordinates — so we can see exactly why
+    // two locations (e.g. an AC + DC "Sähkötalo Kamppi") do or don't merge.
+    function _ensureChDebugBtn(){
+      if (document.getElementById('ch-debug-btn')) return;
+      const btn = document.createElement('button');
+      btn.id = 'ch-debug-btn';
+      btn.type = 'button';
+      btn.textContent = '\uD83D\uDC1E';
+      btn.style.cssText = 'position:fixed;left:12px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:9991;width:42px;height:42px;border-radius:50%;border:none;background:rgba(12,2,67,0.85);color:#fff;font-size:18px;box-shadow:0 3px 10px rgba(0,0,0,0.3);cursor:pointer;';
+      btn.addEventListener('click', _chDebugPanel);
+      document.body.appendChild(btn);
+    }
+    function _chDebugPanel(){
+      if (!(window.map && map.getBounds)) { alert('Kartta ei ole viel\u00e4 valmis.'); return; }
+      const b = map.getBounds();
+      const N = b.getNorth(), S = b.getSouth(), E = b.getEast(), W = b.getWest();
+      const inView = (_chRawLocs || []).filter(L => L.lat <= N && L.lat >= S && L.lng <= E && L.lng >= W);
+      inView.sort((a, b2) => (a.name||'').localeCompare(b2.name||'', 'fi') || (a.op||'').localeCompare(b2.op||'', 'fi'));
+      const cap = inView.slice(0, 80);
+      const old = document.getElementById('ch-debug-box'); if (old) old.remove();
+      const box = document.createElement('div');
+      box.id = 'ch-debug-box';
+      box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;';
+      let html = '<div style="background:#0C0243;color:#fff;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;padding:max(14px,env(safe-area-inset-top)) 16px 14px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">' +
+        '<span>DEBUG \u00b7 raakapisteet n\u00e4kym\u00e4ss\u00e4 (' + inView.length + ')</span>' +
+        '<button id="ch-debug-close" type="button" style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-weight:bold;cursor:pointer;">Sulje</button></div>' +
+        '<div style="flex:1;overflow:auto;background:#fff;font-family:monospace;font-size:12px;padding:12px 14px;line-height:1.5;color:#111;">';
+      if (!cap.length) html += 'Ei pisteit\u00e4 t\u00e4ss\u00e4 karttan\u00e4kym\u00e4ss\u00e4. Keskit\u00e4 ja zoomaa asemalle, ja avaa uudelleen.';
+      else html += cap.map(L => '\u2022 <b>' + (L.name || '(nimet\u00f6n)') + '</b><br>operaattori: ' + (L.op || '(tyhj\u00e4)') + ' &nbsp;|&nbsp; evse: ' + L.evses + '<br>lat ' + L.lat.toFixed(6) + ', lng ' + L.lng.toFixed(6)).join('<hr style="border:none;border-top:1px solid #eee;margin:8px 0;">');
+      if (inView.length > cap.length) html += '<hr style="border:none;border-top:1px solid #eee;margin:8px 0;"><i>\u2026 ja ' + (inView.length - cap.length) + ' lis\u00e4\u00e4 (n\u00e4ytet\u00e4\u00e4n 80).</i>';
+      html += '</div>';
+      box.innerHTML = html;
+      document.body.appendChild(box);
+      box.querySelector('#ch-debug-close').addEventListener('click', () => box.remove());
+    }
+    // ─────────────────────────────────────────────────────────────────────────
     // Recompute each station's availability from a fresh per-EVSE status map,
     // using the cached EVSE→labels index. Mutates available / availCount and the
     // per-connector avail counts on _chargingFeatures in place.
