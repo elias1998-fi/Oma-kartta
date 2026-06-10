@@ -2,6 +2,9 @@
 <html lang="fi">
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -10305,7 +10308,7 @@
               if ((kwHere[l] || 0) > g.byLbl[l].kw)   g.byLbl[l].kw   = kwHere[l];
               if ((vHere[l]  || 0) > g.byLbl[l].volt) g.byLbl[l].volt = vHere[l];
             });
-            g.evList.push({ id: ev.id, labels: [...lblsHere] });
+            g.evList.push({ id: ev.id, ref: (ev.physicalReference || ev.physical_reference || ''), labels: [...lblsHere] });
           });
         });
         _chargingFeatures = _chOrder.map(g => {
@@ -10701,6 +10704,16 @@
       const bc = document.getElementById('btn-container');
       if(bc) bc.classList.remove('hidden');
     }
+    // The REAL connector/stall number. Prefer the operator's physical_reference
+    // (the number printed on the charger, e.g. Tesla "1A") straight from the
+    // AFIR feed. If the operator doesn't publish it, fall back to the EVSE's own
+    // id tail (still a real identifier from the data) — never an invented index.
+    function connectorNumber(ref, evseId){
+      if (ref != null && String(ref).trim()) return String(ref).trim();
+      const tail = String(evseId || '').split(/[*:_\-\/]/).filter(Boolean).pop() || String(evseId || '');
+      const t = tail.replace(/^E(?=\d)/i, '').trim();
+      return t || '\u2013';
+    }
     function openConnectorPicker(cp){
       let ov = document.getElementById('connector-picker-overlay');
       if(!ov){
@@ -10727,14 +10740,19 @@
         const evList = _chargingEvseIndex[cp.id] || [];
         const items = [];
         evList.forEach(e => { (e.labels||[]).forEach(l => {
-          items.push({ evseId:e.id, label:l, kw:(aggKv[l]&&aggKv[l].kw)||0, volt:(aggKv[l]&&aggKv[l].volt)||0, available:_chargingStatusMap[e.id]==='AVAILABLE' });
+          items.push({ evseId:e.id, ref:e.ref||'', label:l, kw:(aggKv[l]&&aggKv[l].kw)||0, volt:(aggKv[l]&&aggKv[l].volt)||0, available:_chargingStatusMap[e.id]==='AVAILABLE' });
         }); });
-        items.sort((a,b) => { const ia=ORDER.indexOf(a.label), ib=ORDER.indexOf(b.label); return (ia<0?99:ia)-(ib<0?99:ib); });
-        items.forEach((it,i) => { it.num = i+1; });
+        // Use the REAL connector number from the feed (physical_reference), not
+        // an invented index. Order by that number (natural sort: 1A, 1B, 2A…).
+        items.forEach(it => { it.num = connectorNumber(it.ref, it.evseId); });
+        items.sort((a,b) => String(a.num).localeCompare(String(b.num), undefined, {numeric:true})
+          || ((ORDER.indexOf(a.label)<0?99:ORDER.indexOf(a.label)) - (ORDER.indexOf(b.label)<0?99:ORDER.indexOf(b.label))));
         const lightning = (col) => '<svg width="13" height="13" viewBox="0 0 24 24" style="flex:none;display:block;"><path d="M13 2 L4 14 h6 l-1 8 9 -12 h-6 z" fill="'+col+'"/></svg>';
         const cardsHtml = items.map(it => {
           const numCol = it.available ? '#0C0243' : '#b4b7bd';
-          const numCell = '<span style="flex:none;width:60px;background:#f4f4ff;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:22px;font-weight:800;color:'+numCol+';">'+it.num+'</span>';
+          const numStr = String(it.num);
+          const numFs = numStr.length >= 6 ? 11 : numStr.length === 5 ? 12 : numStr.length === 4 ? 14 : numStr.length === 3 ? 17 : 22;
+          const numCell = '<span style="flex:none;width:60px;background:#f4f4ff;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:'+numFs+'px;font-weight:800;color:'+numCol+';padding:0 3px;line-height:1.1;text-align:center;word-break:break-all;">'+escapeHtml(numStr)+'</span>';
           if(!it.available){
             // Occupied / unavailable → text instead of an icon. Not tappable.
             return '<div class="cp-card-busy" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;">' +
@@ -10743,7 +10761,7 @@
             '</div>';
           }
           const kwTxt = it.kw>0 ? (it.kw+' kW') : '\u2013';
-          return '<button class="cp-card" data-num="'+it.num+'" data-label="'+escapeHtml(it.label)+'" data-kw="'+(it.kw||0)+'" data-volt="'+(it.volt||0)+'" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;padding:0;cursor:pointer;text-align:left;">' +
+          return '<button class="cp-card" data-num="'+escapeHtml(numStr)+'" data-label="'+escapeHtml(it.label)+'" data-kw="'+(it.kw||0)+'" data-volt="'+(it.volt||0)+'" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;padding:0;cursor:pointer;text-align:left;">' +
             numCell +
             '<span style="flex:1;min-width:0;padding:11px 12px;display:flex;flex-direction:column;gap:5px;justify-content:center;">' +
               '<span style="display:flex;align-items:center;gap:6px;">'+plugIcon(it.label,'#0C0243',18)+'<span style="font-family:Arial,sans-serif;font-size:14px;font-weight:600;color:#0C0243;white-space:nowrap;">'+escapeHtml(it.label)+'</span></span>' +
