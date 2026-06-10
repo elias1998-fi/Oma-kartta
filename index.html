@@ -10181,7 +10181,7 @@
             const p = f.properties || {};
             const evses = Array.isArray(p.evses) ? p.evses : [];
             const standards = new Set();
-            const byLbl = {};   // readable plug label -> { total: EVSEs offering it, avail: of those AVAILABLE, kw: max power }
+            const byLbl = {};   // readable plug label -> { total: EVSEs offering it, avail: of those AVAILABLE, kw: max power, volt: max voltage }
             let maxKw = 0, maxV = 0, anyAvail = false, total = 0, avail = 0;
             evses.forEach(ev => {
               total++;
@@ -10189,26 +10189,33 @@
               if (evAvail) { anyAvail = true; avail++; }
               const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
               const kwHere = {};            // label -> max kW among THIS evse's connectors of that label
+              const vHere = {};             // label -> max voltage among THIS evse's connectors of that label
               (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
                 const kw = c.maxElectricPower ? (c.maxElectricPower / 1000) : 0;
+                const v  = c.maxVoltage || 0;
                 if (c.standard) {
                   standards.add(c.standard);
                   const l = stdLabel(c.standard);
-                  if (l) { lblsHere.add(l); if (kw > (kwHere[l] || 0)) kwHere[l] = kw; }
+                  if (l) {
+                    lblsHere.add(l);
+                    if (kw > (kwHere[l] || 0)) kwHere[l] = kw;
+                    if (v  > (vHere[l]  || 0)) vHere[l]  = v;
+                  }
                 }
                 if (kw) maxKw = Math.max(maxKw, kw);
-                if (c.maxVoltage) maxV = Math.max(maxV, c.maxVoltage);
+                if (v)  maxV  = Math.max(maxV, v);
               });
               lblsHere.forEach(l => {
-                if (!byLbl[l]) byLbl[l] = { total: 0, avail: 0, kw: 0 };
+                if (!byLbl[l]) byLbl[l] = { total: 0, avail: 0, kw: 0, volt: 0 };
                 byLbl[l].total++;
                 if (evAvail) byLbl[l].avail++;
-                if ((kwHere[l] || 0) > byLbl[l].kw) byLbl[l].kw = kwHere[l];
+                if ((kwHere[l] || 0) > byLbl[l].kw)   byLbl[l].kw   = kwHere[l];
+                if ((vHere[l]  || 0) > byLbl[l].volt) byLbl[l].volt = vHere[l];
               });
             });
             // Per plug-type availability rows for the detail view, stored as a
             // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
-            const connectors = Object.keys(byLbl).map(l => ({ name: l, total: byLbl[l].total, avail: byLbl[l].avail, kw: Math.round(byLbl[l].kw) }));
+            const connectors = Object.keys(byLbl).map(l => ({ name: l, total: byLbl[l].total, avail: byLbl[l].avail, kw: Math.round(byLbl[l].kw), volt: Math.round(byLbl[l].volt) }));
             const op = p.operator || {};
             const det = op.details || {};
             return { type: 'Feature', geometry: f.geometry, properties: {
@@ -10312,11 +10319,13 @@
         const total = (+c.total || 0);
         const free  = (+c.avail || 0);
         const kw    = (+c.kw || 0);
+        const volt  = (+c.volt || 0);
         const col   = free > 0 ? '#1faa4a' : '#c0392b';
         const kwTxt = kw > 0 ? (kw + ' kW') : '';
+        const vTxt  = volt > 0 ? (volt + ' V') : '';
         return '<span style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
                  '<span style="display:flex;align-items:center;min-width:0;">' +
-                   '<span style="display:inline-flex;align-items:center;gap:4px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:9px;padding:2px 6px;margin-right:8px;flex:none;">' +
+                   '<span style="display:inline-flex;align-items:center;gap:4px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:4px 6px;margin-right:8px;flex:none;">' +
                      plugIcon(String(c.name || ''), '#0C0243', 20) +
                      '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">\u00d7 ' + total + '</span>' +
                    '</span>' +
@@ -10324,7 +10333,10 @@
                      ' \u00b7 <span style="color:' + col + ';font-weight:700;">Vapaana: ' + free + '</span>' +
                    '</span>' +
                  '</span>' +
-                 '<span style="color:#333;white-space:nowrap;flex:none;">' + kwTxt + '</span>' +
+                 '<span style="display:flex;align-items:center;gap:7px;flex:none;">' +
+                   (kwTxt ? '<span style="color:#333;white-space:nowrap;">' + kwTxt + '</span>' : '') +
+                   (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
+                 '</span>' +
                '</span>';
       }).join('');
       return '<span style="display:flex;flex-direction:column;gap:6px;">' + rows + '</span>';
@@ -10388,7 +10400,6 @@
         'Sähkölatauspiste',
         p.operatorName || 'Latausoperaattori',
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
-        '<p class="price-label">Jännite</p><p class="price-value">' + volt + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>'
       );
       // Big action button label for a charging station.
