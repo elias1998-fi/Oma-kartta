@@ -128,10 +128,10 @@
     #center-marker.expanded #cm-body {
       background: transparent;
       border-color: transparent;
-      padding: 2px 8px 2px 4px;
-      gap: 6px;
+      padding: 2px 7px 2px 3px;
+      gap: 4px;
     }
-    #center-marker.expanded #cm-pin { width: 23px; height: 23px; }
+    #center-marker.expanded #cm-pin { width: 20px; height: 20px; }
     #center-marker.charging-mode #cm-pin { display: none !important; }
     /* Charging extended marker: keep the 20px icon, but tighten the white pill
        a touch (less padding + smaller gap) so it reads a bit smaller. */
@@ -146,16 +146,16 @@
     /* The electronic disc icon uses a wide 340×280 viewBox. It's sized to
        ~23px tall; width is proportional (23 × 340/280 ≈ 28) so the badge
        stays the same height as the paid "P" badge but a bit wider. */
-    #center-marker.expanded #cm-pin.parking-disc { width: 28px; height: 23px; }
-    #cm-pin.parking-disc { width: 28px !important; height: 23px !important; }
-    #center-marker.expanded #cm-code { max-width: 240px; opacity: 1; }
+    #center-marker.expanded #cm-pin.parking-disc { width: 24px; height: 20px; }
+    #cm-pin.parking-disc { width: 24px !important; height: 20px !important; }
+    #center-marker.expanded #cm-code { max-width: 240px; opacity: 1; font-size: 14px; }
 
     /* The duration text on free areas: dark navy (readable on the white
        badge), bold, in the sign font, and a touch smaller than before. */
     #center-marker.expanded.disc-mode #cm-code {
       color: #0C0243;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 20px;
+      font-size: 14px;
       font-weight: 800;
       letter-spacing: 0.2px;
     }
@@ -10449,7 +10449,7 @@
                  '</span>' +
                  '<span style="display:flex;align-items:center;gap:7px;flex:none;">' +
                    (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
-                   (kwTxt ? '<span style="color:#333;white-space:nowrap;">' + kwTxt + '</span>' : '') +
+                   (kwTxt ? '<span style="color:#333;white-space:nowrap;display:inline-block;min-width:54px;text-align:right;">' + kwTxt + '</span>' : '') +
                  '</span>' +
                '</span>';
       }).join('');
@@ -10526,7 +10526,7 @@
         const stTxt = isAvail ? 'Tilaa' : 'Täynnä';
         const stCol = '#111';   // status text in black (icon still shows green/gray)
         const icCol = isAvail ? '#4caf50' : '#b4b7bd';   // gray icon when not available
-        cbadge.innerHTML = '<img src="' + chargingIconSvg(icCol) + '" style="width:22px;height:22px;display:inline-block;vertical-align:middle;">' +
+        cbadge.innerHTML = '<img src="' + chargingIconSvg(icCol) + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
           '<span style="vertical-align:middle;margin-left:5px;color:' + stCol + ';font-size:14px;font-weight:800;letter-spacing:0.3px;">' + stTxt + '</span>';
         cbadge.style.display = 'inline-block';
         cbadge.style.background = 'transparent';
