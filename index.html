@@ -1658,7 +1658,7 @@
     .op-list { display: none; margin-top: 8px; }
     .op-dropdown.open .op-list { display: block; }
     .op-row {
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
       background: white; border: 1.5px solid #ddd; border-radius: 10px;
       padding: 10px 12px; margin-bottom: 8px; cursor: pointer; color: #888;
       transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -1670,7 +1670,7 @@
     /* Logo placeholder chip. To show a real operator logo, replace the chip's
        text with <img src="..."> using a logo file you have the right to use. */
     .op-logo {
-      width: 54px; height: 30px; flex-shrink: 0; border-radius: 5px;
+      width: 72px; height: 40px; flex-shrink: 0; border-radius: 5px;
       background: #eef0f4; display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 700; color: #555; overflow: hidden;
     }
@@ -10080,9 +10080,60 @@
     const OPERATOR_ALIASES = {
       // 'K-auto': 'K-Lataus',
     };
+    // Map an operator (whatever the AFIR feed happens to call it) to its
+    // commonly-known brand name + website domain. The domain drives the logo
+    // (favicon) so every operator gets one. Matched by substring/regex so it
+    // survives feed name variants (e.g. "Latausvirta" -> Virta).
+    const OPERATOR_BRANDS = [
+      { re: /virta/i,                                       name: 'Virta',            domain: 'virta.global' },
+      { re: /k[\s-]*auto|k[\s-]*lataus|k[\s-]*charg|kesko/i, name: 'K-Lataus',         domain: 'k-lataus.fi' },
+      { re: /recharge|fortum/i,                             name: 'Recharge',         domain: 'rechargeinfra.com' },
+      { re: /plugit/i,                                      name: 'Plugit',           domain: 'plugit.fi' },
+      { re: /\babc\b/i,                                     name: 'ABC-Lataus',       domain: 'abcasemat.fi' },
+      { re: /\bneste\b/i,                                   name: 'Neste',            domain: 'neste.fi' },
+      { re: /ionity/i,                                      name: 'Ionity',           domain: 'ionity.eu' },
+      { re: /tesla/i,                                       name: 'Tesla',            domain: 'tesla.com' },
+      { re: /\bhelen\b/i,                                   name: 'Helen',            domain: 'helen.fi' },
+      { re: /vattenfall|incharge/i,                         name: 'Vattenfall',       domain: 'vattenfall.fi' },
+      { re: /kempower/i,                                    name: 'Kempower',         domain: 'kempower.com' },
+      { re: /\blidl\b/i,                                    name: 'Lidl',             domain: 'lidl.fi' },
+      { re: /\bikea\b/i,                                    name: 'IKEA',             domain: 'ikea.com' },
+      { re: /\bmer\b/i,                                     name: 'Mer',              domain: 'mer.eco' },
+      { re: /allego/i,                                      name: 'Allego',           domain: 'allego.eu' },
+      { re: /\bevio\b/i,                                    name: 'Evio',             domain: 'evio.fi' },
+      { re: /\bväre\b|\bvare\b/i,                           name: 'Väre',             domain: 'vare.fi' },
+      { re: /unified/i,                                     name: 'Unified Chargers', domain: 'unifiedchargers.com' },
+      { re: /eparking/i,                                    name: 'eParking',         domain: 'eparking.fi' },
+      { re: /motonet/i,                                     name: 'Motonet',          domain: 'motonet.fi' },
+      { re: /taskuparkki/i,                                 name: 'Taskuparkki',      domain: 'taskuparkki.fi' },
+      { re: /parkkis(ä|a)hk(ö|o)/i,                         name: 'Parkkisähkö',      domain: 'parkkisahko.fi' },
+      { re: /\bdefa\b/i,                                    name: 'DEFA',             domain: 'defa.com' },
+      { re: /autoliitto/i,                                  name: 'Autoliitto',       domain: 'autoliitto.fi' },
+      { re: /tokmanni/i,                                    name: 'Tokmanni',         domain: 'tokmanni.fi' }
+    ];
+    function brandFor(name){
+      const s = String(name || '');
+      for (const b of OPERATOR_BRANDS) { if (b.re.test(s)) return b; }
+      return null;
+    }
+    // Website domain for an operator (brand map, else a best-guess slug.fi).
+    function operatorDomain(name){
+      const b = brandFor(name);
+      if (b) return b.domain;
+      const slug = String(name || '').toLowerCase()
+        .replace(/\b(oy ab|oyj|oy|ab|ltd|inc|gmbh)\b/g, '')
+        .replace(/[^a-z0-9]/g, '');
+      return slug ? slug + '.fi' : 'ev.fi';
+    }
+    // A logo for ANY operator via Google's favicon service (resolved by domain).
+    function operatorFavicon(name){
+      return 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(operatorDomain(name)) + '&sz=128';
+    }
     function normalizeOperator(name){
       let s = String(name || '').replace(/\s+/g, ' ').trim();
       s = s.replace(/[\s,]+(oy ab|oyj|oy|ab|ltd\.?|inc\.?|gmbh)\.?$/i, '').trim();
+      const b = brandFor(s);
+      if (b) return b.name;
       return OPERATOR_ALIASES[s] || s;
     }
 
@@ -10788,21 +10839,17 @@
         row.setAttribute('data-op', nm);
         const logoDiv = document.createElement('div');
         logoDiv.className = 'op-logo';
-        const initials = opInitials(nm);
-        if(OPERATOR_LOGOS[nm]){
-          logoDiv.style.background = '#fff';   // logos read best on white
-          const im = document.createElement('img');
-          im.alt = ''; im.referrerPolicy = 'no-referrer'; im.loading = 'lazy';
-          im.src = OPERATOR_LOGOS[nm];
-          im.onerror = () => { logoDiv.style.background = ''; im.replaceWith(document.createTextNode(initials)); };
-          logoDiv.appendChild(im);
-        } else {
-          logoDiv.textContent = initials;
-        }
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'op-name';
-        nameSpan.textContent = nm;
-        row.appendChild(logoDiv); row.appendChild(nameSpan);
+        logoDiv.style.background = '#fff';   // logos read best on white
+        const favicon = operatorFavicon(nm);
+        const im = document.createElement('img');
+        im.alt = ''; im.referrerPolicy = 'no-referrer'; im.loading = 'lazy';
+        // Prefer the feed's own logo; if it's missing or fails to load, fall
+        // back to the operator's logo via Google (favicon by domain) so EVERY
+        // operator shows a logo. The list shows logos only — no names.
+        im.src = OPERATOR_LOGOS[nm] || favicon;
+        im.onerror = () => { if (im.src !== favicon) im.src = favicon; };
+        logoDiv.appendChild(im);
+        row.appendChild(logoDiv);
         row.addEventListener('click', () => toggleOperator(nm, row));
         list.appendChild(row);
       });
