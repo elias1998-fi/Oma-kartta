@@ -10135,7 +10135,7 @@
     // "publishable" token: sign up at https://logo.dev, copy the token, and
     // paste it below. With a token, every operator shows its real full logo by
     // domain. Without one we fall back to Google's favicon (small icons).
-    const LOGO_DEV_TOKEN = '';   // <-- paste your free logo.dev publishable token here
+    const LOGO_DEV_TOKEN = 'pk_bMj_J40RSByK0yowk5WGmw';   // logo.dev publishable token
     function operatorLogoUrl(name){
       const dom = operatorDomain(name);
       if (LOGO_DEV_TOKEN) {
@@ -10216,7 +10216,7 @@
           } else {
             map.addSource('charging-points', { type: 'geojson', data: geojson });
             map.addLayer({
-              id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
+              id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 12,
               layout: {
                 'icon-image': ['case', ['get', 'available'], 'charging-green', 'charging-gray'],
                 'icon-size': 0.25, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
