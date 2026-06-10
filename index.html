@@ -10181,16 +10181,23 @@
             const p = f.properties || {};
             const evses = Array.isArray(p.evses) ? p.evses : [];
             const standards = new Set();
+            const byLbl = {};   // readable plug label -> { total: EVSEs offering it, avail: of those AVAILABLE }
             let maxKw = 0, maxV = 0, anyAvail = false, total = 0, avail = 0;
             evses.forEach(ev => {
               total++;
-              if (statusMap[ev.id] === 'AVAILABLE') { anyAvail = true; avail++; }
+              const evAvail = statusMap[ev.id] === 'AVAILABLE';
+              if (evAvail) { anyAvail = true; avail++; }
+              const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
               (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
-                if (c.standard) standards.add(c.standard);
+                if (c.standard) { standards.add(c.standard); const l = stdLabel(c.standard); if (l) lblsHere.add(l); }
                 if (c.maxElectricPower) maxKw = Math.max(maxKw, c.maxElectricPower / 1000);
                 if (c.maxVoltage) maxV = Math.max(maxV, c.maxVoltage);
               });
+              lblsHere.forEach(l => { if (!byLbl[l]) byLbl[l] = { total: 0, avail: 0 }; byLbl[l].total++; if (evAvail) byLbl[l].avail++; });
             });
+            // Per plug-type availability rows for the detail view, stored as a
+            // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
+            const connectors = Object.keys(byLbl).map(l => ({ name: l, total: byLbl[l].total, avail: byLbl[l].avail }));
             const op = p.operator || {};
             const det = op.details || {};
             return { type: 'Feature', geometry: f.geometry, properties: {
@@ -10199,6 +10206,7 @@
               logoUrl: (det.logo && det.logo.url) || '',
               address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
               standards: [...standards].join(','),
+              connectors: JSON.stringify(connectors),
               maxKw: Math.round(maxKw), maxVoltage: maxV,
               evseCount: total, availCount: avail, available: anyAvail,
               price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
@@ -10240,6 +10248,23 @@
       if(type === 'chademo') return std === 'CHADEMO';
       if(type === 'schuko')  return std.indexOf('DOMESTIC') >= 0;
       return false;
+    }
+    // Build the per-plug "Pistokkeet" rows for a station's detail view: one
+    // line per plug type, "<name> · Tilaa/Täynnä (free/total)", coloured.
+    // `connectorsJson` is the JSON string stored on each charging feature.
+    function chargingConnectorsHtml(connectorsJson, fallbackText){
+      let conns = [];
+      try { conns = JSON.parse(connectorsJson || '[]'); } catch (e) { conns = []; }
+      if (!Array.isArray(conns) || !conns.length) return fallbackText || '\u2013';
+      return conns.map(c => {
+        const free = (+c.avail || 0) > 0;
+        const col  = free ? '#1faa4a' : '#c0392b';
+        const stat = free ? 'Tilaa' : 'Täynnä';
+        const cnt  = (+c.total > 1) ? (' ' + (+c.avail || 0) + '/' + (+c.total)) : '';
+        return '<span style="display:block;line-height:1.6;">' + escapeHtml(String(c.name || '')) +
+               ' \u00b7 <span style="color:' + col + ';font-weight:700;">' + stat + '</span>' +
+               '<span style="color:#888;">' + cnt + '</span></span>';
+      }).join('');
     }
     // Re-filter the loaded charging stations by the EV controls and push the
     // result to the map source. No-op until the data + layer exist.
@@ -10301,7 +10326,7 @@
         p.operatorName || 'Latausoperaattori',
         '<p class="price-label">Tila</p><p class="price-value">' + availTxt + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
-        '<p class="price-label">Pistokkeet</p><p class="price-value">' + stdText + '</p>' +
+        '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
         '<p class="price-label">Teho</p><p class="price-value">' + power + '</p>' +
         '<p class="price-label">Jännite</p><p class="price-value">' + volt + '</p>'
       );
@@ -10367,7 +10392,7 @@
       const veh = (typeof vehicles !== 'undefined' && vehicles[selectedVehicleIdx]) ? vehicles[selectedVehicleIdx] : { plate:'', name:'' };
       const pay = (typeof paymentMethods !== 'undefined' && paymentMethods[selectedPaymentIdx]) ? paymentMethods[selectedPaymentIdx] : { name:'', icon:'' };
       const payIcon = (typeof getPaymentIcon === 'function') ? getPaymentIcon(pay.icon) : '';
-      const specs = [['Tila', statusTxt], ['Pistokkeet', stdText], ['Teho', power], ['J\u00e4nnite', volt]];
+      const specs = [['Tila', statusTxt], ['Pistokkeet', chargingConnectorsHtml(cp.connectors, stdText)], ['Teho', power], ['J\u00e4nnite', volt]];
       const specsHtml = specs.map((s,i) =>
         '<div style="display:flex;justify-content:space-between;padding:11px 0;' + (i < specs.length-1 ? 'border-bottom:1px solid #eef0f2;' : '') + '">' +
           '<span style="color:#666;font-size:14px;">' + s[0] + '</span>' +
