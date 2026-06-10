@@ -10249,21 +10249,55 @@
       if(type === 'schuko')  return std.indexOf('DOMESTIC') >= 0;
       return false;
     }
+    // Small schematic icon per plug type. Distinguished by pin layout: CCS has
+    // two large DC pins below a Type-2 face, CHAdeMO four pins, Type 2 seven
+    // small, etc. `color`/`size` let callers recolour (e.g. white on the green
+    // count pill) and resize; defaults are navy at 16px.
+    function plugIcon(label, color, size){
+      const c = color || '#0C0243';
+      const s = size || 16;
+      const dot = (x,y,r) => '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+c+'"/>';
+      const ring = '<circle cx="12" cy="12" r="8.5" fill="none" stroke="'+c+'" stroke-width="1.6"/>';
+      let inner;
+      switch (label) {
+        case 'CCS':
+          inner = '<circle cx="12" cy="8.5" r="6" fill="none" stroke="'+c+'" stroke-width="1.5"/>' +
+                  dot(9.6,7.6,0.9)+dot(14.4,7.6,0.9)+dot(12,6.6,0.9)+dot(10.2,9.8,0.9)+dot(13.8,9.8,0.9) +
+                  dot(8.8,18,2.5)+dot(15.2,18,2.5); break;
+        case 'CHAdeMO':
+          inner = ring+dot(8.6,9,1.7)+dot(15.4,9,1.7)+dot(8.6,15,1.7)+dot(15.4,15,1.7)+dot(12,12,1.2); break;
+        case 'Schuko':
+          inner = ring+dot(9.2,11,1.9)+dot(14.8,11,1.9)+'<rect x="10.4" y="15.4" width="3.2" height="1.7" rx="0.85" fill="'+c+'"/>'; break;
+        case 'Type 1':
+          inner = ring+dot(9,9,1.1)+dot(15,9,1.1)+dot(12,11,1.1)+dot(9.2,14.2,1.1)+dot(14.8,14.2,1.1); break;
+        case 'Type 2':
+          inner = ring+dot(8.8,8.6,0.95)+dot(12,8,0.95)+dot(15.2,8.6,0.95)+dot(8.4,12,0.95)+dot(12,12,0.95)+dot(15.6,12,0.95)+dot(12,15.6,0.95); break;
+        default:
+          inner = ring+dot(9.6,10.6,1.2)+dot(14.4,10.6,1.2)+dot(12,14.2,1.2);
+      }
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" style="flex:none;display:block;">'+inner+'</svg>';
+    }
     // Build the per-plug "Pistokkeet" rows for a station's detail view: one
-    // line per plug type, "<name> · Tilaa/Täynnä (free/total)", coloured.
+    // line per plug type — a green count pill "[white icon × <total>]" then
+    // "<name> · Vapaana: <free>" (free count green if >0, red if 0).
     // `connectorsJson` is the JSON string stored on each charging feature.
     function chargingConnectorsHtml(connectorsJson, fallbackText){
       let conns = [];
       try { conns = JSON.parse(connectorsJson || '[]'); } catch (e) { conns = []; }
       if (!Array.isArray(conns) || !conns.length) return fallbackText || '\u2013';
       return conns.map(c => {
-        const free = (+c.avail || 0) > 0;
-        const col  = free ? '#1faa4a' : '#c0392b';
-        const stat = free ? 'Tilaa' : 'Täynnä';
-        const cnt  = (+c.total > 1) ? (' ' + (+c.avail || 0) + '/' + (+c.total)) : '';
-        return '<span style="display:block;line-height:1.6;">' + escapeHtml(String(c.name || '')) +
-               ' \u00b7 <span style="color:' + col + ';font-weight:700;">' + stat + '</span>' +
-               '<span style="color:#888;">' + cnt + '</span></span>';
+        const total = (+c.total || 0);
+        const free  = (+c.avail || 0);
+        const col   = free > 0 ? '#1faa4a' : '#c0392b';
+        return '<span style="display:flex;align-items:center;line-height:2;">' +
+                 '<span style="display:inline-flex;align-items:center;gap:5px;background:#4caf50;border-radius:11px;padding:3px 8px;margin-right:8px;flex:none;">' +
+                   plugIcon(String(c.name || ''), '#ffffff', 18) +
+                   '<span style="color:#fff;font-weight:700;font-size:12.5px;white-space:nowrap;">\u00d7 ' + total + '</span>' +
+                 '</span>' +
+                 '<span>' + escapeHtml(String(c.name || '')) +
+                   ' \u00b7 <span style="color:' + col + ';font-weight:700;">Vapaana: ' + free + '</span>' +
+                 '</span>' +
+               '</span>';
       }).join('');
     }
     // Re-filter the loaded charging stations by the EV controls and push the
@@ -10324,11 +10358,10 @@
         p.name || 'Latausasema',
         'Sähkölatauspiste',
         p.operatorName || 'Latausoperaattori',
-        '<p class="price-label">Tila</p><p class="price-value">' + availTxt + '</p>' +
-        '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
         '<p class="price-label">Teho</p><p class="price-value">' + power + '</p>' +
-        '<p class="price-label">Jännite</p><p class="price-value">' + volt + '</p>'
+        '<p class="price-label">Jännite</p><p class="price-value">' + volt + '</p>' +
+        '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>'
       );
       // Big action button label for a charging station.
       document.getElementById('action-btn').textContent = 'Lataa täällä';
@@ -10392,7 +10425,7 @@
       const veh = (typeof vehicles !== 'undefined' && vehicles[selectedVehicleIdx]) ? vehicles[selectedVehicleIdx] : { plate:'', name:'' };
       const pay = (typeof paymentMethods !== 'undefined' && paymentMethods[selectedPaymentIdx]) ? paymentMethods[selectedPaymentIdx] : { name:'', icon:'' };
       const payIcon = (typeof getPaymentIcon === 'function') ? getPaymentIcon(pay.icon) : '';
-      const specs = [['Tila', statusTxt], ['Pistokkeet', chargingConnectorsHtml(cp.connectors, stdText)], ['Teho', power], ['J\u00e4nnite', volt]];
+      const specs = [['Tila', statusTxt], ['Pistokkeet', stdText], ['Teho', power], ['J\u00e4nnite', volt]];
       const specsHtml = specs.map((s,i) =>
         '<div style="display:flex;justify-content:space-between;padding:11px 0;' + (i < specs.length-1 ? 'border-bottom:1px solid #eef0f2;' : '') + '">' +
           '<span style="color:#666;font-size:14px;">' + s[0] + '</span>' +
