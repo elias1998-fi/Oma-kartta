@@ -10195,13 +10195,15 @@
           const det = op.details || {};
           const coords = f.geometry.coordinates;
           const opName = normalizeOperator(det.name);
+          const _logoObj = det.logo || op.logo;   // logo may sit under details or operator, as {url} or a bare string
+          const logoUrl = !_logoObj ? '' : (typeof _logoObj === 'string' ? _logoObj : (_logoObj.url || ''));
           const key = opName + '@' + (+coords[1]).toFixed(4) + ',' + (+coords[0]).toFixed(4);
           let g = _chGroups[key];
           if (!g) {
             g = _chGroups[key] = {
               id: p.id || key, name: p.name || 'Latausasema',
               operatorId: op.id || '', operatorName: opName,
-              logoUrl: (det.logo && det.logo.url) || '',
+              logoUrl: logoUrl,
               address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
               coords: coords, standards: new Set(), byLbl: {},
               maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
@@ -10745,7 +10747,7 @@
       const counts = {};
       _chargingFeatures.forEach(f => {
         const nm = f.properties.operatorName;
-        if(nm){ names.add(nm); counts[nm] = (counts[nm] || 0) + 1; if(!OPERATOR_LOGOS[nm] && f.properties.logoUrl) OPERATOR_LOGOS[nm] = f.properties.logoUrl; }
+        if(nm){ names.add(nm); counts[nm] = (counts[nm] || 0) + 1; if(!OPERATOR_LOGOS[nm] && f.properties.logoUrl) OPERATOR_LOGOS[nm] = f.properties.logoUrl.replace(/^http:\/\//i, 'https://'); }
       });
       // Order by charging-point coverage (most stations first) so the biggest
       // operators in Finland (Tesla, K-Lataus, …) sit at the top; alphabetical
@@ -10763,9 +10765,11 @@
         logoDiv.className = 'op-logo';
         const initials = opInitials(nm);
         if(OPERATOR_LOGOS[nm]){
+          logoDiv.style.background = '#fff';   // logos read best on white
           const im = document.createElement('img');
-          im.alt = ''; im.src = OPERATOR_LOGOS[nm];
-          im.onerror = () => im.replaceWith(document.createTextNode(initials));
+          im.alt = ''; im.referrerPolicy = 'no-referrer'; im.loading = 'lazy';
+          im.src = OPERATOR_LOGOS[nm];
+          im.onerror = () => { logoDiv.style.background = ''; im.replaceWith(document.createTextNode(initials)); };
           logoDiv.appendChild(im);
         } else {
           logoDiv.textContent = initials;
