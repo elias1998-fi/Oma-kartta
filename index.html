@@ -10181,23 +10181,34 @@
             const p = f.properties || {};
             const evses = Array.isArray(p.evses) ? p.evses : [];
             const standards = new Set();
-            const byLbl = {};   // readable plug label -> { total: EVSEs offering it, avail: of those AVAILABLE }
+            const byLbl = {};   // readable plug label -> { total: EVSEs offering it, avail: of those AVAILABLE, kw: max power }
             let maxKw = 0, maxV = 0, anyAvail = false, total = 0, avail = 0;
             evses.forEach(ev => {
               total++;
               const evAvail = statusMap[ev.id] === 'AVAILABLE';
               if (evAvail) { anyAvail = true; avail++; }
               const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
+              const kwHere = {};            // label -> max kW among THIS evse's connectors of that label
               (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
-                if (c.standard) { standards.add(c.standard); const l = stdLabel(c.standard); if (l) lblsHere.add(l); }
-                if (c.maxElectricPower) maxKw = Math.max(maxKw, c.maxElectricPower / 1000);
+                const kw = c.maxElectricPower ? (c.maxElectricPower / 1000) : 0;
+                if (c.standard) {
+                  standards.add(c.standard);
+                  const l = stdLabel(c.standard);
+                  if (l) { lblsHere.add(l); if (kw > (kwHere[l] || 0)) kwHere[l] = kw; }
+                }
+                if (kw) maxKw = Math.max(maxKw, kw);
                 if (c.maxVoltage) maxV = Math.max(maxV, c.maxVoltage);
               });
-              lblsHere.forEach(l => { if (!byLbl[l]) byLbl[l] = { total: 0, avail: 0 }; byLbl[l].total++; if (evAvail) byLbl[l].avail++; });
+              lblsHere.forEach(l => {
+                if (!byLbl[l]) byLbl[l] = { total: 0, avail: 0, kw: 0 };
+                byLbl[l].total++;
+                if (evAvail) byLbl[l].avail++;
+                if ((kwHere[l] || 0) > byLbl[l].kw) byLbl[l].kw = kwHere[l];
+              });
             });
             // Per plug-type availability rows for the detail view, stored as a
             // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
-            const connectors = Object.keys(byLbl).map(l => ({ name: l, total: byLbl[l].total, avail: byLbl[l].avail }));
+            const connectors = Object.keys(byLbl).map(l => ({ name: l, total: byLbl[l].total, avail: byLbl[l].avail, kw: Math.round(byLbl[l].kw) }));
             const op = p.operator || {};
             const det = op.details || {};
             return { type: 'Feature', geometry: f.geometry, properties: {
@@ -10249,37 +10260,42 @@
       if(type === 'schuko')  return std.indexOf('DOMESTIC') >= 0;
       return false;
     }
-    // Small schematic icon per plug type. Distinguished by pin layout: CCS has
-    // two large DC pins below a Type-2 face, CHAdeMO four pins, Type 2 seven
-    // small, etc. `color`/`size` let callers recolour (e.g. white on the green
-    // count pill) and resize; defaults are navy at 16px.
+    // Plug-type icon, reusing the same higher-fidelity shapes as the map
+    // filter tiles (Type-2 flat-bottom face, CCS combo, CHAdeMO, Schuko, …).
+    // `color`/`size` let callers recolour/resize; defaults navy at 18px.
     function plugIcon(label, color, size){
       const c = color || '#0C0243';
-      const s = size || 16;
-      const dot = (x,y,r) => '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+c+'"/>';
-      const ring = '<circle cx="12" cy="12" r="8.5" fill="none" stroke="'+c+'" stroke-width="1.6"/>';
+      const s = size || 18;
       let inner;
       switch (label) {
-        case 'CCS':
-          inner = '<circle cx="12" cy="8.5" r="6" fill="none" stroke="'+c+'" stroke-width="1.5"/>' +
-                  dot(9.6,7.6,0.9)+dot(14.4,7.6,0.9)+dot(12,6.6,0.9)+dot(10.2,9.8,0.9)+dot(13.8,9.8,0.9) +
-                  dot(8.8,18,2.5)+dot(15.2,18,2.5); break;
-        case 'CHAdeMO':
-          inner = ring+dot(8.6,9,1.7)+dot(15.4,9,1.7)+dot(8.6,15,1.7)+dot(15.4,15,1.7)+dot(12,12,1.2); break;
-        case 'Schuko':
-          inner = ring+dot(9.2,11,1.9)+dot(14.8,11,1.9)+'<rect x="10.4" y="15.4" width="3.2" height="1.7" rx="0.85" fill="'+c+'"/>'; break;
-        case 'Type 1':
-          inner = ring+dot(9,9,1.1)+dot(15,9,1.1)+dot(12,11,1.1)+dot(9.2,14.2,1.1)+dot(14.8,14.2,1.1); break;
         case 'Type 2':
-          inner = ring+dot(8.8,8.6,0.95)+dot(12,8,0.95)+dot(15.2,8.6,0.95)+dot(8.4,12,0.95)+dot(12,12,0.95)+dot(15.6,12,0.95)+dot(12,15.6,0.95); break;
+          inner = '<path d="M8 18 a12 12 0 0 1 24 0 v8 a4 4 0 0 1 -4 4 h-16 a4 4 0 0 1 -4 -4 z" fill="none" stroke="'+c+'" stroke-width="2"/>' +
+                  '<circle cx="20" cy="14" r="1.5" fill="'+c+'"/><circle cx="15" cy="17.5" r="1.5" fill="'+c+'"/><circle cx="25" cy="17.5" r="1.5" fill="'+c+'"/><circle cx="20" cy="20" r="1.5" fill="'+c+'"/><circle cx="14" cy="24" r="2" fill="'+c+'"/><circle cx="26" cy="24" r="2" fill="'+c+'"/><circle cx="20" cy="26" r="1.5" fill="'+c+'"/>'; break;
+        case 'CCS':
+          inner = '<path d="M8 14 a12 12 0 0 1 24 0 v4 a3 3 0 0 1 -3 3 h-18 a3 3 0 0 1 -3 -3 z" fill="none" stroke="'+c+'" stroke-width="2"/>' +
+                  '<circle cx="20" cy="10" r="1.3" fill="'+c+'"/><circle cx="15.5" cy="13" r="1.3" fill="'+c+'"/><circle cx="24.5" cy="13" r="1.3" fill="'+c+'"/><circle cx="15" cy="17" r="1.6" fill="'+c+'"/><circle cx="25" cy="17" r="1.6" fill="'+c+'"/>' +
+                  '<circle cx="15" cy="29" r="3.5" fill="none" stroke="'+c+'" stroke-width="1.8"/><circle cx="25" cy="29" r="3.5" fill="none" stroke="'+c+'" stroke-width="1.8"/>'; break;
+        case 'CHAdeMO':
+          inner = '<circle cx="20" cy="20" r="13" fill="none" stroke="'+c+'" stroke-width="2"/>' +
+                  '<circle cx="14" cy="14" r="1.6" fill="'+c+'"/><circle cx="26" cy="14" r="1.6" fill="'+c+'"/><circle cx="14" cy="26" r="1.6" fill="'+c+'"/><circle cx="26" cy="26" r="1.6" fill="'+c+'"/><circle cx="20" cy="20" r="2.4" fill="'+c+'"/>' +
+                  '<rect x="18.5" y="5" width="3" height="2.2" rx="0.5" fill="'+c+'"/>'; break;
+        case 'Schuko':
+          inner = '<circle cx="20" cy="20" r="14" fill="none" stroke="'+c+'" stroke-width="2"/>' +
+                  '<circle cx="15" cy="20" r="1.6" fill="'+c+'"/><circle cx="25" cy="20" r="1.6" fill="'+c+'"/>' +
+                  '<rect x="18.5" y="7.5" width="3" height="2.2" rx="0.4" fill="'+c+'"/><rect x="18.5" y="30.3" width="3" height="2.2" rx="0.4" fill="'+c+'"/>'; break;
+        case 'Type 1':
+          inner = '<circle cx="20" cy="20" r="13" fill="none" stroke="'+c+'" stroke-width="2"/>' +
+                  '<circle cx="20" cy="13" r="1.5" fill="'+c+'"/><circle cx="14.5" cy="17.5" r="1.5" fill="'+c+'"/><circle cx="25.5" cy="17.5" r="1.5" fill="'+c+'"/><circle cx="15.5" cy="24" r="2" fill="'+c+'"/><circle cx="24.5" cy="24" r="2" fill="'+c+'"/>'; break;
         default:
-          inner = ring+dot(9.6,10.6,1.2)+dot(14.4,10.6,1.2)+dot(12,14.2,1.2);
+          inner = '<circle cx="20" cy="20" r="13" fill="none" stroke="'+c+'" stroke-width="2"/>' +
+                  '<circle cx="15" cy="18" r="1.8" fill="'+c+'"/><circle cx="25" cy="18" r="1.8" fill="'+c+'"/><circle cx="20" cy="25" r="1.8" fill="'+c+'"/>';
       }
-      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" style="flex:none;display:block;">'+inner+'</svg>';
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 40 40" style="flex:none;display:block;">'+inner+'</svg>';
     }
     // Build the per-plug "Pistokkeet" rows for a station's detail view: one
-    // line per plug type — a green count pill "[white icon × <total>]" then
-    // "<name> · Vapaana: <free>" (free count green if >0, red if 0).
+    // line per plug type — a count pill (light lavender fill + thin dark-blue
+    // outline + dark-blue icon/×count, matching the selected filter tile), then
+    // "<name> · Vapaana: <free>", and that plug type's power at the right edge.
     // `connectorsJson` is the JSON string stored on each charging feature.
     function chargingConnectorsHtml(connectorsJson, fallbackText){
       let conns = [];
@@ -10288,15 +10304,20 @@
       return conns.map(c => {
         const total = (+c.total || 0);
         const free  = (+c.avail || 0);
+        const kw    = (+c.kw || 0);
         const col   = free > 0 ? '#1faa4a' : '#c0392b';
-        return '<span style="display:flex;align-items:center;line-height:2;">' +
-                 '<span style="display:inline-flex;align-items:center;gap:5px;background:#4caf50;border-radius:11px;padding:3px 8px;margin-right:8px;flex:none;">' +
-                   plugIcon(String(c.name || ''), '#ffffff', 18) +
-                   '<span style="color:#fff;font-weight:700;font-size:12.5px;white-space:nowrap;">\u00d7 ' + total + '</span>' +
+        const kwTxt = kw > 0 ? (kw + ' kW') : '';
+        return '<span style="display:flex;align-items:center;justify-content:space-between;gap:10px;line-height:2.1;">' +
+                 '<span style="display:flex;align-items:center;min-width:0;">' +
+                   '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:11px;padding:2px 8px;margin-right:8px;flex:none;">' +
+                     plugIcon(String(c.name || ''), '#0C0243', 18) +
+                     '<span style="color:#0C0243;font-weight:700;font-size:12.5px;white-space:nowrap;">\u00d7 ' + total + '</span>' +
+                   '</span>' +
+                   '<span>' + escapeHtml(String(c.name || '')) +
+                     ' \u00b7 <span style="color:' + col + ';font-weight:700;">Vapaana: ' + free + '</span>' +
+                   '</span>' +
                  '</span>' +
-                 '<span>' + escapeHtml(String(c.name || '')) +
-                   ' \u00b7 <span style="color:' + col + ';font-weight:700;">Vapaana: ' + free + '</span>' +
-                 '</span>' +
+                 '<span style="color:#333;white-space:nowrap;flex:none;">' + kwTxt + '</span>' +
                '</span>';
       }).join('');
     }
@@ -10359,7 +10380,6 @@
         'Sähkölatauspiste',
         p.operatorName || 'Latausoperaattori',
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
-        '<p class="price-label">Teho</p><p class="price-value">' + power + '</p>' +
         '<p class="price-label">Jännite</p><p class="price-value">' + volt + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>'
       );
