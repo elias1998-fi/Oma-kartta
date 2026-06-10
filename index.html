@@ -4699,10 +4699,10 @@
         <div class="charger-type-label" style="margin-top:18px;">Latausteho</div>
         <div class="range-container">
           <div class="range-track"></div><div class="range-fill" id="power-range-fill"></div>
-          <input type="range" class="range-input" id="power-slider-min" min="0" max="3" step="1" value="0"/>
-          <input type="range" class="range-input" id="power-slider-max" min="0" max="3" step="1" value="3"/>
+          <input type="range" class="range-input" id="power-slider-min" min="0" max="5" step="1" value="0"/>
+          <input type="range" class="range-input" id="power-slider-max" min="0" max="5" step="1" value="5"/>
         </div>
-        <div class="slider-ticks"><span>100kW</span><span>200kW</span><span>300kW</span><span>400kW</span></div>
+        <div class="slider-ticks"><span>0kW</span><span>50kW</span><span>100kW</span><span>200kW</span><span>300kW</span><span>400kW</span></div>
         <!-- Voltage segmented control — dark-blue indicator only. -->
         <div class="charger-type-label" style="margin-top:18px;">Latausjännite</div>
         <div id="voltage-segmented" style="margin-top:10px;">
@@ -6874,6 +6874,9 @@
 
         // Apply current filter state (free areas hidden by default until enabled)
         applyRangeFilter();
+        // If "show only public charging" is active, the freshly-added parking
+        // layers must start hidden (charging-only view).
+        if (typeof showEvCharging !== 'undefined' && showEvCharging) setParkingLayersVisible(false);
 
         // The polygon layers were just added, which may have placed them on
         // top of the halli-icons layer. Promote halli icons to the very top
@@ -7129,7 +7132,7 @@
       if (window._navigationInProgress) return;
       // A charging station under the P-marker takes priority and reacts in real
       // time during the drag (no finger-lift needed), like parking areas.
-      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= 13) {
+      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= 12) {
         const ccpt = map.project(map.getCenter());
         const cr = 15;
         const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
@@ -7322,7 +7325,7 @@
       // Filter view manages its own P-marker visibility (hidden); don't
       // fight it from here.
       const inFilter = (typeof filterMode !== 'undefined' && filterMode);
-      if (zoom < 13) {
+      if (zoom < (showEvCharging ? 12 : 13)) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
         // Also hide the P-marker — polygons and halli icons are hidden by
@@ -7493,6 +7496,10 @@
       // top of the parking-area polygons (otherwise the polygon fills
       // partially cover the icons at higher zoom levels).
       map.moveLayer('halli-icons');
+      // Keep halli hidden too if the charging-only view is active.
+      if (typeof showEvCharging !== 'undefined' && showEvCharging && map.getLayer('halli-icons')) {
+        map.setLayoutProperty('halli-icons', 'visibility', 'none');
+      }
 
       function showHalliInfo(e) {
         const props = e.features[0].properties;
@@ -10055,6 +10062,8 @@
         loadChargingStations();
       }
       setChargingVisibility(showEvCharging);
+      // Charging-only view: hide all parking layers when the toggle is on.
+      setParkingLayersVisible(!showEvCharging);
       applyChargingFilters();
       updateChargerCount();
     }
@@ -10180,6 +10189,15 @@
     }
     function setChargingVisibility(on){
       if (map.getLayer('charging-icons')) map.setLayoutProperty('charging-icons', 'visibility', on ? 'visible' : 'none');
+    }
+    // Parking layers (paid areas, free/disc areas, parking garages). They are
+    // hidden when the "Näytä vain julkiset sähkölatauspisteet" toggle is on, so
+    // only charging stations remain on the map.
+    const PARKING_LAYER_IDS = ['master-poly-fill','master-poly-line','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill','halli-icons'];
+    function setParkingLayersVisible(visible){
+      PARKING_LAYER_IDS.forEach(id => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+      });
     }
     // Cursor-paginated fetch of an AFIR list endpoint (key = 'features' | 'statuses').
     async function _afirPaged(path, key){
@@ -10530,13 +10548,13 @@
     function applyChargingFilters(){
       if(!map.getSource('charging-points')) return;
       const types = _selectedChargerTypes;
-      const tickKw = [100,200,300,400];
+      const tickKw = [0,50,100,200,300,400];
       const pminEl = document.getElementById('power-slider-min');
       const pmaxEl = document.getElementById('power-slider-max');
       const pmin = pminEl ? parseInt(pminEl.value) : 0;
-      const pmax = pmaxEl ? parseInt(pmaxEl.value) : 3;
-      const lowerKw = pmin === 0 ? 0 : tickKw[pmin];
-      const upperKw = pmax === 3 ? Infinity : tickKw[pmax];
+      const pmax = pmaxEl ? parseInt(pmaxEl.value) : 5;
+      const lowerKw = tickKw[pmin];
+      const upperKw = pmax === 5 ? Infinity : tickKw[pmax];
       const powerActive = !(lowerKw === 0 && upperKw === Infinity);
       const voltBtn = document.querySelector('#voltage-segmented .seg-option.active');
       const voltMode = voltBtn ? voltBtn.dataset.volt : 'both';
@@ -10939,7 +10957,7 @@
       const pmax = document.getElementById('power-slider-max');
       const pfill = document.getElementById('power-range-fill');
       if (!pmin || !pmax || !pfill) return;
-      const MAXI = 3;
+      const MAXI = 5;
       function upd() {
         const a = parseInt(pmin.value), b = parseInt(pmax.value);
         pfill.style.left  = (a / MAXI * 100) + '%';
@@ -11203,7 +11221,7 @@
 
       // Hide P-marker when zoomed out (matches the master-poly / halli
       // layer minzoom of 13)
-      if(zoom < 13) {
+      if(zoom < (showEvCharging ? 12 : 13)) {
         centerPointerEl.classList.add('hidden');
       } else {
         centerPointerEl.classList.remove('hidden');
@@ -11211,7 +11229,7 @@
 
       // A charging station directly under the P-marker takes priority and
       // shows its details in the sheet (same behaviour as a parking area).
-      if(zoom>=13 && showEvCharging && map.getLayer('charging-icons')){
+      if(zoom>=12 && showEvCharging && map.getLayer('charging-icons')){
         const ccpt = map.project(map.getCenter());
         const cr = 15;
         const cb = [[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]];
