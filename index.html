@@ -7142,6 +7142,7 @@
           const cp = best.properties;
           if (cp.id !== hoveredChargingId) {
             hoveredChargingId = cp.id;
+            scheduleHitRefetch();   // freshen this station's status on focus
             if (hoveredPolyId) { clearHoverHighlight(); hoveredPolyId = null; }
             window._badgeAreaId = null;
             showChargingInSheet(cp);
@@ -10079,8 +10080,11 @@
     let _chargingEvseIndex = {};          // stationId -> [{ id: evseId, labels:[..] }] for live status recompute
     let _chargingStatusTimer = null;      // setInterval handle for live status polling
     let _chargingStatusRefreshing = false;// guard so status fetches don't overlap
-    const CHARGING_STATUS_REFRESH_MS = 30000;  // how often to re-poll live availability
+    const CHARGING_STATUS_REFRESH_MS = 60000;  // how often to re-poll live availability (matches the server's 1-min status snapshot)
     let _chargingStatusMap = {};          // latest evseId -> status (used by the connector picker)
+    let _chargingStatusFetchedAt = 0;     // ms timestamp of the last successful status fetch (for the "updated X ago" label)
+    let _hitRefetchTimer = null;          // debounce timer for the on-P-marker-hit refetch
+    let _lastHitRefetchAt = 0;            // last time an on-hit refetch actually ran
     let _connectorPickerOpen = false;     // is the "Valitse pistoke" view currently open
 
     // Operator names from the AFIR feed are inconsistent (e.g. "Helen" vs
@@ -10250,6 +10254,7 @@
               const coords = (ft.geometry && ft.geometry.coordinates) ? ft.geometry.coordinates.slice() : null;
               if(filterMode && typeof closeFilter === 'function') closeFilter();
               hoveredChargingId = ft.properties.id;
+              scheduleHitRefetch();   // freshen this station's status on tap
               showChargingInSheet(ft.properties);
               if(coords) map.flyTo({ center: coords, zoom: 16, duration: 800 });
             });
@@ -10270,6 +10275,7 @@
         const statusMap = {};
         stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
         _chargingStatusMap = statusMap;
+        _chargingStatusFetchedAt = Date.now();
         _chargingEvseIndex = {};
         // Merge co-located locations of the SAME operator into one site. Some
         // operators split one physical site into separate AFIR locations for AC
@@ -10422,6 +10428,9 @@
         const statusMap = {};
         stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
         _chargingStatusMap = statusMap;
+        _chargingStatusFetchedAt = Date.now();
+        const _upd = document.getElementById('charging-updated-line');
+        if (_upd) _upd.textContent = formatUpdatedAgo(_chargingStatusFetchedAt);
         // Remember the currently-shown station's signature so we only re-render
         // the sheet if its availability actually changed (avoids flicker).
         const shownId = (typeof hoveredChargingId !== 'undefined') ? hoveredChargingId : null;
@@ -10441,6 +10450,28 @@
       } finally {
         _chargingStatusRefreshing = false;
       }
+    }
+    // Human-readable "updated X ago" label for the charging detail sheet.
+    function formatUpdatedAgo(ts){
+      if (!ts) return 'Päivitetty juuri nyt';
+      const mins = Math.floor((Date.now() - ts) / 60000);
+      return mins < 1 ? 'Päivitetty juuri nyt' : ('Päivitetty ' + mins + ' min sitten');
+    }
+    // When the P-marker settles on a charging station, pull the latest status
+    // snapshot — but only if the local copy is already stale. The AFIR status
+    // feed is a server-side snapshot regenerated once a minute, so re-downloading
+    // a still-fresh snapshot would return identical data for no benefit.
+    function scheduleHitRefetch(){
+      if (!chargingLoaded || !showEvCharging) return;
+      if (_hitRefetchTimer) clearTimeout(_hitRefetchTimer);
+      _hitRefetchTimer = setTimeout(function(){
+        _hitRefetchTimer = null;
+        const now = Date.now();
+        if (now - _chargingStatusFetchedAt < 30000) return;  // snapshot still fresh
+        if (now - _lastHitRefetchAt < 30000) return;         // just refetched on a previous hit
+        _lastHitRefetchAt = now;
+        refreshChargingStatuses();
+      }, 450);
     }
     // Pick a readable string from an OCPI DisplayText[] (or string): prefer Finnish.
     function _chDisplayText(d){
@@ -10601,6 +10632,7 @@
         p.name || 'Latausasema',
         'Sähkölatauspiste',
         p.operatorName || 'Latausoperaattori',
+        '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:0 0 9px;">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</p>' +
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
         '<p class="price-label">Lisätiedot</p><p class="price-value">' + (p.extraInfo ? escapeHtml(p.extraInfo) : '–') + '</p>'
@@ -11260,6 +11292,7 @@
           const cp = best.properties;
           if(cp.id !== hoveredChargingId){
             hoveredChargingId = cp.id;
+            scheduleHitRefetch();   // freshen this station's status on focus
             if(hoveredPolyId){ clearHoverHighlight(); hoveredPolyId = null; window._badgeAreaId = null; hideCenterBadge(); }
             showChargingInSheet(cp);
             showChargingCenterBadge(cp.available);
