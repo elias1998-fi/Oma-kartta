@@ -10188,7 +10188,7 @@
         // vs DC. We cluster by ACTUAL DISTANCE (not a coordinate grid, which can
         // split two nearby points across a cell boundary). One marker per site;
         // the sheet/picker then list ALL connectors from the merged locations.
-        const MERGE_RADIUS_M = 25;    // same-operator locations within this distance merge into one
+        const MERGE_RADIUS_M = 50;    // same-operator locations within this distance merge into one
         const _chDistM = (a, b) => {  // haversine metres between [lng,lat] points
           const R = 6371000, r = Math.PI / 180;
           const dLat = (b[1]-a[1]) * r, dLng = (b[0]-a[0]) * r;
@@ -10214,15 +10214,21 @@
               operatorId: op.id || '', operatorName: opName,
               logoUrl: logoUrl,
               address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
-              coords: coords, standards: new Set(), byLbl: {},
+              coords: coords, standards: new Set(), byLbl: {}, extras: new Set(),
               maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
             };
             clusters.push(g); _chOrder.push(g);
           }
+          const _ldir = _chDisplayText(p.directions);   // location-level directions, if any
+          if (_ldir) g.extras.add(_ldir);
           (Array.isArray(p.evses) ? p.evses : []).forEach(ev => {
             g.total++;
             const evAvail = statusMap[ev.id] === 'AVAILABLE';
             if (evAvail) { g.anyAvail = true; g.avail++; }
+            const _fl = ev.floorLevel || ev.floor_level;   // building floor of this charger, if reported
+            if (_fl) g.extras.add('Kerros ' + _fl);
+            const _edir = _chDisplayText(ev.directions);    // per-EVSE directions, if any
+            if (_edir) g.extras.add(_edir);
             const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
             const kwHere = {};            // label -> max kW among THIS evse's connectors of that label
             const vHere = {};             // label -> max voltage among THIS evse's connectors of that label
@@ -10263,6 +10269,7 @@
             address: g.address,
             standards: [...g.standards].join(','),
             connectors: JSON.stringify(connectors),
+            extraInfo: [...g.extras].join(' \u00b7 '),
             maxKw: Math.round(g.maxKw), maxVoltage: g.maxV,
             evseCount: g.total, availCount: g.avail, available: g.anyAvail,
             price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
@@ -10346,6 +10353,15 @@
       } finally {
         _chargingStatusRefreshing = false;
       }
+    }
+    // Pick a readable string from an OCPI DisplayText[] (or string): prefer Finnish.
+    function _chDisplayText(d){
+      if (!d) return '';
+      if (typeof d === 'string') return d.trim();
+      const arr = Array.isArray(d) ? d : [d];
+      const byLang = l => arr.find(x => x && x.language === l && x.text);
+      const pick = byLang('fi') || byLang('en') || arr.find(x => x && x.text) || (typeof arr[0] === 'string' ? { text: arr[0] } : null);
+      return pick ? String(pick.text || '').trim() : '';
     }
     // Friendly label for an AFIR connector standard.
     function stdLabel(s){
@@ -10498,7 +10514,8 @@
         'Sähkölatauspiste',
         p.operatorName || 'Latausoperaattori',
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
-        '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>'
+        '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
+        '<p class="price-label">Lisätiedot</p><p class="price-value">' + (p.extraInfo ? escapeHtml(p.extraInfo) : '–') + '</p>'
       );
       // Big action button label for a charging station.
       document.getElementById('action-btn').textContent = 'Lataa täällä';
@@ -10680,7 +10697,6 @@
             '<span style="flex:1;min-width:0;padding:11px 12px;display:flex;flex-direction:column;gap:5px;justify-content:center;">' +
               '<span style="display:flex;align-items:center;gap:6px;">'+plugIcon(it.label,'#0C0243',18)+'<span style="font-family:Arial,sans-serif;font-size:14px;font-weight:600;color:#0C0243;white-space:nowrap;">'+escapeHtml(it.label)+'</span></span>' +
               '<span style="display:flex;align-items:center;gap:6px;">'+lightning('#0C0243')+'<span style="font-family:Arial,sans-serif;font-size:13px;color:#444;white-space:nowrap;">'+kwTxt+'</span></span>' +
-              '<span style="font-family:Arial,sans-serif;font-size:12px;color:#888;padding-left:19px;white-space:nowrap;">Toimivuus: \u2013</span>' +
             '</span>' +
           '</button>';
         }).join('');
