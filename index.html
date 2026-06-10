@@ -10183,69 +10183,84 @@
         stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
         _chargingStatusMap = statusMap;
         _chargingEvseIndex = {};
-        _chargingFeatures = locs
-          .filter(f => f && f.geometry && f.geometry.coordinates)
-          .map(f => {
-            const p = f.properties || {};
-            const evses = Array.isArray(p.evses) ? p.evses : [];
-            const evList = [];   // {id, labels} per EVSE for live status recompute
-            const standards = new Set();
-            const byLbl = {};   // readable plug label -> { total: EVSEs offering it, avail: of those AVAILABLE, kw: max power, volt: max voltage }
-            let maxKw = 0, maxV = 0, anyAvail = false, total = 0, avail = 0;
-            evses.forEach(ev => {
-              total++;
-              const evAvail = statusMap[ev.id] === 'AVAILABLE';
-              if (evAvail) { anyAvail = true; avail++; }
-              const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
-              const kwHere = {};            // label -> max kW among THIS evse's connectors of that label
-              const vHere = {};             // label -> max voltage among THIS evse's connectors of that label
-              (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
-                const kw = c.maxElectricPower ? (c.maxElectricPower / 1000) : 0;
-                const v  = c.maxVoltage || 0;
-                if (c.standard) {
-                  standards.add(c.standard);
-                  const l = stdLabel(c.standard);
-                  if (l) {
-                    lblsHere.add(l);
-                    if (kw > (kwHere[l] || 0)) kwHere[l] = kw;
-                    if (v  > (vHere[l]  || 0)) vHere[l]  = v;
-                  }
-                }
-                if (kw) maxKw = Math.max(maxKw, kw);
-                if (v)  maxV  = Math.max(maxV, v);
-              });
-              lblsHere.forEach(l => {
-                if (!byLbl[l]) byLbl[l] = { total: 0, avail: 0, kw: 0, volt: 0 };
-                byLbl[l].total++;
-                if (evAvail) byLbl[l].avail++;
-                if ((kwHere[l] || 0) > byLbl[l].kw)   byLbl[l].kw   = kwHere[l];
-                if ((vHere[l]  || 0) > byLbl[l].volt) byLbl[l].volt = vHere[l];
-              });
-              evList.push({ id: ev.id, labels: [...lblsHere] });
-            });
-            if (p.id) _chargingEvseIndex[p.id] = evList;
-            // Per plug-type availability rows for the detail view, stored as a
-            // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
-            const connectors = Object.keys(byLbl).map(l => ({ name: l, total: byLbl[l].total, avail: byLbl[l].avail, kw: Math.round(byLbl[l].kw), volt: Math.round(byLbl[l].volt) }));
-            const op = p.operator || {};
-            const det = op.details || {};
-            return { type: 'Feature', geometry: f.geometry, properties: {
-              id: p.id || '', name: p.name || 'Latausasema',
-              operatorId: op.id || '', operatorName: normalizeOperator(det.name),
+        // Group co-located charging locations (same operator + same coordinates,
+        // rounded to ~11 m) into a SINGLE feature. Some operators split one
+        // physical site into separate AFIR locations for AC vs DC; merging them
+        // shows one map marker whose sheet lists ALL connectors from both.
+        const _chGroups = {};
+        const _chOrder = [];
+        locs.filter(f => f && f.geometry && f.geometry.coordinates).forEach(f => {
+          const p = f.properties || {};
+          const op = p.operator || {};
+          const det = op.details || {};
+          const coords = f.geometry.coordinates;
+          const opName = normalizeOperator(det.name);
+          const key = opName + '@' + (+coords[1]).toFixed(4) + ',' + (+coords[0]).toFixed(4);
+          let g = _chGroups[key];
+          if (!g) {
+            g = _chGroups[key] = {
+              id: p.id || key, name: p.name || 'Latausasema',
+              operatorId: op.id || '', operatorName: opName,
               logoUrl: (det.logo && det.logo.url) || '',
               address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
-              standards: [...standards].join(','),
-              connectors: JSON.stringify(connectors),
-              maxKw: Math.round(maxKw), maxVoltage: maxV,
-              evseCount: total, availCount: avail, available: anyAvail,
-              price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
-            }};
-          })
-          // Drop "shell" locations that have no actual EVSEs (no real chargers).
-          // These registered-but-empty sites otherwise surface phantom operators
-          // (e.g. "Helen" with no charging points) in the operator filter list.
-          // Only stations with at least one EVSE are kept.
-          .filter(ft => ft.properties.evseCount > 0);
+              coords: coords, standards: new Set(), byLbl: {},
+              maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
+            };
+            _chOrder.push(key);
+          }
+          (Array.isArray(p.evses) ? p.evses : []).forEach(ev => {
+            g.total++;
+            const evAvail = statusMap[ev.id] === 'AVAILABLE';
+            if (evAvail) { g.anyAvail = true; g.avail++; }
+            const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
+            const kwHere = {};            // label -> max kW among THIS evse's connectors of that label
+            const vHere = {};             // label -> max voltage among THIS evse's connectors of that label
+            (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
+              const kw = c.maxElectricPower ? (c.maxElectricPower / 1000) : 0;
+              const v  = c.maxVoltage || 0;
+              if (c.standard) {
+                g.standards.add(c.standard);
+                const l = stdLabel(c.standard);
+                if (l) {
+                  lblsHere.add(l);
+                  if (kw > (kwHere[l] || 0)) kwHere[l] = kw;
+                  if (v  > (vHere[l]  || 0)) vHere[l]  = v;
+                }
+              }
+              if (kw) g.maxKw = Math.max(g.maxKw, kw);
+              if (v)  g.maxV  = Math.max(g.maxV, v);
+            });
+            lblsHere.forEach(l => {
+              if (!g.byLbl[l]) g.byLbl[l] = { total: 0, avail: 0, kw: 0, volt: 0 };
+              g.byLbl[l].total++;
+              if (evAvail) g.byLbl[l].avail++;
+              if ((kwHere[l] || 0) > g.byLbl[l].kw)   g.byLbl[l].kw   = kwHere[l];
+              if ((vHere[l]  || 0) > g.byLbl[l].volt) g.byLbl[l].volt = vHere[l];
+            });
+            g.evList.push({ id: ev.id, labels: [...lblsHere] });
+          });
+        });
+        _chargingFeatures = _chOrder.map(key => {
+          const g = _chGroups[key];
+          // Per plug-type availability rows for the detail view, stored as a
+          // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
+          const connectors = Object.keys(g.byLbl).map(l => ({ name: l, total: g.byLbl[l].total, avail: g.byLbl[l].avail, kw: Math.round(g.byLbl[l].kw), volt: Math.round(g.byLbl[l].volt) }));
+          _chargingEvseIndex[g.id] = g.evList;
+          return { type: 'Feature', geometry: { type: 'Point', coordinates: g.coords }, properties: {
+            id: g.id, name: g.name,
+            operatorId: g.operatorId, operatorName: g.operatorName,
+            logoUrl: g.logoUrl,
+            address: g.address,
+            standards: [...g.standards].join(','),
+            connectors: JSON.stringify(connectors),
+            maxKw: Math.round(g.maxKw), maxVoltage: g.maxV,
+            evseCount: g.total, availCount: g.avail, available: g.anyAvail,
+            price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
+          }};
+        })
+        // Drop "shell" sites that have no actual EVSEs (registered-but-empty),
+        // which otherwise surface phantom operators in the operator filter list.
+        .filter(ft => ft.properties.evseCount > 0);
         chargingLoaded = true;
         console.log('Latauspisteet ladattu:', _chargingFeatures.length);
         const _opCounts = {}; _chargingFeatures.forEach(f => { const o = f.properties.operatorName || '(tyhjä)'; _opCounts[o] = (_opCounts[o] || 0) + 1; });
@@ -10507,7 +10522,7 @@
       const bc = document.getElementById('btn-container');
       if(bc && !_connectorPickerOpen) bc.classList.remove('hidden');
     }
-    function openChargingOverlay(cp){
+    function openChargingOverlay(cp, chosen){
       let ov = document.getElementById('charging-overlay');
       if(!ov){
         ov = document.createElement('div');
@@ -10529,8 +10544,9 @@
       const isAvail = (cp.available === true || cp.available === 'true');
       const stds = (cp.standards||'').split(',').filter(Boolean).map(stdLabel).filter(Boolean);
       const stdText = stds.length ? [...new Set(stds)].join(', ') : '\u2013';
-      const power = (cp.maxKw && +cp.maxKw > 0) ? (cp.maxKw + ' kW') : '\u2013';
-      const volt  = (cp.maxVoltage && +cp.maxVoltage > 0) ? (cp.maxVoltage + ' V') : '\u2013';
+      const chosenText = (chosen && chosen.label) ? ((chosen.num ? (chosen.num + ' \u00b7 ') : '') + chosen.label) : stdText;
+      const power = (chosen && chosen.kw > 0) ? (chosen.kw + ' kW') : ((cp.maxKw && +cp.maxKw > 0) ? (cp.maxKw + ' kW') : '\u2013');
+      const volt  = (chosen && chosen.volt > 0) ? (chosen.volt + ' V') : ((cp.maxVoltage && +cp.maxVoltage > 0) ? (cp.maxVoltage + ' V') : '\u2013');
       const statusTxt = isAvail
         ? '<span style="color:#1faa4a;font-weight:700;">Tilaa</span>'
         : '<span style="color:#c0392b;font-weight:700;">Täynnä</span>';
@@ -10538,7 +10554,7 @@
       const veh = (typeof vehicles !== 'undefined' && vehicles[selectedVehicleIdx]) ? vehicles[selectedVehicleIdx] : { plate:'', name:'' };
       const pay = (typeof paymentMethods !== 'undefined' && paymentMethods[selectedPaymentIdx]) ? paymentMethods[selectedPaymentIdx] : { name:'', icon:'' };
       const payIcon = (typeof getPaymentIcon === 'function') ? getPaymentIcon(pay.icon) : '';
-      const specs = [['Pistokkeet', stdText], ['Teho', power], ['J\u00e4nnite', volt]];
+      const specs = [['Valittu pistoke', chosenText], ['Teho', power], ['J\u00e4nnite', volt]];
       const specsHtml = specs.map((s,i) =>
         '<div style="display:flex;justify-content:space-between;padding:11px 0;' + (i < specs.length-1 ? 'border-bottom:1px solid #eef0f2;' : '') + '">' +
           '<span style="color:#666;font-size:14px;">' + s[0] + '</span>' +
@@ -10639,25 +10655,22 @@
         items.sort((a,b) => { const ia=ORDER.indexOf(a.label), ib=ORDER.indexOf(b.label); return (ia<0?99:ia)-(ib<0?99:ib); });
         items.forEach((it,i) => { it.num = i+1; });
         const lightning = (col) => '<svg width="13" height="13" viewBox="0 0 24 24" style="flex:none;display:block;"><path d="M13 2 L4 14 h6 l-1 8 9 -12 h-6 z" fill="'+col+'"/></svg>';
-        const carIcon = '<svg width="54" height="29" viewBox="0 0 76 40" style="display:block;"><rect x="8" y="4" width="60" height="32" rx="14" fill="#aeb2bd"/><rect x="27" y="9" width="22" height="22" rx="6" fill="#fff"/><path d="M49 11 L60 14.5 L60 25.5 L49 29 Z" fill="#fff"/><path d="M27 11 L16 14.5 L16 25.5 L27 29 Z" fill="#fff"/></svg>';
         const cardsHtml = items.map(it => {
           const numCol = it.available ? '#0C0243' : '#b4b7bd';
           const numCell = '<span style="flex:none;width:60px;background:#f4f4ff;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:22px;font-weight:800;color:'+numCol+';">'+it.num+'</span>';
           if(!it.available){
-            // Occupied / unavailable → car icon, like the reference layout. Not tappable.
+            // Occupied / unavailable → text instead of an icon. Not tappable.
             return '<div class="cp-card-busy" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;">' +
               numCell +
-              '<span style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:8px;">'+carIcon+'</span>' +
+              '<span style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:10px 8px;font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#b4b7bd;text-align:center;line-height:1.35;">Varattu /<br>Ei k\u00e4yt\u00f6ss\u00e4</span>' +
             '</div>';
           }
           const kwTxt = it.kw>0 ? (it.kw+' kW') : '\u2013';
-          const vTxt  = (it.kw>=50 && it.volt>0) ? (it.volt+' V') : '';
-          return '<button class="cp-card" data-evse="'+escapeHtml(it.evseId)+'" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;padding:0;cursor:pointer;text-align:left;">' +
+          return '<button class="cp-card" data-num="'+it.num+'" data-label="'+escapeHtml(it.label)+'" data-kw="'+(it.kw||0)+'" data-volt="'+(it.volt||0)+'" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;padding:0;cursor:pointer;text-align:left;">' +
             numCell +
             '<span style="flex:1;min-width:0;padding:11px 12px;display:flex;flex-direction:column;gap:5px;justify-content:center;">' +
               '<span style="display:flex;align-items:center;gap:6px;">'+plugIcon(it.label,'#0C0243',18)+'<span style="font-family:Arial,sans-serif;font-size:14px;font-weight:600;color:#0C0243;white-space:nowrap;">'+escapeHtml(it.label)+'</span></span>' +
               '<span style="display:flex;align-items:center;gap:6px;">'+lightning('#0C0243')+'<span style="font-family:Arial,sans-serif;font-size:13px;color:#444;white-space:nowrap;">'+kwTxt+'</span></span>' +
-              (vTxt ? '<span style="font-family:Arial,sans-serif;font-size:12px;color:#888;padding-left:19px;">'+vTxt+'</span>' : '') +
             '</span>' +
           '</button>';
         }).join('');
@@ -10671,7 +10684,7 @@
       }
       ov.innerHTML = headerHtml + bodyHtml;
       const back = ov.querySelector('#cp-back-btn'); if(back) back.addEventListener('click', closeConnectorPicker);
-      ov.querySelectorAll('.cp-card').forEach(btn => { btn.addEventListener('click', () => { openChargingOverlay(cp); }); });
+      ov.querySelectorAll('.cp-card').forEach(btn => { btn.addEventListener('click', () => { openChargingOverlay(cp, { num: btn.dataset.num, label: btn.dataset.label, kw: +btn.dataset.kw||0, volt: +btn.dataset.volt||0 }); }); });
       requestAnimationFrame(() => { ov.style.transform = 'translateX(0)'; });
     }
     // Tracks which plug types the user wants visible on the map. Multi-select.
