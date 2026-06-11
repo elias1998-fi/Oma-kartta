@@ -6874,9 +6874,6 @@
 
         // Apply current filter state (free areas hidden by default until enabled)
         applyRangeFilter();
-        // If "show only public charging" is active, the freshly-added parking
-        // layers must start hidden (charging-only view).
-        if (typeof showEvCharging !== 'undefined' && showEvCharging) setParkingLayersVisible(false);
 
         // The polygon layers were just added, which may have placed them on
         // top of the halli-icons layer. Promote halli icons to the very top
@@ -6913,6 +6910,7 @@
     // so they survive source setData() calls
     let hoveredPolyId = null;
     let hoveredChargingId = null;   // charging station currently under the P-marker
+    let hoveredHalliId = null;      // parking garage currently under the P-marker
 
     // Returns all feature IDs that share the same "group" as the given props
     function getSameGroupIds(props) {
@@ -7124,6 +7122,63 @@
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
     }
 
+    // ── Parking-garage (halli) P-marker handling ──────────────────────
+    // Expand the on-map P-marker over a parking garage: keep the "P" pin and
+    // show a short "Halli" label in place of the area code.
+    function showHalliCenterBadge() {
+      if (window._navigationInProgress) return;
+      centerBadgeCode.textContent = 'Halli';
+      centerPointerEl.classList.add('expanded');
+      centerPointerEl.classList.remove('charging-mode');
+      centerPointerEl.classList.remove('disc-mode');
+      window._chargingContext = false;
+      if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
+    }
+    // Show a parking garage's details in the bottom sheet (mirrors the
+    // halli-icon click/hover display so the P-marker shows the same info).
+    function showHalliInSheet(p) {
+      const parts = (p.name || '').split(' | ');
+      const name = parts[0] || 'Pysäköintihalli';
+      const addr = parts[1] || '';
+      const dept = parts[2] || '';
+      showMasterFeatureInSheet(
+        name, addr || 'Pysäköintihalli / -tila', dept || 'Helsingin kaupunki',
+        '<p class="price-label">Tyyppi</p><p class="price-value">Pysäköintihalli / -tila</p>'
+      );
+    }
+    // If a parking garage icon is directly under the P-marker, show it (sheet +
+    // badge) and return true; otherwise clear the garage hover state and return
+    // false so the caller falls through to parking-area detection.
+    function detectHalliUnderMarker() {
+      // Leaving a garage (none now, but one was focused) → collapse the sheet.
+      // Returns false so the caller falls through to parking detection; if a
+      // parking area IS under the marker, its block re-opens the sheet in the
+      // same synchronous frame (no visible flicker).
+      const leaveHalli = () => {
+        if (hoveredHalliId !== null) { hoveredHalliId = null; collapseCenterSheet(); }
+        return false;
+      };
+      if (map.getZoom() < 12 || !map.getLayer('halli-icons')) return leaveHalli();
+      const hpt = map.project(map.getCenter());
+      const hr = 15;
+      const hhits = map.queryRenderedFeatures([[hpt.x-hr, hpt.y-hr],[hpt.x+hr, hpt.y+hr]], { layers:['halli-icons'] });
+      if (!hhits.length) return leaveHalli();
+      let best = hhits[0], bestD = Infinity;
+      hhits.forEach(ff => { const pt = map.project(ff.geometry.coordinates); const dx = pt.x-hpt.x, dy = pt.y-hpt.y, d = dx*dx + dy*dy; if (d < bestD) { bestD = d; best = ff; } });
+      const hp = best.properties;
+      if (hp.id !== hoveredHalliId) {
+        hoveredHalliId = hp.id;
+        hoveredChargingId = null;
+        if (hoveredPolyId) { clearHoverHighlight(); hoveredPolyId = null; }
+        window._badgeAreaId = null;
+        showHalliInSheet(hp);
+        releaseMasterLock();
+        showHalliCenterBadge();
+        const _nr = document.getElementById('sheet-nav-row'); if (_nr) _nr.classList.add('visible');
+      }
+      return true;
+    }
+
     function checkCenterHighlight() {
       if (filterMode) return; // No P-marker detection / badge in filter view
       // While the directions flow is running, the P-marker is intentionally
@@ -7144,6 +7199,7 @@
             hoveredChargingId = cp.id;
             scheduleHitRefetch();   // freshen this station's status on focus
             if (hoveredPolyId) { clearHoverHighlight(); hoveredPolyId = null; }
+            hoveredHalliId = null;   // over a charging station now, not a garage
             window._badgeAreaId = null;
             showChargingInSheet(cp);
             releaseMasterLock();          // real-time hover → don't hold the 4s lock
@@ -7154,6 +7210,9 @@
         // no charging under the marker → fall through (the parking / no-area
         // branch below clears hoveredChargingId and collapses if needed).
       }
+      // A parking garage directly under the P-marker takes priority over
+      // parking-area polygons (and works even where no polygon is rendered).
+      if (detectHalliUnderMarker()) return;
       if (!map.getLayer('master-poly-fill')) { updateButtonText(); return; }
       const cpt = map.project(map.getCenter());
       // Create detection area: 5px radius circle around center (easier targeting)
@@ -7326,7 +7385,7 @@
       // Filter view manages its own P-marker visibility (hidden); don't
       // fight it from here.
       const inFilter = (typeof filterMode !== 'undefined' && filterMode);
-      if (zoom < (showEvCharging ? 12 : 13)) {
+      if (zoom < 12) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
         // Also hide the P-marker — polygons and halli icons are hidden by
@@ -7487,9 +7546,9 @@
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
       map.addLayer({
-        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
+        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 12,
         layout: {
-          'icon-image': 'halli-icon', 'icon-size': 0.52,
+          'icon-image': 'halli-icon', 'icon-size': 0.50,
           'icon-allow-overlap': true, 'icon-anchor': 'center'
         }
       });
@@ -7523,7 +7582,7 @@
       });
       map.on('mouseleave', 'halli-icons', () => {
         map.getCanvas().style.cursor = '';
-        map.setLayoutProperty('halli-icons', 'icon-size', 0.52);
+        map.setLayoutProperty('halli-icons', 'icon-size', 0.50);
         releaseMasterLock();
       });
     }
@@ -9967,9 +10026,8 @@
     // charging-only view.
     function updateHalliVisibility(){
       if (!map.getLayer('halli-icons')) return;
-      const chargingOnly = (typeof showEvCharging !== 'undefined' && showEvCharging);
       const freeOnly = (typeof showFreeParking !== 'undefined' && showFreeParking && freeFilterMode === 'free');
-      map.setLayoutProperty('halli-icons', 'visibility', (!chargingOnly && !freeOnly) ? 'visible' : 'none');
+      map.setLayoutProperty('halli-icons', 'visibility', !freeOnly ? 'visible' : 'none');
     }
     let sliderTouching=false;
     sliderMin.addEventListener('touchstart',()=>{sliderTouching=true;},{passive:true});
@@ -10071,9 +10129,6 @@
         loadChargingStations();
       }
       setChargingVisibility(showEvCharging);
-      // Charging-only view: hide all parking layers when the toggle is on.
-      setParkingLayersVisible(!showEvCharging);
-      updateHalliVisibility();
       applyChargingFilters();
       updateChargerCount();
     }
@@ -11282,7 +11337,7 @@
 
       // Hide P-marker when zoomed out (matches the master-poly / halli
       // layer minzoom of 13)
-      if(zoom < (showEvCharging ? 12 : 13)) {
+      if(zoom < 12) {
         centerPointerEl.classList.add('hidden');
       } else {
         centerPointerEl.classList.remove('hidden');
@@ -11307,6 +11362,7 @@
             hoveredChargingId = cp.id;
             scheduleHitRefetch();   // freshen this station's status on focus
             if(hoveredPolyId){ clearHoverHighlight(); hoveredPolyId = null; window._badgeAreaId = null; hideCenterBadge(); }
+            hoveredHalliId = null;   // over a charging station now, not a garage
             showChargingInSheet(cp);
             showChargingCenterBadge(cp.available);
           }
@@ -11315,6 +11371,10 @@
           hoveredChargingId = null;   // moved off the station — fall through
         }
       }
+
+      // A parking garage directly under the P-marker takes priority over
+      // parking-area polygons (works even where no polygon is rendered).
+      if(detectHalliUnderMarker()) return;
 
       // Highlight parking area under map center (works on mobile & desktop)
       if(zoom>=13 && map.getLayer('master-poly-fill')){
@@ -12615,7 +12675,7 @@
       // parking area is currently under the P-marker.
       const row = document.getElementById('sheet-nav-row');
       if (!row) return;
-      const hasArea = (typeof filterMode === 'undefined' || !filterMode) && !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId) || (typeof hoveredChargingId !== 'undefined' && hoveredChargingId));
+      const hasArea = (typeof filterMode === 'undefined' || !filterMode) && !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId) || (typeof hoveredChargingId !== 'undefined' && hoveredChargingId) || (typeof hoveredHalliId !== 'undefined' && hoveredHalliId));
       row.classList.toggle('visible', hasArea);
       // Whenever the area-under-marker state changes, also refresh the
       // center pin's icon — areas that are free or disc-required show a
@@ -13024,7 +13084,7 @@
     function onSheetNavBtnClick() {
       console.log('[nav-btn] clicked. currentParkingProps:', currentParkingProps,
                   'hoveredPolyId:', (typeof hoveredPolyId !== 'undefined' ? hoveredPolyId : 'undef'));
-      const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId) || (typeof hoveredChargingId !== 'undefined' && hoveredChargingId));
+      const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId) || (typeof hoveredChargingId !== 'undefined' && hoveredChargingId) || (typeof hoveredHalliId !== 'undefined' && hoveredHalliId));
       if (!hasArea) {
         console.warn('[nav-btn] no parking area selected — aborting');
         return;
@@ -13706,7 +13766,7 @@
         // Filter view: translateY between 80% (max size, highest) and 70px-from-bottom (min size, lowest)
         minY = sheet.clientHeight - window.innerHeight * 0.8;
         maxY = sheet.clientHeight - 70;
-      } else if(currentParkingProps || hoveredPolyId || hoveredChargingId){
+      } else if(currentParkingProps || hoveredPolyId || hoveredChargingId || hoveredHalliId){
         // P-marker on a parking area: max 80% from bottom, min 75px from bottom
         minY = sheet.clientHeight - window.innerHeight * 0.8;
         maxY = sheet.clientHeight - 75;
@@ -13786,7 +13846,7 @@
         snapTo(levels[ti]);
         return;
       }
-      if(currentParkingProps || hoveredPolyId || hoveredChargingId){
+      if(currentParkingProps || hoveredPolyId || hoveredChargingId || hoveredHalliId){
         // P-marker on a parking area: 3-level snap (max 80% / mid 153px / min 75px)
         const maxY = sheet.clientHeight - window.innerHeight * 0.8;  // top (highest)
         const midY = sheet.clientHeight - 153;                       // mid step
