@@ -10415,7 +10415,7 @@
               logoUrl: logoUrl,
               address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
               coords: coords, standards: new Set(), byLbl: {}, extras: new Set(),
-              maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
+              maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: [], floors: {}
             };
             clusters.push(g); _chOrder.push(g);
           }
@@ -10425,8 +10425,8 @@
             g.total++;
             const evAvail = statusMap[ev.id] === 'AVAILABLE';
             if (evAvail) { g.anyAvail = true; g.avail++; }
-            const _fl = ev.floorLevel || ev.floor_level;   // building floor of this charger, if reported
-            if (_fl) g.extras.add('Kerros ' + _fl);
+            const _fl = String(ev.floorLevel || ev.floor_level || ev.floor || '').trim();   // building floor of this charger, if reported
+            if (_fl) g.floors[_fl] = (g.floors[_fl] || 0) + 1;   // per-floor EVSE counts → "P1 10 paikkaa" list
             const _edir = _chDisplayText(ev.directions);    // per-EVSE directions, if any
             if (_edir) g.extras.add(_edir);
             const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
@@ -10454,7 +10454,7 @@
               if ((kwHere[l] || 0) > g.byLbl[l].kw)   g.byLbl[l].kw   = kwHere[l];
               if ((vHere[l]  || 0) > g.byLbl[l].volt) g.byLbl[l].volt = vHere[l];
             });
-            g.evList.push({ id: ev.id, ref: (ev.physicalReference || ev.physical_reference || ''), floor: (ev.floorLevel || ev.floor_level || ''), labels: [...lblsHere] });
+            g.evList.push({ id: ev.id, ref: (ev.physicalReference || ev.physical_reference || ''), floor: _fl, labels: [...lblsHere] });
           });
         });
         _chargingFeatures = _chOrder.map(g => {
@@ -10469,6 +10469,7 @@
             address: g.address,
             standards: [...g.standards].join(','),
             connectors: JSON.stringify(connectors),
+            floorCounts: JSON.stringify(g.floors),
             extraInfo: [...g.extras].join(' \u00b7 '),
             maxKw: Math.round(g.maxKw), maxVoltage: g.maxV,
             evseCount: g.total, availCount: g.avail, available: g.anyAvail,
@@ -10663,22 +10664,21 @@
         const col   = free > 0 ? '#1faa4a' : '#c0392b';
         const kwTxt = kw > 0 ? (kw + ' kW') : '';
         const vTxt  = (kw >= 50 && volt > 0) ? (volt + ' V') : '';
-        return '<span style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
-                 '<span style="display:flex;align-items:center;min-width:0;gap:10px;">' +
-                   '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 9px;flex:none;">' +
-                     plugIcon(String(c.name || ''), '#0C0243', 20) +
-                     '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(String(c.name || '')) + '</span>' +
-                   '</span>' +
-                   
-                   '<span style="color:' + col + ';font-weight:700;white-space:nowrap;-webkit-text-stroke:0.3px #0C0243;">Vapaana: ' + free + '/' + total + '</span>' +
-                 '</span>' +
-                 '<span style="display:flex;align-items:center;gap:7px;flex:none;">' +
-                   (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
-                   (kwTxt ? '<span style="color:#333;white-space:nowrap;display:inline-block;min-width:54px;text-align:right;">' + kwTxt + '</span>' : '') +
-                 '</span>' +
+        const cntTxt = total > 0 ? ('\u00d7' + total) : '';
+        return '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 9px;justify-self:start;">' +
+                 plugIcon(String(c.name || ''), '#0C0243', 20) +
+                 (cntTxt ? '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + cntTxt + '</span>' : '') +
+               '</span>' +
+               '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(String(c.name || '')) + '</span>' +
+               '<span style="color:' + col + ';font-weight:700;white-space:nowrap;">Vapaana: ' + free + '/' + total + '</span>' +
+               '<span style="display:flex;align-items:center;gap:7px;justify-self:end;">' +
+                 (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
+                 (kwTxt ? '<span style="color:#333;white-space:nowrap;display:inline-block;min-width:54px;text-align:right;">' + kwTxt + '</span>' : '') +
                '</span>';
       }).join('');
-      return '<span style="display:flex;flex-direction:column;gap:6px;">' + rows + '</span>';
+      // 4-column grid shared by ALL rows → the pill, plug name, "Vapaana" and
+      // the kW column each start at the same x on every line.
+      return '<span style="display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;column-gap:10px;row-gap:6px;">' + rows + '</span>';
     }
     // Re-filter the loaded charging stations by the EV controls and push the
     // result to the map source. No-op until the data + layer exist.
@@ -10731,6 +10731,18 @@
       const tot = (p.evseCount != null && p.evseCount !== '') ? p.evseCount : '';
       const free = (p.availCount != null && p.availCount !== '') ? p.availCount : (isAvail ? 1 : 0);
       const cnt = (tot !== '') ? (' (' + free + '/' + tot + ')') : '';
+      // "Lisätiedot": when the feed reports floor levels, lead with a per-floor
+      // summary list ("P1 10 paikkaa", "P2 2 paikkaa", …) like latauskartta.fi;
+      // any operator-provided extra text follows it. Otherwise old behaviour.
+      let floorsHtml = '';
+      try {
+        const fc = JSON.parse(p.floorCounts || '{}');
+        const fk = Object.keys(fc).sort((a,b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
+        floorsHtml = fk.map(f => escapeHtml(floorLabel(f)) + ' ' + fc[f] + (fc[f] === 1 ? ' paikka' : ' paikkaa')).join('<br>');
+      } catch (e) { floorsHtml = ''; }
+      const extraHtml = floorsHtml
+        ? floorsHtml + (p.extraInfo ? '<br>' + escapeHtml(p.extraInfo) : '')
+        : (p.extraInfo ? escapeHtml(p.extraInfo) : '\u2013');
       const availTxt = isAvail
         ? '<span style="color:#1faa4a;font-weight:700;">Tilaa</span>' + cnt
         : '<span style="color:#c0392b;font-weight:700;">Täynnä</span>' + cnt;
@@ -10740,7 +10752,7 @@
         p.operatorName || 'Latausoperaattori',
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
-        '<p class="price-label">Lisätiedot</p><p class="price-value">' + (p.extraInfo ? escapeHtml(p.extraInfo) : '–') + '</p>' +
+        '<p class="price-label">Lisätiedot</p><p class="price-value">' + extraHtml + '</p>' +
         '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:10px 0 0;">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</p>'
       );
       // Big action button label for a charging station.
@@ -10886,6 +10898,12 @@
       const t = tail.replace(/^E(?=\d)/i, '').trim();
       return t || '\u2013';
     }
+    // Human label for a floor_level value: garage-style codes ("P1", "K2") are
+    // shown as-is; bare numbers ("1", "-1") get a ". krs" suffix.
+    function floorLabel(f){
+      const s = String(f == null ? '' : f).trim();
+      return /^-?\d+$/.test(s) ? (s + '. krs') : s;
+    }
     function openConnectorPicker(cp){
       let ov = document.getElementById('connector-picker-overlay');
       if(!ov){
@@ -10922,9 +10940,12 @@
         const lightning = (col) => '<svg width="13" height="13" viewBox="0 0 24 24" style="flex:none;display:block;"><path d="M13 2 L4 14 h6 l-1 8 9 -12 h-6 z" fill="'+col+'"/></svg>';
         const renderCard = (it) => {
           const numCol = it.available ? '#0C0243' : '#b4b7bd';
+          // Subtle status tint on the number cell: soft green = free, soft red
+          // = occupied / out of service. Border + text colours stay as before.
+          const cellBg = it.available ? '#eaf6ee' : '#f9eeec';
           const numStr = String(it.num);
           const numFs = numStr.length >= 6 ? 11 : numStr.length === 5 ? 12 : numStr.length === 4 ? 14 : numStr.length === 3 ? 17 : 22;
-          const numCell = '<span style="flex:none;width:60px;background:#f4f4ff;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:'+numFs+'px;font-weight:800;color:'+numCol+';padding:0 3px;line-height:1.1;text-align:center;word-break:break-all;">'+escapeHtml(numStr)+'</span>';
+          const numCell = '<span style="flex:none;width:60px;background:'+cellBg+';display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:'+numFs+'px;font-weight:800;color:'+numCol+';padding:0 3px;line-height:1.1;text-align:center;word-break:break-all;">'+escapeHtml(numStr)+'</span>';
           if(!it.available){
             // Occupied / unavailable → text instead of an icon. Not tappable.
             return '<div class="cp-card-busy" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;">' +
@@ -10952,7 +10973,7 @@
         const cardsHtml = _hasFloors
           ? floorKeys.map(f => {
               const hdr = f
-                ? '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;color:#0C0243;margin:6px 2px 9px;">'+escapeHtml(f)+'. krs</div>'
+                ? '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;color:#0C0243;margin:6px 2px 9px;">'+escapeHtml(floorLabel(f))+'</div>'
                 : '<div style="font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#888;margin:6px 2px 9px;">Kerros ei tiedossa</div>';
               return '<div style="margin-bottom:16px;">'+hdr+_gridOpen+byFloor[f].map(renderCard).join('')+'</div></div>';
             }).join('')
