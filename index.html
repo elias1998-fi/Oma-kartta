@@ -1773,7 +1773,9 @@
       border-top: 1px solid #eee; padding-top: 10px;
     }
     #free-terms-details.expanded { display: block; }
-    #free-terms-details p { margin-bottom: 8px; }
+    #free-terms-details ul { margin: 0; padding-left: 20px; }
+    #free-terms-details li { margin-bottom: 8px; }
+    #free-terms-details li:last-child { margin-bottom: 0; }
     #free-terms-buttons { display: flex; gap: 10px; }
     #free-terms-buttons button {
       flex: 1; height: 44px; border: none; border-radius: 12px;
@@ -4513,13 +4515,16 @@
   <div id="free-terms-backdrop"></div>
   <div id="free-terms-box">
     <div id="free-terms-row">
-      <div id="free-terms-text">Näytä ilmaiset paikat kartalla hyväksymällä käyttöehdot</div>
+      <div id="free-terms-text">Näytä ilmaiset paikat kartalla hyväksymällä käyttöehdot:</div>
       <button id="free-terms-arrow" onclick="toggleFreeTermsExpand()" aria-label="Laajenna">⌄</button>
     </div>
     <div id="free-terms-details">
-      <p>Ilmaiseksi merkityt pysäköintialueet perustuvat yhteisön ilmoituksiin ja julkisiin lähteisiin. Tietojen oikeellisuutta ei voida taata.</p>
-      <p>Tarkista aina paikan opasteet ja liikennemerkit ennen pysäköintiä. Sovellus ei vastaa mahdollisista virheellisistä tiedoista tai pysäköintivirhemaksuista.</p>
-      <p>Hyväksymällä käyttöehdot vahvistat ymmärtäväsi, että tiedot ovat suuntaa antavia.</p>
+      <ul>
+        <li>Tiedot ovat suuntaa antavia ja niissä voi esiintyä virheitä.</li>
+        <li>Pysäköintipaikat perustuvat muiden käyttäjien ilmoituksiin sekä julkisiin lähteisiin. Ilmaisia paikkoja lisätään sitä mukaa, kun keretään.</li>
+        <li>TotalParking pyrkii tarkistamaan paikat, mutta ei voi kuitenkaan taata niiden oikeellisuutta. Aineistoon ei voida vedota missään oikeustoimissa tai kenenkään toimesta.</li>
+        <li>Aineisto on tarkoitettu helpottamaan sovelluksen käyttäjiä löytämään ilmaisia pysäköintialueita lähiympäristöstään.</li>
+      </ul>
     </div>
     <div id="free-terms-buttons">
       <button id="free-terms-reject" onclick="rejectFreeTerms()">Hylkää</button>
@@ -7140,13 +7145,19 @@
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">' +
         '<rect x="2" y="2" width="60" height="60" rx="10" fill="#1565C0" stroke="white" stroke-width="2.5"/>' +
         '<path d="M12 24 L32 10 L52 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-        '<text x="32" y="58" font-family="Arial" font-weight="bold" font-size="32" fill="white" text-anchor="middle">P</text>' +
+        '<text x="32" y="52" font-family="Arial" font-weight="bold" font-size="32" fill="white" text-anchor="middle">P</text>' +
         '</svg>'
       );
     }
-    function showHalliCenterBadge() {
+    function showHalliCenterBadge(code) {
       if (window._navigationInProgress) return;
-      centerBadgeCode.innerHTML = '<img src="' + halliIconSvg() + '" style="width:22px;height:22px;display:inline-block;vertical-align:middle;">';
+      const codeTxt = (code != null && String(code).trim() !== '') ? String(code).trim() : '';
+      // Garage icon sized identically to the charging icon (20px); the garage
+      // code sits beside it with the same font/colour/position as the charging
+      // status text, shown only when the data provides a code.
+      centerBadgeCode.innerHTML =
+        '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
+        (codeTxt ? '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:#111;">' + escapeHtml(codeTxt) + '</span>' : '');
       centerPointerEl.classList.add('expanded');
       centerPointerEl.classList.add('halli-mode');
       centerPointerEl.classList.remove('charging-mode');
@@ -7207,7 +7218,7 @@
         window._badgeAreaId = null;
         showHalliInSheet(hp);
         releaseMasterLock();
-        showHalliCenterBadge();
+        showHalliCenterBadge(hp.code);
         const _nr = document.getElementById('sheet-nav-row'); if (_nr) _nr.classList.add('visible');
       }
       return true;
@@ -7534,7 +7545,7 @@
       ctx.font = 'bold 32px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
-      ctx.fillText('P', size/2, size - 6);
+      ctx.fillText('P', size/2, size - 12);
       return ctx.getImageData(0, 0, size, size);
     }
 
@@ -7542,7 +7553,7 @@
     async function loadHalliMarkers() {
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_master?select=id,polygon_coordinates,info_additional&parking_type=eq.Pysäköintihalli`,
+          `${SUPABASE_URL}/rest/v1/parking_master?select=id,polygon_coordinates,info_additional,zone_number&parking_type=eq.Pysäköintihalli`,
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -7552,7 +7563,7 @@
           .filter(r => r.polygon_coordinates?.type === 'Point')
           .map(r => ({
             type:'Feature',
-            properties:{ id:r.id, name: r.info_additional || 'Pysäköintihalli' },
+            properties:{ id:r.id, name: r.info_additional || 'Pysäköintihalli', code: (r.zone_number != null ? r.zone_number : '') },
             geometry: r.polygon_coordinates
           }));
         const halliGeoJSON = { type:'FeatureCollection', features: halliFeatures };
@@ -10081,6 +10092,10 @@
       const bd  = document.getElementById('free-terms-backdrop');
       bd.classList.add('visible');
       box.classList.add('visible');
+      // Show the 4 disclaimer bullets immediately when the banner appears; the
+      // arrow can still collapse/expand them (toggleFreeTermsExpand) as before.
+      document.getElementById('free-terms-details').classList.add('expanded');
+      document.getElementById('free-terms-arrow').classList.add('expanded');
       // Trigger fade-in on next frame so the transition runs
       requestAnimationFrame(() => { box.classList.add('shown'); });
     }
@@ -13676,7 +13691,7 @@
       // Stop any in-progress momentum scroll so a new touch catches it
       if(_momentumRAF){ cancelAnimationFrame(_momentumRAF); _momentumRAF = null; }
       // Estä drag jos ei ole pysäköintialuetta valittuna — paitsi filter-näkymässä, jossa drag aina sallittu
-      if(!filterMode && ((!currentParkingProps && !hoveredPolyId && !hoveredChargingId) || sliderTouching || e.target===sliderMin || e.target===sliderMax)){
+      if(!filterMode && ((!currentParkingProps && !hoveredPolyId && !hoveredChargingId && !hoveredHalliId) || sliderTouching || e.target===sliderMin || e.target===sliderMax)){
         return;
       }
       // In filter mode, ignore drags that start on a slider thumb (the ball).
