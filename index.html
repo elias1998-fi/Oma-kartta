@@ -10664,13 +10664,13 @@
         const kwTxt = kw > 0 ? (kw + ' kW') : '';
         const vTxt  = (kw >= 50 && volt > 0) ? (volt + ' V') : '';
         return '<span style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
-                 '<span style="display:flex;align-items:center;min-width:0;">' +
-                   '<span style="display:inline-flex;align-items:center;gap:4px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 7px;margin-right:8px;flex:none;">' +
+                 '<span style="display:flex;align-items:center;min-width:0;gap:10px;">' +
+                   '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 9px;flex:none;">' +
                      plugIcon(String(c.name || ''), '#0C0243', 20) +
-                     '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;min-width:26px;">\u00d7 ' + total + '</span>' +
+                     '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(String(c.name || '')) + '</span>' +
                    '</span>' +
-                   '<span style="min-width:88px;white-space:nowrap;flex:none;">' + escapeHtml(String(c.name || '')) + '</span>' +
-                   '<span style="color:' + col + ';font-weight:700;white-space:nowrap;">Vapaana: ' + free + '</span>' +
+                   
+                   '<span style="color:' + col + ';font-weight:700;white-space:nowrap;-webkit-text-stroke:0.3px #0C0243;">Vapaana: ' + free + '/' + total + '</span>' +
                  '</span>' +
                  '<span style="display:flex;align-items:center;gap:7px;flex:none;">' +
                    (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
