@@ -7497,10 +7497,8 @@
       // top of the parking-area polygons (otherwise the polygon fills
       // partially cover the icons at higher zoom levels).
       map.moveLayer('halli-icons');
-      // Keep halli hidden too if the charging-only view is active.
-      if (typeof showEvCharging !== 'undefined' && showEvCharging && map.getLayer('halli-icons')) {
-        map.setLayoutProperty('halli-icons', 'visibility', 'none');
-      }
+      // Garages are paid parking → follow the paid/free + charging-only filters.
+      updateHalliVisibility();
 
       function showHalliInfo(e) {
         const props = e.features[0].properties;
@@ -9962,6 +9960,16 @@
       const f = parts.length === 1 ? null : parts;
       map.setFilter('master-poly-fill', f);
       map.setFilter('master-poly-line', f);
+      updateHalliVisibility();   // garages are paid → follow the paid/free filter
+    }
+    // Parking garages (halli-icons) are paid parking, so they are shown only when
+    // paid areas are shown — i.e. NOT in the free-only view, and NOT in the
+    // charging-only view.
+    function updateHalliVisibility(){
+      if (!map.getLayer('halli-icons')) return;
+      const chargingOnly = (typeof showEvCharging !== 'undefined' && showEvCharging);
+      const freeOnly = (typeof showFreeParking !== 'undefined' && showFreeParking && freeFilterMode === 'free');
+      map.setLayoutProperty('halli-icons', 'visibility', (!chargingOnly && !freeOnly) ? 'visible' : 'none');
     }
     let sliderTouching=false;
     sliderMin.addEventListener('touchstart',()=>{sliderTouching=true;},{passive:true});
@@ -10065,6 +10073,7 @@
       setChargingVisibility(showEvCharging);
       // Charging-only view: hide all parking layers when the toggle is on.
       setParkingLayersVisible(!showEvCharging);
+      updateHalliVisibility();
       applyChargingFilters();
       updateChargerCount();
     }
@@ -10194,10 +10203,11 @@
     function setChargingVisibility(on){
       if (map.getLayer('charging-icons')) map.setLayoutProperty('charging-icons', 'visibility', on ? 'visible' : 'none');
     }
-    // Parking layers (paid areas, free/disc areas, parking garages). They are
-    // hidden when the "Näytä vain julkiset sähkölatauspisteet" toggle is on, so
-    // only charging stations remain on the map.
-    const PARKING_LAYER_IDS = ['master-poly-fill','master-poly-line','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill','halli-icons'];
+    // Parking-area polygon layers (paid + free/disc areas). Hidden when the
+    // "Näytä vain julkiset sähkölatauspisteet" toggle is on. Garages (halli-icons)
+    // are handled separately by updateHalliVisibility(), since they also follow
+    // the paid/free filter.
+    const PARKING_LAYER_IDS = ['master-poly-fill','master-poly-line','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill'];
     function setParkingLayersVisible(visible){
       PARKING_LAYER_IDS.forEach(id => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
@@ -10632,10 +10642,10 @@
         p.name || 'Latausasema',
         'Sähkölatauspiste',
         p.operatorName || 'Latausoperaattori',
-        '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:0 0 9px;">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</p>' +
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
-        '<p class="price-label">Lisätiedot</p><p class="price-value">' + (p.extraInfo ? escapeHtml(p.extraInfo) : '–') + '</p>'
+        '<p class="price-label">Lisätiedot</p><p class="price-value">' + (p.extraInfo ? escapeHtml(p.extraInfo) : '–') + '</p>' +
+        '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:10px 0 0;">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</p>'
       );
       // Big action button label for a charging station.
       document.getElementById('action-btn').textContent = 'Lataa täällä';
@@ -11148,6 +11158,9 @@
       clearHoverHighlight();
       hoveredPolyId = null;
       releaseMasterLock();
+      // Hide the directions/share row — it belongs to the info sheet (P-marker
+      // over a charging station or parking area), not the filter view.
+      const _navRow = document.getElementById('sheet-nav-row'); if (_navRow) _navRow.classList.remove('visible');
       sheetNormal.style.display='none';
       sheetFilter.classList.add('visible');
       sizeFilterSheet();
@@ -12602,7 +12615,7 @@
       // parking area is currently under the P-marker.
       const row = document.getElementById('sheet-nav-row');
       if (!row) return;
-      const hasArea = !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId) || (typeof hoveredChargingId !== 'undefined' && hoveredChargingId));
+      const hasArea = (typeof filterMode === 'undefined' || !filterMode) && !!(currentParkingProps || (typeof hoveredPolyId !== 'undefined' && hoveredPolyId) || (typeof hoveredChargingId !== 'undefined' && hoveredChargingId));
       row.classList.toggle('visible', hasArea);
       // Whenever the area-under-marker state changes, also refresh the
       // center pin's icon — areas that are free or disc-required show a
