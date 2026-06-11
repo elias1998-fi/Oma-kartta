@@ -10180,6 +10180,34 @@
     // props (standards, kW, voltage, operator, status) are kept so the filters
     // and the P-marker→sheet view can use them in the next steps.
     const AFIR_BASE = 'https://afir.digitraffic.fi/api/charging-network/v1';
+    // Käsin kuratoitu kerrostieto asemille, joiden operaattori EI julkaise
+    // floorLevel-kenttää AFIR-syötteessä. Syöte voittaa aina: overridea
+    // käytetään vain, jos syöte ei anna kerroksia.
+    //  - "floors": asemakohtainen koonti Lisätiedot-listaan ("P1 10 paikkaa" …).
+    //  - "evse": pistokenumero → kerros (sama numero, joka näkyy valitsimen
+    //    kortissa, eli physicalReference tai EVSE-id:n häntä). Kun tämä
+    //    täytetään, myös "Valitse pistoke" -näkymä ryhmittyy kerroksittain.
+    // Satamaparkkitalo / "Satamaparkki Premium" (Jätkäsaari, Helen/Virta):
+    // AFIR-syöte ei sisällä kerrostietoa (tarkistettu 11.6.2026), joten koonti
+    // on kuratoitu latauskartta.fi:n tiedoista (18 paikkaa yhteensä).
+    const CHARGING_FLOOR_OVERRIDES = [
+      {
+        match: /satamapark|länsisatamankatu\s*45/i,
+        floors: { P1: 10, P2: 2, P3: 1, P4: 1, P5: 1, P6: 1, P7: 1, P8: 1 },
+        evse: {}   // esim. { '40292': 'P1', '40301': 'P2', … } kun numerot tiedossa
+      }
+    ];
+    // Find (and cache on the group) the curated override for a merged station,
+    // matched by exact AFIR id or by a name/address regex.
+    function _floorOverrideFor(g){
+      if (g._ovDone) return g._ov || null;
+      g._ovDone = true;
+      g._ov = CHARGING_FLOOR_OVERRIDES.find(o =>
+        (o.id && o.id === g.id) ||
+        (o.match && (o.match.test(g.name || '') || o.match.test(g.address || '')))
+      ) || null;
+      return g._ov;
+    }
     let chargingLoaded = false, chargingLoading = false;
     let _chargingFeatures = [];
     let _chargingEvseIndex = {};          // stationId -> [{ id: evseId, labels:[..] }] for live status recompute
@@ -10425,7 +10453,16 @@
             g.total++;
             const evAvail = statusMap[ev.id] === 'AVAILABLE';
             if (evAvail) { g.anyAvail = true; g.avail++; }
-            const _fl = String(ev.floorLevel || ev.floor_level || ev.floor || '').trim();   // building floor of this charger, if reported
+            let _flv = ev.floorLevel; if (_flv == null || _flv === '') _flv = ev.floor_level; if (_flv == null || _flv === '') _flv = ev.floor;
+            let _fl = (_flv == null) ? '' : String(_flv).trim();   // building floor of this charger, if reported
+            if (!_fl) {
+              // Operator didn't publish floorLevel → curated per-EVSE fallback.
+              const _ov = _floorOverrideFor(g);
+              if (_ov && _ov.evse) {
+                const _ref = String(ev.physicalReference || ev.physical_reference || '').trim();
+                _fl = String(_ov.evse[_ref] || _ov.evse[connectorNumber(_ref, ev.id)] || '').trim();
+              }
+            }
             if (_fl) g.floors[_fl] = (g.floors[_fl] || 0) + 1;   // per-floor EVSE counts → "P1 10 paikkaa" list
             const _edir = _chDisplayText(ev.directions);    // per-EVSE directions, if any
             if (_edir) g.extras.add(_edir);
@@ -10462,6 +10499,13 @@
           // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
           const connectors = Object.keys(g.byLbl).map(l => ({ name: l, total: g.byLbl[l].total, avail: g.byLbl[l].avail, kw: Math.round(g.byLbl[l].kw), volt: Math.round(g.byLbl[l].volt) }));
           _chargingEvseIndex[g.id] = g.evList;
+          // When the feed (and per-EVSE overrides) gave no floors at all, fall
+          // back to the curated station-level summary for the Lisätiedot list.
+          let _floorsOut = g.floors;
+          if (!Object.keys(_floorsOut).length) {
+            const _ov = _floorOverrideFor(g);
+            if (_ov && _ov.floors) _floorsOut = _ov.floors;
+          }
           return { type: 'Feature', geometry: { type: 'Point', coordinates: g.coords }, properties: {
             id: g.id, name: g.name,
             operatorId: g.operatorId, operatorName: g.operatorName,
@@ -10469,7 +10513,7 @@
             address: g.address,
             standards: [...g.standards].join(','),
             connectors: JSON.stringify(connectors),
-            floorCounts: JSON.stringify(g.floors),
+            floorCounts: JSON.stringify(_floorsOut),
             extraInfo: [...g.extras].join(' \u00b7 '),
             maxKw: Math.round(g.maxKw), maxVoltage: g.maxV,
             evseCount: g.total, availCount: g.avail, available: g.anyAvail,
@@ -10481,6 +10525,11 @@
         .filter(ft => ft.properties.evseCount > 0);
         chargingLoaded = true;
         console.log('Latauspisteet ladattu:', _chargingFeatures.length);
+        // Diagnostiikka: monelleko EVSE:lle syöte/override antoi kerroksen.
+        const _evLists = Object.values(_chargingEvseIndex);
+        const _allEv = _evLists.reduce((n, l) => n + l.length, 0);
+        const _flEv  = _evLists.reduce((n, l) => n + l.filter(e => e.floor).length, 0);
+        console.log('Kerrostieto (floorLevel) saatavilla:', _flEv + '/' + _allEv, 'latauspisteellä');
         const _opCounts = {}; _chargingFeatures.forEach(f => { const o = f.properties.operatorName || '(tyhjä)'; _opCounts[o] = (_opCounts[o] || 0) + 1; });
         console.log('Operaattorit (latauspisteiden määrä):', _opCounts);
         addChargingLayer();
@@ -10940,9 +10989,9 @@
         const lightning = (col) => '<svg width="13" height="13" viewBox="0 0 24 24" style="flex:none;display:block;"><path d="M13 2 L4 14 h6 l-1 8 9 -12 h-6 z" fill="'+col+'"/></svg>';
         const renderCard = (it) => {
           const numCol = it.available ? '#0C0243' : '#b4b7bd';
-          // Subtle status tint on the number cell: soft green = free, soft red
-          // = occupied / out of service. Border + text colours stay as before.
-          const cellBg = it.available ? '#eaf6ee' : '#f9eeec';
+          // Status tint on the number cell: green = free, red = occupied /
+          // out of service. Border + text colours stay as before.
+          const cellBg = it.available ? '#c8e7d1' : '#f5d6d0';
           const numStr = String(it.num);
           const numFs = numStr.length >= 6 ? 11 : numStr.length === 5 ? 12 : numStr.length === 4 ? 14 : numStr.length === 3 ? 17 : 22;
           const numCell = '<span style="flex:none;width:60px;background:'+cellBg+';display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:'+numFs+'px;font-weight:800;color:'+numCol+';padding:0 3px;line-height:1.1;text-align:center;word-break:break-all;">'+escapeHtml(numStr)+'</span>';
