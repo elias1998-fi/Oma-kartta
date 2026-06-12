@@ -143,9 +143,10 @@
        it sits in the middle of the pill instead of riding the text baseline. */
     #center-marker.charging-mode #cm-code { display: flex; align-items: center; }
     /* Garage extended marker: show the halli icon in #cm-code and hide the "P"
-       pin. Symmetric padding since there's only an icon (no status text). */
+       pin. Padding + gap match charging-mode exactly so the garage icon sits at
+       the same left position inside the pill as the charging icon. */
     #center-marker.halli-mode #cm-pin { display: none !important; }
-    #center-marker.halli-mode.expanded #cm-body { padding: 2px 5px; gap: 0; align-items: center; }
+    #center-marker.halli-mode.expanded #cm-body { padding: 2px 7px 2px 3px; gap: 3px; align-items: center; }
     #center-marker.halli-mode #cm-code { display: flex; align-items: center; }
     /* The paid badge's "P" pin renders a touch larger so its symbol reads at
        the same height as the disc icon. transform:scale doesn't change the
@@ -7175,14 +7176,23 @@
       const ci = full.indexOf(',');
       const owner = ci > 0 ? full.slice(0, ci).trim() : '';
       const title = ci > 0 ? full.slice(ci + 1).trim() : full;
-      showMasterFeatureInSheet(title || full, 'Pysäköintihalli', owner, '');
-      // Garages carry no price/hours in the open data → no detail rows.
-      document.getElementById('sheet-divider').style.display = 'none';
+      // Garages carry no price/extra info in the open data yet → show the same
+      // Hinta + Lisätiedot rows as charging/parking, with "–" placeholders until
+      // the data exists (forward-compatible: shows real values if ever present).
+      const price = (p.price != null && String(p.price).trim() !== '') ? escapeHtml(String(p.price)) : '\u2013';
+      const extra = (p.extraInfo != null && String(p.extraInfo).trim() !== '') ? escapeHtml(String(p.extraInfo))
+                  : (p.extra_info != null && String(p.extra_info).trim() !== '') ? escapeHtml(String(p.extra_info)) : '\u2013';
+      showMasterFeatureInSheet(
+        title || full, 'Pysäköintihalli', owner,
+        '<p class="price-label">Hinta</p><p class="price-value">' + price + '</p>' +
+        '<p class="price-label">Lisätiedot</p><p class="price-value">' + extra + '</p>'
+      );
       document.getElementById('action-btn').textContent = 'Pysäköi täällä';
-      // Top-left sheet badge = the parking-garage icon (like the charging badge).
+      // Top-left sheet badge = the parking-garage icon, sized identically to the
+      // charging icon (20px) so halls and charging stations match on the sheet.
       const hbadge = document.getElementById('area-code-badge');
       if (hbadge) {
-        hbadge.innerHTML = '<img src="' + halliIconSvg() + '" style="width:24px;height:24px;display:inline-block;vertical-align:middle;">';
+        hbadge.innerHTML = '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">';
         hbadge.style.display = 'inline-block';
         hbadge.style.background = 'transparent';
         hbadge.style.padding = '0';
@@ -10180,34 +10190,6 @@
     // props (standards, kW, voltage, operator, status) are kept so the filters
     // and the P-marker→sheet view can use them in the next steps.
     const AFIR_BASE = 'https://afir.digitraffic.fi/api/charging-network/v1';
-    // Käsin kuratoitu kerrostieto asemille, joiden operaattori EI julkaise
-    // floorLevel-kenttää AFIR-syötteessä. Syöte voittaa aina: overridea
-    // käytetään vain, jos syöte ei anna kerroksia.
-    //  - "floors": asemakohtainen koonti Lisätiedot-listaan ("P1 10 paikkaa" …).
-    //  - "evse": pistokenumero → kerros (sama numero, joka näkyy valitsimen
-    //    kortissa, eli physicalReference tai EVSE-id:n häntä). Kun tämä
-    //    täytetään, myös "Valitse pistoke" -näkymä ryhmittyy kerroksittain.
-    // Satamaparkkitalo / "Satamaparkki Premium" (Jätkäsaari, Helen/Virta):
-    // AFIR-syöte ei sisällä kerrostietoa (tarkistettu 11.6.2026), joten koonti
-    // on kuratoitu latauskartta.fi:n tiedoista (18 paikkaa yhteensä).
-    const CHARGING_FLOOR_OVERRIDES = [
-      {
-        match: /satamapark|länsisatamankatu\s*45/i,
-        floors: { P1: 10, P2: 2, P3: 1, P4: 1, P5: 1, P6: 1, P7: 1, P8: 1 },
-        evse: {}   // esim. { '40292': 'P1', '40301': 'P2', … } kun numerot tiedossa
-      }
-    ];
-    // Find (and cache on the group) the curated override for a merged station,
-    // matched by exact AFIR id or by a name/address regex.
-    function _floorOverrideFor(g){
-      if (g._ovDone) return g._ov || null;
-      g._ovDone = true;
-      g._ov = CHARGING_FLOOR_OVERRIDES.find(o =>
-        (o.id && o.id === g.id) ||
-        (o.match && (o.match.test(g.name || '') || o.match.test(g.address || '')))
-      ) || null;
-      return g._ov;
-    }
     let chargingLoaded = false, chargingLoading = false;
     let _chargingFeatures = [];
     let _chargingEvseIndex = {};          // stationId -> [{ id: evseId, labels:[..] }] for live status recompute
@@ -10443,7 +10425,7 @@
               logoUrl: logoUrl,
               address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
               coords: coords, standards: new Set(), byLbl: {}, extras: new Set(),
-              maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: [], floors: {}
+              maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
             };
             clusters.push(g); _chOrder.push(g);
           }
@@ -10453,17 +10435,6 @@
             g.total++;
             const evAvail = statusMap[ev.id] === 'AVAILABLE';
             if (evAvail) { g.anyAvail = true; g.avail++; }
-            let _flv = ev.floorLevel; if (_flv == null || _flv === '') _flv = ev.floor_level; if (_flv == null || _flv === '') _flv = ev.floor;
-            let _fl = (_flv == null) ? '' : String(_flv).trim();   // building floor of this charger, if reported
-            if (!_fl) {
-              // Operator didn't publish floorLevel → curated per-EVSE fallback.
-              const _ov = _floorOverrideFor(g);
-              if (_ov && _ov.evse) {
-                const _ref = String(ev.physicalReference || ev.physical_reference || '').trim();
-                _fl = String(_ov.evse[_ref] || _ov.evse[connectorNumber(_ref, ev.id)] || '').trim();
-              }
-            }
-            if (_fl) g.floors[_fl] = (g.floors[_fl] || 0) + 1;   // per-floor EVSE counts → "P1 10 paikkaa" list
             const _edir = _chDisplayText(ev.directions);    // per-EVSE directions, if any
             if (_edir) g.extras.add(_edir);
             const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
@@ -10491,7 +10462,7 @@
               if ((kwHere[l] || 0) > g.byLbl[l].kw)   g.byLbl[l].kw   = kwHere[l];
               if ((vHere[l]  || 0) > g.byLbl[l].volt) g.byLbl[l].volt = vHere[l];
             });
-            g.evList.push({ id: ev.id, ref: (ev.physicalReference || ev.physical_reference || ''), floor: _fl, labels: [...lblsHere] });
+            g.evList.push({ id: ev.id, ref: (ev.physicalReference || ev.physical_reference || ''), labels: [...lblsHere] });
           });
         });
         _chargingFeatures = _chOrder.map(g => {
@@ -10499,13 +10470,6 @@
           // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
           const connectors = Object.keys(g.byLbl).map(l => ({ name: l, total: g.byLbl[l].total, avail: g.byLbl[l].avail, kw: Math.round(g.byLbl[l].kw), volt: Math.round(g.byLbl[l].volt) }));
           _chargingEvseIndex[g.id] = g.evList;
-          // When the feed (and per-EVSE overrides) gave no floors at all, fall
-          // back to the curated station-level summary for the Lisätiedot list.
-          let _floorsOut = g.floors;
-          if (!Object.keys(_floorsOut).length) {
-            const _ov = _floorOverrideFor(g);
-            if (_ov && _ov.floors) _floorsOut = _ov.floors;
-          }
           return { type: 'Feature', geometry: { type: 'Point', coordinates: g.coords }, properties: {
             id: g.id, name: g.name,
             operatorId: g.operatorId, operatorName: g.operatorName,
@@ -10513,7 +10477,6 @@
             address: g.address,
             standards: [...g.standards].join(','),
             connectors: JSON.stringify(connectors),
-            floorCounts: JSON.stringify(_floorsOut),
             extraInfo: [...g.extras].join(' \u00b7 '),
             maxKw: Math.round(g.maxKw), maxVoltage: g.maxV,
             evseCount: g.total, availCount: g.avail, available: g.anyAvail,
@@ -10525,11 +10488,6 @@
         .filter(ft => ft.properties.evseCount > 0);
         chargingLoaded = true;
         console.log('Latauspisteet ladattu:', _chargingFeatures.length);
-        // Diagnostiikka: monelleko EVSE:lle syöte/override antoi kerroksen.
-        const _evLists = Object.values(_chargingEvseIndex);
-        const _allEv = _evLists.reduce((n, l) => n + l.length, 0);
-        const _flEv  = _evLists.reduce((n, l) => n + l.filter(e => e.floor).length, 0);
-        console.log('Kerrostieto (floorLevel) saatavilla:', _flEv + '/' + _allEv, 'latauspisteellä');
         const _opCounts = {}; _chargingFeatures.forEach(f => { const o = f.properties.operatorName || '(tyhjä)'; _opCounts[o] = (_opCounts[o] || 0) + 1; });
         console.log('Operaattorit (latauspisteiden määrä):', _opCounts);
         addChargingLayer();
@@ -10780,18 +10738,6 @@
       const tot = (p.evseCount != null && p.evseCount !== '') ? p.evseCount : '';
       const free = (p.availCount != null && p.availCount !== '') ? p.availCount : (isAvail ? 1 : 0);
       const cnt = (tot !== '') ? (' (' + free + '/' + tot + ')') : '';
-      // "Lisätiedot": when the feed reports floor levels, lead with a per-floor
-      // summary list ("P1 10 paikkaa", "P2 2 paikkaa", …) like latauskartta.fi;
-      // any operator-provided extra text follows it. Otherwise old behaviour.
-      let floorsHtml = '';
-      try {
-        const fc = JSON.parse(p.floorCounts || '{}');
-        const fk = Object.keys(fc).sort((a,b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
-        floorsHtml = fk.map(f => escapeHtml(floorLabel(f)) + ' ' + fc[f] + (fc[f] === 1 ? ' paikka' : ' paikkaa')).join('<br>');
-      } catch (e) { floorsHtml = ''; }
-      const extraHtml = floorsHtml
-        ? floorsHtml + (p.extraInfo ? '<br>' + escapeHtml(p.extraInfo) : '')
-        : (p.extraInfo ? escapeHtml(p.extraInfo) : '\u2013');
       const availTxt = isAvail
         ? '<span style="color:#1faa4a;font-weight:700;">Tilaa</span>' + cnt
         : '<span style="color:#c0392b;font-weight:700;">Täynnä</span>' + cnt;
@@ -10801,7 +10747,7 @@
         p.operatorName || 'Latausoperaattori',
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
-        '<p class="price-label">Lisätiedot</p><p class="price-value">' + extraHtml + '</p>' +
+        '<p class="price-label">Lisätiedot</p><p class="price-value">' + (p.extraInfo ? escapeHtml(p.extraInfo) : '–') + '</p>' +
         '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:10px 0 0;">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</p>'
       );
       // Big action button label for a charging station.
@@ -10947,12 +10893,6 @@
       const t = tail.replace(/^E(?=\d)/i, '').trim();
       return t || '\u2013';
     }
-    // Human label for a floor_level value: garage-style codes ("P1", "K2") are
-    // shown as-is; bare numbers ("1", "-1") get a ". krs" suffix.
-    function floorLabel(f){
-      const s = String(f == null ? '' : f).trim();
-      return /^-?\d+$/.test(s) ? (s + '. krs') : s;
-    }
     function openConnectorPicker(cp){
       let ov = document.getElementById('connector-picker-overlay');
       if(!ov){
@@ -10979,7 +10919,7 @@
         const evList = _chargingEvseIndex[cp.id] || [];
         const items = [];
         evList.forEach(e => { (e.labels||[]).forEach(l => {
-          items.push({ evseId:e.id, ref:e.ref||'', floor:e.floor||'', label:l, kw:(aggKv[l]&&aggKv[l].kw)||0, volt:(aggKv[l]&&aggKv[l].volt)||0, available:_chargingStatusMap[e.id]==='AVAILABLE' });
+          items.push({ evseId:e.id, ref:e.ref||'', label:l, kw:(aggKv[l]&&aggKv[l].kw)||0, volt:(aggKv[l]&&aggKv[l].volt)||0, available:_chargingStatusMap[e.id]==='AVAILABLE' });
         }); });
         // Use the REAL connector number from the feed (physical_reference), not
         // an invented index. Order by that number (natural sort: 1A, 1B, 2A…).
@@ -11011,22 +10951,7 @@
             '</span>' +
           '</button>';
         };
-        // Group connector cards by building floor (floor_level from the feed).
-        // Only operators that report it (often parking-garage stations like this
-        // Jätkäsaari Virta) have floors; otherwise everything is one flat list.
-        const byFloor = {}; const floorKeys = [];
-        items.forEach(it => { const f = (it.floor==null?'':String(it.floor)).trim(); if(!(f in byFloor)){ byFloor[f]=[]; floorKeys.push(f); } byFloor[f].push(it); });
-        floorKeys.sort((a,b) => ((a===''?1:0)-(b===''?1:0)) || String(a).localeCompare(String(b), undefined, {numeric:true}));
-        const _hasFloors = floorKeys.some(f => f !== '');
-        const _gridOpen = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">';
-        const cardsHtml = _hasFloors
-          ? floorKeys.map(f => {
-              const hdr = f
-                ? '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;color:#0C0243;margin:6px 2px 9px;">'+escapeHtml(floorLabel(f))+'</div>'
-                : '<div style="font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#888;margin:6px 2px 9px;">Kerros ei tiedossa</div>';
-              return '<div style="margin-bottom:16px;">'+hdr+_gridOpen+byFloor[f].map(renderCard).join('')+'</div></div>';
-            }).join('')
-          : _gridOpen+items.map(renderCard).join('')+'</div>';
+        const cardsHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">'+items.map(renderCard).join('')+'</div>';
         bodyHtml =
           '<div style="padding:12px 16px 4px 16px;flex-shrink:0;font-family:Arial,sans-serif;">' +
             '<div style="font-size:14px;color:#111;font-weight:700;">'+escapeHtml(cp.name||'Latausasema')+'</div>' +
