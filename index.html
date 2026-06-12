@@ -1569,6 +1569,20 @@
     .hours-time { font-weight: 500; }
     .price-label { font-size: 13px; color: #888; margin-top: 18px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
+    /* Pulsing green "live" dot shown after the "Päivitetty …" line to signal
+       that availability updates in real time. The expanding, fading ring is
+       drawn with an animated box-shadow so it needs no extra elements. */
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: #1faa4a; vertical-align: middle; margin-left: 6px;
+      animation: liveDotPulse 1.8s ease-out infinite;
+    }
+    @keyframes liveDotPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(31,170,74,0.55); }
+      70%  { box-shadow: 0 0 0 6px rgba(31,170,74,0); }
+      100% { box-shadow: 0 0 0 0 rgba(31,170,74,0); }
+    }
+    @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
     #sheet-filter { display: none; flex-direction: column; padding: 0 18px 16px 24px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 18px); overflow-y: scroll; overflow-x: hidden; touch-action: none; position: relative; scrollbar-width: none; }
     #sheet-filter::-webkit-scrollbar { width: 0; height: 0; display: none; }
     #filter-scrollbar { position: absolute; right: 4px; width: 11px; z-index: 6; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
@@ -7604,7 +7618,10 @@
         id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 12,
         layout: {
           'icon-image': 'halli-icon', 'icon-size': 0.50,
-          'icon-allow-overlap': true, 'icon-anchor': 'center'
+          // ignore-placement = the icon doesn't reserve collision space, so map
+          // labels no longer dodge it — they stay put and the icon (drawn on top
+          // via moveLayer below) simply overlaps them. Matches charging-icons.
+          'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
         }
       });
       // Promote the halli icons to the very top so they always sit on
@@ -10543,7 +10560,7 @@
         stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
         _chargingStatusMap = statusMap;
         _chargingStatusFetchedAt = Date.now();
-        const _upd = document.getElementById('charging-updated-line');
+        const _upd = document.getElementById('charging-updated-text') || document.getElementById('charging-updated-line');
         if (_upd) _upd.textContent = formatUpdatedAgo(_chargingStatusFetchedAt);
         // Remember the currently-shown station's signature so we only re-render
         // the sheet if its availability actually changed (avoids flicker).
@@ -10748,7 +10765,7 @@
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
         '<p class="price-label">Lisätiedot</p><p class="price-value">' + (p.extraInfo ? escapeHtml(p.extraInfo) : '–') + '</p>' +
-        '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:10px 0 0;">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</p>'
+        '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:10px 0 0;"><span id="charging-updated-text">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</span><span class="live-dot"></span></p>'
       );
       // Big action button label for a charging station.
       document.getElementById('action-btn').textContent = 'Lataa täällä';
