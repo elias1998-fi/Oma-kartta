@@ -3164,6 +3164,7 @@
     }
     .detail-label { color: #555; }
     .detail-value { color: #222; }
+    .detail-vat-note { color: #888; font-size: 12.5px; line-height: 1.4; padding: 12px 0 2px; }
 
     #start-btn-container { 
       padding: 10px 14px; 
@@ -11001,7 +11002,7 @@
         '</div>' +
         '<div id="total-price-container" style="padding:12px 14px 0 14px;flex-shrink:0;">' +
           '<div class="total-price-row">' +
-            '<span class="total-price-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail()">i</span></span>' +
+            '<span class="total-price-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail(\'charging\')">i</span></span>' +
             '<span class="total-price-val" style="font-size:16px;">' + (cp.price || 'K\u00e4yt\u00f6n mukaan') + '</span>' +
           '</div>' +
         '</div>' +
@@ -11930,14 +11931,26 @@
       drawDrum();
     }
 
-    function openPriceDetail(minutes) {
-      const mins  = (typeof minutes === 'number') ? minutes : parkingMinutes;
-      const price = calculatePrice(mins);
-      document.getElementById('detail-parking').textContent = formatPrice(price.parking);
-      document.getElementById('detail-service').textContent = formatPrice(price.service);
-      document.getElementById('detail-subtotal').textContent = formatPrice(price.subtotal);
-      document.getElementById('detail-vat').textContent = formatPrice(price.vat);
-      document.getElementById('detail-total').textContent = formatPrice(price.total);
+    function openPriceDetail(arg) {
+      const content = document.querySelector('#price-detail-sheet .price-detail-content');
+      const row = (label, val) => '<div class="detail-row"><span class="detail-label">' + label + '</span><span class="detail-value">' + val + '</span></div>';
+      if (arg === 'charging') {
+        // Charging is billed per kWh, so the sheet is a rate card (no computed
+        // total): charging rate + service fee + a VAT note.
+        content.innerHTML =
+          row('Latauksen hinta', '0,30 €/kWh') +
+          row('Palvelumaksu', '0,25 €') +
+          '<div class="detail-vat-note">Hintoihin lisätään arvonlisävero 25,5%</div>';
+      } else {
+        const mins  = (typeof arg === 'number') ? arg : parkingMinutes;
+        const price = calculatePrice(mins);
+        content.innerHTML =
+          row('Pysäköintimaksu', formatPrice(price.parking)) +
+          row('Palvelumaksu (10%)', formatPrice(price.service)) +
+          row('Välisumma (ilman ALV)', formatPrice(price.subtotal)) +
+          row('ALV 25,5%', formatPrice(price.vat)) +
+          '<div class="detail-row total"><span class="detail-label">Yhteensä</span><span class="detail-value">' + formatPrice(price.total) + '</span></div>';
+      }
       document.getElementById('price-detail-sheet').classList.add('open');
     }
 
