@@ -11006,6 +11006,7 @@
       if(bc) bc.classList.add('hidden');
       requestAnimationFrame(() => { ov.style.transform = 'translateX(0)'; });
       resetParkingPurpose();   // start as "Henkilökohtainen" + sync the segmented control
+      renderPaymentDisplay();  // refresh Maksutapa card (shows company sub-line if business billing)
     }
     // "Valitse pistoke" — opens from the "Lataa täällä" button. Shows the
     // station's individual connectors as a visual, numbered list grouped by type
@@ -12066,7 +12067,7 @@
       { id:'applepay', name:'Apple Pay', icon:'applepay' },
       { id:'card', name:'Visa *2345', icon:'card' },
       { id:'mobilepay', name:'MobilePay', icon:'mobilepay' },
-      { id:'business', name:'Yrityslaskutus', icon:'business', sub:'Yrityksen nimi: TotalParking' }
+      { id:'business', name:'Yrityslaskutus', icon:'business', sub:'TotalParking' }
     ];
     let selectedPaymentIdx = 0;
 
@@ -12088,10 +12089,13 @@
 
     function renderPaymentDisplay() {
       const p = paymentMethods[selectedPaymentIdx];
+      // When the method carries a sub-line (e.g. business billing → company
+      // name), show it under the method name in the Maksutapa card too.
+      const nameHtml = escapeHtml(p.name) + (p.sub ? '<div style="font-size:12px;color:#888;font-weight:normal;margin-top:2px;">' + escapeHtml(p.sub) + '</div>' : '');
       document.getElementById('payment-icon').innerHTML = getPaymentIcon(p.icon);
-      document.getElementById('payment-name').textContent = p.name;
+      document.getElementById('payment-name').innerHTML = nameHtml;
       const _cpi = document.getElementById('c-payment-icon'); if (_cpi) _cpi.innerHTML = getPaymentIcon(p.icon);
-      const _cpn = document.getElementById('c-payment-name'); if (_cpn) _cpn.textContent = p.name;
+      const _cpn = document.getElementById('c-payment-name'); if (_cpn) _cpn.innerHTML = nameHtml;
     }
 
     function renderPaymentOptions() {
