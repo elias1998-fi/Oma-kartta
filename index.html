@@ -1841,6 +1841,17 @@
       text-align: center;
       line-height: 1.4;
     }
+    /* Two-option segmented control (Henkilökohtainen / Työ): thumb is half width. */
+    .seg-track.two .seg-thumb { width: calc((100% - 6px) / 2); }
+    /* Cost-center picker + work-comment screens (slide in over the parking/
+       charging overlays). z above charging overlay (130). */
+    .purpose-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 240; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94); }
+    .purpose-overlay.open { transform: translateX(0); }
+    .cc-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: white; border-radius: 14px; padding: 16px 16px; margin-bottom: 10px; cursor: pointer; font-family: Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+    .cc-row:active { background: #f4f5fb; }
+    .cc-row-label { font-size: 15px; color: #1a1a2e; font-weight: 600; line-height: 1.35; }
+    .cc-row-chevron { flex-shrink: 0; color: #c5c8cf; font-size: 20px; }
+    .cc-row.selected { box-shadow: inset 0 0 0 2px #0C0243; }
 
     #slider-label { font-size: 15px; color: #222; margin-bottom: 10px; text-align: center; }
     #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
@@ -3604,6 +3615,14 @@
             <span class="summary-label">Maksutapa</span>
             <span class="summary-value" id="ed-payment">—</span>
           </div>
+          <div class="summary-row" id="ed-purpose-row">
+            <span class="summary-label">Pysäköinnin tyyppi</span>
+            <span class="summary-value" id="ed-purpose">—</span>
+          </div>
+          <div class="summary-row" id="ed-costcenter-row" style="display:none;align-items:flex-start;">
+            <span class="summary-label">Kustannuspaikka</span>
+            <span class="summary-value" id="ed-costcenter" style="max-width:62%;text-align:right;">—</span>
+          </div>
           <div class="summary-row summary-total-row">
             <span class="summary-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail(_edPriceMinutes)">i</span></span>
             <span class="summary-value summary-price" id="ed-price">—</span>
@@ -4850,6 +4869,14 @@
           <div class="payment-name" id="payment-name">Apple Pay</div>
           <div class="payment-chevron">⌄</div>
         </div>
+        <div id="purpose-segmented" style="margin-top:12px;">
+          <div class="seg-track two">
+            <div class="seg-thumb" id="purpose-seg-thumb" style="background:#0C0243;"></div>
+            <button class="seg-option active" data-purpose="personal" onclick="setParkingPurpose('personal','parking')">Henkilökohtainen</button>
+            <button class="seg-option" data-purpose="work" onclick="setParkingPurpose('work','parking')">Työ</button>
+          </div>
+          <div id="purpose-work-info" style="display:none;margin-top:9px;font-size:12.5px;color:#0C0243;font-family:Arial,sans-serif;line-height:1.4;"></div>
+        </div>
       </div>
 
       <div class="p-card">
@@ -4881,6 +4908,35 @@
     </div>
 
     <div id="start-btn-container"><button id="start-btn" class="disabled">Aseta pysäköintiaika</button></div>
+  </div>
+
+  <!-- Työ → "Valitse kustannuspaikka": pick which company cost center this
+       parking belongs to. Selecting a row opens the comment screen. -->
+  <div id="costcenter-overlay" class="purpose-overlay">
+    <div id="parking-header" style="background:white;">
+      <button id="back-btn" onclick="closeCostCenterOverlay(true)">←</button>
+      <div id="parking-header-title">Valitse kustannuspaikka</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 14px max(20px,env(safe-area-inset-bottom));">
+      <div id="costcenter-list"></div>
+    </div>
+  </div>
+
+  <!-- "Lisää kommentti": employer-requested clarifying comment for a work
+       parking. Saving returns to the parking/charging view. -->
+  <div id="workcomment-overlay" class="purpose-overlay">
+    <div id="parking-header" style="background:white;">
+      <button id="back-btn" onclick="backFromWorkComment()">←</button>
+      <div id="parking-header-title">Lisää kommentti</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:18px 16px max(20px,env(safe-area-inset-bottom));font-family:Arial,sans-serif;">
+      <div id="workcomment-costcenter" style="font-size:12.5px;color:#888;margin-bottom:14px;"></div>
+      <div style="font-size:15px;font-weight:600;color:#1a1a2e;line-height:1.4;margin-bottom:12px;">Työnantajasi pyytää sinua lisäämään pysäköintiin liittyvän tarkentavan kommentin.</div>
+      <textarea id="workcomment-input" placeholder="Kirjoita kommentti…" style="width:100%;box-sizing:border-box;min-height:120px;border:1px solid #dcdce3;border-radius:12px;padding:12px;font-family:Arial,sans-serif;font-size:14px;color:#222;resize:vertical;outline:none;"></textarea>
+    </div>
+    <div style="padding:12px 16px max(20px,env(safe-area-inset-bottom));background:transparent;">
+      <button onclick="saveWorkCommentAndReturn()" style="width:100%;height:56px;border:none;border-radius:16px;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;color:white;background:#0C0243;cursor:pointer;">Tallenna ja palaa pysäköintiin</button>
+    </div>
   </div>
 
   <div id="btn-container">
@@ -10930,6 +10986,14 @@
               '<div class="payment-name" id="c-payment-name">' + escapeHtml(pay.name||'') + '</div>' +
               '<div class="payment-chevron">\u2304</div>' +
             '</div>' +
+            '<div id="c-purpose-segmented" style="margin-top:12px;">' +
+              '<div class="seg-track two">' +
+                '<div class="seg-thumb" id="c-purpose-seg-thumb" style="background:#0C0243;"></div>' +
+                '<button class="seg-option" data-purpose="personal" onclick="setParkingPurpose(\'personal\',\'charging\')">Henkil\u00f6kohtainen</button>' +
+                '<button class="seg-option" data-purpose="work" onclick="setParkingPurpose(\'work\',\'charging\')">Ty\u00f6</button>' +
+              '</div>' +
+              '<div id="c-purpose-work-info" style="display:none;margin-top:9px;font-size:12.5px;color:#0C0243;font-family:Arial,sans-serif;line-height:1.4;"></div>' +
+            '</div>' +
           '</div>' +
           '<div class="p-card">' +
             '<div class="p-card-title">Latauksen tiedot</div>' +
@@ -10953,6 +11017,7 @@
       const bc = document.getElementById('btn-container');
       if(bc) bc.classList.add('hidden');
       requestAnimationFrame(() => { ov.style.transform = 'translateX(0)'; });
+      resetParkingPurpose();   // start as "Henkilökohtainen" + sync the segmented control
     }
     // "Valitse pistoke" — opens from the "Lataa täällä" button. Shows the
     // station's individual connectors as a visual, numbered list grouped by type
@@ -11183,6 +11248,111 @@
     updateOperatorUI();
     // Voltage segmented control under the charger picker. Indicator is always
     // dark blue (no light-blue / lilac like the parking segmented control).
+    // ── Pysäköinnin tyyppi: Henkilökohtainen vs Työ ────────────────────────
+    // "Työ" marks a parking as a company expense and routes the user through a
+    // cost-center picker + a clarifying comment, so an employee can later get a
+    // monthly summary of work parkings for tax deduction. The choice + its
+    // cost center/comment ride along on the parking session and show on the
+    // event detail (and emailed receipt). The Supabase table has no column for
+    // this yet, so it's also kept client-side per event id (_purposeMetaById).
+    const PARKING_COST_CENTERS = [
+      'Kustannuspaikka 1: Työmaavierailu',
+      'Kustannuspaikka 2: Asiakastapaamiset',
+      'Kustannuspaikka 3: Tyky ja virkistystoiminta'
+    ];
+    let _parkingPurpose   = 'personal';   // 'personal' | 'work'
+    let _parkingCostCenter = '';           // selected cost center (work only)
+    let _parkingWorkComment = '';          // optional clarifying comment (work only)
+    let _purposeReturnTarget = 'parking';  // which overlay to return to after the flow
+    const _purposeMetaById = {};           // eventId -> { purpose, costCenter, comment }
+
+    // Reset to the default (personal) for a fresh parking/charging session and
+    // sync the segmented controls. Called when either overlay opens.
+    function resetParkingPurpose(){
+      _parkingPurpose = 'personal';
+      _parkingCostCenter = '';
+      _parkingWorkComment = '';
+      updatePurposeSegUI();
+    }
+    // Reflect _parkingPurpose on both segmented controls (parking + charging),
+    // whichever are in the DOM, plus the little work-summary line under them.
+    function updatePurposeSegUI(){
+      const idx = _parkingPurpose === 'work' ? 1 : 0;
+      ['purpose-seg-thumb','c-purpose-seg-thumb'].forEach(id => {
+        const t = document.getElementById(id);
+        if (t) t.style.transform = `translateX(${idx * 100}%)`;
+      });
+      document.querySelectorAll('#purpose-segmented .seg-option, #c-purpose-segmented .seg-option').forEach(b => {
+        b.classList.toggle('active', b.dataset.purpose === _parkingPurpose);
+      });
+      const info = (_parkingPurpose === 'work' && _parkingCostCenter)
+        ? (_parkingCostCenter + (_parkingWorkComment ? ' · ' + _parkingWorkComment : ''))
+        : '';
+      ['purpose-work-info','c-purpose-work-info'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = info; el.style.display = info ? 'block' : 'none'; }
+      });
+    }
+    function setParkingPurpose(mode, source){
+      _purposeReturnTarget = (source === 'charging') ? 'charging' : 'parking';
+      if (mode === 'work') {
+        // Don't commit to "Työ" until a cost center is chosen — open the picker.
+        openCostCenterOverlay();
+        return;
+      }
+      _parkingPurpose = 'personal';
+      _parkingCostCenter = '';
+      _parkingWorkComment = '';
+      updatePurposeSegUI();
+    }
+    // ── "Valitse kustannuspaikka" ───────────────────────────────────────────
+    function openCostCenterOverlay(){
+      const list = document.getElementById('costcenter-list');
+      if (list) {
+        list.innerHTML = PARKING_COST_CENTERS.map(cc =>
+          '<div class="cc-row' + (cc === _parkingCostCenter ? ' selected' : '') + '" onclick="selectCostCenter(' + JSON.stringify(cc).replace(/"/g,'&quot;') + ')">' +
+            '<span class="cc-row-label">' + escapeHtml(cc) + '</span>' +
+            '<span class="cc-row-chevron">›</span>' +
+          '</div>'
+        ).join('');
+      }
+      const ov = document.getElementById('costcenter-overlay');
+      if (ov) requestAnimationFrame(() => ov.classList.add('open'));
+    }
+    // back=true → user backed out without finishing → revert to personal.
+    function closeCostCenterOverlay(back){
+      const ov = document.getElementById('costcenter-overlay');
+      if (ov) ov.classList.remove('open');
+      if (back && _parkingPurpose !== 'work') { _parkingPurpose = 'personal'; updatePurposeSegUI(); }
+    }
+    function selectCostCenter(cc){
+      _parkingCostCenter = cc;
+      openWorkCommentOverlay();
+    }
+    // ── "Lisää kommentti" ───────────────────────────────────────────────────
+    function openWorkCommentOverlay(){
+      const cc = document.getElementById('workcomment-costcenter');
+      if (cc) cc.textContent = _parkingCostCenter;
+      const ta = document.getElementById('workcomment-input');
+      if (ta) ta.value = _parkingWorkComment || '';
+      const ov = document.getElementById('workcomment-overlay');
+      if (ov) requestAnimationFrame(() => ov.classList.add('open'));
+    }
+    function backFromWorkComment(){
+      const ov = document.getElementById('workcomment-overlay');
+      if (ov) ov.classList.remove('open');   // back to the cost-center picker
+    }
+    function saveWorkCommentAndReturn(){
+      const ta = document.getElementById('workcomment-input');
+      _parkingWorkComment = ta ? (ta.value || '').trim() : '';
+      _parkingPurpose = 'work';   // now committed
+      // Close both flow overlays → back to the parking/charging view underneath.
+      const wc = document.getElementById('workcomment-overlay');
+      if (wc) wc.classList.remove('open');
+      const cco = document.getElementById('costcenter-overlay');
+      if (cco) cco.classList.remove('open');
+      updatePurposeSegUI();
+    }
     function setVoltageMode(mode) {
       const idx = mode === '400' ? 0 : mode === '800' ? 2 : 1;
       const thumb = document.getElementById('voltage-seg-thumb');
@@ -11966,6 +12136,7 @@
 
     const overlay=document.getElementById('parking-overlay');
     function openParkingOverlay(p){
+      resetParkingPurpose();   // each new session starts as "Henkilökohtainen"
       const areaCode=p['hel:id']||'—',kesto=p['hel:kesto']||null;
       const tyyppi=getTypeName(p['hel:paikan_asento']);
       const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';
@@ -12325,7 +12496,17 @@
         areaCode:      areaCode,
         paymentMethod: pm.name,
         maxHours:      parkingMaxMinutes / 60,
-        location:      { lat: center.lat, lng: center.lng }
+        location:      { lat: center.lat, lng: center.lng },
+        purpose:       _parkingPurpose,
+        costCenter:    _parkingPurpose === 'work' ? _parkingCostCenter : '',
+        workComment:   _parkingPurpose === 'work' ? _parkingWorkComment : ''
+      };
+      // The parkkihubi table has no column for parking purpose yet, so keep it
+      // client-side keyed by the event id — the event detail + receipt read it.
+      if (id) _purposeMetaById[id] = {
+        purpose:    _parkingPurpose,
+        costCenter: _parkingPurpose === 'work' ? _parkingCostCenter : '',
+        comment:    _parkingPurpose === 'work' ? _parkingWorkComment : ''
       };
 
       // Show 4-second toast, then return to map with active banner visible
@@ -12591,10 +12772,14 @@
           const hi = new Date(f.endDate + 'T23:59:59');
           if (start > hi) return false;
         }
-        // Payment-type filter: no DB column for this yet, so all events are
-        // implicitly "Henkilökohtainen". "Kaikki" and "Henkilökohtainen" both
-        // match everything; "Yritystili" matches nothing for now.
-        if (f.paymentType === 'yritys') return false;
+        // Payment-type filter. Purpose comes from an optional DB field if it
+        // ever exists, else the client-side meta captured at parking start
+        // (default personal). "Kaikki" matches all; "Yritystili" → work only.
+        if (f.paymentType === 'yritys') {
+          const meta = _purposeMetaById[ev.id] || {};
+          const purpose = ev.payment_purpose || meta.purpose || 'personal';
+          if (purpose !== 'work') return false;
+        }
         return true;
       });
     }
@@ -12652,13 +12837,30 @@
       document.getElementById('ed-payment').textContent      = ev.payment_method || '—';
       document.getElementById('ed-price').textContent        = formatPrice(price.total);
       document.getElementById('ed-event-id').textContent     = ev.id || '—';
+      // Parking purpose (Henkilökohtainen / Työ): from optional DB fields if they
+      // ever exist, else the client-side meta captured at start. Work parkings
+      // also show their cost center; the clarifying comment is shown in the
+      // editable comment box below.
+      const meta = _purposeMetaById[ev.id] || {};
+      const purpose = ev.payment_purpose || meta.purpose || 'personal';
+      const costCenter = ev.cost_center || meta.costCenter || '';
+      const workComment = ev.work_comment || meta.comment || '';
+      document.getElementById('ed-purpose').textContent = (purpose === 'work') ? 'Työ' : 'Henkilökohtainen';
+      const ccRow = document.getElementById('ed-costcenter-row');
+      if (purpose === 'work' && costCenter) {
+        document.getElementById('ed-costcenter').textContent = costCenter;
+        ccRow.style.display = 'flex';
+      } else {
+        ccRow.style.display = 'none';
+      }
       _edPriceMinutes = durMin;
 
       _currentDetailEvent = ev;
 
-      // Editable comment, pre-filled with the saved note for this event
+      // Editable comment, pre-filled with the saved note; for a work parking
+      // with no saved note yet, seed it with the employer-requested comment.
       const notesInput = document.getElementById('ed-notes-input');
-      if (notesInput) notesInput.value = ev.notes || '';
+      if (notesInput) notesInput.value = ev.notes || ((purpose === 'work') ? workComment : '') || '';
 
       // Make sure the receipt sheet starts closed
       closeReceiptSheet();
