@@ -5370,7 +5370,7 @@
       // + clustering) is already cached by the time the user flips the EV toggle.
       // The layer is created hidden here (showEvCharging is false), so toggling
       // on then just flips visibility → markers appear instantly, no wait.
-      setTimeout(() => { if (!chargingLoaded && !chargingLoading) loadChargingStations(); }, 2500);
+      setTimeout(() => { if (!chargingLoaded && !chargingLoading) loadChargingStations(); }, 1500);
     });
 
     // Geolocate control — manual only.
@@ -7473,6 +7473,15 @@
       // even after the finger lifts (moveend fires updateButtonText).
       if (typeof hoveredChargingId !== 'undefined' && hoveredChargingId) {
         btn.textContent = 'Lataa täällä';
+        btn.classList.add('active');
+        return;
+      }
+      // A parking garage under the P-marker → "Pysäköi täällä" (and tappable),
+      // so the garage parking flow stays reachable even after moveend fires
+      // updateButtonText (which otherwise reset it to the empty-state prompt and
+      // stripped the .active class, making the button a no-op).
+      if (typeof hoveredHalliId !== 'undefined' && hoveredHalliId) {
+        btn.textContent = 'Pysäköi täällä';
         btn.classList.add('active');
         return;
       }
@@ -10200,7 +10209,8 @@
       // toggle their visibility. Default to all plug types selected on enable.
       if (showEvCharging) {
         if (_selectedChargerTypes.size === 0) selectAllChargerTypes();
-        loadChargingStations();
+        if (!chargingLoaded) loadChargingStations();   // fetch raw once → renders current viewport
+        else rebuildChargingForViewport(true);          // already cached → render current viewport now
       }
       setChargingVisibility(showEvCharging);
       applyChargingFilters();
@@ -10215,6 +10225,9 @@
     const AFIR_BASE = 'https://afir.digitraffic.fi/api/charging-network/v1';
     let chargingLoaded = false, chargingLoading = false;
     let _chargingFeatures = [];
+    let _chargingRawLocs = null;          // cached raw AFIR locations (whole-Finland snapshot, fetched once)
+    let _chargingRenderedBounds = null;   // padded bbox currently clustered/rendered; rebuild only when the view leaves it
+    let _chargingViewportTimer = null;    // debounce handle for viewport re-clustering on pan/zoom
     let _chargingEvseIndex = {};          // stationId -> [{ id: evseId, labels:[..] }] for live status recompute
     let _chargingStatusTimer = null;      // setInterval handle for live status polling
     let _chargingStatusRefreshing = false;// guard so status fetches don't overlap
@@ -10371,11 +10384,10 @@
     function addChargingLayer(){
       ensureChargingImage('charging-green', '#4caf50', () => {
         ensureChargingImage('charging-gray', '#b4b7bd', () => {
-          const geojson = { type: 'FeatureCollection', features: _chargingFeatures };
-          if (map.getSource('charging-points')) {
-            map.getSource('charging-points').setData(geojson);
-          } else {
-            map.addSource('charging-points', { type: 'geojson', data: geojson });
+          if (!map.getSource('charging-points')) {
+            // Created empty; applyChargingFilters() below fills it with the
+            // current (viewport-clustered, filtered) feature set.
+            map.addSource('charging-points', { type: 'geojson', data: { type:'FeatureCollection', features: [] } });
             map.addLayer({
               id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 12,
               layout: {
@@ -10400,13 +10412,136 @@
           }
           setChargingVisibility(showEvCharging);
           if (map.getLayer('charging-icons')) map.moveLayer('charging-icons');
+          applyChargingFilters();   // authoritative render of the filtered feature set
         });
       });
+    }
+    // Cluster a SUBSET of raw AFIR locations (e.g. just the current viewport)
+    // into per-site features. Merges co-located locations of the SAME operator
+    // into one site (some operators split AC vs DC into separate AFIR locations).
+    // Distance-based (not a coordinate grid, which can split two nearby points
+    // across a cell boundary). Populates the global _chargingEvseIndex for the
+    // clustered sites; the caller resets that map first. Returns the feature array.
+    function clusterChargingLocations(locs, statusMap){
+      const MERGE_RADIUS_M = 50;
+      const _chDistM = (a, b) => {
+        const R = 6371000, r = Math.PI / 180;
+        const dLat = (b[1]-a[1]) * r, dLng = (b[0]-a[0]) * r;
+        const h = Math.sin(dLat/2)**2 + Math.cos(a[1]*r) * Math.cos(b[1]*r) * Math.sin(dLng/2)**2;
+        return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+      };
+      const _chByOp = {};
+      const _chOrder = [];
+      locs.forEach(f => {
+        const p = f.properties || {};
+        const op = p.operator || {};
+        const det = op.details || {};
+        const coords = f.geometry.coordinates;
+        const opName = normalizeOperator(det.name);
+        const _logoObj = det.logo || op.logo;
+        const logoUrl = !_logoObj ? '' : (typeof _logoObj === 'string' ? _logoObj : (_logoObj.url || ''));
+        const clusters = _chByOp[opName] || (_chByOp[opName] = []);
+        let g = null;
+        for (let i = 0; i < clusters.length; i++) { if (_chDistM(clusters[i].coords, coords) <= MERGE_RADIUS_M) { g = clusters[i]; break; } }
+        if (!g) {
+          g = {
+            id: p.id || (opName + '@' + coords.join(',')), name: p.name || 'Latausasema',
+            operatorId: op.id || '', operatorName: opName,
+            logoUrl: logoUrl,
+            address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
+            coords: coords, standards: new Set(), byLbl: {}, extras: new Set(),
+            maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
+          };
+          clusters.push(g); _chOrder.push(g);
+        }
+        const _ldir = _chDisplayText(p.directions);
+        if (_ldir) g.extras.add(_ldir);
+        (Array.isArray(p.evses) ? p.evses : []).forEach(ev => {
+          g.total++;
+          const evAvail = statusMap[ev.id] === 'AVAILABLE';
+          if (evAvail) { g.anyAvail = true; g.avail++; }
+          const _edir = _chDisplayText(ev.directions);
+          if (_edir) g.extras.add(_edir);
+          const lblsHere = new Set();
+          const kwHere = {};
+          const vHere = {};
+          (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
+            const kw = c.maxElectricPower ? (c.maxElectricPower / 1000) : 0;
+            const v  = c.maxVoltage || 0;
+            if (c.standard) {
+              g.standards.add(c.standard);
+              const l = stdLabel(c.standard);
+              if (l) {
+                lblsHere.add(l);
+                if (kw > (kwHere[l] || 0)) kwHere[l] = kw;
+                if (v  > (vHere[l]  || 0)) vHere[l]  = v;
+              }
+            }
+            if (kw) g.maxKw = Math.max(g.maxKw, kw);
+            if (v)  g.maxV  = Math.max(g.maxV, v);
+          });
+          lblsHere.forEach(l => {
+            if (!g.byLbl[l]) g.byLbl[l] = { total: 0, avail: 0, kw: 0, volt: 0 };
+            g.byLbl[l].total++;
+            if (evAvail) g.byLbl[l].avail++;
+            if ((kwHere[l] || 0) > g.byLbl[l].kw)   g.byLbl[l].kw   = kwHere[l];
+            if ((vHere[l]  || 0) > g.byLbl[l].volt) g.byLbl[l].volt = vHere[l];
+          });
+          g.evList.push({ id: ev.id, ref: (ev.physicalReference || ev.physical_reference || ''), labels: [...lblsHere] });
+        });
+      });
+      return _chOrder.map(g => {
+        const connectors = Object.keys(g.byLbl).map(l => ({ name: l, total: g.byLbl[l].total, avail: g.byLbl[l].avail, kw: Math.round(g.byLbl[l].kw), volt: Math.round(g.byLbl[l].volt) }));
+        _chargingEvseIndex[g.id] = g.evList;
+        return { type: 'Feature', geometry: { type: 'Point', coordinates: g.coords }, properties: {
+          id: g.id, name: g.name,
+          operatorId: g.operatorId, operatorName: g.operatorName,
+          logoUrl: g.logoUrl,
+          address: g.address,
+          standards: [...g.standards].join(','),
+          connectors: JSON.stringify(connectors),
+          extraInfo: [...g.extras].join(' \u00b7 '),
+          maxKw: Math.round(g.maxKw), maxVoltage: g.maxV,
+          evseCount: g.total, availCount: g.avail, available: g.anyAvail,
+          price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
+        }};
+      }).filter(ft => ft.properties.evseCount > 0);  // drop registered-but-empty shell sites
+    }
+    // Re-cluster + render ONLY the charging stations in (or near) the current
+    // viewport. The whole-Finland snapshot is fetched once (loadChargingStations)
+    // and cached in _chargingRawLocs; here we cluster just the visible slice, so
+    // the heavy work + marker count scale with the screen, not the country.
+    // Panning beyond the already-rendered (padded) area triggers a fresh slice.
+    function rebuildChargingForViewport(force){
+      if (!chargingLoaded || !_chargingRawLocs) return;
+      if (map.getZoom() < 12) return;   // markers are hidden below z12 — nothing to render
+      const v = map.getBounds();
+      const w = v.getWest(), e = v.getEast(), s = v.getSouth(), n = v.getNorth();
+      // Skip if the view is still inside the slice we already clustered.
+      if (!force && _chargingRenderedBounds) {
+        const b = _chargingRenderedBounds;
+        if (w >= b.west && e <= b.east && s >= b.south && n <= b.north) return;
+      }
+      // Cluster a region padded to ~2× the viewport so a small pan needs no
+      // rebuild and edge-of-screen merges aren't split.
+      const padX = (e - w) * 0.5, padY = (n - s) * 0.5;
+      const b = { west: w - padX, east: e + padX, south: s - padY, north: n + padY };
+      _chargingRenderedBounds = b;
+      const subset = _chargingRawLocs.filter(f => {
+        const c = f.geometry.coordinates;
+        return c[0] >= b.west && c[0] <= b.east && c[1] >= b.south && c[1] <= b.north;
+      });
+      _chargingEvseIndex = {};
+      _chargingFeatures = clusterChargingLocations(subset, _chargingStatusMap);
+      addChargingLayer();   // ensures the layer exists, then renders via applyChargingFilters()
     }
     async function loadChargingStations(){
       if (chargingLoaded || chargingLoading) return;
       chargingLoading = true;
       try {
+        // One whole-Finland snapshot (the AFIR API has no bbox filter — only a
+        // full snapshot + cursor paging). Cached raw; clustering/rendering is
+        // then done per-viewport by rebuildChargingForViewport().
         const [locs, stats] = await Promise.all([
           _afirPaged('/locations', 'features'),
           _afirPaged('/locations/statuses', 'statuses')
@@ -10415,107 +10550,12 @@
         stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
         _chargingStatusMap = statusMap;
         _chargingStatusFetchedAt = Date.now();
-        _chargingEvseIndex = {};
-        // Merge co-located locations of the SAME operator into one site. Some
-        // operators split one physical site into separate AFIR locations for AC
-        // vs DC. We cluster by ACTUAL DISTANCE (not a coordinate grid, which can
-        // split two nearby points across a cell boundary). One marker per site;
-        // the sheet/picker then list ALL connectors from the merged locations.
-        const MERGE_RADIUS_M = 50;    // same-operator locations within this distance merge into one
-        const _chDistM = (a, b) => {  // haversine metres between [lng,lat] points
-          const R = 6371000, r = Math.PI / 180;
-          const dLat = (b[1]-a[1]) * r, dLng = (b[0]-a[0]) * r;
-          const h = Math.sin(dLat/2)**2 + Math.cos(a[1]*r) * Math.cos(b[1]*r) * Math.sin(dLng/2)**2;
-          return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
-        };
-        const _chByOp = {};   // operatorName -> array of cluster groups
-        const _chOrder = [];  // all cluster groups, first-seen order
-        locs.filter(f => f && f.geometry && f.geometry.coordinates).forEach(f => {
-          const p = f.properties || {};
-          const op = p.operator || {};
-          const det = op.details || {};
-          const coords = f.geometry.coordinates;
-          const opName = normalizeOperator(det.name);
-          const _logoObj = det.logo || op.logo;   // logo may sit under details or operator, as {url} or a bare string
-          const logoUrl = !_logoObj ? '' : (typeof _logoObj === 'string' ? _logoObj : (_logoObj.url || ''));
-          const clusters = _chByOp[opName] || (_chByOp[opName] = []);
-          let g = null;
-          for (let i = 0; i < clusters.length; i++) { if (_chDistM(clusters[i].coords, coords) <= MERGE_RADIUS_M) { g = clusters[i]; break; } }
-          if (!g) {
-            g = {
-              id: p.id || (opName + '@' + coords.join(',')), name: p.name || 'Latausasema',
-              operatorId: op.id || '', operatorName: opName,
-              logoUrl: logoUrl,
-              address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
-              coords: coords, standards: new Set(), byLbl: {}, extras: new Set(),
-              maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
-            };
-            clusters.push(g); _chOrder.push(g);
-          }
-          const _ldir = _chDisplayText(p.directions);   // location-level directions, if any
-          if (_ldir) g.extras.add(_ldir);
-          (Array.isArray(p.evses) ? p.evses : []).forEach(ev => {
-            g.total++;
-            const evAvail = statusMap[ev.id] === 'AVAILABLE';
-            if (evAvail) { g.anyAvail = true; g.avail++; }
-            const _edir = _chDisplayText(ev.directions);    // per-EVSE directions, if any
-            if (_edir) g.extras.add(_edir);
-            const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
-            const kwHere = {};            // label -> max kW among THIS evse's connectors of that label
-            const vHere = {};             // label -> max voltage among THIS evse's connectors of that label
-            (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
-              const kw = c.maxElectricPower ? (c.maxElectricPower / 1000) : 0;
-              const v  = c.maxVoltage || 0;
-              if (c.standard) {
-                g.standards.add(c.standard);
-                const l = stdLabel(c.standard);
-                if (l) {
-                  lblsHere.add(l);
-                  if (kw > (kwHere[l] || 0)) kwHere[l] = kw;
-                  if (v  > (vHere[l]  || 0)) vHere[l]  = v;
-                }
-              }
-              if (kw) g.maxKw = Math.max(g.maxKw, kw);
-              if (v)  g.maxV  = Math.max(g.maxV, v);
-            });
-            lblsHere.forEach(l => {
-              if (!g.byLbl[l]) g.byLbl[l] = { total: 0, avail: 0, kw: 0, volt: 0 };
-              g.byLbl[l].total++;
-              if (evAvail) g.byLbl[l].avail++;
-              if ((kwHere[l] || 0) > g.byLbl[l].kw)   g.byLbl[l].kw   = kwHere[l];
-              if ((vHere[l]  || 0) > g.byLbl[l].volt) g.byLbl[l].volt = vHere[l];
-            });
-            g.evList.push({ id: ev.id, ref: (ev.physicalReference || ev.physical_reference || ''), labels: [...lblsHere] });
-          });
-        });
-        _chargingFeatures = _chOrder.map(g => {
-          // Per plug-type availability rows for the detail view, stored as a
-          // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
-          const connectors = Object.keys(g.byLbl).map(l => ({ name: l, total: g.byLbl[l].total, avail: g.byLbl[l].avail, kw: Math.round(g.byLbl[l].kw), volt: Math.round(g.byLbl[l].volt) }));
-          _chargingEvseIndex[g.id] = g.evList;
-          return { type: 'Feature', geometry: { type: 'Point', coordinates: g.coords }, properties: {
-            id: g.id, name: g.name,
-            operatorId: g.operatorId, operatorName: g.operatorName,
-            logoUrl: g.logoUrl,
-            address: g.address,
-            standards: [...g.standards].join(','),
-            connectors: JSON.stringify(connectors),
-            extraInfo: [...g.extras].join(' \u00b7 '),
-            maxKw: Math.round(g.maxKw), maxVoltage: g.maxV,
-            evseCount: g.total, availCount: g.avail, available: g.anyAvail,
-            price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
-          }};
-        })
-        // Drop "shell" sites that have no actual EVSEs (registered-but-empty),
-        // which otherwise surface phantom operators in the operator filter list.
-        .filter(ft => ft.properties.evseCount > 0);
+        _chargingRawLocs = locs.filter(f => f && f.geometry && f.geometry.coordinates);
         chargingLoaded = true;
-        console.log('Latauspisteet ladattu:', _chargingFeatures.length);
-        const _opCounts = {}; _chargingFeatures.forEach(f => { const o = f.properties.operatorName || '(tyhjä)'; _opCounts[o] = (_opCounts[o] || 0) + 1; });
-        console.log('Operaattorit (latauspisteiden määrä):', _opCounts);
-        addChargingLayer();
-        buildOperatorList();
-        applyChargingFilters();
+        console.log('Latauspisteet (raakadata) ladattu:', _chargingRawLocs.length, 'sijaintia');
+        buildOperatorList();                 // from the FULL raw set → stable operator dropdown
+        _chargingRenderedBounds = null;       // force first slice
+        rebuildChargingForViewport(true);     // cluster + render only the current viewport
         // Keep availability live: poll the status endpoint periodically and on
         // app re-focus, updating the map + open sheet without re-fetching the
         // static location data.
@@ -11065,9 +11105,20 @@
     function buildOperatorList(){
       const names = new Set();
       const counts = {};
-      _chargingFeatures.forEach(f => {
-        const nm = f.properties.operatorName;
-        if(nm){ names.add(nm); counts[nm] = (counts[nm] || 0) + 1; if(!OPERATOR_LOGOS[nm] && f.properties.logoUrl) OPERATOR_LOGOS[nm] = f.properties.logoUrl.replace(/^http:\/\//i, 'https://'); }
+      // Built from the FULL raw snapshot (not the viewport-clustered subset) so
+      // the operator dropdown lists every operator regardless of where the map is.
+      (_chargingRawLocs || []).forEach(f => {
+        const p = f.properties || {};
+        const det = (p.operator && p.operator.details) || {};
+        const nm = normalizeOperator(det.name);
+        if(nm){
+          names.add(nm); counts[nm] = (counts[nm] || 0) + 1;
+          if(!OPERATOR_LOGOS[nm]){
+            const lo = det.logo || (p.operator && p.operator.logo);
+            const url = !lo ? '' : (typeof lo === 'string' ? lo : (lo.url || ''));
+            if(url) OPERATOR_LOGOS[nm] = url.replace(/^http:\/\//i, 'https://');
+          }
+        }
       });
       // Order by charging-point coverage (most stations first) so the biggest
       // operators in Finland (Tesla, K-Lataus, …) sit at the top; alphabetical
@@ -11359,6 +11410,14 @@
 
       // Load hallis once we hit zoom 13+
       if (!halliLoaded) { halliLoaded = true; setTimeout(loadHalliMarkers, 200); }
+
+      // Re-cluster the charging layer for the new viewport (debounced). The
+      // skip-if-inside-rendered-slice check in rebuildChargingForViewport keeps
+      // this cheap; it only does real work when the view leaves the cached slice.
+      if (showEvCharging && chargingLoaded) {
+        clearTimeout(_chargingViewportTimer);
+        _chargingViewportTimer = setTimeout(() => rebuildChargingForViewport(false), 150);
+      }
 
       // Load master polygons — only once, then cache in memory
       // Layers have minzoom:13 so they auto-hide when zoomed out
