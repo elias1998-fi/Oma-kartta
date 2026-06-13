@@ -5365,6 +5365,12 @@
           loadViewportTiles(null);
         }
       }, 800);
+      // Preload public charging stations in the background a bit later, so the
+      // initial parking/halli render isn't slowed but the data (large AFIR fetch
+      // + clustering) is already cached by the time the user flips the EV toggle.
+      // The layer is created hidden here (showEvCharging is false), so toggling
+      // on then just flips visibility → markers appear instantly, no wait.
+      setTimeout(() => { if (!chargingLoaded && !chargingLoading) loadChargingStations(); }, 2500);
     });
 
     // Geolocate control — manual only.
@@ -10820,7 +10826,6 @@
       const isAvail = (cp.available === true || cp.available === 'true');
       const stds = (cp.standards||'').split(',').filter(Boolean).map(stdLabel).filter(Boolean);
       const stdText = stds.length ? [...new Set(stds)].join(', ') : '\u2013';
-      const chosenText = (chosen && chosen.label) ? ((chosen.num ? (chosen.num + ' \u00b7 ') : '') + chosen.label) : stdText;
       const power = (chosen && chosen.kw > 0) ? (chosen.kw + ' kW') : ((cp.maxKw && +cp.maxKw > 0) ? (cp.maxKw + ' kW') : '\u2013');
       const volt  = (chosen && chosen.volt > 0) ? (chosen.volt + ' V') : ((cp.maxVoltage && +cp.maxVoltage > 0) ? (cp.maxVoltage + ' V') : '\u2013');
       const statusTxt = isAvail
@@ -10830,11 +10835,32 @@
       const veh = (typeof vehicles !== 'undefined' && vehicles[selectedVehicleIdx]) ? vehicles[selectedVehicleIdx] : { plate:'', name:'' };
       const pay = (typeof paymentMethods !== 'undefined' && paymentMethods[selectedPaymentIdx]) ? paymentMethods[selectedPaymentIdx] : { name:'', icon:'' };
       const payIcon = (typeof getPaymentIcon === 'function') ? getPaymentIcon(pay.icon) : '';
-      const specs = [['Valittu pistoke', chosenText], ['Teho', power], ['J\u00e4nnite', volt]];
+      // Connector identifier (the on-station number), shown as its own row.
+      const tunnus = (chosen && chosen.num != null && String(chosen.num).trim() !== '') ? String(chosen.num).trim() : '\u2013';
+      // Connector type: prefer the chosen connector's label; else the station's
+      // single standard if unambiguous. Shown as an icon+name pill like the sheet.
+      const typeLabel = (chosen && chosen.label) ? chosen.label : (stds.length === 1 ? stds[0] : '');
+      const typePillHtml = typeLabel
+        ? '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:5px 9px;">' +
+            plugIcon(typeLabel, '#0C0243', 18) +
+            '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(typeLabel) + '</span></span>'
+        : '<span style="font-weight:600;color:#0C0243;font-size:14px;">\u2013</span>';
+      // Power + voltage on one row, same style as the sheet: a lavender voltage
+      // pill first (only when voltage is known), then the kW figure after it.
+      const voltPill = (volt !== '\u2013')
+        ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + volt + '</span>'
+        : '';
+      const powerVoltHtml = '<span style="display:inline-flex;align-items:center;gap:7px;justify-content:flex-end;">' +
+        voltPill + '<span style="color:#333;font-size:14px;white-space:nowrap;">' + power + '</span></span>';
+      const specs = [
+        ['Pistokkeen tunnus', '<span style="font-weight:600;color:#0C0243;font-size:14px;">' + escapeHtml(tunnus) + '</span>'],
+        ['Pistokkeen tyyppi', typePillHtml],
+        ['Teho ja j\u00e4nnite', powerVoltHtml]
+      ];
       const specsHtml = specs.map((s,i) =>
-        '<div style="display:flex;justify-content:space-between;padding:11px 0;' + (i < specs.length-1 ? 'border-bottom:1px solid #eef0f2;' : '') + '">' +
-          '<span style="color:#666;font-size:14px;">' + s[0] + '</span>' +
-          '<span style="font-weight:600;color:#0C0243;font-size:14px;text-align:right;">' + s[1] + '</span></div>').join('');
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;' + (i < specs.length-1 ? 'border-bottom:1px solid #eef0f2;' : '') + '">' +
+          '<span style="color:#666;font-size:14px;flex:none;">' + s[0] + '</span>' +
+          '<span style="min-width:0;text-align:right;">' + s[1] + '</span></div>').join('');
       ov.innerHTML = headerHtml +
         '<div class="p-cards-container">' +
           '<div class="p-card">' +
@@ -11910,10 +11936,13 @@
       const row2 = kestoText && kestoText !== 'Rajoittamaton'
         ? `${ownerComma}  |  ${kestoText}`
         : ownerComma;
-      document.getElementById('p-owner').textContent = row2;
+      // Optional overrides (used by parking garages, which have their own
+      // operator + location instead of a city zone). Absent for street parking,
+      // so its display is unchanged.
+      document.getElementById('p-owner').textContent = (p['hel:ownerLine'] != null ? p['hel:ownerLine'] : row2);
       // Row 3 (type) and Row 4 (operator) on separate lines for readability
       document.getElementById('p-type').textContent     = tyyppi;
-      document.getElementById('p-operator').textContent = getParkingOperator(p['hel:luokka_nimi']);
+      document.getElementById('p-operator').textContent = (p['hel:operatorName'] != null ? p['hel:operatorName'] : getParkingOperator(p['hel:luokka_nimi']));
       // Reset start button to its disabled "Aseta pysäköintiaika" state
       const startBtn0 = document.getElementById('start-btn');
       startBtn0.classList.add('disabled');
@@ -11972,11 +12001,32 @@
         openConnectorPicker(ch.length ? ch[0].properties : null);
         return;
       }
-      // Parking garage under the P-marker: the open data carries no rate or
-      // booking info for garages yet, so don't fall into the street-parking
-      // flow (which would otherwise start a session for an unrelated polygon
-      // beneath the garage). No-op until a garage-parking integration exists.
-      if (hoveredHalliId) return;
+      // Parking garage under the P-marker → open the same parking flow as
+      // street parking (duration drum, vehicle, payment, start). Re-query the
+      // garage under the marker for its details, like the charging path above.
+      if (hoveredHalliId) {
+        const hcpt = map.project(map.getCenter());
+        const hr = 15;
+        const hh = map.getLayer('halli-icons')
+          ? map.queryRenderedFeatures([[hcpt.x-hr, hcpt.y-hr],[hcpt.x+hr, hcpt.y+hr]], { layers:['halli-icons'] })
+          : [];
+        const hp = hh.length ? hh[0].properties : {};
+        const full = (hp.name || 'Pysäköintihalli').trim();
+        const ci = full.indexOf(',');
+        const owner = ci > 0 ? full.slice(0, ci).trim() : '';
+        const title = ci > 0 ? full.slice(ci + 1).trim() : full;
+        openParkingOverlay({
+          'hel:id':            (hp.code != null && String(hp.code).trim() !== '') ? String(hp.code).trim() : '\u2013',
+          'hel:kesto':         null,                       // garages: no posted max duration
+          'hel:paikan_asento': 'Pysäköintihalli',
+          'hel:datanomistaja': 'HEL',
+          'hel:luokka_nimi':   'hel_halli',
+          'hel:voimassaolo':   '',
+          'hel:ownerLine':     title || full,              // garage location as the name line
+          'hel:operatorName':  owner || 'Pysäköintihalli'  // operator from "Operator, Location"
+        });
+        return;
+      }
       if (!map.getLayer('master-poly-fill')) return;
       const cpt = map.project(map.getCenter());
       const r = 5;
