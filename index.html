@@ -1945,7 +1945,7 @@
     #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
     .p-cards-container { flex: 1; display: flex; flex-direction: column; padding: 10px 14px 0 14px; gap: 8px; overflow-y: auto; }
-    .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
+    .p-card { background: white; border: 1px solid #0C0243; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
     .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .area-row { display: flex; align-items: center; gap: 10px; }
     .area-code-badge { display: inline-block; background: #0C0243; color: white; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; font-family: Arial, sans-serif; }
@@ -10923,7 +10923,6 @@
       const stds = (cp.standards||'').split(',').filter(Boolean).map(stdLabel).filter(Boolean);
       const stdText = stds.length ? [...new Set(stds)].join(', ') : '\u2013';
       const power = (chosen && chosen.kw > 0) ? (chosen.kw + ' kW') : ((cp.maxKw && +cp.maxKw > 0) ? (cp.maxKw + ' kW') : '\u2013');
-      const volt  = (chosen && chosen.volt > 0) ? (chosen.volt + ' V') : ((cp.maxVoltage && +cp.maxVoltage > 0) ? (cp.maxVoltage + ' V') : '\u2013');
       const statusTxt = isAvail
         ? '<span style="color:#1faa4a;font-weight:700;">Tilaa</span>'
         : '<span style="color:#c0392b;font-weight:700;">Täynnä</span>';
@@ -10936,22 +10935,22 @@
       // Connector type: prefer the chosen connector's label; else the station's
       // single standard if unambiguous. Shown as an icon+name pill like the sheet.
       const typeLabel = (chosen && chosen.label) ? chosen.label : (stds.length === 1 ? stds[0] : '');
-      const typePillHtml = typeLabel
+      // Connector type pill (icon + name), with the power reading shown to its
+      // RIGHT on the same row. Voltage is no longer shown.
+      const typePill = typeLabel
         ? '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:5px 9px;">' +
             plugIcon(typeLabel, '#0C0243', 18) +
             '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(typeLabel) + '</span></span>'
-        : '<span style="font-weight:600;color:#0C0243;font-size:14px;">\u2013</span>';
-      // Power + voltage on one row, same style as the sheet: a lavender voltage
-      // pill first (only when voltage is known), then the kW figure after it.
-      const voltPill = (volt !== '\u2013')
-        ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + volt + '</span>'
         : '';
-      const powerVoltHtml = '<span style="display:inline-flex;align-items:center;gap:7px;justify-content:flex-end;">' +
-        voltPill + '<span style="color:#333;font-size:14px;white-space:nowrap;">' + power + '</span></span>';
+      const typeRowHtml = (typePill || power !== '\u2013')
+        ? '<span style="display:inline-flex;align-items:center;gap:9px;justify-content:flex-end;">' +
+            (typePill || '') +
+            (power !== '\u2013' ? '<span style="color:#333;font-size:14px;white-space:nowrap;">' + power + '</span>' : '') +
+          '</span>'
+        : '<span style="font-weight:600;color:#0C0243;font-size:14px;">\u2013</span>';
       const specs = [
         ['Pistokkeen tunnus', '<span style="font-weight:600;color:#0C0243;font-size:14px;">' + escapeHtml(tunnus) + '</span>'],
-        ['Pistokkeen tyyppi', typePillHtml],
-        ['Teho ja j\u00e4nnite', powerVoltHtml]
+        ['Pistokkeen tyyppi', typeRowHtml]
       ];
       const specsHtml = specs.map((s,i) =>
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;' + (i < specs.length-1 ? 'border-bottom:1px solid #eef0f2;' : '') + '">' +
