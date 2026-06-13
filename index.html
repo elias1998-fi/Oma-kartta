@@ -1945,7 +1945,7 @@
     #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
     .p-cards-container { flex: 1; display: flex; flex-direction: column; padding: 10px 14px 0 14px; gap: 8px; overflow-y: auto; }
-    .p-card { background: white; border: 1px solid #0C0243; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
+    .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
     .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .area-row { display: flex; align-items: center; gap: 10px; }
     .area-code-badge { display: inline-block; background: #0C0243; color: white; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; font-family: Arial, sans-serif; }
@@ -4869,14 +4869,6 @@
           <div class="payment-icon-box" id="payment-icon"></div>
           <div class="payment-name" id="payment-name">Apple Pay</div>
           <div class="payment-chevron">⌄</div>
-        </div>
-        <div id="purpose-segmented" style="margin-top:12px;">
-          <div class="seg-track two">
-            <div class="seg-thumb" id="purpose-seg-thumb" style="background:#0C0243;"></div>
-            <button class="seg-option active" data-purpose="personal" onclick="setParkingPurpose('personal','parking')">Henkilökohtainen</button>
-            <button class="seg-option" data-purpose="work" onclick="setParkingPurpose('work','parking')">Työ</button>
-          </div>
-          <div id="purpose-work-info" style="display:none;margin-top:9px;font-size:12.5px;color:#0C0243;font-family:Arial,sans-serif;line-height:1.4;"></div>
         </div>
       </div>
 
@@ -10985,14 +10977,6 @@
               '<div class="payment-name" id="c-payment-name">' + escapeHtml(pay.name||'') + '</div>' +
               '<div class="payment-chevron">\u2304</div>' +
             '</div>' +
-            '<div id="c-purpose-segmented" style="margin-top:12px;">' +
-              '<div class="seg-track two">' +
-                '<div class="seg-thumb" id="c-purpose-seg-thumb" style="background:#0C0243;"></div>' +
-                '<button class="seg-option" data-purpose="personal" onclick="setParkingPurpose(\'personal\',\'charging\')">Henkil\u00f6kohtainen</button>' +
-                '<button class="seg-option" data-purpose="work" onclick="setParkingPurpose(\'work\',\'charging\')">Ty\u00f6</button>' +
-              '</div>' +
-              '<div id="c-purpose-work-info" style="display:none;margin-top:9px;font-size:12.5px;color:#0C0243;font-family:Arial,sans-serif;line-height:1.4;"></div>' +
-            '</div>' +
           '</div>' +
           '<div class="p-card">' +
             '<div id="c-details-row" style="display:flex;align-items:center;cursor:pointer;">' +
@@ -12080,8 +12064,9 @@
 
     const paymentMethods = [
       { id:'applepay', name:'Apple Pay', icon:'applepay' },
-      { id:'card', name:'Maksukortti', icon:'card' },
-      { id:'mobilepay', name:'MobilePay', icon:'mobilepay' }
+      { id:'card', name:'Visa *2345', icon:'card' },
+      { id:'mobilepay', name:'MobilePay', icon:'mobilepay' },
+      { id:'business', name:'Yrityslaskutus', icon:'business', sub:'Yrityksen nimi: TotalParking' }
     ];
     let selectedPaymentIdx = 0;
 
@@ -12094,6 +12079,9 @@
       }
       if (icon === 'mobilepay') {
         return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="#5A78FF" stroke-width="1.8"/><circle cx="12" cy="18" r="1.2" fill="#5A78FF"/><path d="M9 7h6M9 10h6M9 13h4" stroke="#5A78FF" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+      }
+      if (icon === 'business') {
+        return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="3" width="11" height="18" rx="1.5" fill="none" stroke="#555" stroke-width="1.6"/><path d="M15 9h5v12h-5" fill="none" stroke="#555" stroke-width="1.6"/><path d="M7 7h5M7 10.5h5M7 14h5" stroke="#555" stroke-width="1.4" stroke-linecap="round"/><path d="M17.5 12.5h0.8M17.5 16h0.8" stroke="#555" stroke-width="1.4" stroke-linecap="round"/></svg>`;
       }
       return '';
     }
@@ -12115,7 +12103,10 @@
         row.innerHTML = `
           <div class="option-check ${i===selectedPaymentIdx?'selected':''}"></div>
           <div class="payment-icon-box">${getPaymentIcon(p.icon)}</div>
-          <div class="option-name">${p.name}</div>`;
+          <div style="flex:1;min-width:0;">
+            <div class="option-name">${p.name}</div>
+            ${p.sub ? `<div style="font-size:12px;color:#888;margin-top:2px;font-family:Arial,sans-serif;">${p.sub}</div>` : ''}
+          </div>`;
         row.addEventListener('click', () => { selectedPaymentIdx=i; renderPaymentDisplay(); closePaymentSheet(); });
         container.appendChild(row);
       });
