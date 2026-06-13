@@ -10964,8 +10964,7 @@
             '<div class="area-select-row" id="c-area-row">' +
               '<div style="flex:1;display:flex;flex-direction:column;gap:4px;">' +
                 '<div class="area-name">' + escapeHtml(cp.name||'Latausasema') + '</div>' +
-                '<div class="area-meta">' + (cp.address ? escapeHtml(cp.address) : '\u2013') + '</div>' +
-                '<div class="area-meta">' + escapeHtml(cp.operatorName||'Latausoperaattori') + '</div>' +
+                '<div style="font-size:14px;color:#333;">' + escapeHtml(cp.operatorName||'Latausoperaattori') + '</div>' +
               '</div>' +
               '<div class="area-chevron">\u2304</div>' +
             '</div>' +
@@ -10996,8 +10995,11 @@
             '</div>' +
           '</div>' +
           '<div class="p-card">' +
-            '<div class="p-card-title">Latauksen tiedot</div>' +
-            '<div style="font-family:Arial,sans-serif;">' + specsHtml + '</div>' +
+            '<div id="c-details-row" style="display:flex;align-items:center;cursor:pointer;">' +
+              '<div class="p-card-title" style="margin-bottom:0;">Latauksen tiedot</div>' +
+              '<div class="area-chevron">\u2304</div>' +
+            '</div>' +
+            '<div style="font-family:Arial,sans-serif;margin-top:10px;">' + specsHtml + '</div>' +
           '</div>' +
         '</div>' +
         '<div id="total-price-container" style="padding:12px 14px 0 14px;flex-shrink:0;">' +
@@ -11012,6 +11014,8 @@
       ov.querySelector('#c-back-btn').addEventListener('click', closeChargingOverlay);
       const arow = ov.querySelector('#c-area-row');
       if(arow) arow.addEventListener('click', closeChargingOverlay);
+      const drow = ov.querySelector('#c-details-row');
+      if(drow) drow.addEventListener('click', closeChargingOverlay);   // chevron → back to "Valitse pistoke"
       const cstart = ov.querySelector('#c-start-btn');
       if(cstart) cstart.addEventListener('click', () => { if(typeof showCustomToast==='function') showCustomToast('Lataus aloitettu!'); });
       const bc = document.getElementById('btn-container');
