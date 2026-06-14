@@ -3177,6 +3177,51 @@
     .detail-value { color: #222; }
     .detail-vat-note { color: #888; font-size: 12.5px; line-height: 1.4; padding: 12px 0 2px; }
 
+    /* ── End-of-session rating banner ──────────────────────────────────────
+       Slides up over the "Pysäköinti päättynyt" summary 1.5s after it appears.
+       Quick 1–5 star tap; a poor rating (1–3) reveals a free-text box. */
+    #rating-banner {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 300;
+      display: flex; justify-content: center;
+      padding: 0 12px max(16px, env(safe-area-inset-bottom));
+      transform: translateY(130%);
+      transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94);
+      pointer-events: none;
+    }
+    #rating-banner.open { transform: translateY(0); pointer-events: auto; }
+    .rating-banner-card {
+      width: 100%; max-width: 440px; background: white; border-radius: 22px;
+      box-shadow: 0 -10px 44px rgba(12,2,67,0.20);
+      padding: 22px 20px 20px; font-family: Arial, sans-serif; position: relative;
+    }
+    .rating-banner-close {
+      position: absolute; top: 13px; right: 13px; width: 30px; height: 30px;
+      border: none; background: #f0f0f2; border-radius: 50%; color: #999;
+      font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .rating-title { font-size: 18px; font-weight: bold; color: #1a1a2e; text-align: center; margin: 2px 24px 16px; }
+    .rating-stars { display: flex; justify-content: center; gap: 6px; }
+    .rating-star {
+      border: none; background: none; cursor: pointer; font-size: 40px; line-height: 1;
+      color: #dadce3; transition: transform 0.12s ease, color 0.12s ease; padding: 2px 3px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .rating-star.filled { color: #ffc107; }
+    .rating-star:active { transform: scale(1.25); }
+    .rating-feedback { margin-top: 16px; }
+    .rating-feedback textarea {
+      width: 100%; box-sizing: border-box; min-height: 84px; border: 1px solid #dcdce3;
+      border-radius: 12px; padding: 11px; font-family: Arial, sans-serif; font-size: 14px;
+      color: #222; resize: vertical; outline: none;
+    }
+    .rating-submit-btn {
+      width: 100%; height: 50px; margin-top: 12px; border: none; border-radius: 999px;
+      background: #0C0243; color: white; font-size: 15px; font-weight: bold;
+      font-family: Arial, sans-serif; cursor: pointer;
+    }
+    .rating-thanks { text-align: center; font-size: 15.5px; color: #1faa4a; font-weight: bold; padding: 10px 0 4px; }
+
     #start-btn-container { 
       padding: 10px 14px; 
       padding-bottom: max(20px,env(safe-area-inset-bottom)); 
@@ -4498,6 +4543,26 @@
     </div>
     <div class="summary-footer">
       <button id="summary-back-btn" onclick="closeParkingSummary()">Palaa karttanäkymään</button>
+    </div>
+  </div>
+
+  <!-- Quick rating prompt shown 1.5s after the "Pysäköinti päättynyt" summary. -->
+  <div id="rating-banner">
+    <div class="rating-banner-card">
+      <button class="rating-banner-close" onclick="dismissRatingBanner()" aria-label="Sulje">✕</button>
+      <div class="rating-title" id="rating-title">Miten pysäköinti sujui?</div>
+      <div class="rating-stars" id="rating-stars">
+        <button class="rating-star" data-val="1" onclick="setRating(1)">★</button>
+        <button class="rating-star" data-val="2" onclick="setRating(2)">★</button>
+        <button class="rating-star" data-val="3" onclick="setRating(3)">★</button>
+        <button class="rating-star" data-val="4" onclick="setRating(4)">★</button>
+        <button class="rating-star" data-val="5" onclick="setRating(5)">★</button>
+      </div>
+      <div class="rating-feedback" id="rating-feedback" style="display:none;">
+        <textarea id="rating-feedback-input" placeholder="Kerro mikä meni pieleen, niin voimme parantaa…"></textarea>
+        <button class="rating-submit-btn" onclick="submitRatingFeedback()">Lähetä palaute</button>
+      </div>
+      <div class="rating-thanks" id="rating-thanks" style="display:none;">Kiitos palautteestasi! 🙌</div>
     </div>
   </div>
 
@@ -12705,6 +12770,56 @@
       const mm  = String(d.getMinutes()).padStart(2, '0');
       return `${day}.${mon}. klo ${hh}:${mm}`;
     }
+    // ── End-of-session rating banner ───────────────────────────────────
+    let _ratingShowTimer = null;     // delay before the banner slides up
+    let _ratingDismissTimer = null;  // auto-dismiss after a good rating / submit
+    let _ratingValue = 0;            // last selected 1–5 rating
+    let _ratingContext = 'parking';  // 'parking' | 'charging' (drives the wording)
+    function showRatingBanner(context){
+      _ratingContext = context || 'parking';
+      _ratingValue = 0;
+      clearTimeout(_ratingDismissTimer);
+      document.getElementById('rating-title').textContent =
+        (_ratingContext === 'charging') ? 'Miten lataus sujui?' : 'Miten pysäköinti sujui?';
+      document.querySelectorAll('#rating-stars .rating-star').forEach(s => s.classList.remove('filled'));
+      document.getElementById('rating-stars').style.display = 'flex';
+      document.getElementById('rating-feedback').style.display = 'none';
+      document.getElementById('rating-feedback-input').value = '';
+      document.getElementById('rating-thanks').style.display = 'none';
+      document.getElementById('rating-banner').classList.add('open');
+    }
+    function setRating(val){
+      _ratingValue = val;
+      document.querySelectorAll('#rating-stars .rating-star').forEach(s => {
+        s.classList.toggle('filled', (+s.dataset.val) <= val);
+      });
+      if (val <= 3){
+        // Poor rating → invite written feedback.
+        document.getElementById('rating-feedback').style.display = 'block';
+        document.getElementById('rating-thanks').style.display = 'none';
+        clearTimeout(_ratingDismissTimer);
+      } else {
+        // Good rating → thank and auto-dismiss.
+        document.getElementById('rating-feedback').style.display = 'none';
+        document.getElementById('rating-thanks').style.display = 'block';
+        clearTimeout(_ratingDismissTimer);
+        _ratingDismissTimer = setTimeout(dismissRatingBanner, 1600);
+      }
+    }
+    function submitRatingFeedback(){
+      // No backend for ratings yet — capture locally and thank the user.
+      const txt = (document.getElementById('rating-feedback-input').value || '').trim();
+      console.log('Arvostelu:', _ratingValue, 'tähteä', _ratingContext, txt ? ('· ' + txt) : '');
+      document.getElementById('rating-stars').style.display = 'none';
+      document.getElementById('rating-feedback').style.display = 'none';
+      document.getElementById('rating-thanks').style.display = 'block';
+      clearTimeout(_ratingDismissTimer);
+      _ratingDismissTimer = setTimeout(dismissRatingBanner, 1500);
+    }
+    function dismissRatingBanner(){
+      clearTimeout(_ratingDismissTimer);
+      document.getElementById('rating-banner').classList.remove('open');
+    }
     function showParkingSummary(session, actualEnd) {
       const startDate = new Date(session.startTime);
       const durationMin = Math.max(0, Math.round((actualEnd.getTime() - startDate.getTime()) / 60000));
@@ -12730,8 +12845,13 @@
       // Hide the map's floating action button while the summary is shown
       btnContainer.classList.add('hidden');
       document.getElementById('parking-summary-overlay').classList.add('open');
+      // 1.5s later, slide up a quick rating prompt over the summary.
+      clearTimeout(_ratingShowTimer);
+      _ratingShowTimer = setTimeout(() => showRatingBanner('parking'), 1500);
     }
     async function closeParkingSummary(skipSave) {
+      clearTimeout(_ratingShowTimer);   // cancel a not-yet-shown rating prompt
+      dismissRatingBanner();
       if (!skipSave) {
         // Save notes to the DB if the user wrote anything
         const ta = document.getElementById('summary-notes-input');
