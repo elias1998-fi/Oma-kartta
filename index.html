@@ -1903,7 +1903,7 @@
     #action-btn, #start-btn, #c-start-btn, #admin-approve-btn, #send-receipts-btn,
     #confirm-area-btn, #submit-parking-btn, #disc-set-btn, #editor-action-btn,
     #free-terms-accept, .account-action-btn, .apb-buttons button, .pill-action-btn,
-    #sheet-share-btn, #ed-send-receipt-btn, #ed-support-btn, #summary-back-btn,
+    #sheet-nav-btn, #sheet-share-btn, #ed-send-receipt-btn, #ed-support-btn, #summary-back-btn,
     #send-receipt-btn, .filter-apply-btn, .account-edit-btn, .confirm-buttons button {
       border-radius: 999px !important;
     }
@@ -3811,7 +3811,7 @@
       <div style="font-size:13px;color:#888;margin-bottom:16px;text-align:center;">Valitse, miten haluat olla yhteydessä</div>
 
       <!-- Prominent, inviting option: chat with Pertti -->
-      <button class="pill-action-btn" onclick="openSupportChat()" style="width:100%;text-align:left;border:none;cursor:pointer;background:#0C0243;border-radius:18px;padding:22px 20px;box-shadow:0 6px 20px rgba(12,2,67,0.28);display:flex;align-items:center;gap:16px;margin-bottom:18px;">
+      <button onclick="openSupportChat()" style="width:100%;text-align:left;border:none;cursor:pointer;background:#0C0243;border-radius:18px;padding:22px 20px;box-shadow:0 6px 20px rgba(12,2,67,0.28);display:flex;align-items:center;gap:16px;margin-bottom:18px;">
         <div style="width:52px;height:52px;border-radius:50%;background:white;color:#0C0243;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;flex-shrink:0;">P</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:17px;font-weight:700;color:white;line-height:1.3;">Hoida asia nopeasti Pertin kanssa</div>
@@ -3826,7 +3826,7 @@
       </button>
 
       <!-- Deliberately understated option: email -->
-      <button class="pill-action-btn" onclick="contactSupportEmail()" style="width:100%;text-align:left;border:none;cursor:pointer;background:#e3e3e3;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+      <button onclick="contactSupportEmail()" style="width:100%;text-align:left;border:none;cursor:pointer;background:#e3e3e3;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:600;color:#5f5f5f;line-height:1.3;">Lähetä sähköposti asiakaspalveluun</div>
           <div style="font-size:11px;color:#888;margin-top:2px;">Vastausaika n. 2–3 työpäivää</div>
@@ -3916,7 +3916,7 @@
     <div id="support-menu-modal" style="display:none;position:absolute;inset:0;z-index:50;align-items:center;justify-content:center;">
       <div onclick="closeSupportMenu()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>
       <div style="position:relative;background:white;border-radius:16px;padding:18px;width:min(86vw,320px);box-shadow:0 12px 48px rgba(0,0,0,0.35);">
-        <button class="pill-action-btn" onclick="endSupportChat()" style="width:100%;height:48px;background:white;border:1.5px solid #e53935;color:#e53935;border-radius:12px;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;">Lopeta chat</button>
+        <button onclick="endSupportChat()" style="width:100%;height:48px;background:white;border:1.5px solid #e53935;color:#e53935;border-radius:12px;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;">Lopeta chat</button>
       </div>
     </div>
     <!-- Leave-confirmation banner (shown from the back arrow) -->
@@ -3924,8 +3924,8 @@
       <div onclick="closeLeaveSupport()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>
       <div style="position:relative;background:white;border-radius:16px;padding:20px;width:min(88vw,360px);box-shadow:0 12px 48px rgba(0,0,0,0.35);font-family:Arial,sans-serif;">
         <div style="font-size:16px;font-weight:700;color:#222;text-align:center;margin-bottom:18px;">Olet poistumassa keskustelusta</div>
-        <button class="pill-action-btn" onclick="minimizeSupportChat()" style="width:100%;min-height:48px;background:#0C0243;border:none;color:white;border-radius:12px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;margin-bottom:10px;padding:9px 12px;line-height:1.3;">Poistu ja pidä keskustelu avoimena taustalla</button>
-        <button class="pill-action-btn" onclick="endSupportChat()" style="width:100%;height:48px;background:white;border:1.5px solid #e53935;color:#e53935;border-radius:12px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;">Lopeta keskustelu</button>
+        <button onclick="minimizeSupportChat()" style="width:100%;min-height:48px;background:#0C0243;border:none;color:white;border-radius:12px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;margin-bottom:10px;padding:9px 12px;line-height:1.3;">Poistu ja pidä keskustelu avoimena taustalla</button>
+        <button onclick="endSupportChat()" style="width:100%;height:48px;background:white;border:1.5px solid #e53935;color:#e53935;border-radius:12px;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;">Lopeta keskustelu</button>
       </div>
     </div>
   </div>
@@ -4940,6 +4940,22 @@
     </div>
     <div style="padding:12px 16px max(20px,env(safe-area-inset-bottom));background:transparent;">
       <button class="pill-action-btn" onclick="saveWorkCommentAndReturn()" style="width:100%;height:56px;border:none;border-radius:16px;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;color:white;background:#0C0243;cursor:pointer;">Tallenna ja palaa pysäköintiin</button>
+    </div>
+  </div>
+
+  <!-- "Kohteen tietojen päivitys": opened from the "Päivitä kohteen tietoja" button on
+       a feature sheet to report incorrect data. Back arrow returns to the sheet. -->
+  <div id="data-update-overlay" class="purpose-overlay">
+    <div id="parking-header" style="background:white;">
+      <button id="back-btn" onclick="closeDataUpdateOverlay()">←</button>
+      <div id="parking-header-title">Kohteen tietojen päivitys</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:18px 16px max(20px,env(safe-area-inset-bottom));font-family:Arial,sans-serif;">
+      <div style="font-size:14px;color:#555;line-height:1.5;margin-bottom:14px;">Huomasitko virheellistä tietoa tässä kohteessa? Kerro mikä on pielessä, niin tarkistamme ja korjaamme tiedot.</div>
+      <textarea id="data-update-input" placeholder="Kuvaile virhe (esim. väärä hinta, sijainti tai aukioloaika)…" style="width:100%;box-sizing:border-box;min-height:120px;border:1px solid #dcdce3;border-radius:12px;padding:12px;font-family:Arial,sans-serif;font-size:14px;color:#222;resize:vertical;outline:none;"></textarea>
+    </div>
+    <div style="padding:12px 16px max(20px,env(safe-area-inset-bottom));background:transparent;">
+      <button class="pill-action-btn" onclick="submitDataUpdate()" style="width:100%;height:56px;border:none;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;color:white;background:#0C0243;cursor:pointer;">Lähetä ilmoitus</button>
     </div>
   </div>
 
@@ -6779,6 +6795,7 @@
         badge.textContent = areaCode;
         badge.style.display = 'inline-block';
         badge.style.background = '#0C0243';
+        badge.style.color = 'white';   // reset: the charging path may have set this to dark (#111)
         badge.style.padding = '2px 8px';
         badge.style.borderRadius = '5px';
         // Also expand the on-map P-marker into its full badge form with the code
@@ -7232,13 +7249,12 @@
     }
     function showHalliCenterBadge(code) {
       if (window._navigationInProgress) return;
-      const codeTxt = (code != null && String(code).trim() !== '') ? String(code).trim() : '';
-      // Garage icon sized identically to the charging icon (20px); the garage
-      // code sits beside it with the same font/colour/position as the charging
-      // status text, shown only when the data provides a code.
+      // Garage marker, laid out like the charging marker: garage icon + a
+      // "Tilaa" availability label, shown for every garage (mirrors how charging
+      // stations display their status text inside the expanded P-marker).
       centerBadgeCode.innerHTML =
         '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        (codeTxt ? '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:#111;">' + escapeHtml(codeTxt) + '</span>' : '');
+        '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:#111;">Tilaa</span>';
       centerPointerEl.classList.add('expanded');
       centerPointerEl.classList.add('halli-mode');
       centerPointerEl.classList.remove('charging-mode');
@@ -10871,7 +10887,10 @@
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
         '<p class="price-label">Lisätiedot</p><p class="price-value">' + (p.extraInfo ? escapeHtml(p.extraInfo) : '–') + '</p>' +
-        '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:10px 0 0;"><span id="charging-updated-text">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</span><span class="live-dot"></span></p>'
+        '<div id="charging-updated-line" style="display:flex;align-items:center;gap:10px;margin:10px 0 0;font-family:Arial,sans-serif;">' +
+          '<span style="font-size:12px;color:#8a8a8a;display:inline-flex;align-items:center;"><span id="charging-updated-text">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</span><span class="live-dot"></span></span>' +
+          '<button onclick="openDataUpdateOverlay()" style="margin-left:auto;background:#f0f0f0;border:none;border-radius:999px;color:#555;font-size:12px;font-weight:600;font-family:Arial,sans-serif;padding:6px 12px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;">Päivitä kohteen tietoja</button>' +
+        '</div>'
       );
       // Big action button label for a charging station.
       document.getElementById('action-btn').textContent = 'Lataa täällä';
@@ -11349,6 +11368,23 @@
     function backFromWorkComment(){
       const ov = document.getElementById('workcomment-overlay');
       if (ov) ov.classList.remove('open');   // back to the cost-center picker
+    }
+    // ── "Kohteen tietojen päivitys" (report incorrect data) ──────────────────
+    function openDataUpdateOverlay(){
+      const ta = document.getElementById('data-update-input');
+      if (ta) ta.value = '';
+      const ov = document.getElementById('data-update-overlay');
+      if (ov) requestAnimationFrame(() => ov.classList.add('open'));
+    }
+    function closeDataUpdateOverlay(){
+      const ov = document.getElementById('data-update-overlay');
+      if (ov) ov.classList.remove('open');   // back to the feature sheet underneath
+    }
+    function submitDataUpdate(){
+      const ta = document.getElementById('data-update-input');
+      const txt = ta ? (ta.value || '').trim() : '';
+      closeDataUpdateOverlay();
+      if (typeof showCustomToast === 'function') showCustomToast(txt ? 'Kiitos! Ilmoitus vastaanotettu.' : 'Ilmoitus suljettu', 2000);
     }
     function saveWorkCommentAndReturn(){
       const ta = document.getElementById('workcomment-input');
