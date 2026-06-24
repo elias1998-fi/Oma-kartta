@@ -143,10 +143,9 @@
        it sits in the middle of the pill instead of riding the text baseline. */
     #center-marker.charging-mode #cm-code { display: flex; align-items: center; }
     /* Garage extended marker: show the halli icon in #cm-code and hide the "P"
-       pin. Padding + gap match charging-mode exactly so the garage icon sits at
-       the same left position inside the pill as the charging icon. */
+       pin. Symmetric padding since there's only an icon (no status text). */
     #center-marker.halli-mode #cm-pin { display: none !important; }
-    #center-marker.halli-mode.expanded #cm-body { padding: 2px 7px 2px 3px; gap: 3px; align-items: center; }
+    #center-marker.halli-mode.expanded #cm-body { padding: 2px 5px; gap: 0; align-items: center; }
     #center-marker.halli-mode #cm-code { display: flex; align-items: center; }
     /* The paid badge's "P" pin renders a touch larger so its symbol reads at
        the same height as the disc icon. transform:scale doesn't change the
@@ -1354,6 +1353,11 @@
     .settings-detail-overlay.open {
       transform: translateX(0);
     }
+    /* The support chat can be opened directly over the map (from an area's
+       "Havaitsitko virheen tiedoissa?" button), so it must sit above the
+       floating action-button bar (#btn-container, z-index 9990) yet stay
+       below global modals/toasts. */
+    #support-chat-overlay { z-index: 9993; }
     
     #bottom-sheet { 
       position: absolute; left: 0; right: 0; bottom: 0; 
@@ -1569,20 +1573,6 @@
     .hours-time { font-weight: 500; }
     .price-label { font-size: 13px; color: #888; margin-top: 18px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
-    /* Pulsing green "live" dot shown after the "Päivitetty …" line to signal
-       that availability updates in real time. The expanding, fading ring is
-       drawn with an animated box-shadow so it needs no extra elements. */
-    .live-dot {
-      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-      background: #1faa4a; vertical-align: middle; margin-left: 6px;
-      animation: liveDotPulse 1.8s ease-out infinite;
-    }
-    @keyframes liveDotPulse {
-      0%   { box-shadow: 0 0 0 0 rgba(31,170,74,0.55); }
-      70%  { box-shadow: 0 0 0 6px rgba(31,170,74,0); }
-      100% { box-shadow: 0 0 0 0 rgba(31,170,74,0); }
-    }
-    @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
     #sheet-filter { display: none; flex-direction: column; padding: 0 18px 16px 24px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 18px); overflow-y: scroll; overflow-x: hidden; touch-action: none; position: relative; scrollbar-width: none; }
     #sheet-filter::-webkit-scrollbar { width: 0; height: 0; display: none; }
     #filter-scrollbar { position: absolute; right: 4px; width: 11px; z-index: 6; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
@@ -1841,17 +1831,6 @@
       text-align: center;
       line-height: 1.4;
     }
-    /* Two-option segmented control (Henkilökohtainen / Työ): thumb is half width. */
-    .seg-track.two .seg-thumb { width: calc((100% - 6px) / 2); }
-    /* Cost-center picker + work-comment screens (slide in over the parking/
-       charging overlays). z above charging overlay (130). */
-    .purpose-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 240; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94); }
-    .purpose-overlay.open { transform: translateX(0); }
-    .cc-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: white; border-radius: 14px; padding: 16px 16px; margin-bottom: 10px; cursor: pointer; font-family: Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-    .cc-row:active { background: #f4f5fb; }
-    .cc-row-label { font-size: 15px; color: #1a1a2e; font-weight: 600; line-height: 1.35; }
-    .cc-row-chevron { flex-shrink: 0; color: #c5c8cf; font-size: 20px; }
-    .cc-row.selected { box-shadow: inset 0 0 0 2px #0C0243; }
 
     #slider-label { font-size: 15px; color: #222; margin-bottom: 10px; text-align: center; }
     #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
@@ -1896,17 +1875,6 @@
       text-align: center; 
     }
     #action-btn.active { opacity: 1; }
-
-    /* Pill-shaped primary action buttons: fully rounded left/right ends (radius
-       capped at half-height). !important so it also overrides inline radii on
-       the dynamically-built buttons. Size/colour of each button is unchanged. */
-    #action-btn, #start-btn, #c-start-btn, #admin-approve-btn, #send-receipts-btn,
-    #confirm-area-btn, #submit-parking-btn, #disc-set-btn, #editor-action-btn,
-    #free-terms-accept, .account-action-btn, .apb-buttons button, .pill-action-btn,
-    #sheet-nav-btn, #sheet-share-btn, #ed-send-receipt-btn, #ed-support-btn, #summary-back-btn,
-    #send-receipt-btn, .filter-apply-btn, .account-edit-btn, .confirm-buttons button {
-      border-radius: 999px !important;
-    }
     
     /* GPS Info Overlay */
     #gps-info-overlay {
@@ -3175,53 +3143,6 @@
     }
     .detail-label { color: #555; }
     .detail-value { color: #222; }
-    .detail-vat-note { color: #888; font-size: 12.5px; line-height: 1.4; padding: 12px 0 2px; }
-
-    /* ── End-of-session rating sheet ───────────────────────────────────────
-       Bottom-anchored sheet shown 1.5s after the "Pysäköinti päättynyt" summary.
-       A dimming scrim focuses attention; rating is mandatory (no close button).
-       Stars + a big action button that's faded ("Paina tähtiä") until the user
-       rates, then lights up ("Lähetä palaute") and reveals the feedback box. */
-    #rating-banner { position: fixed; inset: 0; z-index: 300; display: none; }
-    #rating-banner.open { display: block; }
-    .rating-scrim {
-      position: absolute; inset: 0; background: rgba(20,18,45,0.45);
-      opacity: 0; transition: opacity 0.35s ease;
-    }
-    #rating-banner.open .rating-scrim { opacity: 1; }
-    .rating-sheet {
-      position: absolute; left: 0; right: 0; bottom: 0;
-      background: white; border-radius: 24px 24px 0 0;
-      box-shadow: 0 -10px 48px rgba(12,2,67,0.28);
-      padding: 26px 20px max(22px, env(safe-area-inset-bottom));
-      font-family: Arial, sans-serif;
-      transform: translateY(100%);
-      transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94);
-    }
-    #rating-banner.open .rating-sheet { transform: translateY(0); }
-    .rating-title { font-size: 19px; font-weight: bold; color: #1a1a2e; text-align: center; margin: 0 0 18px; }
-    .rating-stars { display: flex; justify-content: center; gap: 6px; }
-    .rating-star {
-      border: none; background: none; cursor: pointer; font-size: 44px; line-height: 1;
-      color: #dadce3; transition: transform 0.12s ease, color 0.12s ease; padding: 2px 4px;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .rating-star.filled { color: #ffc107; }
-    .rating-star:active { transform: scale(1.25); }
-    .rating-feedback { margin-top: 20px; }
-    .rating-feedback textarea {
-      width: 100%; box-sizing: border-box; min-height: 88px; border: 1px solid #dcdce3;
-      border-radius: 12px; padding: 12px; font-family: Arial, sans-serif; font-size: 14px;
-      color: #222; resize: vertical; outline: none;
-    }
-    .rating-action-btn {
-      width: 100%; height: 58px; margin-top: 28px; border: none; border-radius: 999px;
-      font-size: 17px; font-weight: bold; font-family: Arial, sans-serif; cursor: pointer;
-      background: #dcdce6; color: #9a9ab0;
-      transition: background 0.25s ease, color 0.25s ease;
-    }
-    .rating-action-btn.active { background: #0C0243; color: white; }
-    .rating-thanks { text-align: center; font-size: 15.5px; color: #1faa4a; font-weight: bold; padding: 14px 0 4px; }
 
     #start-btn-container { 
       padding: 10px 14px; 
@@ -3673,14 +3594,6 @@
             <span class="summary-label">Maksutapa</span>
             <span class="summary-value" id="ed-payment">—</span>
           </div>
-          <div class="summary-row" id="ed-purpose-row">
-            <span class="summary-label">Pysäköinnin tyyppi</span>
-            <span class="summary-value" id="ed-purpose">—</span>
-          </div>
-          <div class="summary-row" id="ed-costcenter-row" style="display:none;align-items:flex-start;">
-            <span class="summary-label">Kustannuspaikka</span>
-            <span class="summary-value" id="ed-costcenter" style="max-width:62%;text-align:right;">—</span>
-          </div>
           <div class="summary-row summary-total-row">
             <span class="summary-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail(_edPriceMinutes)">i</span></span>
             <span class="summary-value summary-price" id="ed-price">—</span>
@@ -3714,7 +3627,7 @@
           <input type="email" id="receipt-email-input" autocomplete="email" placeholder="nimi@example.com" style="width:100%;height:44px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:0 38px 0 12px;outline:none;box-sizing:border-box;background:white;color:#222;">
           <button type="button" onclick="clearReceiptEmail()" aria-label="Tyhjennä kenttä" style="position:absolute;top:50%;right:6px;transform:translateY(-50%);width:26px;height:26px;border:none;background:none;color:#aaa;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>
         </div>
-        <button class="pill-action-btn" onclick="confirmReceiptSend()" style="width:100%;height:52px;margin-top:18px;background:#0C0243;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:Arial,sans-serif;cursor:pointer;">Lähetä</button>
+        <button onclick="confirmReceiptSend()" style="width:100%;height:52px;margin-top:18px;background:#0C0243;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:Arial,sans-serif;cursor:pointer;">Lähetä</button>
       </div>
     </div>
   </div>
@@ -4322,7 +4235,7 @@
         Tue yhteisöä ja ilmoita havaitsemastasi ilmaisesta parkkialueesta!
       </div>
       <div style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
-        <button class="pill-action-btn" onclick="openAddParkingArea()" style="width:100%;min-height:120px;background:#0C0243;border:none;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(12,2,67,0.25);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
+        <button onclick="openAddParkingArea()" style="width:100%;min-height:120px;background:#0C0243;border:none;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(12,2,67,0.25);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
           onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'"
           ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4330,7 +4243,7 @@
           </svg>
           <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:white;text-align:center;line-height:1.3;">Lisää uusi ilmainen pysäköintialue</span>
         </button>
-        <button class="pill-action-btn" onclick="openCommentAreas()" style="width:100%;min-height:120px;background:white;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(0,0,0,0.08);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
+        <button onclick="openCommentAreas()" style="width:100%;min-height:120px;background:white;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(0,0,0,0.08);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
           onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'"
           ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4547,27 +4460,6 @@
     </div>
   </div>
 
-  <!-- Mandatory end-of-session rating sheet (shown 1.5s after the summary).
-       Scrim dims the rest; no close button — the user must rate + send. -->
-  <div id="rating-banner">
-    <div class="rating-scrim"></div>
-    <div class="rating-sheet">
-      <div class="rating-title" id="rating-title">Miten pysäköinti sujui?</div>
-      <div class="rating-stars" id="rating-stars">
-        <button class="rating-star" data-val="1" onclick="setRating(1)">★</button>
-        <button class="rating-star" data-val="2" onclick="setRating(2)">★</button>
-        <button class="rating-star" data-val="3" onclick="setRating(3)">★</button>
-        <button class="rating-star" data-val="4" onclick="setRating(4)">★</button>
-        <button class="rating-star" data-val="5" onclick="setRating(5)">★</button>
-      </div>
-      <div class="rating-feedback" id="rating-feedback" style="display:none;">
-        <textarea id="rating-feedback-input" placeholder="Miten voisimme kehittää toimintaamme?"></textarea>
-      </div>
-      <button class="rating-action-btn" id="rating-action-btn" onclick="submitRatingFeedback()" disabled>Paina tähtiä</button>
-      <div class="rating-thanks" id="rating-thanks" style="display:none;">Kiitos palautteestasi! 🙌</div>
-    </div>
-  </div>
-
   <!-- Sub-overlay: Kommentoi nykyisiä alueita -->
   <!-- Area type bottom sheet -->
   <div id="area-type-sheet" style="position:fixed;inset:0;z-index:210;display:none;">
@@ -4662,6 +4554,10 @@
       </div>
       <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
+      <button id="sheet-report-btn" onclick="openSupportChatForArea()" style="display:none;width:100%;margin-top:16px;padding:11px 12px;background:#f4f4ff;border:1px solid #e3e3f2;border-radius:12px;cursor:pointer;font-family:Arial,sans-serif;text-align:center;line-height:1.35;-webkit-tap-highlight-color:transparent;">
+        <span style="display:block;font-size:13px;color:#777;">Havaitsitko virheen tiedoissa?</span>
+        <span style="display:block;font-size:14px;color:#0C0243;font-weight:700;margin-top:3px;">→ Päivitä tästä</span>
+      </button>
     </div>
     <!-- Pair of action buttons — direct child of the sheet so they move
          in lockstep with the sheet's transform (no JS sync needed). The
@@ -4979,51 +4875,6 @@
     </div>
 
     <div id="start-btn-container"><button id="start-btn" class="disabled">Aseta pysäköintiaika</button></div>
-  </div>
-
-  <!-- Työ → "Valitse kustannuspaikka": pick which company cost center this
-       parking belongs to. Selecting a row opens the comment screen. -->
-  <div id="costcenter-overlay" class="purpose-overlay">
-    <div id="parking-header" style="background:white;">
-      <button id="back-btn" onclick="closeCostCenterOverlay(true)">←</button>
-      <div id="parking-header-title">Valitse kustannuspaikka</div>
-    </div>
-    <div style="flex:1;overflow-y:auto;padding:16px 14px max(20px,env(safe-area-inset-bottom));">
-      <div id="costcenter-list"></div>
-    </div>
-  </div>
-
-  <!-- "Lisää kommentti": employer-requested clarifying comment for a work
-       parking. Saving returns to the parking/charging view. -->
-  <div id="workcomment-overlay" class="purpose-overlay">
-    <div id="parking-header" style="background:white;">
-      <button id="back-btn" onclick="backFromWorkComment()">←</button>
-      <div id="parking-header-title">Lisää kommentti</div>
-    </div>
-    <div style="flex:1;overflow-y:auto;padding:18px 16px max(20px,env(safe-area-inset-bottom));font-family:Arial,sans-serif;">
-      <div id="workcomment-costcenter" style="font-size:12.5px;color:#888;margin-bottom:14px;"></div>
-      <div style="font-size:15px;font-weight:600;color:#1a1a2e;line-height:1.4;margin-bottom:12px;">Työnantajasi pyytää sinua lisäämään pysäköintiin liittyvän tarkentavan kommentin.</div>
-      <textarea id="workcomment-input" placeholder="Kirjoita kommentti…" style="width:100%;box-sizing:border-box;min-height:120px;border:1px solid #dcdce3;border-radius:12px;padding:12px;font-family:Arial,sans-serif;font-size:14px;color:#222;resize:vertical;outline:none;"></textarea>
-    </div>
-    <div style="padding:12px 16px max(20px,env(safe-area-inset-bottom));background:transparent;">
-      <button class="pill-action-btn" onclick="saveWorkCommentAndReturn()" style="width:100%;height:56px;border:none;border-radius:16px;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;color:white;background:#0C0243;cursor:pointer;">Tallenna ja palaa pysäköintiin</button>
-    </div>
-  </div>
-
-  <!-- "Kohteen tietojen päivitys": opened from the "Päivitä kohteen tietoja" button on
-       a feature sheet to report incorrect data. Back arrow returns to the sheet. -->
-  <div id="data-update-overlay" class="purpose-overlay">
-    <div id="parking-header" style="background:white;">
-      <button id="back-btn" onclick="closeDataUpdateOverlay()">←</button>
-      <div id="parking-header-title">Kohteen tietojen päivitys</div>
-    </div>
-    <div style="flex:1;overflow-y:auto;padding:18px 16px max(20px,env(safe-area-inset-bottom));font-family:Arial,sans-serif;">
-      <div style="font-size:14px;color:#555;line-height:1.5;margin-bottom:14px;">Huomasitko virheellistä tietoa tässä kohteessa? Kerro mikä on pielessä, niin tarkistamme ja korjaamme tiedot.</div>
-      <textarea id="data-update-input" placeholder="Kuvaile virhe (esim. väärä hinta, sijainti tai aukioloaika)…" style="width:100%;box-sizing:border-box;min-height:120px;border:1px solid #dcdce3;border-radius:12px;padding:12px;font-family:Arial,sans-serif;font-size:14px;color:#222;resize:vertical;outline:none;"></textarea>
-    </div>
-    <div style="padding:12px 16px max(20px,env(safe-area-inset-bottom));background:transparent;">
-      <button class="pill-action-btn" onclick="submitDataUpdate()" style="width:100%;height:56px;border:none;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;color:white;background:#0C0243;cursor:pointer;">Lähetä ilmoitus</button>
-    </div>
   </div>
 
   <div id="btn-container">
@@ -5508,12 +5359,6 @@
           loadViewportTiles(null);
         }
       }, 800);
-      // Preload public charging stations in the background a bit later, so the
-      // initial parking/halli render isn't slowed but the data (large AFIR fetch
-      // + clustering) is already cached by the time the user flips the EV toggle.
-      // The layer is created hidden here (showEvCharging is false), so toggling
-      // on then just flips visibility → markers appear instantly, no wait.
-      setTimeout(() => { if (!chargingLoaded && !chargingLoading) loadChargingStations(); }, 1500);
     });
 
     // Geolocate control — manual only.
@@ -6826,6 +6671,7 @@
       document.getElementById('summary-type').textContent     = type;
       document.getElementById('summary-operator').textContent = operator;
       document.getElementById('sheet-details').innerHTML      = detailsHTML;
+      var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'block';
       document.getElementById('sheet-divider').style.display  = 'block';
       document.getElementById('action-btn').textContent       = header;
       document.getElementById('action-btn').classList.add('active');
@@ -6862,7 +6708,6 @@
         badge.textContent = areaCode;
         badge.style.display = 'inline-block';
         badge.style.background = '#0C0243';
-        badge.style.color = 'white';   // reset: the charging path may have set this to dark (#111)
         badge.style.padding = '2px 8px';
         badge.style.borderRadius = '5px';
         // Also expand the on-map P-marker into its full badge form with the code
@@ -6882,6 +6727,7 @@
         document.getElementById('sheet-details').innerHTML     = '';
         document.getElementById('sheet-divider').style.display = 'none';
       }
+      var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'block';
       // Auto-open to 153px from bottom when P-marker is on area
       const bs = document.getElementById('bottom-sheet');
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
@@ -6907,6 +6753,7 @@
       document.getElementById('summary-type').textContent = '';
       document.getElementById('summary-operator').textContent = '';
       document.getElementById('sheet-details').innerHTML = '';
+      var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'none';
       document.getElementById('sheet-divider').style.display = 'none';
       document.getElementById('action-btn').textContent = 'Siirrä kursori pysäköintialueelle';
       document.getElementById('action-btn').classList.remove('active');
@@ -7316,12 +7163,13 @@
     }
     function showHalliCenterBadge(code) {
       if (window._navigationInProgress) return;
-      // Garage marker, laid out like the charging marker: garage icon + a
-      // "Tilaa" availability label, shown for every garage (mirrors how charging
-      // stations display their status text inside the expanded P-marker).
+      const codeTxt = (code != null && String(code).trim() !== '') ? String(code).trim() : '';
+      // Garage icon sized identically to the charging icon (20px); the garage
+      // code sits beside it with the same font/colour/position as the charging
+      // status text, shown only when the data provides a code.
       centerBadgeCode.innerHTML =
         '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:#111;">Tilaa</span>';
+        (codeTxt ? '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:#111;">' + escapeHtml(codeTxt) + '</span>' : '');
       centerPointerEl.classList.add('expanded');
       centerPointerEl.classList.add('halli-mode');
       centerPointerEl.classList.remove('charging-mode');
@@ -7339,24 +7187,14 @@
       const ci = full.indexOf(',');
       const owner = ci > 0 ? full.slice(0, ci).trim() : '';
       const title = ci > 0 ? full.slice(ci + 1).trim() : full;
-      // Garages carry no price/extra info in the open data yet → show the same
-      // Hinta + Lisätiedot rows as charging/parking, with "–" placeholders until
-      // the data exists (forward-compatible: shows real values if ever present).
-      const price = (p.price != null && String(p.price).trim() !== '') ? escapeHtml(String(p.price)) : '\u2013';
-      const extra = (p.extraInfo != null && String(p.extraInfo).trim() !== '') ? escapeHtml(String(p.extraInfo))
-                  : (p.extra_info != null && String(p.extra_info).trim() !== '') ? escapeHtml(String(p.extra_info)) : '\u2013';
-      showMasterFeatureInSheet(
-        title || full, 'Pysäköintihalli', owner,
-        '<p class="price-label">Hinta</p><p class="price-value">' + price + '</p>' +
-        '<p class="price-label">Lisätiedot</p><p class="price-value">' + extra + '</p>'
-      );
+      showMasterFeatureInSheet(title || full, 'Pysäköintihalli', owner, '');
+      // Garages carry no price/hours in the open data → no detail rows.
+      document.getElementById('sheet-divider').style.display = 'none';
       document.getElementById('action-btn').textContent = 'Pysäköi täällä';
-      // Top-left sheet badge = the parking-garage icon, sized identically to the
-      // charging icon (20px) so halls and charging stations match on the sheet.
+      // Top-left sheet badge = the parking-garage icon (like the charging badge).
       const hbadge = document.getElementById('area-code-badge');
       if (hbadge) {
-        hbadge.innerHTML = '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-          '<span style="vertical-align:middle;margin-left:5px;color:#111;font-size:14px;font-weight:800;letter-spacing:0.3px;">Tilaa</span>';
+        hbadge.innerHTML = '<img src="' + halliIconSvg() + '" style="width:24px;height:24px;display:inline-block;vertical-align:middle;">';
         hbadge.style.display = 'inline-block';
         hbadge.style.background = 'transparent';
         hbadge.style.padding = '0';
@@ -7620,15 +7458,6 @@
         btn.classList.add('active');
         return;
       }
-      // A parking garage under the P-marker → "Pysäköi täällä" (and tappable),
-      // so the garage parking flow stays reachable even after moveend fires
-      // updateButtonText (which otherwise reset it to the empty-state prompt and
-      // stripped the .active class, making the button a no-op).
-      if (typeof hoveredHalliId !== 'undefined' && hoveredHalliId) {
-        btn.textContent = 'Pysäköi täällä';
-        btn.classList.add('active');
-        return;
-      }
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
       // Moved off a charging station (we were last in charging context) → the
@@ -7777,10 +7606,7 @@
         id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 12,
         layout: {
           'icon-image': 'halli-icon', 'icon-size': 0.50,
-          // ignore-placement = the icon doesn't reserve collision space, so map
-          // labels no longer dodge it — they stay put and the icon (drawn on top
-          // via moveLayer below) simply overlaps them. Matches charging-icons.
-          'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+          'icon-allow-overlap': true, 'icon-anchor': 'center'
         }
       });
       // Promote the halli icons to the very top so they always sit on
@@ -9611,6 +9437,58 @@
       box.appendChild(wrap);
       box.scrollTop = box.scrollHeight;
     }
+    // Apple-style preview card of a map area (charging station / parking
+    // garage / parking zone), shown as the user's "attachment" at the top of
+    // the "report an error" chat.
+    function addSupportAreaPreview(name, type, operator) {
+      const box = document.getElementById('support-chat-messages');
+      if (!box) return;
+      const row = (l, v) => `<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;"><span style="color:#888;">${l}</span><span style="color:#222;font-weight:500;text-align:right;">${v}</span></div>`;
+      const wrap = document.createElement('div');
+      wrap.className = 'sup-pop';
+      wrap.style.cssText = 'display:flex;justify-content:flex-end;';
+      const card = document.createElement('div');
+      card.style.cssText = 'max-width:82%;background:white;border-radius:18px;border-bottom-right-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.14);overflow:hidden;font-family:Arial,sans-serif;';
+      card.innerHTML =
+        '<div style="background:#0C0243;color:#fff;padding:8px 14px;font-size:12px;font-weight:bold;">' + escapeHtml(type || 'Kohde') + '</div>'
+        + '<div style="padding:11px 14px;display:flex;flex-direction:column;gap:6px;">'
+          + row('Nimi', escapeHtml(name || '—'))
+          + (operator ? row('Operaattori', escapeHtml(operator)) : '')
+        + '</div>';
+      wrap.appendChild(card);
+      box.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+    }
+    // Opens the support chat from a map area's bottom sheet ("Havaitsitko
+    // virheen tiedoissa? → Päivitä tästä"): attaches the area as a preview,
+    // then Pertti joins and greets. The chat sits above #btn-container (CSS
+    // z-index 9993), so the chat's back arrow just closes it and returns
+    // straight to the map + sheet the user came from.
+    function openSupportChatForArea() {
+      const sh = document.getElementById('summary-header');
+      const st = document.getElementById('summary-type');
+      const so = document.getElementById('summary-operator');
+      const name = sh ? sh.textContent : '';
+      const type = st ? st.textContent : '';
+      const operator = so ? so.textContent : '';
+      const overlay = document.getElementById('support-chat-overlay');
+      const box = document.getElementById('support-chat-messages');
+      if (!overlay || !box) return;
+      overlay.classList.add('open');
+      updateSendSupportBtn();
+      box.innerHTML = '';
+      box.dataset.seeded = '1';
+      supportEngaged = false;
+      supportLog = [];
+      setSupportStatus('offline');
+      addSupportAreaPreview(name, type, operator);
+      const joinNote = addSupportSystem('Odota, virtuaalinen asiakaspalvelija liittyy keskusteluun.');
+      setTimeout(() => {
+        setSupportStatus('online');
+        if (joinNote) joinNote.textContent = 'Virtuaalinen asiakaspalvelija liittyi keskusteluun';
+        perttiSay('Morjesta. Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Havaitsitko virheen tai jotain päivitettävää/kehitettävää alueen tiedoissa? Kerro asiasta tarkemmin, niin välitän tiedon ihmiskollegoilleni.');
+      }, 1200);
+    }
     // Opens the support chat from the event-detail view: attaches the event as
     // a preview, Pertti joins and greets, then two guided options appear.
     function openSupportChatForEvent() {
@@ -10353,8 +10231,7 @@
       // toggle their visibility. Default to all plug types selected on enable.
       if (showEvCharging) {
         if (_selectedChargerTypes.size === 0) selectAllChargerTypes();
-        if (!chargingLoaded) loadChargingStations();   // fetch raw once → renders current viewport
-        else rebuildChargingForViewport(true);          // already cached → render current viewport now
+        loadChargingStations();
       }
       setChargingVisibility(showEvCharging);
       applyChargingFilters();
@@ -10369,9 +10246,6 @@
     const AFIR_BASE = 'https://afir.digitraffic.fi/api/charging-network/v1';
     let chargingLoaded = false, chargingLoading = false;
     let _chargingFeatures = [];
-    let _chargingRawLocs = null;          // cached raw AFIR locations (whole-Finland snapshot, fetched once)
-    let _chargingRenderedBounds = null;   // padded bbox currently clustered/rendered; rebuild only when the view leaves it
-    let _chargingViewportTimer = null;    // debounce handle for viewport re-clustering on pan/zoom
     let _chargingEvseIndex = {};          // stationId -> [{ id: evseId, labels:[..] }] for live status recompute
     let _chargingStatusTimer = null;      // setInterval handle for live status polling
     let _chargingStatusRefreshing = false;// guard so status fetches don't overlap
@@ -10528,10 +10402,11 @@
     function addChargingLayer(){
       ensureChargingImage('charging-green', '#4caf50', () => {
         ensureChargingImage('charging-gray', '#b4b7bd', () => {
-          if (!map.getSource('charging-points')) {
-            // Created empty; applyChargingFilters() below fills it with the
-            // current (viewport-clustered, filtered) feature set.
-            map.addSource('charging-points', { type: 'geojson', data: { type:'FeatureCollection', features: [] } });
+          const geojson = { type: 'FeatureCollection', features: _chargingFeatures };
+          if (map.getSource('charging-points')) {
+            map.getSource('charging-points').setData(geojson);
+          } else {
+            map.addSource('charging-points', { type: 'geojson', data: geojson });
             map.addLayer({
               id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 12,
               layout: {
@@ -10556,136 +10431,13 @@
           }
           setChargingVisibility(showEvCharging);
           if (map.getLayer('charging-icons')) map.moveLayer('charging-icons');
-          applyChargingFilters();   // authoritative render of the filtered feature set
         });
       });
-    }
-    // Cluster a SUBSET of raw AFIR locations (e.g. just the current viewport)
-    // into per-site features. Merges co-located locations of the SAME operator
-    // into one site (some operators split AC vs DC into separate AFIR locations).
-    // Distance-based (not a coordinate grid, which can split two nearby points
-    // across a cell boundary). Populates the global _chargingEvseIndex for the
-    // clustered sites; the caller resets that map first. Returns the feature array.
-    function clusterChargingLocations(locs, statusMap){
-      const MERGE_RADIUS_M = 50;
-      const _chDistM = (a, b) => {
-        const R = 6371000, r = Math.PI / 180;
-        const dLat = (b[1]-a[1]) * r, dLng = (b[0]-a[0]) * r;
-        const h = Math.sin(dLat/2)**2 + Math.cos(a[1]*r) * Math.cos(b[1]*r) * Math.sin(dLng/2)**2;
-        return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
-      };
-      const _chByOp = {};
-      const _chOrder = [];
-      locs.forEach(f => {
-        const p = f.properties || {};
-        const op = p.operator || {};
-        const det = op.details || {};
-        const coords = f.geometry.coordinates;
-        const opName = normalizeOperator(det.name);
-        const _logoObj = det.logo || op.logo;
-        const logoUrl = !_logoObj ? '' : (typeof _logoObj === 'string' ? _logoObj : (_logoObj.url || ''));
-        const clusters = _chByOp[opName] || (_chByOp[opName] = []);
-        let g = null;
-        for (let i = 0; i < clusters.length; i++) { if (_chDistM(clusters[i].coords, coords) <= MERGE_RADIUS_M) { g = clusters[i]; break; } }
-        if (!g) {
-          g = {
-            id: p.id || (opName + '@' + coords.join(',')), name: p.name || 'Latausasema',
-            operatorId: op.id || '', operatorName: opName,
-            logoUrl: logoUrl,
-            address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
-            coords: coords, standards: new Set(), byLbl: {}, extras: new Set(),
-            maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
-          };
-          clusters.push(g); _chOrder.push(g);
-        }
-        const _ldir = _chDisplayText(p.directions);
-        if (_ldir) g.extras.add(_ldir);
-        (Array.isArray(p.evses) ? p.evses : []).forEach(ev => {
-          g.total++;
-          const evAvail = statusMap[ev.id] === 'AVAILABLE';
-          if (evAvail) { g.anyAvail = true; g.avail++; }
-          const _edir = _chDisplayText(ev.directions);
-          if (_edir) g.extras.add(_edir);
-          const lblsHere = new Set();
-          const kwHere = {};
-          const vHere = {};
-          (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
-            const kw = c.maxElectricPower ? (c.maxElectricPower / 1000) : 0;
-            const v  = c.maxVoltage || 0;
-            if (c.standard) {
-              g.standards.add(c.standard);
-              const l = stdLabel(c.standard);
-              if (l) {
-                lblsHere.add(l);
-                if (kw > (kwHere[l] || 0)) kwHere[l] = kw;
-                if (v  > (vHere[l]  || 0)) vHere[l]  = v;
-              }
-            }
-            if (kw) g.maxKw = Math.max(g.maxKw, kw);
-            if (v)  g.maxV  = Math.max(g.maxV, v);
-          });
-          lblsHere.forEach(l => {
-            if (!g.byLbl[l]) g.byLbl[l] = { total: 0, avail: 0, kw: 0, volt: 0 };
-            g.byLbl[l].total++;
-            if (evAvail) g.byLbl[l].avail++;
-            if ((kwHere[l] || 0) > g.byLbl[l].kw)   g.byLbl[l].kw   = kwHere[l];
-            if ((vHere[l]  || 0) > g.byLbl[l].volt) g.byLbl[l].volt = vHere[l];
-          });
-          g.evList.push({ id: ev.id, ref: (ev.physicalReference || ev.physical_reference || ''), labels: [...lblsHere] });
-        });
-      });
-      return _chOrder.map(g => {
-        const connectors = Object.keys(g.byLbl).map(l => ({ name: l, total: g.byLbl[l].total, avail: g.byLbl[l].avail, kw: Math.round(g.byLbl[l].kw), volt: Math.round(g.byLbl[l].volt) }));
-        _chargingEvseIndex[g.id] = g.evList;
-        return { type: 'Feature', geometry: { type: 'Point', coordinates: g.coords }, properties: {
-          id: g.id, name: g.name,
-          operatorId: g.operatorId, operatorName: g.operatorName,
-          logoUrl: g.logoUrl,
-          address: g.address,
-          standards: [...g.standards].join(','),
-          connectors: JSON.stringify(connectors),
-          extraInfo: [...g.extras].join(' \u00b7 '),
-          maxKw: Math.round(g.maxKw), maxVoltage: g.maxV,
-          evseCount: g.total, availCount: g.avail, available: g.anyAvail,
-          price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
-        }};
-      }).filter(ft => ft.properties.evseCount > 0);  // drop registered-but-empty shell sites
-    }
-    // Re-cluster + render ONLY the charging stations in (or near) the current
-    // viewport. The whole-Finland snapshot is fetched once (loadChargingStations)
-    // and cached in _chargingRawLocs; here we cluster just the visible slice, so
-    // the heavy work + marker count scale with the screen, not the country.
-    // Panning beyond the already-rendered (padded) area triggers a fresh slice.
-    function rebuildChargingForViewport(force){
-      if (!chargingLoaded || !_chargingRawLocs) return;
-      if (map.getZoom() < 12) return;   // markers are hidden below z12 — nothing to render
-      const v = map.getBounds();
-      const w = v.getWest(), e = v.getEast(), s = v.getSouth(), n = v.getNorth();
-      // Skip if the view is still inside the slice we already clustered.
-      if (!force && _chargingRenderedBounds) {
-        const b = _chargingRenderedBounds;
-        if (w >= b.west && e <= b.east && s >= b.south && n <= b.north) return;
-      }
-      // Cluster a region padded to ~2× the viewport so a small pan needs no
-      // rebuild and edge-of-screen merges aren't split.
-      const padX = (e - w) * 0.5, padY = (n - s) * 0.5;
-      const b = { west: w - padX, east: e + padX, south: s - padY, north: n + padY };
-      _chargingRenderedBounds = b;
-      const subset = _chargingRawLocs.filter(f => {
-        const c = f.geometry.coordinates;
-        return c[0] >= b.west && c[0] <= b.east && c[1] >= b.south && c[1] <= b.north;
-      });
-      _chargingEvseIndex = {};
-      _chargingFeatures = clusterChargingLocations(subset, _chargingStatusMap);
-      addChargingLayer();   // ensures the layer exists, then renders via applyChargingFilters()
     }
     async function loadChargingStations(){
       if (chargingLoaded || chargingLoading) return;
       chargingLoading = true;
       try {
-        // One whole-Finland snapshot (the AFIR API has no bbox filter — only a
-        // full snapshot + cursor paging). Cached raw; clustering/rendering is
-        // then done per-viewport by rebuildChargingForViewport().
         const [locs, stats] = await Promise.all([
           _afirPaged('/locations', 'features'),
           _afirPaged('/locations/statuses', 'statuses')
@@ -10694,12 +10446,109 @@
         stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
         _chargingStatusMap = statusMap;
         _chargingStatusFetchedAt = Date.now();
-        _chargingRawLocs = locs.filter(f => f && f.geometry && f.geometry.coordinates);
+        _chargingEvseIndex = {};
+        // Merge co-located locations of the SAME operator into one site. Some
+        // operators split one physical site into separate AFIR locations for AC
+        // vs DC. We cluster by ACTUAL DISTANCE (not a coordinate grid, which can
+        // split two nearby points across a cell boundary). One marker per site;
+        // the sheet/picker then list ALL connectors from the merged locations.
+        const MERGE_RADIUS_M = 50;    // same-operator locations within this distance merge into one
+        const _chDistM = (a, b) => {  // haversine metres between [lng,lat] points
+          const R = 6371000, r = Math.PI / 180;
+          const dLat = (b[1]-a[1]) * r, dLng = (b[0]-a[0]) * r;
+          const h = Math.sin(dLat/2)**2 + Math.cos(a[1]*r) * Math.cos(b[1]*r) * Math.sin(dLng/2)**2;
+          return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+        };
+        const _chByOp = {};   // operatorName -> array of cluster groups
+        const _chOrder = [];  // all cluster groups, first-seen order
+        locs.filter(f => f && f.geometry && f.geometry.coordinates).forEach(f => {
+          const p = f.properties || {};
+          const op = p.operator || {};
+          const det = op.details || {};
+          const coords = f.geometry.coordinates;
+          const opName = normalizeOperator(det.name);
+          const _logoObj = det.logo || op.logo;   // logo may sit under details or operator, as {url} or a bare string
+          const logoUrl = !_logoObj ? '' : (typeof _logoObj === 'string' ? _logoObj : (_logoObj.url || ''));
+          const clusters = _chByOp[opName] || (_chByOp[opName] = []);
+          let g = null;
+          for (let i = 0; i < clusters.length; i++) { if (_chDistM(clusters[i].coords, coords) <= MERGE_RADIUS_M) { g = clusters[i]; break; } }
+          if (!g) {
+            g = {
+              id: p.id || (opName + '@' + coords.join(',')), name: p.name || 'Latausasema',
+              operatorId: op.id || '', operatorName: opName,
+              logoUrl: logoUrl,
+              address: [p.address && p.address.street, p.address && p.address.city].filter(Boolean).join(', '),
+              coords: coords, standards: new Set(), byLbl: {}, extras: new Set(),
+              maxKw: 0, maxV: 0, anyAvail: false, total: 0, avail: 0, evList: []
+            };
+            clusters.push(g); _chOrder.push(g);
+          }
+          const _ldir = _chDisplayText(p.directions);   // location-level directions, if any
+          if (_ldir) g.extras.add(_ldir);
+          (Array.isArray(p.evses) ? p.evses : []).forEach(ev => {
+            g.total++;
+            const evAvail = statusMap[ev.id] === 'AVAILABLE';
+            if (evAvail) { g.anyAvail = true; g.avail++; }
+            const _fl = ev.floorLevel || ev.floor_level;   // building floor of this charger, if reported
+            if (_fl) g.extras.add('Kerros ' + _fl);
+            const _edir = _chDisplayText(ev.directions);    // per-EVSE directions, if any
+            if (_edir) g.extras.add(_edir);
+            const lblsHere = new Set();   // distinct plug labels on THIS evse (avoid double-count)
+            const kwHere = {};            // label -> max kW among THIS evse's connectors of that label
+            const vHere = {};             // label -> max voltage among THIS evse's connectors of that label
+            (Array.isArray(ev.connectors) ? ev.connectors : []).forEach(c => {
+              const kw = c.maxElectricPower ? (c.maxElectricPower / 1000) : 0;
+              const v  = c.maxVoltage || 0;
+              if (c.standard) {
+                g.standards.add(c.standard);
+                const l = stdLabel(c.standard);
+                if (l) {
+                  lblsHere.add(l);
+                  if (kw > (kwHere[l] || 0)) kwHere[l] = kw;
+                  if (v  > (vHere[l]  || 0)) vHere[l]  = v;
+                }
+              }
+              if (kw) g.maxKw = Math.max(g.maxKw, kw);
+              if (v)  g.maxV  = Math.max(g.maxV, v);
+            });
+            lblsHere.forEach(l => {
+              if (!g.byLbl[l]) g.byLbl[l] = { total: 0, avail: 0, kw: 0, volt: 0 };
+              g.byLbl[l].total++;
+              if (evAvail) g.byLbl[l].avail++;
+              if ((kwHere[l] || 0) > g.byLbl[l].kw)   g.byLbl[l].kw   = kwHere[l];
+              if ((vHere[l]  || 0) > g.byLbl[l].volt) g.byLbl[l].volt = vHere[l];
+            });
+            g.evList.push({ id: ev.id, ref: (ev.physicalReference || ev.physical_reference || ''), floor: (ev.floorLevel != null ? String(ev.floorLevel).trim() : (ev.floor_level != null ? String(ev.floor_level).trim() : '')), labels: [...lblsHere] });
+          });
+        });
+        _chargingFeatures = _chOrder.map(g => {
+          // Per plug-type availability rows for the detail view, stored as a
+          // JSON string so it survives MapLibre's queryRenderedFeatures serialisation.
+          const connectors = Object.keys(g.byLbl).map(l => ({ name: l, total: g.byLbl[l].total, avail: g.byLbl[l].avail, kw: Math.round(g.byLbl[l].kw), volt: Math.round(g.byLbl[l].volt) }));
+          _chargingEvseIndex[g.id] = g.evList;
+          return { type: 'Feature', geometry: { type: 'Point', coordinates: g.coords }, properties: {
+            id: g.id, name: g.name,
+            operatorId: g.operatorId, operatorName: g.operatorName,
+            logoUrl: g.logoUrl,
+            address: g.address,
+            standards: [...g.standards].join(','),
+            connectors: JSON.stringify(connectors),
+            extraInfo: [...g.extras].join(' \u00b7 '),
+            maxKw: Math.round(g.maxKw), maxVoltage: g.maxV,
+            evseCount: g.total, availCount: g.avail, available: g.anyAvail,
+            price: ''   // AFIR open feed has no consumer pricing; '' → shown as "–"
+          }};
+        })
+        // Drop "shell" sites that have no actual EVSEs (registered-but-empty),
+        // which otherwise surface phantom operators in the operator filter list.
+        .filter(ft => ft.properties.evseCount > 0);
         chargingLoaded = true;
-        console.log('Latauspisteet (raakadata) ladattu:', _chargingRawLocs.length, 'sijaintia');
-        buildOperatorList();                 // from the FULL raw set → stable operator dropdown
-        _chargingRenderedBounds = null;       // force first slice
-        rebuildChargingForViewport(true);     // cluster + render only the current viewport
+        console.log('Latauspisteet ladattu:', _chargingFeatures.length);
+        const _opCounts = {}; _chargingFeatures.forEach(f => { const o = f.properties.operatorName || '(tyhjä)'; _opCounts[o] = (_opCounts[o] || 0) + 1; });
+        console.log('Operaattorit (latauspisteiden määrä):', _opCounts);
+        addChargingLayer();
+        buildOperatorList();
+        applyChargingFilters();
         // Keep availability live: poll the status endpoint periodically and on
         // app re-focus, updating the map + open sheet without re-fetching the
         // static location data.
@@ -10750,7 +10599,7 @@
         stats.forEach(s => { if (s && s.evseId) statusMap[s.evseId] = s.status; });
         _chargingStatusMap = statusMap;
         _chargingStatusFetchedAt = Date.now();
-        const _upd = document.getElementById('charging-updated-text') || document.getElementById('charging-updated-line');
+        const _upd = document.getElementById('charging-updated-line');
         if (_upd) _upd.textContent = formatUpdatedAgo(_chargingStatusFetchedAt);
         // Remember the currently-shown station's signature so we only re-render
         // the sheet if its availability actually changed (avoids flicker).
@@ -10878,21 +10727,22 @@
         const col   = free > 0 ? '#1faa4a' : '#c0392b';
         const kwTxt = kw > 0 ? (kw + ' kW') : '';
         const vTxt  = (kw >= 50 && volt > 0) ? (volt + ' V') : '';
-        const cntTxt = total > 0 ? ('\u00d7' + total) : '';
-        return '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 9px;justify-self:start;">' +
-                 plugIcon(String(c.name || ''), '#0C0243', 20) +
-                 (cntTxt ? '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + cntTxt + '</span>' : '') +
-               '</span>' +
-               '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(String(c.name || '')) + '</span>' +
-               '<span style="color:' + col + ';font-weight:700;white-space:nowrap;">Vapaana: ' + free + '/' + total + '</span>' +
-               '<span style="display:flex;align-items:center;gap:7px;justify-self:end;">' +
-                 (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
-                 (kwTxt ? '<span style="color:#333;white-space:nowrap;display:inline-block;min-width:54px;text-align:right;">' + kwTxt + '</span>' : '') +
+        return '<span style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+                 '<span style="display:flex;align-items:center;min-width:0;">' +
+                   '<span style="display:inline-flex;align-items:center;gap:4px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 7px;margin-right:8px;flex:none;">' +
+                     plugIcon(String(c.name || ''), '#0C0243', 20) +
+                     '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;min-width:26px;">× ' + total + '</span>' +
+                   '</span>' +
+                   '<span style="min-width:88px;white-space:nowrap;flex:none;">' + escapeHtml(String(c.name || '')) + '</span>' +
+                   '<span style="color:' + col + ';font-weight:700;white-space:nowrap;">Vapaana: ' + free + '/' + total + '</span>' +
+                 '</span>' +
+                 '<span style="display:flex;align-items:center;gap:7px;flex:none;">' +
+                   (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
+                   (kwTxt ? '<span style="color:#333;white-space:nowrap;display:inline-block;min-width:54px;text-align:right;">' + kwTxt + '</span>' : '') +
+                 '</span>' +
                '</span>';
       }).join('');
-      // 4-column grid shared by ALL rows → the pill, plug name, "Vapaana" and
-      // the kW column each start at the same x on every line.
-      return '<span style="display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;column-gap:10px;row-gap:6px;">' + rows + '</span>';
+      return '<span style="display:flex;flex-direction:column;gap:6px;">' + rows + '</span>';
     }
     // Re-filter the loaded charging stations by the EV controls and push the
     // result to the map source. No-op until the data + layer exist.
@@ -10955,10 +10805,7 @@
         '<p class="price-label">Pistokkeet</p><p class="price-value">' + chargingConnectorsHtml(p.connectors, stdText) + '</p>' +
         '<p class="price-label">Hinta</p><p class="price-value">' + (p.price || '–') + '</p>' +
         '<p class="price-label">Lisätiedot</p><p class="price-value">' + (p.extraInfo ? escapeHtml(p.extraInfo) : '–') + '</p>' +
-        '<div id="charging-updated-line" style="display:flex;align-items:center;gap:10px;margin:10px 0 0;font-family:Arial,sans-serif;">' +
-          '<span style="font-size:12px;color:#8a8a8a;display:inline-flex;align-items:center;"><span id="charging-updated-text">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</span><span class="live-dot"></span></span>' +
-          '<button onclick="openDataUpdateOverlay()" style="margin-left:auto;background:#f0f0f0;border:none;border-radius:999px;color:#555;font-size:12px;font-weight:600;font-family:Arial,sans-serif;padding:6px 12px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;">Päivitä kohteen tietoja</button>' +
-        '</div>'
+        '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:10px 0 0;">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</p>'
       );
       // Big action button label for a charging station.
       document.getElementById('action-btn').textContent = 'Lataa täällä';
@@ -11013,7 +10860,9 @@
       const isAvail = (cp.available === true || cp.available === 'true');
       const stds = (cp.standards||'').split(',').filter(Boolean).map(stdLabel).filter(Boolean);
       const stdText = stds.length ? [...new Set(stds)].join(', ') : '\u2013';
+      const chosenText = (chosen && chosen.label) ? ((chosen.num ? (chosen.num + ' \u00b7 ') : '') + chosen.label) : stdText;
       const power = (chosen && chosen.kw > 0) ? (chosen.kw + ' kW') : ((cp.maxKw && +cp.maxKw > 0) ? (cp.maxKw + ' kW') : '\u2013');
+      const volt  = (chosen && chosen.volt > 0) ? (chosen.volt + ' V') : ((cp.maxVoltage && +cp.maxVoltage > 0) ? (cp.maxVoltage + ' V') : '\u2013');
       const statusTxt = isAvail
         ? '<span style="color:#1faa4a;font-weight:700;">Tilaa</span>'
         : '<span style="color:#c0392b;font-weight:700;">Täynnä</span>';
@@ -11021,32 +10870,11 @@
       const veh = (typeof vehicles !== 'undefined' && vehicles[selectedVehicleIdx]) ? vehicles[selectedVehicleIdx] : { plate:'', name:'' };
       const pay = (typeof paymentMethods !== 'undefined' && paymentMethods[selectedPaymentIdx]) ? paymentMethods[selectedPaymentIdx] : { name:'', icon:'' };
       const payIcon = (typeof getPaymentIcon === 'function') ? getPaymentIcon(pay.icon) : '';
-      // Connector identifier (the on-station number), shown as its own row.
-      const tunnus = (chosen && chosen.num != null && String(chosen.num).trim() !== '') ? String(chosen.num).trim() : '\u2013';
-      // Connector type: prefer the chosen connector's label; else the station's
-      // single standard if unambiguous. Shown as an icon+name pill like the sheet.
-      const typeLabel = (chosen && chosen.label) ? chosen.label : (stds.length === 1 ? stds[0] : '');
-      // Connector type pill (icon + name), with the power reading shown to its
-      // RIGHT on the same row. Voltage is no longer shown.
-      const typePill = typeLabel
-        ? '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:5px 9px;">' +
-            plugIcon(typeLabel, '#0C0243', 18) +
-            '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(typeLabel) + '</span></span>'
-        : '';
-      const typeRowHtml = (typePill || power !== '\u2013')
-        ? '<span style="display:inline-flex;align-items:center;gap:9px;justify-content:flex-end;">' +
-            (typePill || '') +
-            (power !== '\u2013' ? '<span style="color:#333;font-size:14px;white-space:nowrap;">' + power + '</span>' : '') +
-          '</span>'
-        : '<span style="font-weight:600;color:#0C0243;font-size:14px;">\u2013</span>';
-      const specs = [
-        ['Pistokkeen tunnus', '<span style="font-weight:600;color:#0C0243;font-size:14px;">' + escapeHtml(tunnus) + '</span>'],
-        ['Pistokkeen tyyppi', typeRowHtml]
-      ];
+      const specs = [['Valittu pistoke', chosenText], ['Teho', power], ['J\u00e4nnite', volt]];
       const specsHtml = specs.map((s,i) =>
-        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;' + (i < specs.length-1 ? 'border-bottom:1px solid #eef0f2;' : '') + '">' +
-          '<span style="color:#666;font-size:14px;flex:none;">' + s[0] + '</span>' +
-          '<span style="min-width:0;text-align:right;">' + s[1] + '</span></div>').join('');
+        '<div style="display:flex;justify-content:space-between;padding:11px 0;' + (i < specs.length-1 ? 'border-bottom:1px solid #eef0f2;' : '') + '">' +
+          '<span style="color:#666;font-size:14px;">' + s[0] + '</span>' +
+          '<span style="font-weight:600;color:#0C0243;font-size:14px;text-align:right;">' + s[1] + '</span></div>').join('');
       ov.innerHTML = headerHtml +
         '<div class="p-cards-container">' +
           '<div class="p-card">' +
@@ -11054,7 +10882,8 @@
             '<div class="area-select-row" id="c-area-row">' +
               '<div style="flex:1;display:flex;flex-direction:column;gap:4px;">' +
                 '<div class="area-name">' + escapeHtml(cp.name||'Latausasema') + '</div>' +
-                '<div style="font-size:14px;color:#333;">' + escapeHtml(cp.operatorName||'Latausoperaattori') + '</div>' +
+                '<div class="area-meta">' + (cp.address ? escapeHtml(cp.address) : '\u2013') + '</div>' +
+                '<div class="area-meta">' + escapeHtml(cp.operatorName||'Latausoperaattori') + '</div>' +
               '</div>' +
               '<div class="area-chevron">\u2304</div>' +
             '</div>' +
@@ -11078,15 +10907,12 @@
           '</div>' +
           '<div class="p-card">' +
             '<div class="p-card-title">Latauksen tiedot</div>' +
-            '<div class="area-select-row" id="c-details-row" style="padding:2px 12px;">' +
-              '<div style="flex:1;min-width:0;font-family:Arial,sans-serif;">' + specsHtml + '</div>' +
-              '<div class="area-chevron">\u2304</div>' +
-            '</div>' +
+            '<div style="font-family:Arial,sans-serif;">' + specsHtml + '</div>' +
           '</div>' +
         '</div>' +
         '<div id="total-price-container" style="padding:12px 14px 0 14px;flex-shrink:0;">' +
           '<div class="total-price-row">' +
-            '<span class="total-price-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail(\'charging\')">i</span></span>' +
+            '<span class="total-price-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail()">i</span></span>' +
             '<span class="total-price-val" style="font-size:16px;">' + (cp.price || 'K\u00e4yt\u00f6n mukaan') + '</span>' +
           '</div>' +
         '</div>' +
@@ -11096,15 +10922,11 @@
       ov.querySelector('#c-back-btn').addEventListener('click', closeChargingOverlay);
       const arow = ov.querySelector('#c-area-row');
       if(arow) arow.addEventListener('click', closeChargingOverlay);
-      const drow = ov.querySelector('#c-details-row');
-      if(drow) drow.addEventListener('click', closeChargingOverlay);   // chevron → back to "Valitse pistoke"
       const cstart = ov.querySelector('#c-start-btn');
       if(cstart) cstart.addEventListener('click', () => { if(typeof showCustomToast==='function') showCustomToast('Lataus aloitettu!'); });
       const bc = document.getElementById('btn-container');
       if(bc) bc.classList.add('hidden');
       requestAnimationFrame(() => { ov.style.transform = 'translateX(0)'; });
-      resetParkingPurpose();   // start as "Henkilökohtainen" + sync the segmented control
-      renderPaymentDisplay();  // refresh Maksutapa card (shows company sub-line if business billing)
     }
     // "Valitse pistoke" — opens from the "Lataa täällä" button. Shows the
     // station's individual connectors as a visual, numbered list grouped by type
@@ -11154,7 +10976,7 @@
         const evList = _chargingEvseIndex[cp.id] || [];
         const items = [];
         evList.forEach(e => { (e.labels||[]).forEach(l => {
-          items.push({ evseId:e.id, ref:e.ref||'', label:l, kw:(aggKv[l]&&aggKv[l].kw)||0, volt:(aggKv[l]&&aggKv[l].volt)||0, available:_chargingStatusMap[e.id]==='AVAILABLE' });
+          items.push({ evseId:e.id, ref:e.ref||'', floor:e.floor||'', label:l, kw:(aggKv[l]&&aggKv[l].kw)||0, volt:(aggKv[l]&&aggKv[l].volt)||0, available:_chargingStatusMap[e.id]==='AVAILABLE' });
         }); });
         // Use the REAL connector number from the feed (physical_reference), not
         // an invented index. Order by that number (natural sort: 1A, 1B, 2A…).
@@ -11163,18 +10985,18 @@
           || ((ORDER.indexOf(a.label)<0?99:ORDER.indexOf(a.label)) - (ORDER.indexOf(b.label)<0?99:ORDER.indexOf(b.label))));
         const lightning = (col) => '<svg width="13" height="13" viewBox="0 0 24 24" style="flex:none;display:block;"><path d="M13 2 L4 14 h6 l-1 8 9 -12 h-6 z" fill="'+col+'"/></svg>';
         const renderCard = (it) => {
-          const numCol = it.available ? '#0C0243' : '#b4b7bd';
-          // Status tint on the number cell: green = free, red = occupied /
-          // out of service. Border + text colours stay as before.
-          const cellBg = it.available ? '#c8e7d1' : '#f5d6d0';
+          // Muted availability colours: soft green tint for free connectors,
+          // soft red for occupied/unavailable ones (subtle, not loud).
+          const numCol = it.available ? '#1a9247' : '#c0392b';
+          const numBg  = it.available ? '#e8f6ed' : '#fceced';
           const numStr = String(it.num);
           const numFs = numStr.length >= 6 ? 11 : numStr.length === 5 ? 12 : numStr.length === 4 ? 14 : numStr.length === 3 ? 17 : 22;
-          const numCell = '<span style="flex:none;width:60px;background:'+cellBg+';display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:'+numFs+'px;font-weight:800;color:'+numCol+';padding:0 3px;line-height:1.1;text-align:center;word-break:break-all;">'+escapeHtml(numStr)+'</span>';
+          const numCell = '<span style="flex:none;width:60px;background:'+numBg+';display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:'+numFs+'px;font-weight:800;color:'+numCol+';padding:0 3px;line-height:1.1;text-align:center;word-break:break-all;">'+escapeHtml(numStr)+'</span>';
           if(!it.available){
             // Occupied / unavailable → text instead of an icon. Not tappable.
             return '<div class="cp-card-busy" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;">' +
               numCell +
-              '<span style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:10px 8px;font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#b4b7bd;text-align:center;line-height:1.35;">Varattu /<br>Ei k\u00e4yt\u00f6ss\u00e4</span>' +
+              '<span style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:10px 8px;font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#c0392b;text-align:center;line-height:1.35;">Varattu /<br>Ei k\u00e4yt\u00f6ss\u00e4</span>' +
             '</div>';
           }
           const kwTxt = it.kw>0 ? (it.kw+' kW') : '\u2013';
@@ -11186,7 +11008,22 @@
             '</span>' +
           '</button>';
         };
-        const cardsHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">'+items.map(renderCard).join('')+'</div>';
+        // Group connector cards by building floor (floor_level from the feed).
+        // Only operators that report it (often parking-garage stations like this
+        // Jätkäsaari Virta) have floors; otherwise everything is one flat list.
+        const byFloor = {}; const floorKeys = [];
+        items.forEach(it => { const f = (it.floor==null?'':String(it.floor)).trim(); if(!(f in byFloor)){ byFloor[f]=[]; floorKeys.push(f); } byFloor[f].push(it); });
+        floorKeys.sort((a,b) => ((a===''?1:0)-(b===''?1:0)) || String(a).localeCompare(String(b), undefined, {numeric:true}));
+        const _hasFloors = floorKeys.some(f => f !== '');
+        const _gridOpen = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">';
+        const cardsHtml = _hasFloors
+          ? floorKeys.map(f => {
+              const hdr = f
+                ? '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;color:#0C0243;margin:6px 2px 9px;">'+escapeHtml(f)+'. krs</div>'
+                : '<div style="font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#888;margin:6px 2px 9px;">Kerros ei tiedossa</div>';
+              return '<div style="margin-bottom:16px;">'+hdr+_gridOpen+byFloor[f].map(renderCard).join('')+'</div></div>';
+            }).join('')
+          : _gridOpen+items.map(renderCard).join('')+'</div>';
         bodyHtml =
           '<div style="padding:12px 16px 4px 16px;flex-shrink:0;font-family:Arial,sans-serif;">' +
             '<div style="font-size:14px;color:#111;font-weight:700;">'+escapeHtml(cp.name||'Latausasema')+'</div>' +
@@ -11257,20 +11094,9 @@
     function buildOperatorList(){
       const names = new Set();
       const counts = {};
-      // Built from the FULL raw snapshot (not the viewport-clustered subset) so
-      // the operator dropdown lists every operator regardless of where the map is.
-      (_chargingRawLocs || []).forEach(f => {
-        const p = f.properties || {};
-        const det = (p.operator && p.operator.details) || {};
-        const nm = normalizeOperator(det.name);
-        if(nm){
-          names.add(nm); counts[nm] = (counts[nm] || 0) + 1;
-          if(!OPERATOR_LOGOS[nm]){
-            const lo = det.logo || (p.operator && p.operator.logo);
-            const url = !lo ? '' : (typeof lo === 'string' ? lo : (lo.url || ''));
-            if(url) OPERATOR_LOGOS[nm] = url.replace(/^http:\/\//i, 'https://');
-          }
-        }
+      _chargingFeatures.forEach(f => {
+        const nm = f.properties.operatorName;
+        if(nm){ names.add(nm); counts[nm] = (counts[nm] || 0) + 1; if(!OPERATOR_LOGOS[nm] && f.properties.logoUrl) OPERATOR_LOGOS[nm] = f.properties.logoUrl.replace(/^http:\/\//i, 'https://'); }
       });
       // Order by charging-point coverage (most stations first) so the biggest
       // operators in Finland (Tesla, K-Lataus, …) sit at the top; alphabetical
@@ -11335,136 +11161,6 @@
     updateOperatorUI();
     // Voltage segmented control under the charger picker. Indicator is always
     // dark blue (no light-blue / lilac like the parking segmented control).
-    // ── Pysäköinnin tyyppi: Henkilökohtainen vs Työ ────────────────────────
-    // "Työ" marks a parking as a company expense and routes the user through a
-    // cost-center picker + a clarifying comment, so an employee can later get a
-    // monthly summary of work parkings for tax deduction. The choice + its
-    // cost center/comment ride along on the parking session and show on the
-    // event detail (and emailed receipt). The Supabase table has no column for
-    // this yet, so it's also kept client-side per event id (_purposeMetaById).
-    const PARKING_COST_CENTERS = [
-      'Kustannuspaikka 1: Työmaavierailu',
-      'Kustannuspaikka 2: Asiakastapaamiset',
-      'Kustannuspaikka 3: Tyky ja virkistystoiminta'
-    ];
-    let _parkingPurpose   = 'personal';   // 'personal' | 'work'
-    let _parkingCostCenter = '';           // selected cost center (work only)
-    let _parkingWorkComment = '';          // optional clarifying comment (work only)
-    let _purposeReturnTarget = 'parking';  // which overlay to return to after the flow
-    let _businessPrevIdx = 0;              // payment method to revert to if company-billing setup is cancelled
-    const _purposeMetaById = {};           // eventId -> { purpose, costCenter, comment }
-
-    // A parking is a "work" parking when the chosen payment method is business
-    // billing (Yrityslaskutus). Called when either overlay opens: keep the
-    // stored cost center/comment for business, otherwise reset to personal.
-    function resetParkingPurpose(){
-      const isBiz = paymentMethods[selectedPaymentIdx] && paymentMethods[selectedPaymentIdx].id === 'business';
-      _parkingPurpose = isBiz ? 'work' : 'personal';
-      if (!isBiz) { _parkingCostCenter = ''; _parkingWorkComment = ''; }
-      updatePurposeSegUI();
-    }
-    // Reflect _parkingPurpose on both segmented controls (parking + charging),
-    // whichever are in the DOM, plus the little work-summary line under them.
-    function updatePurposeSegUI(){
-      const idx = _parkingPurpose === 'work' ? 1 : 0;
-      ['purpose-seg-thumb','c-purpose-seg-thumb'].forEach(id => {
-        const t = document.getElementById(id);
-        if (t) t.style.transform = `translateX(${idx * 100}%)`;
-      });
-      document.querySelectorAll('#purpose-segmented .seg-option, #c-purpose-segmented .seg-option').forEach(b => {
-        b.classList.toggle('active', b.dataset.purpose === _parkingPurpose);
-      });
-      const info = (_parkingPurpose === 'work' && _parkingCostCenter)
-        ? (_parkingCostCenter + (_parkingWorkComment ? ' · ' + _parkingWorkComment : ''))
-        : '';
-      ['purpose-work-info','c-purpose-work-info'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.textContent = info; el.style.display = info ? 'block' : 'none'; }
-      });
-    }
-    function setParkingPurpose(mode, source){
-      _purposeReturnTarget = (source === 'charging') ? 'charging' : 'parking';
-      if (mode === 'work') {
-        // Don't commit to "Työ" until a cost center is chosen — open the picker.
-        openCostCenterOverlay();
-        return;
-      }
-      _parkingPurpose = 'personal';
-      _parkingCostCenter = '';
-      _parkingWorkComment = '';
-      updatePurposeSegUI();
-    }
-    // ── "Valitse kustannuspaikka" ───────────────────────────────────────────
-    function openCostCenterOverlay(){
-      const list = document.getElementById('costcenter-list');
-      if (list) {
-        list.innerHTML = PARKING_COST_CENTERS.map(cc =>
-          '<div class="cc-row' + (cc === _parkingCostCenter ? ' selected' : '') + '" onclick="selectCostCenter(' + JSON.stringify(cc).replace(/"/g,'&quot;') + ')">' +
-            '<span class="cc-row-label">' + escapeHtml(cc) + '</span>' +
-            '<span class="cc-row-chevron">›</span>' +
-          '</div>'
-        ).join('');
-      }
-      const ov = document.getElementById('costcenter-overlay');
-      if (ov) requestAnimationFrame(() => ov.classList.add('open'));
-    }
-    // back=true → user backed out of the company-billing setup → revert to the
-    // payment method that was selected before choosing Yrityslaskutus.
-    function closeCostCenterOverlay(back){
-      const ov = document.getElementById('costcenter-overlay');
-      if (ov) ov.classList.remove('open');
-      if (back) {
-        selectedPaymentIdx = _businessPrevIdx;
-        _parkingPurpose = 'personal'; _parkingCostCenter = ''; _parkingWorkComment = '';
-        renderPaymentDisplay();
-        updatePurposeSegUI();
-      }
-    }
-    function selectCostCenter(cc){
-      _parkingCostCenter = cc;
-      openWorkCommentOverlay();
-    }
-    // ── "Lisää kommentti" ───────────────────────────────────────────────────
-    function openWorkCommentOverlay(){
-      const cc = document.getElementById('workcomment-costcenter');
-      if (cc) cc.textContent = _parkingCostCenter;
-      const ta = document.getElementById('workcomment-input');
-      if (ta) ta.value = _parkingWorkComment || '';
-      const ov = document.getElementById('workcomment-overlay');
-      if (ov) requestAnimationFrame(() => ov.classList.add('open'));
-    }
-    function backFromWorkComment(){
-      const ov = document.getElementById('workcomment-overlay');
-      if (ov) ov.classList.remove('open');   // back to the cost-center picker
-    }
-    // ── "Kohteen tietojen päivitys" (report incorrect data) ──────────────────
-    function openDataUpdateOverlay(){
-      const ta = document.getElementById('data-update-input');
-      if (ta) ta.value = '';
-      const ov = document.getElementById('data-update-overlay');
-      if (ov) requestAnimationFrame(() => ov.classList.add('open'));
-    }
-    function closeDataUpdateOverlay(){
-      const ov = document.getElementById('data-update-overlay');
-      if (ov) ov.classList.remove('open');   // back to the feature sheet underneath
-    }
-    function submitDataUpdate(){
-      const ta = document.getElementById('data-update-input');
-      const txt = ta ? (ta.value || '').trim() : '';
-      closeDataUpdateOverlay();
-      if (typeof showCustomToast === 'function') showCustomToast(txt ? 'Kiitos! Ilmoitus vastaanotettu.' : 'Ilmoitus suljettu', 2000);
-    }
-    function saveWorkCommentAndReturn(){
-      const ta = document.getElementById('workcomment-input');
-      _parkingWorkComment = ta ? (ta.value || '').trim() : '';
-      _parkingPurpose = 'work';   // now committed
-      // Close both flow overlays → back to the parking/charging view underneath.
-      const wc = document.getElementById('workcomment-overlay');
-      if (wc) wc.classList.remove('open');
-      const cco = document.getElementById('costcenter-overlay');
-      if (cco) cco.classList.remove('open');
-      updatePurposeSegUI();
-    }
     function setVoltageMode(mode) {
       const idx = mode === '400' ? 0 : mode === '800' ? 2 : 1;
       const thumb = document.getElementById('voltage-seg-thumb');
@@ -11692,14 +11388,6 @@
 
       // Load hallis once we hit zoom 13+
       if (!halliLoaded) { halliLoaded = true; setTimeout(loadHalliMarkers, 200); }
-
-      // Re-cluster the charging layer for the new viewport (debounced). The
-      // skip-if-inside-rendered-slice check in rebuildChargingForViewport keeps
-      // this cheap; it only does real work when the view leaves the cached slice.
-      if (showEvCharging && chargingLoaded) {
-        clearTimeout(_chargingViewportTimer);
-        _chargingViewportTimer = setTimeout(() => rebuildChargingForViewport(false), 150);
-      }
 
       // Load master polygons — only once, then cache in memory
       // Layers have minzoom:13 so they auto-hide when zoomed out
@@ -12043,26 +11731,14 @@
       drawDrum();
     }
 
-    function openPriceDetail(arg) {
-      const content = document.querySelector('#price-detail-sheet .price-detail-content');
-      const row = (label, val) => '<div class="detail-row"><span class="detail-label">' + label + '</span><span class="detail-value">' + val + '</span></div>';
-      if (arg === 'charging') {
-        // Charging is billed per kWh, so the sheet is a rate card (no computed
-        // total): charging rate + service fee + a VAT note.
-        content.innerHTML =
-          row('Latauksen hinta', '0,30 €/kWh') +
-          row('Palvelumaksu', '0,25 €') +
-          '<div class="detail-vat-note">Hintoihin lisätään arvonlisävero 25,5%</div>';
-      } else {
-        const mins  = (typeof arg === 'number') ? arg : parkingMinutes;
-        const price = calculatePrice(mins);
-        content.innerHTML =
-          row('Pysäköintimaksu', formatPrice(price.parking)) +
-          row('Palvelumaksu (10%)', formatPrice(price.service)) +
-          row('Välisumma (ilman ALV)', formatPrice(price.subtotal)) +
-          row('ALV 25,5%', formatPrice(price.vat)) +
-          '<div class="detail-row total"><span class="detail-label">Yhteensä</span><span class="detail-value">' + formatPrice(price.total) + '</span></div>';
-      }
+    function openPriceDetail(minutes) {
+      const mins  = (typeof minutes === 'number') ? minutes : parkingMinutes;
+      const price = calculatePrice(mins);
+      document.getElementById('detail-parking').textContent = formatPrice(price.parking);
+      document.getElementById('detail-service').textContent = formatPrice(price.service);
+      document.getElementById('detail-subtotal').textContent = formatPrice(price.subtotal);
+      document.getElementById('detail-vat').textContent = formatPrice(price.vat);
+      document.getElementById('detail-total').textContent = formatPrice(price.total);
       document.getElementById('price-detail-sheet').classList.add('open');
     }
 
@@ -12188,9 +11864,8 @@
 
     const paymentMethods = [
       { id:'applepay', name:'Apple Pay', icon:'applepay' },
-      { id:'card', name:'Visa *2345', icon:'card' },
-      { id:'mobilepay', name:'MobilePay', icon:'mobilepay' },
-      { id:'business', name:'Yrityslaskutus', icon:'business', sub:'TotalParking' }
+      { id:'card', name:'Maksukortti', icon:'card' },
+      { id:'mobilepay', name:'MobilePay', icon:'mobilepay' }
     ];
     let selectedPaymentIdx = 0;
 
@@ -12204,21 +11879,15 @@
       if (icon === 'mobilepay') {
         return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="#5A78FF" stroke-width="1.8"/><circle cx="12" cy="18" r="1.2" fill="#5A78FF"/><path d="M9 7h6M9 10h6M9 13h4" stroke="#5A78FF" stroke-width="1.5" stroke-linecap="round"/></svg>`;
       }
-      if (icon === 'business') {
-        return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="3" width="11" height="18" rx="1.5" fill="none" stroke="#555" stroke-width="1.6"/><path d="M15 9h5v12h-5" fill="none" stroke="#555" stroke-width="1.6"/><path d="M7 7h5M7 10.5h5M7 14h5" stroke="#555" stroke-width="1.4" stroke-linecap="round"/><path d="M17.5 12.5h0.8M17.5 16h0.8" stroke="#555" stroke-width="1.4" stroke-linecap="round"/></svg>`;
-      }
       return '';
     }
 
     function renderPaymentDisplay() {
       const p = paymentMethods[selectedPaymentIdx];
-      // When the method carries a sub-line (e.g. business billing → company
-      // name), show it under the method name in the Maksutapa card too.
-      const nameHtml = escapeHtml(p.name) + (p.sub ? '<div style="font-size:12px;color:#888;font-weight:normal;margin-top:2px;">' + escapeHtml(p.sub) + '</div>' : '');
       document.getElementById('payment-icon').innerHTML = getPaymentIcon(p.icon);
-      document.getElementById('payment-name').innerHTML = nameHtml;
+      document.getElementById('payment-name').textContent = p.name;
       const _cpi = document.getElementById('c-payment-icon'); if (_cpi) _cpi.innerHTML = getPaymentIcon(p.icon);
-      const _cpn = document.getElementById('c-payment-name'); if (_cpn) _cpn.innerHTML = nameHtml;
+      const _cpn = document.getElementById('c-payment-name'); if (_cpn) _cpn.textContent = p.name;
     }
 
     function renderPaymentOptions() {
@@ -12230,22 +11899,8 @@
         row.innerHTML = `
           <div class="option-check ${i===selectedPaymentIdx?'selected':''}"></div>
           <div class="payment-icon-box">${getPaymentIcon(p.icon)}</div>
-          <div style="flex:1;min-width:0;">
-            <div class="option-name">${p.name}</div>
-            ${p.sub ? `<div style="font-size:12px;color:#888;margin-top:2px;font-family:Arial,sans-serif;">${p.sub}</div>` : ''}
-          </div>`;
-        row.addEventListener('click', () => {
-          if (p.id === 'business') {
-            // Selecting company billing → choose a cost center, then add a comment.
-            _businessPrevIdx = selectedPaymentIdx;   // remember, to revert if cancelled
-            selectedPaymentIdx = i;
-            renderPaymentDisplay();
-            closePaymentSheet();
-            openCostCenterOverlay();
-            return;
-          }
-          selectedPaymentIdx=i; renderPaymentDisplay(); closePaymentSheet();
-        });
+          <div class="option-name">${p.name}</div>`;
+        row.addEventListener('click', () => { selectedPaymentIdx=i; renderPaymentDisplay(); closePaymentSheet(); });
         container.appendChild(row);
       });
       // Divider before "add new" entry
@@ -12281,7 +11936,6 @@
 
     const overlay=document.getElementById('parking-overlay');
     function openParkingOverlay(p){
-      resetParkingPurpose();   // each new session starts as "Henkilökohtainen"
       const areaCode=p['hel:id']||'—',kesto=p['hel:kesto']||null;
       const tyyppi=getTypeName(p['hel:paikan_asento']);
       const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';
@@ -12311,13 +11965,10 @@
       const row2 = kestoText && kestoText !== 'Rajoittamaton'
         ? `${ownerComma}  |  ${kestoText}`
         : ownerComma;
-      // Optional overrides (used by parking garages, which have their own
-      // operator + location instead of a city zone). Absent for street parking,
-      // so its display is unchanged.
-      document.getElementById('p-owner').textContent = (p['hel:ownerLine'] != null ? p['hel:ownerLine'] : row2);
+      document.getElementById('p-owner').textContent = row2;
       // Row 3 (type) and Row 4 (operator) on separate lines for readability
       document.getElementById('p-type').textContent     = tyyppi;
-      document.getElementById('p-operator').textContent = (p['hel:operatorName'] != null ? p['hel:operatorName'] : getParkingOperator(p['hel:luokka_nimi']));
+      document.getElementById('p-operator').textContent = getParkingOperator(p['hel:luokka_nimi']);
       // Reset start button to its disabled "Aseta pysäköintiaika" state
       const startBtn0 = document.getElementById('start-btn');
       startBtn0.classList.add('disabled');
@@ -12376,32 +12027,11 @@
         openConnectorPicker(ch.length ? ch[0].properties : null);
         return;
       }
-      // Parking garage under the P-marker → open the same parking flow as
-      // street parking (duration drum, vehicle, payment, start). Re-query the
-      // garage under the marker for its details, like the charging path above.
-      if (hoveredHalliId) {
-        const hcpt = map.project(map.getCenter());
-        const hr = 15;
-        const hh = map.getLayer('halli-icons')
-          ? map.queryRenderedFeatures([[hcpt.x-hr, hcpt.y-hr],[hcpt.x+hr, hcpt.y+hr]], { layers:['halli-icons'] })
-          : [];
-        const hp = hh.length ? hh[0].properties : {};
-        const full = (hp.name || 'Pysäköintihalli').trim();
-        const ci = full.indexOf(',');
-        const owner = ci > 0 ? full.slice(0, ci).trim() : '';
-        const title = ci > 0 ? full.slice(ci + 1).trim() : full;
-        openParkingOverlay({
-          'hel:id':            (hp.code != null && String(hp.code).trim() !== '') ? String(hp.code).trim() : '\u2013',
-          'hel:kesto':         null,                       // garages: no posted max duration
-          'hel:paikan_asento': 'Pysäköintihalli',
-          'hel:datanomistaja': 'HEL',
-          'hel:luokka_nimi':   'hel_halli',
-          'hel:voimassaolo':   '',
-          'hel:ownerLine':     title || full,              // garage location as the name line
-          'hel:operatorName':  owner || 'Pysäköintihalli'  // operator from "Operator, Location"
-        });
-        return;
-      }
+      // Parking garage under the P-marker: the open data carries no rate or
+      // booking info for garages yet, so don't fall into the street-parking
+      // flow (which would otherwise start a session for an unrelated polygon
+      // beneath the garage). No-op until a garage-parking integration exists.
+      if (hoveredHalliId) return;
       if (!map.getLayer('master-poly-fill')) return;
       const cpt = map.project(map.getCenter());
       const r = 5;
@@ -12641,17 +12271,7 @@
         areaCode:      areaCode,
         paymentMethod: pm.name,
         maxHours:      parkingMaxMinutes / 60,
-        location:      { lat: center.lat, lng: center.lng },
-        purpose:       _parkingPurpose,
-        costCenter:    _parkingPurpose === 'work' ? _parkingCostCenter : '',
-        workComment:   _parkingPurpose === 'work' ? _parkingWorkComment : ''
-      };
-      // The parkkihubi table has no column for parking purpose yet, so keep it
-      // client-side keyed by the event id — the event detail + receipt read it.
-      if (id) _purposeMetaById[id] = {
-        purpose:    _parkingPurpose,
-        costCenter: _parkingPurpose === 'work' ? _parkingCostCenter : '',
-        comment:    _parkingPurpose === 'work' ? _parkingWorkComment : ''
+        location:      { lat: center.lat, lng: center.lng }
       };
 
       // Show 4-second toast, then return to map with active banner visible
@@ -12772,57 +12392,6 @@
       const mm  = String(d.getMinutes()).padStart(2, '0');
       return `${day}.${mon}. klo ${hh}:${mm}`;
     }
-    // ── End-of-session rating banner ───────────────────────────────────
-    let _ratingShowTimer = null;     // delay before the banner slides up
-    let _ratingDismissTimer = null;  // auto-dismiss after a good rating / submit
-    let _ratingValue = 0;            // last selected 1–5 rating
-    let _ratingContext = 'parking';  // 'parking' | 'charging' (drives the wording)
-    function showRatingBanner(context){
-      _ratingContext = context || 'parking';
-      _ratingValue = 0;
-      clearTimeout(_ratingDismissTimer);
-      document.getElementById('rating-title').textContent =
-        (_ratingContext === 'charging') ? 'Miten lataus sujui?' : 'Miten pysäköinti sujui?';
-      document.querySelectorAll('#rating-stars .rating-star').forEach(s => s.classList.remove('filled'));
-      document.getElementById('rating-stars').style.display = 'flex';
-      document.getElementById('rating-feedback').style.display = 'none';
-      document.getElementById('rating-feedback-input').value = '';
-      document.getElementById('rating-thanks').style.display = 'none';
-      const btn = document.getElementById('rating-action-btn');
-      btn.style.display = '';
-      btn.classList.remove('active');   // faded until the user rates
-      btn.textContent = 'Paina tähtiä';
-      btn.disabled = true;
-      document.getElementById('rating-banner').classList.add('open');
-    }
-    function setRating(val){
-      _ratingValue = val;
-      document.querySelectorAll('#rating-stars .rating-star').forEach(s => {
-        s.classList.toggle('filled', (+s.dataset.val) <= val);
-      });
-      // Any rating reveals the feedback box and lights up the action button.
-      document.getElementById('rating-feedback').style.display = 'block';
-      document.getElementById('rating-thanks').style.display = 'none';
-      const btn = document.getElementById('rating-action-btn');
-      btn.classList.add('active');
-      btn.textContent = 'Lähetä palaute';
-      btn.disabled = false;
-    }
-    function submitRatingFeedback(){
-      if (_ratingValue < 1) return;   // rating is mandatory
-      const txt = (document.getElementById('rating-feedback-input').value || '').trim();
-      console.log('Arvostelu:', _ratingValue, 'tähteä', _ratingContext, txt ? ('· ' + txt) : '');
-      document.getElementById('rating-stars').style.display = 'none';
-      document.getElementById('rating-feedback').style.display = 'none';
-      document.getElementById('rating-action-btn').style.display = 'none';
-      document.getElementById('rating-thanks').style.display = 'block';
-      clearTimeout(_ratingDismissTimer);
-      _ratingDismissTimer = setTimeout(dismissRatingBanner, 1500);
-    }
-    function dismissRatingBanner(){
-      clearTimeout(_ratingDismissTimer);
-      document.getElementById('rating-banner').classList.remove('open');
-    }
     function showParkingSummary(session, actualEnd) {
       const startDate = new Date(session.startTime);
       const durationMin = Math.max(0, Math.round((actualEnd.getTime() - startDate.getTime()) / 60000));
@@ -12848,13 +12417,8 @@
       // Hide the map's floating action button while the summary is shown
       btnContainer.classList.add('hidden');
       document.getElementById('parking-summary-overlay').classList.add('open');
-      // 1.5s later, slide up a quick rating prompt over the summary.
-      clearTimeout(_ratingShowTimer);
-      _ratingShowTimer = setTimeout(() => showRatingBanner('parking'), 1500);
     }
     async function closeParkingSummary(skipSave) {
-      clearTimeout(_ratingShowTimer);   // cancel a not-yet-shown rating prompt
-      dismissRatingBanner();
       if (!skipSave) {
         // Save notes to the DB if the user wrote anything
         const ta = document.getElementById('summary-notes-input');
@@ -12973,14 +12537,10 @@
           const hi = new Date(f.endDate + 'T23:59:59');
           if (start > hi) return false;
         }
-        // Payment-type filter. Purpose comes from an optional DB field if it
-        // ever exists, else the client-side meta captured at parking start
-        // (default personal). "Kaikki" matches all; "Yritystili" → work only.
-        if (f.paymentType === 'yritys') {
-          const meta = _purposeMetaById[ev.id] || {};
-          const purpose = ev.payment_purpose || meta.purpose || 'personal';
-          if (purpose !== 'work') return false;
-        }
+        // Payment-type filter: no DB column for this yet, so all events are
+        // implicitly "Henkilökohtainen". "Kaikki" and "Henkilökohtainen" both
+        // match everything; "Yritystili" matches nothing for now.
+        if (f.paymentType === 'yritys') return false;
         return true;
       });
     }
@@ -13038,30 +12598,13 @@
       document.getElementById('ed-payment').textContent      = ev.payment_method || '—';
       document.getElementById('ed-price').textContent        = formatPrice(price.total);
       document.getElementById('ed-event-id').textContent     = ev.id || '—';
-      // Parking purpose (Henkilökohtainen / Työ): from optional DB fields if they
-      // ever exist, else the client-side meta captured at start. Work parkings
-      // also show their cost center; the clarifying comment is shown in the
-      // editable comment box below.
-      const meta = _purposeMetaById[ev.id] || {};
-      const purpose = ev.payment_purpose || meta.purpose || 'personal';
-      const costCenter = ev.cost_center || meta.costCenter || '';
-      const workComment = ev.work_comment || meta.comment || '';
-      document.getElementById('ed-purpose').textContent = (purpose === 'work') ? 'Työ' : 'Henkilökohtainen';
-      const ccRow = document.getElementById('ed-costcenter-row');
-      if (purpose === 'work' && costCenter) {
-        document.getElementById('ed-costcenter').textContent = costCenter;
-        ccRow.style.display = 'flex';
-      } else {
-        ccRow.style.display = 'none';
-      }
       _edPriceMinutes = durMin;
 
       _currentDetailEvent = ev;
 
-      // Editable comment, pre-filled with the saved note; for a work parking
-      // with no saved note yet, seed it with the employer-requested comment.
+      // Editable comment, pre-filled with the saved note for this event
       const notesInput = document.getElementById('ed-notes-input');
-      if (notesInput) notesInput.value = ev.notes || ((purpose === 'work') ? workComment : '') || '';
+      if (notesInput) notesInput.value = ev.notes || '';
 
       // Make sure the receipt sheet starts closed
       closeReceiptSheet();
