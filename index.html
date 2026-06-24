@@ -3889,6 +3889,23 @@
     </div>
   </div>
 
+  <!-- Location-edit panel: slides up over the lower part of the support chat
+       (the chat above stays visible) so the user can drag the map to set a
+       corrected position for the reported area. -->
+  <div id="loc-edit-panel" style="display:none;position:fixed;left:0;right:0;bottom:0;top:40%;z-index:9997;background:#fff;flex-direction:column;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);box-shadow:0 -4px 22px rgba(0,0,0,0.18);">
+    <div id="loc-edit-map" style="flex:1;position:relative;overflow:hidden;">
+      <div id="loc-edit-center-pin" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);z-index:5;pointer-events:none;">
+        <svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg" style="display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));">
+          <path d="M17 2 C9 2 3 8 3 16 c0 10 14 26 14 26 s14 -16 14 -26 C31 8 25 2 17 2 z" fill="#0C0243"/>
+          <text x="17" y="21" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#fff">P</text>
+        </svg>
+      </div>
+    </div>
+    <div style="padding:10px 14px;padding-bottom:max(20px,env(safe-area-inset-bottom));flex-shrink:0;background:#fff;">
+      <button id="loc-edit-action-btn" onclick="handleLocEditAction()" style="width:100%;height:54px;background:#0C0243;border:none;border-radius:14px;color:white;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;">Aseta päivitetty sijainti</button>
+    </div>
+  </div>
+
   <!-- Floating, draggable "minimized chat" bubble (iPhone AssistiveTouch style) -->
   <div id="support-bubble" style="display:none;position:fixed;right:18px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:160;width:56px;height:56px;border-radius:50%;background:white;border:2.5px solid #0C0243;box-shadow:0 4px 16px rgba(0,0,0,0.28);cursor:pointer;align-items:center;justify-content:center;touch-action:none;">
     <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#0C0243" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;">
@@ -4555,8 +4572,8 @@
       <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
       <button id="sheet-report-btn" onclick="openSupportChatForArea()" style="display:none;width:100%;margin-top:16px;padding:11px 12px;background:#f4f4ff;border:1px solid #e3e3f2;border-radius:12px;cursor:pointer;font-family:Arial,sans-serif;text-align:center;line-height:1.35;-webkit-tap-highlight-color:transparent;">
-        <span style="display:block;font-size:13px;color:#777;">Havaitsitko virheen tiedoissa?</span>
-        <span style="display:block;font-size:14px;color:#0C0243;font-weight:700;margin-top:3px;">→ Päivitä tästä</span>
+        <span style="display:block;font-size:13px;color:#777;">Virhe tai kehitystoive?</span>
+        <span style="display:block;font-size:14px;color:#0C0243;font-weight:700;margin-top:3px;">Ilmoita meille</span>
       </button>
     </div>
     <!-- Pair of action buttons — direct child of the sheet so they move
@@ -9471,6 +9488,12 @@
       const name = sh ? sh.textContent : '';
       const type = st ? st.textContent : '';
       const operator = so ? so.textContent : '';
+      // Remember the area's name/type and the map's current centre (the P-marker
+      // sits over the area, so the map centre ≈ the area's location) so the
+      // "Sijainti" location-edit flow can open a map centred there.
+      _areaReportCtx = { name: name, type: type,
+        center: (typeof map !== 'undefined' && map) ? map.getCenter() : null,
+        zoom:   (typeof map !== 'undefined' && map) ? map.getZoom()   : 16 };
       const overlay = document.getElementById('support-chat-overlay');
       const box = document.getElementById('support-chat-messages');
       if (!overlay || !box) return;
@@ -9486,8 +9509,121 @@
       setTimeout(() => {
         setSupportStatus('online');
         if (joinNote) joinNote.textContent = 'Virtuaalinen asiakaspalvelija liittyi keskusteluun';
-        perttiSay('Morjesta. Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Havaitsitko virheen tai jotain päivitettävää/kehitettävää alueen tiedoissa? Kerro asiasta tarkemmin, niin välitän tiedon ihmiskollegoilleni.');
+        perttiSay('Morjesta. Olen Pertti, TotalParkingin virtuaalisesta asiakaspalvelusta. Havaitsitko virheen tai jotain päivitettävää/kehitettävää alueen tiedoissa? Kerro asiasta tarkemmin, niin välitän tiedon ihmiskollegoilleni.', () => {
+          setTimeout(() => showSupportChips(AREA_REPORT_TOPICS, chooseAreaReportTopic), 2200);
+        });
       }, 1200);
+    }
+    // Topic chips offered after Pertti's area-report greeting; the user can tap
+    // one instead of typing.
+    const AREA_REPORT_TOPICS = ['Sijainti', 'Aikatiedot', 'Hinta', 'Lisätietokentän sisältö', 'Kehitystoive', 'Muu asia'];
+    let _areaReportCtx = null;
+    function chooseAreaReportTopic(label, chipWrap) {
+      supportEngaged = true;
+      if (chipWrap) chipWrap.remove();
+      const c = addSupportMessage('user', label);
+      markSupportRead(c);
+      if (label === 'Sijainti') {
+        perttiSay('Alueen sijainti sovelluksessa ei siis ilmeisesti vastaa todellisuutta?', () => {
+          setTimeout(addSupportLocationEditPrompt, 1400);
+        });
+      } else {
+        perttiSay('Selvä, autan tässä asiassa. Kerro vielä lyhyesti omin sanoin, mitä haluaisit ilmoittaa, niin välitän tiedon ihmiskollegoilleni.');
+      }
+    }
+    // Pertti's tappable "update the location" bubble (bot side, but clickable).
+    function addSupportLocationEditPrompt() {
+      const box = document.getElementById('support-chat-messages');
+      if (!box) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'sup-pop';
+      wrap.style.cssText = 'display:flex;justify-content:flex-start;';
+      const bubble = document.createElement('div');
+      bubble.style.cssText = 'max-width:80%;padding:11px 14px;border-radius:16px;border-bottom-left-radius:5px;background:white;box-shadow:0 1px 2px rgba(0,0,0,0.08);cursor:pointer;display:flex;align-items:center;gap:10px;-webkit-tap-highlight-color:transparent;';
+      bubble.innerHTML = '<span style="font-size:14px;line-height:1.4;color:#0C0243;font-weight:600;">Päivitä kohteen sijainti painamalla tätä</span>'
+        + '<span style="font-size:20px;color:#0C0243;font-weight:700;flex-shrink:0;line-height:1;">›</span>';
+      bubble.onclick = openLocationEdit;
+      wrap.appendChild(bubble);
+      box.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+    }
+    // ── Location-edit map ───────────────────────────────────────────────────
+    // A panel slides up over the lower part of the chat (the chat above stays
+    // visible). A fixed centre P-marker is the "new position" cursor; the user
+    // pans the map under it. "Aseta päivitetty sijainti" drops an orange marker
+    // at the centre and the button becomes "Vahvista uusi sijainti", which
+    // returns to the chat where the user left off.
+    let locEditMap = null;
+    let _locEditNewMarker = null;   // orange "new location" marker
+    let _locEditOrigMarker = null;  // marker at the area's original location
+    let _locEditState = 'set';      // 'set' → drop marker, 'confirm' → return
+    function openLocationEdit() {
+      const panel = document.getElementById('loc-edit-panel');
+      if (!panel) return;
+      const ctx = _areaReportCtx || {};
+      const center = ctx.center || ((typeof map !== 'undefined' && map) ? map.getCenter() : { lng: 24.9384, lat: 60.1699 });
+      const zoom = ctx.zoom || 16;
+      panel.style.display = 'flex';
+      requestAnimationFrame(() => { panel.style.transform = 'translateY(0)'; });
+      _locEditState = 'set';
+      const ab = document.getElementById('loc-edit-action-btn');
+      if (ab) ab.textContent = 'Aseta päivitetty sijainti';
+      const pin = document.getElementById('loc-edit-center-pin');
+      if (pin) pin.style.display = 'block';
+      if (_locEditNewMarker) { _locEditNewMarker.remove(); _locEditNewMarker = null; }
+      const buildOrig = () => {
+        if (_locEditOrigMarker) { _locEditOrigMarker.remove(); _locEditOrigMarker = null; }
+        const el = document.createElement('img');
+        el.src = (typeof chargingIconSvg === 'function') ? chargingIconSvg('#4caf50') : '';
+        el.style.cssText = 'width:30px;height:30px;display:block;';
+        _locEditOrigMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([center.lng, center.lat]).addTo(locEditMap);
+      };
+      if (!locEditMap) {
+        locEditMap = new maplibregl.Map({
+          container: 'loc-edit-map', style: 'omakartta_style.json',
+          center: [center.lng, center.lat], zoom: zoom,
+          minZoom: 5, maxZoom: 20, transformRequest,
+          dragRotate: false, attributionControl: false
+        });
+        locEditMap.on('load', () => {
+          locEditMap.touchZoomRotate.disableRotation();
+          locEditMap.resize();
+          buildOrig();
+        });
+      } else {
+        locEditMap.resize();
+        locEditMap.setCenter([center.lng, center.lat]);
+        locEditMap.setZoom(zoom);
+        buildOrig();
+      }
+      setTimeout(() => { if (locEditMap) locEditMap.resize(); }, 380);
+    }
+    function closeLocationEdit() {
+      const panel = document.getElementById('loc-edit-panel');
+      if (!panel) return;
+      panel.style.transform = 'translateY(100%)';
+      setTimeout(() => { panel.style.display = 'none'; }, 350);
+    }
+    function handleLocEditAction() {
+      if (!locEditMap) return;
+      if (_locEditState === 'set') {
+        const c = locEditMap.getCenter();
+        if (_locEditNewMarker) _locEditNewMarker.remove();
+        const el = document.createElement('img');
+        el.src = (typeof chargingIconSvg === 'function') ? chargingIconSvg('#ff8c00') : '';
+        el.style.cssText = 'width:34px;height:34px;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4));';
+        _locEditNewMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([c.lng, c.lat]).addTo(locEditMap);
+        const pin = document.getElementById('loc-edit-center-pin');
+        if (pin) pin.style.display = 'none';
+        _locEditState = 'confirm';
+        const ab = document.getElementById('loc-edit-action-btn');
+        if (ab) ab.textContent = 'Vahvista uusi sijainti';
+      } else {
+        closeLocationEdit();
+        setTimeout(() => { perttiSay('Kiitos! Välitän päivitetyn sijainnin kollegoilleni tarkistettavaksi.'); }, 450);
+      }
     }
     // Opens the support chat from the event-detail view: attaches the event as
     // a preview, Pertti joins and greets, then two guided options appear.
