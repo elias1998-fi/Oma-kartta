@@ -7180,13 +7180,11 @@
     }
     function showHalliCenterBadge(code) {
       if (window._navigationInProgress) return;
-      const codeTxt = (code != null && String(code).trim() !== '') ? String(code).trim() : '';
-      // Garage icon sized identically to the charging icon (20px); the garage
-      // code sits beside it with the same font/colour/position as the charging
-      // status text, shown only when the data provides a code.
+      // Garage icon sized identically to the charging icon (20px). Garages carry
+      // no real-time availability in the open data (unlike charging stations),
+      // so the expanded marker shows just the icon — no status text, no code.
       centerBadgeCode.innerHTML =
-        '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        (codeTxt ? '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:#111;">' + escapeHtml(codeTxt) + '</span>' : '');
+        '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">';
       centerPointerEl.classList.add('expanded');
       centerPointerEl.classList.add('halli-mode');
       centerPointerEl.classList.remove('charging-mode');
@@ -7211,7 +7209,7 @@
       // Top-left sheet badge = the parking-garage icon (like the charging badge).
       const hbadge = document.getElementById('area-code-badge');
       if (hbadge) {
-        hbadge.innerHTML = '<img src="' + halliIconSvg() + '" style="width:24px;height:24px;display:inline-block;vertical-align:middle;">';
+        hbadge.innerHTML = '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">';
         hbadge.style.display = 'inline-block';
         hbadge.style.background = 'transparent';
         hbadge.style.padding = '0';
@@ -10855,6 +10853,12 @@
       let conns = [];
       try { conns = JSON.parse(connectorsJson || '[]'); } catch (e) { conns = []; }
       if (!Array.isArray(conns) || !conns.length) return fallbackText || '\u2013';
+      // Always list the plug types in a fixed order: CCS, Type 2, Schuko, CHAdeMO.
+      const _PLUG_ORDER = { 'CCS': 0, 'Type 2': 1, 'Schuko': 2, 'CHAdeMO': 3, 'Type 1': 4 };
+      conns = conns.slice().sort((a, b) => {
+        const oa = _PLUG_ORDER[String(a.name || '')]; const ob = _PLUG_ORDER[String(b.name || '')];
+        return (oa != null ? oa : 99) - (ob != null ? ob : 99);
+      });
       const rows = conns.map(c => {
         const total = (+c.total || 0);
         const free  = (+c.avail || 0);
@@ -10865,11 +10869,10 @@
         const vTxt  = (kw >= 50 && volt > 0) ? (volt + ' V') : '';
         return '<span style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
                  '<span style="display:flex;align-items:center;min-width:0;">' +
-                   '<span style="display:inline-flex;align-items:center;gap:4px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 7px;margin-right:8px;flex:none;">' +
+                   '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 9px;margin-right:8px;flex:none;">' +
                      plugIcon(String(c.name || ''), '#0C0243', 20) +
-                     '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;min-width:26px;">× ' + total + '</span>' +
+                     '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(String(c.name || '')) + '</span>' +
                    '</span>' +
-                   '<span style="min-width:88px;white-space:nowrap;flex:none;">' + escapeHtml(String(c.name || '')) + '</span>' +
                    '<span style="color:' + col + ';font-weight:700;white-space:nowrap;">Vapaana: ' + free + '/' + total + '</span>' +
                  '</span>' +
                  '<span style="display:flex;align-items:center;gap:7px;flex:none;">' +
