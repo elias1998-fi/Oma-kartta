@@ -10859,7 +10859,10 @@
         const oa = _PLUG_ORDER[String(a.name || '')]; const ob = _PLUG_ORDER[String(b.name || '')];
         return (oa != null ? oa : 99) - (ob != null ? ob : 99);
       });
-      const rows = conns.map(c => {
+      // Three-column grid so every "Vapaana" lines up: the widest pill (e.g.
+      // CHAdeMO) sets column 1's width, so each "Vapaana" starts at the same x.
+      // Column 3 (voltage/kW) is right-aligned.
+      const cells = conns.map(c => {
         const total = (+c.total || 0);
         const free  = (+c.avail || 0);
         const kw    = (+c.kw || 0);
@@ -10867,21 +10870,17 @@
         const col   = free > 0 ? '#1faa4a' : '#c0392b';
         const kwTxt = kw > 0 ? (kw + ' kW') : '';
         const vTxt  = (kw >= 50 && volt > 0) ? (volt + ' V') : '';
-        return '<span style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
-                 '<span style="display:flex;align-items:center;min-width:0;">' +
-                   '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 9px;margin-right:8px;flex:none;">' +
-                     plugIcon(String(c.name || ''), '#0C0243', 20) +
-                     '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(String(c.name || '')) + '</span>' +
-                   '</span>' +
-                   '<span style="color:' + col + ';font-weight:700;white-space:nowrap;">Vapaana: ' + free + '/' + total + '</span>' +
-                 '</span>' +
-                 '<span style="display:flex;align-items:center;gap:7px;flex:none;">' +
-                   (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
-                   (kwTxt ? '<span style="color:#333;white-space:nowrap;display:inline-block;min-width:54px;text-align:right;">' + kwTxt + '</span>' : '') +
-                 '</span>' +
+        return '<span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4ff;border:1.5px solid #0C0243;border-radius:10px;padding:7px 9px;justify-self:start;">' +
+                 plugIcon(String(c.name || ''), '#0C0243', 20) +
+                 '<span style="color:#0C0243;font-weight:700;font-size:13px;white-space:nowrap;">' + escapeHtml(String(c.name || '')) + '</span>' +
+               '</span>' +
+               '<span style="color:' + col + ';font-weight:700;white-space:nowrap;justify-self:start;">Vapaana: ' + free + '/' + total + '</span>' +
+               '<span style="display:inline-flex;align-items:center;gap:7px;justify-self:end;">' +
+                 (vTxt ? '<span style="background:#f4f4ff;border:1.5px solid #0C0243;border-radius:7px;padding:1px 6px;color:#0C0243;font-weight:600;font-size:12px;white-space:nowrap;">' + vTxt + '</span>' : '') +
+                 (kwTxt ? '<span style="color:#333;white-space:nowrap;display:inline-block;min-width:54px;text-align:right;">' + kwTxt + '</span>' : '') +
                '</span>';
       }).join('');
-      return '<span style="display:flex;flex-direction:column;gap:6px;">' + rows + '</span>';
+      return '<span style="display:grid;grid-template-columns:max-content max-content 1fr;column-gap:12px;row-gap:8px;align-items:center;">' + cells + '</span>';
     }
     // Re-filter the loaded charging stations by the EV controls and push the
     // result to the map source. No-op until the data + layer exist.
@@ -11133,7 +11132,7 @@
           const numCell = '<span style="flex:none;width:60px;background:'+numBg+';display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;font-size:'+numFs+'px;font-weight:800;color:'+numCol+';padding:0 3px;line-height:1.1;text-align:center;word-break:break-all;">'+escapeHtml(numStr)+'</span>';
           if(!it.available){
             // Occupied / unavailable → text instead of an icon. Not tappable.
-            return '<div class="cp-card-busy" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;">' +
+            return '<div class="cp-card-busy" data-label="'+escapeHtml(it.label)+'" style="display:flex;align-items:stretch;border:1.5px solid #0C0243;border-radius:14px;overflow:hidden;background:white;">' +
               numCell +
               '<span style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:10px 8px;font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#c0392b;text-align:center;line-height:1.35;">Varattu /<br>Ei k\u00e4yt\u00f6ss\u00e4</span>' +
             '</div>';
@@ -11163,11 +11162,37 @@
               return '<div style="margin-bottom:16px;">'+hdr+_gridOpen+byFloor[f].map(renderCard).join('')+'</div></div>';
             }).join('')
           : _gridOpen+items.map(renderCard).join('')+'</div>';
+        // Distinct plug types present, in the usual order, for the in-view type
+        // filter (only meaningful when there's more than one type).
+        const _CP_ORDER = { 'CCS':0, 'Type 2':1, 'Schuko':2, 'CHAdeMO':3, 'Type 1':4 };
+        const typesPresent = [];
+        items.forEach(it => { if (typesPresent.indexOf(it.label) < 0) typesPresent.push(it.label); });
+        typesPresent.sort((a,b) => ((_CP_ORDER[a]!=null?_CP_ORDER[a]:99) - (_CP_ORDER[b]!=null?_CP_ORDER[b]:99)));
+        const _showFilter = typesPresent.length > 1;
+        const filterIcon = _showFilter
+          ? '<button id="cp-filter-btn" aria-label="Suodata pistoketyypit" style="width:38px;height:38px;background:#f0f0f0;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:10px;">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" style="display:block;"><path d="M3 5 h18 l-7 8 v6 l-4 2 v-8 z" fill="none" stroke="#0C0243" stroke-width="2" stroke-linejoin="round"/></svg>' +
+            '</button>'
+          : '';
+        const chipRow = _showFilter
+          ? '<div id="cp-filter-row" style="display:none;flex-wrap:wrap;gap:8px;padding:2px 16px 10px 16px;flex-shrink:0;">' +
+              typesPresent.map(t =>
+                '<button class="cp-filter-chip" data-type="'+escapeHtml(t)+'" style="display:inline-flex;align-items:center;gap:5px;background:#0C0243;border:1.5px solid #0C0243;border-radius:16px;padding:6px 11px;cursor:pointer;">' +
+                  plugIcon(t,'#fff',16) +
+                  '<span style="color:#fff;font-family:Arial,sans-serif;font-size:13px;font-weight:600;white-space:nowrap;">'+escapeHtml(t)+'</span>' +
+                '</button>'
+              ).join('') +
+            '</div>'
+          : '';
         bodyHtml =
-          '<div style="padding:12px 16px 4px 16px;flex-shrink:0;font-family:Arial,sans-serif;">' +
-            '<div style="font-size:14px;color:#111;font-weight:700;">'+escapeHtml(cp.name||'Latausasema')+'</div>' +
-            '<div style="font-size:13px;color:#888;margin-top:2px;">'+escapeHtml(cp.operatorName||'Latausoperaattori')+'</div>' +
+          '<div style="display:flex;align-items:center;padding:12px 16px 4px 16px;flex-shrink:0;font-family:Arial,sans-serif;">' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:14px;color:#111;font-weight:700;">'+escapeHtml(cp.name||'Latausasema')+'</div>' +
+              '<div style="font-size:13px;color:#888;margin-top:2px;">'+escapeHtml(cp.operatorName||'Latausoperaattori')+'</div>' +
+            '</div>' +
+            filterIcon +
           '</div>' +
+          chipRow +
           '<div style="flex:1;overflow-y:auto;padding:10px 16px 18px 16px;">' +
             (items.length ? cardsHtml : '<p style="color:#666;font-family:Arial,sans-serif;padding:6px 2px;">Ei pistoketietoja.</p>') +
           '</div>';
@@ -11175,6 +11200,25 @@
       ov.innerHTML = headerHtml + bodyHtml;
       const back = ov.querySelector('#cp-back-btn'); if(back) back.addEventListener('click', closeConnectorPicker);
       ov.querySelectorAll('.cp-card').forEach(btn => { btn.addEventListener('click', () => { openChargingOverlay(cp, { num: btn.dataset.num, label: btn.dataset.label, kw: +btn.dataset.kw||0, volt: +btn.dataset.volt||0 }); }); });
+      // In-view plug-type filter: the funnel toggles the chip row; each chip
+      // shows/hides that plug type's cards (deselected chip = hidden type).
+      const _fBtn = ov.querySelector('#cp-filter-btn');
+      const _fRow = ov.querySelector('#cp-filter-row');
+      if(_fBtn && _fRow){
+        _fBtn.addEventListener('click', () => { _fRow.style.display = (_fRow.style.display === 'flex') ? 'none' : 'flex'; });
+      }
+      const _cpHidden = new Set();
+      ov.querySelectorAll('.cp-filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const t = chip.dataset.type;
+          const on = _cpHidden.has(t);   // currently hidden → this tap turns it back on
+          if(on) _cpHidden.delete(t); else _cpHidden.add(t);
+          chip.style.background = on ? '#0C0243' : '#fff';
+          chip.innerHTML = plugIcon(t, on ? '#fff' : '#0C0243', 16) +
+            '<span style="color:'+(on?'#fff':'#0C0243')+';font-family:Arial,sans-serif;font-size:13px;font-weight:600;white-space:nowrap;">'+escapeHtml(t)+'</span>';
+          ov.querySelectorAll('[data-label="'+t+'"]').forEach(card => { card.style.display = _cpHidden.has(t) ? 'none' : 'flex'; });
+        });
+      });
       requestAnimationFrame(() => { ov.style.transform = 'translateX(0)'; });
     }
     // Tracks which plug types the user wants visible on the map. Multi-select.
