@@ -11710,12 +11710,15 @@
             const style = SOURCE_STYLE[p.source]||{label:p.source||'Pysäköintialue'};
             const extra = p.extra_info?(p.extra_info.split(' | ')):[];
             const name  = extra[0]||style.label;
-            const kesto = p.max_hours?`Max. ${p.max_hours}h`:'';
+            const areaName = (p.area_name && p.area_name !== '') ? p.area_name : name;
+            let maxSuffix = '';
+            if (p.max_hours !== null && p.max_hours !== undefined && p.max_hours !== '') maxSuffix = `  |  Max. ${p.max_hours}h`;
+            else if (p.max_minutes !== null && p.max_minutes !== undefined && p.max_minutes !== '') maxSuffix = `  |  Max. ${p.max_minutes} min`;
+            const headerName = areaName + (/Max\./.test(areaName) ? '' : maxSuffix);
             const valid = p.valid?`Voimassaolo: ${p.valid}`:'';
             showMasterFeatureInSheet(
-              name, style.label, 'Helsingin kaupunki',
-              `${kesto?`<p class="price-label">Kesto</p><p class="price-value">${kesto}</p>`:''}
-               ${valid?`<p class="price-label">Voimassaolo</p><p class="price-value">${valid}</p>`:''}`
+              headerName, style.label, 'Helsingin kaupunki',
+              `${valid?`<p class="price-label">Voimassaolo</p><p class="price-value">${valid}</p>`:''}`
             );
             return; // skip rest of checkParking
           } else {
@@ -11767,11 +11770,15 @@
           'hel_kertamaksu_1h':'Kertamaksu max. 1h','hel_kertamaksu_2h':'Kertamaksu max. 2h',
           'hel_kertamaksu_4h':'Kertamaksu max. 4h'
         };
-        summaryHeader.textContent = (p.extra_info||'').split(' | ')[0] || SOURCE_LABELS[p.source] || p.source;
+        const rawName2 = (p.extra_info||'').split(' | ')[0] || SOURCE_LABELS[p.source] || p.source;
+        const areaName2 = (p.area_name && p.area_name !== '') ? p.area_name : rawName2;
+        let maxSuffix2 = '';
+        if (p.max_hours !== null && p.max_hours !== undefined && p.max_hours !== '') maxSuffix2 = `  |  Max. ${p.max_hours}h`;
+        else if (p.max_minutes !== null && p.max_minutes !== undefined && p.max_minutes !== '') maxSuffix2 = `  |  Max. ${p.max_minutes} min`;
+        summaryHeader.textContent = areaName2 + (/Max\./.test(areaName2) ? '' : maxSuffix2);
         summaryType.textContent = SOURCE_LABELS[p.source] || '';
         summaryOperator.textContent = p.source==='community' ? 'Tiimin varmentama ✓' : 'Helsingin kaupunki';
-        const kesto = p.max_hours ? `Max. ${p.max_hours}h` : '';
-        details.innerHTML = kesto ? `<p class="price-label">Kesto</p><p class="price-value">${kesto}</p>` : '';
+        details.innerHTML = '';
         divider.style.display = 'block';
         btn.textContent = isDiscOrFreeArea(p) ? 'Aseta elektroninen pysäköintikiekko' : 'Pysäköi tähän';
         btn.classList.add('active');
