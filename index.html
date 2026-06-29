@@ -7475,24 +7475,7 @@
       }
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
-      // Moved off a charging station (we were last in charging context) → the
-      // empty-state prompt should talk about charging points, not parking.
-      if (window._chargingContext) {
-        btn.textContent = 'Siirrä karttaa nähdäksesi latauspisteet';
-        btn.classList.remove('active');
-        return;
-      }
-      if (!map.getLayer('master-poly-fill')) {
-        btn.textContent = 'Siirrä karttaa nähdäksesi pysäköintialueet';
-        btn.classList.remove('active');
-        return;
-      }
-      const visibleAreas = map.queryRenderedFeatures({ layers: ['master-poly-fill'] });
-      if (visibleAreas.length > 0) {
-        btn.textContent = 'Siirrä kursori pysäköintialueelle';
-      } else {
-        btn.textContent = 'Siirrä karttaa nähdäksesi pysäköintialueet';
-      }
+      btn.textContent = 'Siirrä kursori pysäköintialueelle';
       btn.classList.remove('active');
     }
 
