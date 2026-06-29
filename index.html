@@ -6725,6 +6725,9 @@
         badge.textContent = areaCode;
         badge.style.display = 'inline-block';
         badge.style.background = '#0C0243';
+        badge.style.color = 'white';
+        badge.style.fontSize = '12px';
+        badge.style.fontWeight = 'bold';
         badge.style.padding = '2px 8px';
         badge.style.borderRadius = '5px';
         // Also expand the on-map P-marker into its full badge form with the code
@@ -6783,11 +6786,11 @@
       'community':           { fill:'#7F1F89', line:'#611868', label:'Yhteisön lisäämä alue' },
       'hel_ilmainen_pitka':  { fill:'#7F1F89', line:'#611868', label:'Ilmainen pitkäaikainen pysäköinti' },
       'hel_ilmainen_lyhyt':  { fill:'#7F1F89', line:'#611868', label:'Ilmainen lyhytaikainen pysäköinti' },
-      'hel_kertamaksu_1h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 1h)' },
-      'hel_kertamaksu_2h':   { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 2h)' },
-      'hel_kertamaksu_4h':            { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (max. 4h)' },
-      'hel_maksullinen_ei_tunnusta':      { fill:'#4A90D9', line:'#2B6CB0', label:'Maksullinen pysäköinti (ilman tunnusta)' },
-      'hel_kertamaksu_1h_ei_tunnusta':          { fill:'#4A90D9', line:'#2B6CB0', label:'Kertamaksu max. 1h (ilman tunnusta)' },
+      'hel_kertamaksu_1h':   { fill:'#1565C0', line:'#0D47A1', label:'Maksullinen pysäköinti (max. 1h)' },
+      'hel_kertamaksu_2h':   { fill:'#1565C0', line:'#0D47A1', label:'Maksullinen pysäköinti (max. 2h)' },
+      'hel_kertamaksu_4h':            { fill:'#1565C0', line:'#0D47A1', label:'Maksullinen pysäköinti (max. 4h)' },
+      'hel_maksullinen_ei_tunnusta':      { fill:'#1565C0', line:'#0D47A1', label:'Maksullinen pysäköinti (ilman tunnusta)' },
+      'hel_kertamaksu_1h_ei_tunnusta':          { fill:'#1565C0', line:'#0D47A1', label:'Kertamaksu max. 1h (ilman tunnusta)' },
       'hel_sallittu_kiellon_ulkopuolella': { fill:'#7F1F89', line:'#611868', label:'Sallittu pysäköintikieltoajan ulkopuolella' },
     };
 
@@ -6856,12 +6859,12 @@
               'hel_ilmainen_pitka', '#7F1F89',
               'hel_ilmainen_lyhyt', '#7F1F89',
               'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
-              'hel_kertamaksu_1h',  '#4A90D9',
-              'hel_kertamaksu_2h',  '#4A90D9',
-              'hel_kertamaksu_4h',  '#4A90D9',
-              'hel_maksullinen_ei_tunnusta',        '#4A90D9',
-              'hel_kertamaksu_1h_ei_tunnusta',      '#4A90D9',
-              '#4A90D9'
+              'hel_kertamaksu_1h',  '#1565C0',
+              'hel_kertamaksu_2h',  '#1565C0',
+              'hel_kertamaksu_4h',  '#1565C0',
+              'hel_maksullinen_ei_tunnusta',        '#1565C0',
+              'hel_kertamaksu_1h_ei_tunnusta',      '#1565C0',
+              '#1565C0'
             ]
           }
         });
@@ -6873,7 +6876,7 @@
               'hel_ilmainen_pitka', '#611868',
               'hel_ilmainen_lyhyt', '#611868',
               'hel_sallittu_kiellon_ulkopuolella', '#611868',
-              '#2B6CB0'
+              '#0D47A1'
             ]
           }
         });
@@ -6900,12 +6903,12 @@
               'hel_ilmainen_pitka', '#7F1F89',
               'hel_ilmainen_lyhyt', '#7F1F89',
               'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
-              'hel_kertamaksu_1h',  '#4A90D9',
-              'hel_kertamaksu_2h',  '#4A90D9',
-              'hel_kertamaksu_4h',  '#4A90D9',
-              'hel_maksullinen_ei_tunnusta',        '#4A90D9',
-              'hel_kertamaksu_1h_ei_tunnusta',      '#4A90D9',
-              '#4A90D9'
+              'hel_kertamaksu_1h',  '#1565C0',
+              'hel_kertamaksu_2h',  '#1565C0',
+              'hel_kertamaksu_4h',  '#1565C0',
+              'hel_maksullinen_ei_tunnusta',        '#1565C0',
+              'hel_kertamaksu_1h_ei_tunnusta',      '#1565C0',
+              '#1565C0'
             ]
           },
           filter:['==', ['get','id'], '__none__']
@@ -7182,9 +7185,10 @@
       if (window._navigationInProgress) return;
       // Garage icon sized identically to the charging icon (20px). Garages carry
       // no real-time availability in the open data (unlike charging stations),
-      // so the expanded marker shows just the icon — no status text, no code.
+      // so the expanded marker shows the icon with a static "Tilaa" label.
       centerBadgeCode.innerHTML =
-        '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">';
+        '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
+        '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:#111;">Tilaa</span>';
       centerPointerEl.classList.add('expanded');
       centerPointerEl.classList.add('halli-mode');
       centerPointerEl.classList.remove('charging-mode');
@@ -7209,8 +7213,11 @@
       // Top-left sheet badge = the parking-garage icon (like the charging badge).
       const hbadge = document.getElementById('area-code-badge');
       if (hbadge) {
-        hbadge.innerHTML = '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">';
-        hbadge.style.display = 'inline-block';
+        hbadge.innerHTML =
+          '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
+          '<span style="vertical-align:middle;margin-left:5px;font-size:12px;font-weight:700;color:#1faa4a;">Tilaa</span>';
+        hbadge.style.display = 'inline-flex';
+        hbadge.style.alignItems = 'center';
         hbadge.style.background = 'transparent';
         hbadge.style.padding = '0';
         hbadge.style.borderRadius = '0';
@@ -7457,6 +7464,26 @@
       // Filter view manages its own P-marker visibility (hidden); don't
       // fight it from here.
       const inFilter = (typeof filterMode !== 'undefined' && filterMode);
+      // Manage sheet height: zoom < 12 → slim 60px (GPS warning hidden),
+      // zoom ≥ 12 → 90px strip (GPS warning visible). Only when no area is
+      // selected and we're not in a navigation or filter flow.
+      const _noArea = !masterFeatureLocked && !hoveredPolyId &&
+                      !(typeof hoveredChargingId !== 'undefined' && hoveredChargingId) &&
+                      !(typeof hoveredHalliId !== 'undefined' && hoveredHalliId);
+      const _bs = document.getElementById('bottom-sheet');
+      if (_bs && _noArea && !inNav && !inFilter) {
+        const _t = _bs.style.transform || '';
+        if (zoom < 12 && !_t.includes('- 60px')) {
+          _bs.style.transition = 'transform 0.3s ease';
+          _bs.style.transform = 'translateY(calc(100% - 60px))';
+          const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
+        } else if (zoom >= 12 && (_t === '' || _t.includes('- 60px'))) {
+          _bs.style.transition = 'transform 0.3s ease';
+          _bs.style.transform = 'translateY(calc(100% - 90px))';
+          currentY = _bs.offsetHeight - 90;
+          const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
+        }
+      }
       if (zoom < 12) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
@@ -7802,7 +7829,7 @@
               'hel_ilmainen_pitka', '#7F1F89',
               'hel_ilmainen_lyhyt', '#7F1F89',
               'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
-              '#4A90D9'
+              '#1565C0'
             ]
           }
         });
@@ -7813,7 +7840,7 @@
               'hel_ilmainen_pitka', '#611868',
               'hel_ilmainen_lyhyt', '#611868',
               'hel_sallittu_kiellon_ulkopuolella', '#611868',
-              '#2B6CB0'
+              '#0D47A1'
             ]
           }
         });
@@ -9290,7 +9317,13 @@
     const zoomIndicator = document.getElementById('zoom-indicator');
 
     function updateZoomIndicator() {
-      zoomIndicator.textContent = `Z ${map.getZoom().toFixed(1)}`;
+      const z = map.getZoom();
+      if (z < 12) {
+        zoomIndicator.style.display = 'none';
+      } else {
+        zoomIndicator.style.display = '';
+        zoomIndicator.textContent = `Z ${z.toFixed(1)}`;
+      }
     }
     map.on('zoom', () => {
       updateZoomIndicator();
@@ -10301,9 +10334,9 @@
       if (thumb) {
         thumb.style.transform = `translateX(${idx * 100}%)`;
         // Color reflects the segment: paid=blue, free=purple, all=split (blue→purple)
-        if (mode === 'paid')      thumb.style.background = '#4A90D9';
+        if (mode === 'paid')      thumb.style.background = '#1565C0';
         else if (mode === 'free') thumb.style.background = '#7F1F89';
-        else                      thumb.style.background = 'linear-gradient(to right, #4A90D9 50%, #7F1F89 50%)';
+        else                      thumb.style.background = 'linear-gradient(to right, #1565C0 50%, #7F1F89 50%)';
       }
       document.querySelectorAll('#free-mode-segmented .seg-option').forEach(b => {
         b.classList.toggle('active', b.dataset.mode === mode);
