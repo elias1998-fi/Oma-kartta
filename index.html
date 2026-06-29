@@ -7244,8 +7244,8 @@
         return false;
       };
       if (map.getZoom() < 12 || !map.getLayer('halli-icons')) return leaveHalli();
-      const hpt = map.project(map.getCenter());
-      const hr = 15;
+      const hpt = map.project(map.getCenter()); hpt.y += 6.5;
+      const hr = 1;
       const hhits = map.queryRenderedFeatures([[hpt.x-hr, hpt.y-hr],[hpt.x+hr, hpt.y+hr]], { layers:['halli-icons'] });
       if (!hhits.length) return leaveHalli();
       let best = hhits[0], bestD = Infinity;
@@ -7273,8 +7273,8 @@
       // A charging station under the P-marker takes priority and reacts in real
       // time during the drag (no finger-lift needed), like parking areas.
       if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= 12) {
-        const ccpt = map.project(map.getCenter());
-        const cr = 15;
+        const ccpt = map.project(map.getCenter()); ccpt.y += 6.5;
+        const cr = 1;
         const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
         if (chits.length) {
           let best = chits[0], bestD = Infinity;
@@ -7299,9 +7299,9 @@
       // parking-area polygons (and works even where no polygon is rendered).
       if (detectHalliUnderMarker()) return;
       if (!map.getLayer('master-poly-fill')) { updateButtonText(); return; }
-      const cpt = map.project(map.getCenter());
-      // Create detection area: 5px radius circle around center (easier targeting)
-      const radius = 5;
+      const cpt = map.project(map.getCenter()); cpt.y += 6.5;
+      // Detection at P-marker tip: 1px radius (2px diameter point)
+      const radius = 1;
       const bbox = [
         [cpt.x - radius, cpt.y - radius],
         [cpt.x + radius, cpt.y + radius]
@@ -11666,8 +11666,8 @@
       // A charging station directly under the P-marker takes priority and
       // shows its details in the sheet (same behaviour as a parking area).
       if(zoom>=12 && showEvCharging && map.getLayer('charging-icons')){
-        const ccpt = map.project(map.getCenter());
-        const cr = 15;
+        const ccpt = map.project(map.getCenter()); ccpt.y += 6.5;
+        const cr = 1;
         const cb = [[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]];
         const chits = map.queryRenderedFeatures(cb, { layers:['charging-icons'] });
         if(chits.length){
@@ -11698,9 +11698,9 @@
 
       // Highlight parking area under map center (works on mobile & desktop)
       if(zoom>=13 && map.getLayer('master-poly-fill')){
-        const cpt = map.project(map.getCenter());
-        // Create detection area: 5px radius circle around center (easier targeting)
-        const radius = 5;
+        const cpt = map.project(map.getCenter()); cpt.y += 6.5;
+        // Detection at P-marker tip: 1px radius (2px diameter point)
+        const radius = 1;
         const bbox = [
           [cpt.x - radius, cpt.y - radius],
           [cpt.x + radius, cpt.y + radius]
@@ -11766,7 +11766,8 @@
       
       // Check master-poly-fill for any parking area under center crosshair
       const layers = map.getLayer('master-poly-fill') ? ['master-poly-fill'] : [];
-      const f = layers.length ? map.queryRenderedFeatures(map.project(map.getCenter()), {layers}) : [];
+      const _tipPt = map.project(map.getCenter()); _tipPt.y += 6.5;
+      const f = layers.length ? map.queryRenderedFeatures(_tipPt, {layers}) : [];
 
       if(f.length>0 && !masterFeatureLocked){
         currentParkingProps = f[0].properties;
@@ -12240,8 +12241,8 @@
       if (!btn.classList.contains('active')) return;
       // Charging station under the P-marker → open the "Lataus" view.
       if (hoveredChargingId) {
-        const ccpt = map.project(map.getCenter());
-        const cr = 15;
+        const ccpt = map.project(map.getCenter()); ccpt.y += 6.5;
+        const cr = 1;
         const ch = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
         openConnectorPicker(ch.length ? ch[0].properties : null);
         return;
@@ -12252,8 +12253,8 @@
       // beneath the garage). No-op until a garage-parking integration exists.
       if (hoveredHalliId) return;
       if (!map.getLayer('master-poly-fill')) return;
-      const cpt = map.project(map.getCenter());
-      const r = 5;
+      const cpt = map.project(map.getCenter()); cpt.y += 6.5;
+      const r = 1;
       const bbox = [[cpt.x - r, cpt.y - r], [cpt.x + r, cpt.y + r]];
       const f = map.queryRenderedFeatures(bbox, { layers: ['master-poly-fill'] });
       if (!f.length) return;
@@ -13262,8 +13263,8 @@
       if (typeof map !== 'undefined' && map && map.getLayer
           && map.getLayer('master-poly-fill')) {
         try {
-          const cpt = map.project(map.getCenter());
-          const rad = 5;
+          const cpt = map.project(map.getCenter()); cpt.y += 6.5;
+          const rad = 1;
           const feats = map.queryRenderedFeatures(
             [[cpt.x - rad, cpt.y - rad], [cpt.x + rad, cpt.y + rad]],
             { layers: ['master-poly-fill'] }
