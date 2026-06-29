@@ -9,8 +9,8 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>HSL Kartta</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
-  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.css" />
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -6962,7 +6962,7 @@
           legacySourceFor(r.area_type, r.parking_type, r.max_hours) === props.source &&
           String(r.max_hours ?? '') === String(props.max_hours ?? '')
         )
-        .map(r => String(r.id));
+        .map(r => r.id);   // keep native type (number for paid, string 'ilm_X' for free)
     }
 
     function showMasterPolyInfo(e) {
@@ -6982,8 +6982,8 @@
 
     function applyHoverHighlight(props) {
       if (!map.getLayer('master-poly-hover-fill')) return;
-      const hovId = String(props.id || '');
-      const groupIds = getSameGroupIds(props).map(String);
+      const hovId = props.id;   // keep native type: number for paid areas, string for free
+      const groupIds = getSameGroupIds(props);   // same native types
       const groupMinusHov = groupIds.filter(id => id !== hovId);
 
       // Bright red pulsing fill on the hovered area — this is the ONLY visible
@@ -7215,12 +7215,12 @@
       if (hbadge) {
         hbadge.innerHTML =
           '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-          '<span style="vertical-align:middle;margin-left:5px;font-size:12px;font-weight:700;color:#1faa4a;">Tilaa</span>';
-        hbadge.style.display = 'inline-flex';
-        hbadge.style.alignItems = 'center';
+          '<span style="vertical-align:middle;margin-left:5px;color:#111;font-size:14px;font-weight:800;letter-spacing:0.3px;">Tilaa</span>';
+        hbadge.style.display = 'inline-block';
         hbadge.style.background = 'transparent';
         hbadge.style.padding = '0';
         hbadge.style.borderRadius = '0';
+        hbadge.style.color = '#111';
       }
       document.getElementById('gps-warning').classList.remove('visible');
       if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
@@ -7497,6 +7497,13 @@
       // even after the finger lifts (moveend fires updateButtonText).
       if (typeof hoveredChargingId !== 'undefined' && hoveredChargingId) {
         btn.textContent = 'Lataa täällä';
+        btn.classList.add('active');
+        return;
+      }
+      // A garage directly under the P-marker — keep "Pysäköi täällä" even
+      // after moveend (when detectHalliUnderMarker has already set hoveredHalliId).
+      if (typeof hoveredHalliId !== 'undefined' && hoveredHalliId) {
+        btn.textContent = 'Pysäköi täällä';
         btn.classList.add('active');
         return;
       }
