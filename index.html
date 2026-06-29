@@ -6684,7 +6684,6 @@
     let masterFeatureUnlockTimer = null;
 
     function showMasterFeatureInSheet(header, type, operator, detailsHTML) {
-      { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display=''; if(_zi&&typeof map!=='undefined'&&map.getZoom()>=12)_zi.style.display=''; }
       document.getElementById('summary-header').textContent   = header;
       document.getElementById('summary-type').textContent     = type;
       document.getElementById('summary-operator').textContent = operator;
@@ -6712,7 +6711,6 @@
     // Like showMasterFeatureInSheet but NO lock — for center/P-marker detection
     // Shows only 3 lines: header, type, operator — no extra details
     function showCenterFeatureInSheet(header, type, operator, areaCode, detailsHTML, isDisc) {
-      { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display=''; if(_zi&&typeof map!=='undefined'&&map.getZoom()>=12)_zi.style.display=''; }
       document.getElementById('summary-header').textContent   = header;
       const badge = document.getElementById('area-code-badge');
       if (isDisc) {
@@ -6768,9 +6766,8 @@
       hideCenterBadge();
       const bs = document.getElementById('bottom-sheet');
       bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
-      bs.style.transform  = 'translateY(calc(100% - 85px))';
-      currentY = bs.offsetHeight - 85;
-      { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display='none'; if(_zi)_zi.style.display='none'; }
+      bs.style.transform  = 'translateY(calc(100% - 90px))';
+      currentY = bs.offsetHeight - 90;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       document.getElementById('summary-header').textContent = '';
       document.getElementById('summary-type').textContent = '';
@@ -7488,15 +7485,14 @@
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
         } else if (zoom >= 12 && (_t === '' || _t.includes('- 60px'))) {
           _bs.style.transition = 'transform 0.3s ease';
-          _bs.style.transform = 'translateY(calc(100% - 85px))';
-          currentY = _bs.offsetHeight - 85;
+          _bs.style.transform = 'translateY(calc(100% - 90px))';
+          currentY = _bs.offsetHeight - 90;
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
         }
       }
       if (zoom < 12) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
-        { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display='none'; if(_zi)_zi.style.display='none'; }
         // Also hide the P-marker — polygons and halli icons are hidden by
         // their own minzoom, but the P-marker is HTML so we toggle it here.
         if (cm && !inNav && !inFilter) cm.classList.add('hidden');
@@ -7508,7 +7504,6 @@
       if (typeof hoveredChargingId !== 'undefined' && hoveredChargingId) {
         btn.textContent = 'Lataa täällä';
         btn.classList.add('active');
-        { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display=''; if(_zi&&map.getZoom()>=12)_zi.style.display=''; }
         return;
       }
       // A garage directly under the P-marker — keep "Pysäköi täällä" even
@@ -7516,14 +7511,12 @@
       if (typeof hoveredHalliId !== 'undefined' && hoveredHalliId) {
         btn.textContent = 'Pysäköi täällä';
         btn.classList.add('active');
-        { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display=''; if(_zi&&map.getZoom()>=12)_zi.style.display=''; }
         return;
       }
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
       btn.textContent = 'Siirrä kursori pysäköintialueelle';
       btn.classList.remove('active');
-      { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display='none'; if(_zi)_zi.style.display='none'; }
     }
 
     // ── Hover + touch highlight (MapLibre fires synthetic mouse events on iOS too) ──
@@ -11749,11 +11742,10 @@
               summaryOperator.textContent=''; details.innerHTML='';
               divider.style.display='none';
               btn.textContent='Siirrä kursori pysäköintialueelle'; btn.classList.remove('active');
-              { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display='none'; if(_zi)_zi.style.display='none'; }
               gpsWarning.classList.add('visible');
               sheet.style.transition='transform 0.2s ease';
-              sheet.style.transform='translateY(calc(100% - 85px))';
-              currentY = sheet.offsetHeight - 85;
+              sheet.style.transform='translateY(calc(100% - 90px))';
+              currentY = sheet.offsetHeight - 90;
             }
           }
         }
@@ -11764,7 +11756,6 @@
         summaryOperator.textContent=''; details.innerHTML='';
         divider.style.display='none';
         btn.textContent='Lähennä karttaa';
-        { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display='none'; if(_zi)_zi.style.display='none'; }
         btn.classList.remove('active');
         currentParkingProps=null;
         gpsWarning.classList.remove('visible');
@@ -11817,11 +11808,10 @@
         divider.style.display = 'none';
         btn.textContent = 'Siirrä kursori pysäköintialueelle';
         btn.classList.remove('active');
-        { const _dha=document.getElementById('drag-handle-area'), _zi=document.getElementById('zoom-indicator'); if(_dha)_dha.style.display='none'; if(_zi)_zi.style.display='none'; }
         gpsWarning.classList.add('visible');
         sheet.style.transition = 'transform 0.2s ease';
-        sheet.style.transform = 'translateY(calc(100% - 85px))';
-        currentY = sheet.offsetHeight - 85;
+        sheet.style.transform = 'translateY(calc(100% - 90px))';
+        currentY = sheet.offsetHeight - 90;
         updateNavBtnVisibility();
       }
     }
