@@ -6913,22 +6913,6 @@
           },
           filter:['==', ['get','id'], '__none__']
         }, 'master-poly-group-line');
-        // Shooting star animation layer — bright moving dash around hovered polygon
-        map.addLayer({ id:'master-poly-star-line', type:'line', source:'master-polygons', minzoom:13,
-          layout:{ 'line-cap':'round', 'line-join':'round' },
-          paint:{ 'line-width': 3.5, 'line-opacity': 0.95,
-            'line-dasharray': [3, 80],
-            'line-color': ['match', ['get','source'],
-              'community',          '#CE93D8',
-              'hel_ilmainen_pitka', '#CE93D8',
-              'hel_ilmainen_lyhyt', '#CE93D8',
-              'hel_sallittu_kiellon_ulkopuolella', '#CE93D8',
-              '#64B5F6'
-            ]
-          },
-          filter:['==', ['get','id'], '__none__']
-        });
-
         // Apply current filter state (free areas hidden by default until enabled)
         applyRangeFilter();
 
@@ -7051,15 +7035,8 @@
         groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
 
-      // Star animation for hovered polygon border
-      if (map.getLayer('master-poly-star-line')) {
-        map.setFilter('master-poly-star-line',
-          hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
-        );
-      }
-      // Start fill pulse and shooting-star border animation
+      // Start fill pulse
       startSizeAnimation();
-      startStarAnimation();
     }
 
     let sizeAnimationId = null;
@@ -7091,38 +7068,6 @@
       }
     }
 
-    // ── Tähdenlento-animaatio (shooting star around polygon border) ──────────
-    const _STAR = { dash: 3, gap: 80 };  // dash + gap = total cycle
-    _STAR.total = _STAR.dash + _STAR.gap; // 83
-    let _starPhase = 0;
-    let _starAnimId = null;
-
-    function _starDash(p) {
-      // Returns dasharray placing the 'star' at phase position p
-      if (p <= 0.01) return [_STAR.dash, _STAR.gap];
-      if (p < _STAR.gap) return [0, p, _STAR.dash, _STAR.gap - p];
-      const dp = p - _STAR.gap;
-      if (dp <= 0.01 || dp >= _STAR.dash - 0.01) return [_STAR.dash, _STAR.gap];
-      return [_STAR.dash - dp, _STAR.gap, dp];
-    }
-
-    function startStarAnimation() {
-      stopStarAnimation();
-      function tick() {
-        if (!map || !map.getLayer('master-poly-star-line')) return;
-        _starPhase = (_starPhase + 0.45) % _STAR.total;
-        try { map.setPaintProperty('master-poly-star-line', 'line-dasharray', _starDash(_starPhase)); }
-        catch(e) {}
-        _starAnimId = requestAnimationFrame(tick);
-      }
-      tick();
-    }
-
-    function stopStarAnimation() {
-      if (_starAnimId) { cancelAnimationFrame(_starAnimId); _starAnimId = null; }
-      _starPhase = 0;
-    }
-    // ─────────────────────────────────────────────────────────────────────────
 
     let pulseAnimationId = null;
     function startPulseAnimation() {
@@ -7173,7 +7118,6 @@
 
     function clearHoverHighlight() {
       stopSizeAnimation();
-      stopStarAnimation();
       if (!map.getLayer('master-poly-hover-fill')) return;
       map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
       map.setFilter('master-poly-group-line',  ['==','id','__none__']);
@@ -7181,8 +7125,6 @@
         map.setFilter('master-poly-group-fill', ['==','id','__none__']);
       if (map.getLayer('master-poly-hover-line'))
         map.setFilter('master-poly-hover-line', ['==','id','__none__']);
-      if (map.getLayer('master-poly-star-line'))
-        map.setFilter('master-poly-star-line', ['==','id','__none__']);
       // Restore the base border opacity for every area.
       if (map.getLayer('master-poly-line')) {
         map.setPaintProperty('master-poly-line', 'line-opacity', 0.55);
