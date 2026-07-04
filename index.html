@@ -7488,11 +7488,11 @@
       const _bs = document.getElementById('bottom-sheet');
       if (_bs && _noArea && !inNav && !inFilter) {
         const _t = _bs.style.transform || '';
-        if (zoom < 12 && !_t.includes('- 60px')) {
+        if (zoom < 13.8 && !_t.includes('- 60px')) {
           _bs.style.transition = 'transform 0.3s ease';
           _bs.style.transform = 'translateY(calc(100% - 60px))';
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
-        } else if (zoom >= 12 && (_t === '' || _t.includes('- 60px'))) {
+        } else if (zoom >= 13.8 && (_t === '' || _t.includes('- 60px'))) {
           _bs.style.transition = 'transform 0.3s ease';
           _bs.style.transform = 'translateY(calc(100% - 90px))';
           currentY = _bs.offsetHeight - 90;
@@ -9347,11 +9347,32 @@
         zoomIndicator.textContent = `Z ${z.toFixed(1)}`;
       }
     }
+    // ── "Lasin täyttyminen": action-button fills with dark-navy "water" as you
+    //    zoom in. Empty at min zoom (5), completely full at 13.8. The faint
+    //    water-surface boundary slides left↔right with the zoom level. ──
+    function updateButtonFill() {
+      const btn = document.getElementById('action-btn');
+      if (!btn) return;
+      const MIN_Z = 5, FULL_Z = 13.8;
+      let p = (map.getZoom() - MIN_Z) / (FULL_Z - MIN_Z);
+      p = Math.max(0, Math.min(1, p));
+      const FILLED = '#0C0243';   // "water" — brand dark navy
+      const EMPTY  = '#4a4670';   // empty glass — lighter muted navy
+      if (p >= 0.999) { btn.style.background = FILLED; return; }
+      const pct  = p * 100;
+      const soft = 12;                            // faint boundary width (%)
+      const a = Math.max(0, pct - soft / 2);      // end of solid water
+      const b = Math.min(100, pct + soft / 2);    // start of empty glass
+      btn.style.background =
+        'linear-gradient(90deg, ' + FILLED + ' 0%, ' + FILLED + ' ' + a.toFixed(1) + '%, '
+        + EMPTY + ' ' + b.toFixed(1) + '%, ' + EMPTY + ' 100%)';
+    }
     map.on('zoom', () => {
       updateZoomIndicator();
       updateButtonText();
+      updateButtonFill();
     });
-    map.on('load', updateZoomIndicator);
+    map.on('load', () => { updateZoomIndicator(); updateButtonFill(); });
 
     function openHelpSettings() {
       document.getElementById('support-landing-overlay').classList.add('open');
@@ -11706,7 +11727,7 @@
       if(detectHalliUnderMarker()) return;
 
       // Highlight parking area under map center (works on mobile & desktop)
-      if(zoom>=13 && map.getLayer('master-poly-fill')){
+      if(zoom>=13.8 && map.getLayer('master-poly-fill')){
         const cpt = map.project(map.getCenter()); cpt.y += 6.5;
         // Detection at P-marker tip: 1px radius (2px diameter point)
         const radius = 1;
