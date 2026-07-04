@@ -1865,19 +1865,39 @@
     }
     
     #action-btn { 
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      box-sizing: border-box;
       width: 100%; 
       height: 58px; 
-      border: none; 
+      border: 2px solid #0C0243; 
       border-radius: 999px; 
       font-size: 17px; 
       font-weight: bold; 
       font-family: Arial, sans-serif; 
-      color: white; 
-      background: #0C0243; 
+      /* "Lasin täyttyminen": teksti on VALKOINEN tummansinisen veden päällä
+         (--fill vasemmalla) ja TUMMANSININEN tyhjän valkoisen osan päällä. */
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      background-color: transparent;
+      background-image: linear-gradient(90deg, #ffffff 0%, #ffffff var(--fill, 0%), #0C0243 var(--fill, 0%), #0C0243 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
       opacity: 1; 
       cursor: pointer; 
       transition: opacity 0.3s ease; 
       text-align: center; 
+    }
+    #action-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      pointer-events: none;
+      /* Napin täyttö: tummansininen "vesi" (--fill vasemmalla), valkoinen tyhjä lasi oikealla */
+      background: linear-gradient(90deg, #0C0243 0%, #0C0243 var(--fill, 0%), #ffffff var(--fill, 0%), #ffffff 100%);
     }
     #action-btn.active { opacity: 1; }
     
@@ -9356,16 +9376,10 @@
       const MIN_Z = 5, FULL_Z = 13.8;
       let p = (map.getZoom() - MIN_Z) / (FULL_Z - MIN_Z);
       p = Math.max(0, Math.min(1, p));
-      const FILLED = '#0C0243';   // "water" — brand dark navy
-      const EMPTY  = '#4a4670';   // empty glass — lighter muted navy
-      if (p >= 0.999) { btn.style.background = FILLED; return; }
-      const pct  = p * 100;
-      const soft = 12;                            // faint boundary width (%)
-      const a = Math.max(0, pct - soft / 2);      // end of solid water
-      const b = Math.min(100, pct + soft / 2);    // start of empty glass
-      btn.style.background =
-        'linear-gradient(90deg, ' + FILLED + ' 0%, ' + FILLED + ' ' + a.toFixed(1) + '%, '
-        + EMPTY + ' ' + b.toFixed(1) + '%, ' + EMPTY + ' 100%)';
+      // Ease-in: the "water" rises faster the closer you get to 13.8, so the
+      // user clearly feels they are approaching the threshold.
+      const eased = Math.pow(p, 2.5);
+      btn.style.setProperty('--fill', (eased * 100).toFixed(1) + '%');
     }
     map.on('zoom', () => {
       updateZoomIndicator();
