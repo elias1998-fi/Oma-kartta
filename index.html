@@ -6857,7 +6857,7 @@
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
 
         // Base fill layer
-        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13.8,
           paint:{ 'fill-opacity': 0.20,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -6874,7 +6874,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13.8,
           paint:{ 'line-width': 1.0, 'line-opacity': 0.55,
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
@@ -6886,22 +6886,22 @@
           }
         });
         // Hover fill — red, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13.8,
           paint:{ 'fill-color':'#1266f1', 'fill-opacity': 0.45 },
           filter:['==', ['get','id'], '__none__']
         });
         // Hover outline — on the red hovered area, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13.8,
           paint:{ 'line-color':'#0B49D0', 'line-width': 2.5, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13.8,
           paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13.8,
           paint:{ 'fill-opacity': 0.50,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -6918,14 +6918,6 @@
           },
           filter:['==', ['get','id'], '__none__']
         }, 'master-poly-group-line');
-        // ── Shooting-star comet source + layer (line-gradient needs lineMetrics) ──
-        map.addSource('comet-star', { type:'geojson', lineMetrics:true,
-          data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[[0,0],[0,0]] } } });
-        map.addLayer({ id:'comet-star-line', type:'line', source:'comet-star', minzoom:13,
-          layout:{ 'line-cap':'round', 'line-join':'round' },
-          paint:{ 'line-width': 4, 'line-opacity': 0.9,
-            'line-gradient':['interpolate',['linear'],['line-progress'], 0,'rgba(0,0,0,0)', 1,'rgba(0,0,0,0)'] }
-        });
         // Apply current filter state (free areas hidden by default until enabled)
         applyRangeFilter();
 
@@ -7050,9 +7042,7 @@
         groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
 
-      // No fill pulse — solid red, no transparency
-      // Start shooting-star comet around the hovered polygon border
-      startCometAnimation(props, _isFree);
+      // No fill pulse, no comet — solid red only.
     }
 
     let sizeAnimationId = null;
@@ -7083,150 +7073,6 @@
         map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.85);
       }
     }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // Shooting-star "comet" that orbits the hovered polygon's border.
-    // A bright head fades back into a dim tail. Built with a moving line-gradient
-    // over the polygon's outline (converted to a single closed LineString).
-    // 3s per full lap. Affects ONLY the hovered polygon.
-    // ══════════════════════════════════════════════════════════════════════════
-    let _cometAnimId = null;
-    let _cometStart  = 0;
-    const _COMET_LAP_MS = 3000;   // 3 seconds per lap
-    const _COMET_TAIL   = 0.22;   // tail length as fraction of the perimeter
-
-    // Build one continuous ring of [lng,lat] points from a polygon/multipolygon.
-    function _cometRingFromFeature(feat) {
-      if (!feat || !feat.geometry) return null;
-      const g = feat.geometry;
-      let ring = null;
-      if (g.type === 'Polygon') {
-        ring = g.coordinates[0];
-      } else if (g.type === 'MultiPolygon') {
-        // pick the outer ring of the largest polygon by point count
-        let best = null, bestLen = -1;
-        for (const poly of g.coordinates) {
-          const r = poly[0];
-          if (r && r.length > bestLen) { bestLen = r.length; best = r; }
-        }
-        ring = best;
-      }
-      if (!ring || ring.length < 3) return null;
-      // Ensure the ring is closed (first == last)
-      const first = ring[0], last = ring[ring.length - 1];
-      if (first[0] !== last[0] || first[1] !== last[1]) ring = ring.concat([first]);
-      return ring;
-    }
-
-    function startCometAnimation(props, isFree) {
-      stopCometAnimation();
-      if (!map.getSource('comet-star') || !map.getLayer('comet-star-line')) return;
-
-      // Find the hovered feature's geometry from the rendered source data
-      const hovId = props.id;
-      let feat = null;
-      try {
-        const feats = map.querySourceFeatures('master-polygons');
-        for (const f of feats) {
-          if (f.properties && f.properties.id === hovId) { feat = f; break; }
-        }
-      } catch (e) {}
-      // Fallback: query rendered features at all zoom (may be clipped, but ok)
-      if (!feat) {
-        try {
-          const rf = map.queryRenderedFeatures({ layers:['master-poly-fill'] });
-          for (const f of rf) {
-            if (f.properties && f.properties.id === hovId) { feat = f; break; }
-          }
-        } catch (e) {}
-      }
-      const ring = _cometRingFromFeature(feat);
-      if (!ring) return;
-
-      // Push the ring geometry into the comet source
-      map.getSource('comet-star').setData({
-        type:'Feature', geometry:{ type:'LineString', coordinates: ring }
-      });
-
-      // Head colour: bright white-blue for paid, bright white-purple for free
-      const headRGB = '0,0,0';   // black comet (area is solid red underneath)
-      _cometStart = performance.now();
-
-      function frame(now) {
-        if (!map.getLayer('comet-star-line')) return;
-        const t = ((now - _cometStart) % _COMET_LAP_MS) / _COMET_LAP_MS;  // 0..1 head position
-
-        // Build a gradient with a bright head at position t that fades over the
-        // tail (behind the head, wrapping around 0/1). line-progress stops must
-        // be strictly ascending in [0,1], so we assemble sorted stops.
-        const head = t;
-        const tail = _COMET_TAIL;
-        const stops = [];  // {p, rgba}
-
-        // Helper to add a stop clamped to [0,1]
-        const add = (p, a) => stops.push({ p: Math.min(1, Math.max(0, p)), a });
-
-        // Everything invisible by default at 0 and 1
-        add(0, 0); add(1, 0);
-
-        // Tail runs from (head - tail) up to head, brightening toward the head.
-        // Because the ring is closed, we handle wrap by drawing up to two spans.
-        const spanStart = head - tail;
-        // sample the tail with a few stops for a smooth fade
-        const N = 6;
-        for (let i = 0; i <= N; i++) {
-          const frac = i / N;                     // 0 = tail end, 1 = head
-          const alpha = frac * frac;              // ease — dim tail, bright head
-          let p = spanStart + tail * frac;
-          if (p < 0) p += 1;                      // wrap into [0,1]
-          add(p, alpha);
-        }
-        // A tiny bright spark just at the head
-        add(head, 1);
-
-        // Sort stops by position and de-duplicate equal positions (keep max alpha)
-        stops.sort((x, y) => x.p - y.p);
-        const merged = [];
-        for (const s of stops) {
-          if (merged.length && Math.abs(merged[merged.length-1].p - s.p) < 1e-4) {
-            merged[merged.length-1].a = Math.max(merged[merged.length-1].a, s.a);
-          } else {
-            merged.push({ p: s.p, a: s.a });
-          }
-        }
-        // Ensure strictly ascending (nudge duplicates)
-        for (let i = 1; i < merged.length; i++) {
-          if (merged[i].p <= merged[i-1].p) merged[i].p = Math.min(1, merged[i-1].p + 1e-4);
-        }
-
-        const grad = ['interpolate', ['linear'], ['line-progress']];
-        for (const s of merged) {
-          grad.push(s.p, 'rgba(' + headRGB + ',' + s.a.toFixed(3) + ')');
-        }
-
-        try { map.setPaintProperty('comet-star-line', 'line-gradient', grad); } catch (e) {}
-        _cometAnimId = requestAnimationFrame(frame);
-      }
-      _cometAnimId = requestAnimationFrame(frame);
-    }
-
-    function stopCometAnimation() {
-      if (_cometAnimId) { cancelAnimationFrame(_cometAnimId); _cometAnimId = null; }
-      if (map.getSource('comet-star')) {
-        try {
-          map.getSource('comet-star').setData({
-            type:'Feature', geometry:{ type:'LineString', coordinates:[[0,0],[0,0]] }
-          });
-        } catch (e) {}
-      }
-      if (map.getLayer('comet-star-line')) {
-        try {
-          map.setPaintProperty('comet-star-line', 'line-gradient',
-            ['interpolate',['linear'],['line-progress'], 0,'rgba(0,0,0,0)', 1,'rgba(0,0,0,0)']);
-        } catch (e) {}
-      }
-    }
-
 
     let pulseAnimationId = null;
     function startPulseAnimation() {
@@ -7277,7 +7123,6 @@
 
     function clearHoverHighlight() {
       stopSizeAnimation();
-      stopCometAnimation();
       if (!map.getLayer('master-poly-hover-fill')) return;
       map.setFilter('master-poly-hover-fill', ['==','id','__none__']);
       map.setFilter('master-poly-group-line',  ['==','id','__none__']);
@@ -7654,7 +7499,7 @@
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
         }
       }
-      if (zoom < 12) {
+      if (zoom < 13.8) {
         btn.textContent = 'Lähennä karttaa';
         btn.classList.remove('active');
         // Also hide the P-marker — polygons and halli icons are hidden by
@@ -7805,7 +7650,7 @@
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
       map.addLayer({
-        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 12,
+        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13.8,
         layout: {
           'icon-image': 'halli-icon', 'icon-size': 0.50,
           'icon-allow-overlap': true, 'icon-anchor': 'center'
@@ -11820,8 +11665,8 @@
       const zoom=map.getZoom();
 
       // Hide P-marker when zoomed out (matches the master-poly / halli
-      // layer minzoom of 13)
-      if(zoom < 12) {
+      // layer minzoom of 13.8)
+      if(zoom < 13.8) {
         centerPointerEl.classList.add('hidden');
       } else {
         centerPointerEl.classList.remove('hidden');
@@ -11915,7 +11760,7 @@
         }
       }
       
-      if(zoom<13){
+      if(zoom<13.8){
         summaryHeader.textContent=''; summaryType.textContent='';
         summaryOperator.textContent=''; details.innerHTML='';
         divider.style.display='none';
