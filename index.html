@@ -7007,11 +7007,12 @@
       // Colour scheme: purple for free areas, blue for paid
       const _freeSrc = ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella'];
       const _isFree  = _freeSrc.includes(props.source);
-      const _fillClr = _isFree ? '#7F1F89' : '#1266f1';
       const _lineClr = _isFree ? '#611868' : '#0B49D0';
+      const _hoverFillClr = '#ff1744';   // hovered area → red (as before)
+      const _groupFillClr = '#0C0243';   // same-group areas → black (as before)
 
-      map.setPaintProperty('master-poly-hover-fill', 'fill-color', _fillClr);
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.45);
+      map.setPaintProperty('master-poly-hover-fill', 'fill-color', _hoverFillClr);
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.85);
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
@@ -7035,8 +7036,8 @@
 
       // Subtle blue fill on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
-        map.setPaintProperty('master-poly-group-fill', 'fill-color', _fillClr);
-        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', 0.35);
+        map.setPaintProperty('master-poly-group-fill', 'fill-color', _groupFillClr);
+        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', 0.85);
         map.setFilter('master-poly-group-fill',
           groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
         );
@@ -7065,8 +7066,8 @@
         const elapsed = Date.now() - startTime;
         const progress = (elapsed % cycleDuration) / cycleDuration;
         const sineValue = 0.5 + 0.5 * Math.sin(progress * Math.PI * 2);
-        // Pulse opacity between 0.45 and 0.30
-        const opacity = 0.45 - 0.15 * sineValue;
+        // Pulse opacity between 0.90 and 0.70 (vivid red)
+        const opacity = 0.90 - 0.20 * sineValue;
         map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', opacity);
         sizeAnimationId = requestAnimationFrame(animate);
       }
@@ -7079,7 +7080,7 @@
         sizeAnimationId = null;
       }
       if (map.getLayer('master-poly-hover-fill')) {
-        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.45);
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.85);
       }
     }
 
