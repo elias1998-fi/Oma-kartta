@@ -1866,38 +1866,50 @@
     
     #action-btn { 
       position: relative;
-      isolation: isolate;
       overflow: hidden;
       box-sizing: border-box;
       width: 100%; 
       height: 58px; 
-      border: 2px solid #0C0243; 
+      border: none; 
       border-radius: 999px; 
-      font-size: 17px; 
-      font-weight: bold; 
-      font-family: Arial, sans-serif; 
-      /* "Lasin täyttyminen": teksti on VALKOINEN tummansinisen veden päällä
-         (--fill vasemmalla) ja TUMMANSININEN tyhjän valkoisen osan päällä. */
-      color: transparent;
-      -webkit-text-fill-color: transparent;
-      background-color: transparent;
-      background-image: linear-gradient(90deg, #ffffff 0%, #ffffff var(--fill, 0%), #0C0243 var(--fill, 0%), #0C0243 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
+      background: #ffffff;
+      /* Dark-blue rim drawn as an inset shadow so the rising water (same colour)
+         merges seamlessly with it — no white gap between rim and water. */
+      box-shadow: inset 0 0 0 2px #0C0243;
       opacity: 1; 
       cursor: pointer; 
       transition: opacity 0.3s ease; 
-      text-align: center; 
+      padding: 0;
     }
-    #action-btn::before {
-      content: '';
+    /* Rising "water" (dark navy) with a gently undulating surface. */
+    #action-btn .ab-water {
       position: absolute;
       inset: 0;
-      z-index: -1;
-      border-radius: inherit;
+      z-index: 1;
       pointer-events: none;
-      /* Napin täyttö: tummansininen "vesi" (--fill vasemmalla), valkoinen tyhjä lasi oikealla */
-      background: linear-gradient(90deg, #0C0243 0%, #0C0243 var(--fill, 0%), #ffffff var(--fill, 0%), #ffffff 100%);
+    }
+    #action-btn .ab-water svg { width: 100%; height: 100%; display: block; }
+    /* Two stacked text layers: blue base (over white), white clipped to the
+       submerged region (over the water). The clip line follows the fill level. */
+    #action-btn .ab-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 0 16px;
+      box-sizing: border-box;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #action-btn .ab-label-blue  { z-index: 2; color: #0C0243; }
+    #action-btn .ab-label-white { z-index: 3; color: #ffffff;
+      -webkit-clip-path: inset(var(--clip, 100%) 0 0 0);
+      clip-path: inset(var(--clip, 100%) 0 0 0);
     }
     #action-btn.active { opacity: 1; }
     
@@ -4920,7 +4932,11 @@
   </div>
 
   <div id="btn-container">
-    <button id="action-btn">Siirrä kursori pysäköintialueelle</button>
+    <button id="action-btn">
+      <span class="ab-water"><svg viewBox="0 0 100 30" preserveAspectRatio="none"><path class="ab-wave-path" d="M 0 30 L 100 30 L 100 30 L 0 30 Z" fill="#0C0243"/></svg></span>
+      <span class="ab-label ab-label-blue">Siirrä kursori pysäköintialueelle</span>
+      <span class="ab-label ab-label-white">Siirrä kursori pysäköintialueelle</span>
+    </button>
   </div>
 
   <script>
@@ -7470,7 +7486,7 @@
           showCenterFeatureInSheet(line1, srcType, op, computeAreaCodeFromFeature(f), detailsHTML, isDiscOrFreeArea(p));
         }
         // ALWAYS update btn when feature is under center (regardless of same/different ID)
-        btn.textContent = isDiscOrFreeArea(f.properties) ? 'Aseta elektroninen pysäköintikiekko' : 'Pysäköi tähän';
+        setActionBtnText(isDiscOrFreeArea(f.properties) ? 'Aseta elektroninen pysäköintikiekko' : 'Pysäköi tähän');
         btn.classList.add('active');
       } else {
         // No area under center — clear immediately
@@ -7520,7 +7536,7 @@
         }
       }
       if (zoom < 13.8) {
-        btn.textContent = 'Lähennä karttaa';
+        setActionBtnText('Lähennä karttaa');
         btn.classList.remove('active');
         // Also hide the P-marker — polygons and halli icons are hidden by
         // their own minzoom, but the P-marker is HTML so we toggle it here.
@@ -7531,20 +7547,20 @@
       // A charging station under the P-marker always wins — keep "Lataa täällä"
       // even after the finger lifts (moveend fires updateButtonText).
       if (typeof hoveredChargingId !== 'undefined' && hoveredChargingId) {
-        btn.textContent = 'Lataa täällä';
+        setActionBtnText('Lataa täällä');
         btn.classList.add('active');
         return;
       }
       // A garage directly under the P-marker — keep "Pysäköi täällä" even
       // after moveend (when detectHalliUnderMarker has already set hoveredHalliId).
       if (typeof hoveredHalliId !== 'undefined' && hoveredHalliId) {
-        btn.textContent = 'Pysäköi täällä';
+        setActionBtnText('Pysäköi täällä');
         btn.classList.add('active');
         return;
       }
       if (masterFeatureLocked) return;
       if (hoveredPolyId) return;  // P-marker on area — don't override 'Pysäköi tähän'
-      btn.textContent = 'Siirrä kursori pysäköintialueelle';
+      setActionBtnText('Siirrä kursori pysäköintialueelle');
       btn.classList.remove('active');
     }
 
@@ -9370,23 +9386,68 @@
     // ── "Lasin täyttyminen": action-button fills with dark-navy "water" as you
     //    zoom in. Empty at min zoom (5), completely full at 13.8. The faint
     //    water-surface boundary slides left↔right with the zoom level. ──
+    // Sync the action button's text across both (blue + white) layers.
+    function setActionBtnText(t) {
+      const b = document.getElementById('action-btn');
+      if (!b) return;
+      const labels = b.querySelectorAll('.ab-label');
+      for (const l of labels) l.textContent = t;
+    }
+
+    // ── "Lasin täyttyminen": the button is a glass filling with dark-navy water
+    //    as you zoom in. Water rises bottom→top (empty at min zoom 5, full at
+    //    13.8) with an ease-in curve so it accelerates near the threshold. The
+    //    surface undulates gently like real water. Text is blue above the
+    //    surface (on white) and white below it (submerged). ──
+    let _waterLevel = 0;       // 0..1 target fill (from zoom, eased)
+    let _waterPhase = 0;       // animated wave phase
+    let _waterRAF   = null;
+
+    function _waterPathD(level, phase) {
+      const W = 100, H = 30;
+      const surfaceY = H * (1 - level);
+      // Two superimposed sines → organic, non-straight surface.
+      let d = 'M 0 ' + surfaceY.toFixed(2);
+      const steps = 26;
+      for (let i = 0; i <= steps; i++) {
+        const x = (W * i) / steps;
+        const t = x / W;
+        const y = surfaceY
+                + 1.2 * Math.sin(t * 2.2 * 2 * Math.PI + phase)
+                + 0.6 * Math.sin(t * 3.7 * 2 * Math.PI - phase * 1.3);
+        d += ' L ' + x.toFixed(2) + ' ' + y.toFixed(2);
+      }
+      d += ' L ' + W + ' ' + H + ' L 0 ' + H + ' Z';
+      return d;
+    }
+
+    function _waterTick() {
+      _waterPhase += 0.028;   // gentle drift
+      const path = document.querySelector('#action-btn .ab-wave-path');
+      if (path) path.setAttribute('d', _waterPathD(_waterLevel, _waterPhase));
+      _waterRAF = requestAnimationFrame(_waterTick);
+    }
+    function _startWater() { if (_waterRAF === null) _waterTick(); }
+
     function updateButtonFill() {
       const btn = document.getElementById('action-btn');
       if (!btn) return;
       const MIN_Z = 5, FULL_Z = 13.8;
       let p = (map.getZoom() - MIN_Z) / (FULL_Z - MIN_Z);
       p = Math.max(0, Math.min(1, p));
-      // Ease-in: the "water" rises faster the closer you get to 13.8, so the
-      // user clearly feels they are approaching the threshold.
       const eased = Math.pow(p, 2.5);
-      btn.style.setProperty('--fill', (eased * 100).toFixed(1) + '%');
+      _waterLevel = eased;
+      // White text is visible from the surface downward: clip its top by the
+      // empty (above-water) fraction.
+      btn.style.setProperty('--clip', ((1 - eased) * 100).toFixed(1) + '%');
     }
     map.on('zoom', () => {
       updateZoomIndicator();
       updateButtonText();
       updateButtonFill();
     });
-    map.on('load', () => { updateZoomIndicator(); updateButtonFill(); });
+    map.on('load', () => { updateZoomIndicator(); updateButtonFill(); _startWater(); });
+    _startWater();
 
     function openHelpSettings() {
       document.getElementById('support-landing-overlay').classList.add('open');
@@ -11785,7 +11846,7 @@
               summaryHeader.textContent=''; summaryType.textContent='';
               summaryOperator.textContent=''; details.innerHTML='';
               divider.style.display='none';
-              btn.textContent='Siirrä kursori pysäköintialueelle'; btn.classList.remove('active');
+              setActionBtnText('Siirrä kursori pysäköintialueelle'); btn.classList.remove('active');
               gpsWarning.classList.add('visible');
               sheet.style.transition='transform 0.2s ease';
               sheet.style.transform='translateY(calc(100% - 90px))';
@@ -11799,7 +11860,7 @@
         summaryHeader.textContent=''; summaryType.textContent='';
         summaryOperator.textContent=''; details.innerHTML='';
         divider.style.display='none';
-        btn.textContent='Lähennä karttaa';
+        setActionBtnText('Lähennä karttaa');
         btn.classList.remove('active');
         currentParkingProps=null;
         gpsWarning.classList.remove('visible');
@@ -11831,7 +11892,7 @@
         summaryOperator.textContent = p.source==='community' ? 'Tiimin varmentama ✓' : 'Helsingin kaupunki';
         details.innerHTML = '';
         divider.style.display = 'block';
-        btn.textContent = isDiscOrFreeArea(p) ? 'Aseta elektroninen pysäköintikiekko' : 'Pysäköi tähän';
+        setActionBtnText(isDiscOrFreeArea(p) ? 'Aseta elektroninen pysäköintikiekko' : 'Pysäköi tähän');
         btn.classList.add('active');
         gpsWarning.classList.remove('visible');
         // Don't override the sheet position while a directions request is in
@@ -11851,7 +11912,7 @@
         summaryOperator.textContent = '';
         details.innerHTML = '';
         divider.style.display = 'none';
-        btn.textContent = 'Siirrä kursori pysäköintialueelle';
+        setActionBtnText('Siirrä kursori pysäköintialueelle');
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
         sheet.style.transition = 'transform 0.2s ease';
