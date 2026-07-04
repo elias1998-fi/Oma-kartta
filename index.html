@@ -7012,7 +7012,7 @@
       const _groupFillClr = '#0C0243';   // same-group areas → black (as before)
 
       map.setPaintProperty('master-poly-hover-fill', 'fill-color', _hoverFillClr);
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.85);
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
@@ -7026,9 +7026,10 @@
             : 0.55
         );
       }
-      // Show hover-line (thick border, area-type colour) on the hovered area.
+      // Show hover-line (thick RED border, fully opaque) on the hovered area.
       if (map.getLayer('master-poly-hover-line')) {
-        map.setPaintProperty('master-poly-hover-line', 'line-color', _lineClr);
+        map.setPaintProperty('master-poly-hover-line', 'line-color', _hoverFillClr);
+        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 1.0);
         map.setFilter('master-poly-hover-line',
           hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
         );
@@ -7037,20 +7038,19 @@
       // Subtle blue fill on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
         map.setPaintProperty('master-poly-group-fill', 'fill-color', _groupFillClr);
-        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', 0.85);
+        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', 1.0);
         map.setFilter('master-poly-group-fill',
           groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
         );
       }
-      // Border on OTHER same-category areas (area-type colour)
-      map.setPaintProperty('master-poly-group-line', 'line-color', _lineClr);
-      map.setPaintProperty('master-poly-group-line', 'line-opacity', 0.85);
+      // Border on OTHER same-category areas → black, fully opaque
+      map.setPaintProperty('master-poly-group-line', 'line-color', _groupFillClr);
+      map.setPaintProperty('master-poly-group-line', 'line-opacity', 1.0);
       map.setFilter('master-poly-group-line',
         groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
 
-      // Start fill pulse
-      startSizeAnimation();
+      // No fill pulse — solid red, no transparency
       // Start shooting-star comet around the hovered polygon border
       startCometAnimation(props, _isFree);
     }
@@ -7149,7 +7149,7 @@
       });
 
       // Head colour: bright white-blue for paid, bright white-purple for free
-      const headRGB = isFree ? '221,150,216' : '120,170,255';   // #DD96D8 / #78AAFF
+      const headRGB = '0,0,0';   // black comet (area is solid red underneath)
       _cometStart = performance.now();
 
       function frame(now) {
