@@ -6853,7 +6853,7 @@
 
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
-          paint:{ 'fill-opacity': 0.30,
+          paint:{ 'fill-opacity': 0.20,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
               'hel_ilmainen_pitka', '#7F1F89',
@@ -6870,7 +6870,7 @@
         });
         // Base line layer
         map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
-          paint:{ 'line-width': 1.5, 'line-opacity': 0.30,
+          paint:{ 'line-width': 1.0, 'line-opacity': 0.55,
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
               'hel_ilmainen_pitka', '#611868',
@@ -6882,12 +6882,12 @@
         });
         // Hover fill — red, toggled via setFilter
         map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13,
-          paint:{ 'fill-color':'#ff1744', 'fill-opacity': 1.0 },
+          paint:{ 'fill-color':'#1565C0', 'fill-opacity': 0.45 },
           filter:['==', ['get','id'], '__none__']
         });
         // Hover outline — on the red hovered area, toggled via setFilter
         map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13,
-          paint:{ 'line-color':'#ff1744', 'line-width': 1.5, 'line-opacity': 1.0 },
+          paint:{ 'line-color':'#0D47A1', 'line-width': 2.5, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
@@ -6992,11 +6992,8 @@
       const groupIds = getSameGroupIds(props);   // same native types
       const groupMinusHov = groupIds.filter(id => id !== hovId);
 
-      // Bright red pulsing fill on the hovered area — this is the ONLY visible
-      // marker for the hovered area now. Both the base border (master-poly-line)
-      // and the red hover-line are suppressed so the user sees a single pulsing
-      // object instead of fill+border pulsing separately.
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
+      // Blue fill on hovered area — matches reference style.
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.45);
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
@@ -7006,27 +7003,28 @@
       if (map.getLayer('master-poly-line')) {
         map.setPaintProperty('master-poly-line', 'line-opacity',
           hovId
-            ? ['case', ['==', ['get','id'], hovId], 0, 0.30]
-            : 0.30
+            ? ['case', ['==', ['get','id'], hovId], 0, 0.55]
+            : 0.55
         );
       }
-      // Keep the red hover-line layer permanently hidden — no separate
-      // border pulse anymore.
+      // Show hover-line (thick border) on the hovered area.
       if (map.getLayer('master-poly-hover-line')) {
-        map.setFilter('master-poly-hover-line', ['==','id','__none__']);
+        map.setFilter('master-poly-hover-line',
+          hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
+        );
       }
 
-      // Dark blue fill (100%) on OTHER same-category areas
+      // Subtle blue fill on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
-        map.setPaintProperty('master-poly-group-fill', 'fill-color', '#0C0243');
-        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', 1.0);
+        map.setPaintProperty('master-poly-group-fill', 'fill-color', '#1565C0');
+        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', 0.35);
         map.setFilter('master-poly-group-fill',
           groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
         );
       }
-      // Dark blue border on OTHER same-category areas
-      map.setPaintProperty('master-poly-group-line', 'line-color', '#0C0243');
-      map.setPaintProperty('master-poly-group-line', 'line-opacity', 1.0);
+      // Blue border on OTHER same-category areas
+      map.setPaintProperty('master-poly-group-line', 'line-color', '#0D47A1');
+      map.setPaintProperty('master-poly-group-line', 'line-opacity', 0.85);
       map.setFilter('master-poly-group-line',
         groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
       );
@@ -7046,8 +7044,8 @@
         const elapsed = Date.now() - startTime;
         const progress = (elapsed % cycleDuration) / cycleDuration;
         const sineValue = 0.5 + 0.5 * Math.sin(progress * Math.PI * 2);
-        // Pulse opacity between 1.0 (full) and 0.7 (subtle dim)
-        const opacity = 1.0 - 0.3 * sineValue;
+        // Pulse opacity between 0.45 and 0.30
+        const opacity = 0.45 - 0.15 * sineValue;
         map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', opacity);
         sizeAnimationId = requestAnimationFrame(animate);
       }
@@ -7060,7 +7058,7 @@
         sizeAnimationId = null;
       }
       if (map.getLayer('master-poly-hover-fill')) {
-        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.45);
       }
     }
     
@@ -7081,17 +7079,17 @@
         if (progress < 0.15) {
           // First pop: quick rise and fall
           const t = progress / 0.15;
-          opacity = 0.6 + 0.4 * Math.sin(t * Math.PI);
+          opacity = 0.30 + 0.15 * Math.sin(t * Math.PI);
         } else if (progress < 0.2) {
           // Brief dip between pops
-          opacity = 0.6;
+          opacity = 0.30;
         } else if (progress < 0.35) {
           // Second pop: quick rise and fall
           const t = (progress - 0.2) / 0.15;
-          opacity = 0.6 + 0.4 * Math.sin(t * Math.PI);
+          opacity = 0.30 + 0.15 * Math.sin(t * Math.PI);
         } else {
           // Rest period - stay at base
-          opacity = 0.6;
+          opacity = 0.30;
         }
         
         map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', opacity);
@@ -7105,9 +7103,9 @@
         cancelAnimationFrame(pulseAnimationId);
         pulseAnimationId = null;
       }
-      // Reset to solid opacity
+      // Reset to base hover opacity
       if (map.getLayer('master-poly-hover-fill')) {
-        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.45);
       }
     }
 
@@ -7120,10 +7118,9 @@
         map.setFilter('master-poly-group-fill', ['==','id','__none__']);
       if (map.getLayer('master-poly-hover-line'))
         map.setFilter('master-poly-hover-line', ['==','id','__none__']);
-      // Restore the base border opacity for every area (we hid one with a
-      // case expression while hovering — reset that back to the flat value).
+      // Restore the base border opacity for every area.
       if (map.getLayer('master-poly-line')) {
-        map.setPaintProperty('master-poly-line', 'line-opacity', 0.30);
+        map.setPaintProperty('master-poly-line', 'line-opacity', 0.55);
       }
     }
 
