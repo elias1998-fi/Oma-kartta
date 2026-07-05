@@ -9144,11 +9144,21 @@
     //    data (parking polygons, halli icons, charging icons). Everything else in
     //    the app is unaffected. ──
     function reapplyMapLayers() {
-      try { if (_lastMasterRows) renderMasterRows(_lastMasterRows); } catch(e){ console.error('reapply master', e); }
+      // Parking-area polygons (fill/line layers — no icons needed).
       try {
+        if (_lastMasterRows) renderMasterRows(_lastMasterRows);
+        else if (typeof loadViewportTiles === 'function') loadViewportTiles(null);
+      } catch(e){ console.error('reapply master', e); }
+      // Halli icons: setStyle() drops registered images, so re-register the
+      // icon BEFORE (re)adding the layer — otherwise the symbols render blank.
+      try {
+        if (typeof createHalliIconCanvas === 'function' && !map.hasImage('halli-icon')) {
+          map.addImage('halli-icon', createHalliIconCanvas(), { pixelRatio: 2 });
+        }
         if (_lastHalliGeoJSON) addHalliLayers(_lastHalliGeoJSON);
-        else if (typeof loadHalliMarkers === 'function') loadHalliMarkers();
+        else if (typeof loadHalliMarkers === 'function') { halliLoaded = false; loadHalliMarkers(); }
       } catch(e){ console.error('reapply halli', e); }
+      // Charging icons — addChargingLayer() re-registers its own images.
       try { if (typeof showEvCharging !== 'undefined' && showEvCharging) addChargingLayer(); } catch(e){ console.error('reapply charging', e); }
     }
     function onDarkModeToggle(input) {
@@ -9156,8 +9166,19 @@
       darkModeEnabled = input.checked;
       try { localStorage.setItem('tp_darkmode', darkModeEnabled ? '1' : '0'); } catch(e){}
       const url = darkModeEnabled ? 'omakartta_style_darkmode.json' : 'omakartta_style.json';
-      map.once('style.load', reapplyMapLayers);
-      map.setStyle(url);
+      // setStyle() wipes ALL custom sources, layers and images. Re-add them once
+      // the new style is ready. 'style.load' can be missed, so we also poll
+      // isStyleLoaded() and keep a timeout fallback; a guard prevents double runs.
+      let _reapplied = false;
+      const doReapply = () => {
+        if (_reapplied) return;
+        if (!map.isStyleLoaded()) { setTimeout(doReapply, 60); return; }
+        _reapplied = true;
+        reapplyMapLayers();
+      };
+      map.once('style.load', doReapply);
+      map.setStyle(url, { diff: false });
+      setTimeout(doReapply, 400);
     }
     // Reflect the saved dark-mode state in the settings switch on startup.
     (function(){ const cb = document.getElementById('setting-darkmode'); if (cb) cb.checked = darkModeEnabled; })();
