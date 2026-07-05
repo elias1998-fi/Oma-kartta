@@ -9144,6 +9144,15 @@
     //    data (parking polygons, halli icons, charging icons). Everything else in
     //    the app is unaffected. ──
     function reapplyMapLayers() {
+      // Clean slate: remove any custom layers/sources that survived the style
+      // switch. Otherwise a lingering source sends renderMasterRows/addHalliLayers
+      // down their setData() path and the layer is never re-created → nothing
+      // shows. Removing first guarantees a fresh re-add in BOTH directions.
+      ['master-poly-fill','master-poly-line','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill','halli-icons','charging-icons']
+        .forEach(id => { if (map.getLayer(id)) { try { map.removeLayer(id); } catch(e){} } });
+      ['master-polygons','halli-points','charging-points']
+        .forEach(id => { if (map.getSource(id)) { try { map.removeSource(id); } catch(e){} } });
+
       // Parking-area polygons (fill/line layers — no icons needed).
       try {
         if (_lastMasterRows) renderMasterRows(_lastMasterRows);
