@@ -3148,6 +3148,50 @@
     }
     .detail-label { color: #555; }
     .detail-value { color: #222; }
+    /* ── Maksuerittelyn aikajana ── */
+    #price-detail-sheet .sheet-panel { display: flex; flex-direction: column; max-height: 86vh; }
+    #price-detail-sheet .price-detail-content { flex-shrink: 0; }
+    #paid-timeline-wrap {
+      flex: 1 1 auto; min-height: 0;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      margin: 0 12px; padding: 12px 8px 8px;
+      border-top: 1px solid #f0f0f0;
+      display: none;
+    }
+    #paid-timeline-wrap.visible { display: block; }
+    #paid-timeline-title {
+      font-family: Arial, sans-serif; font-size: 12px; font-weight: bold;
+      color: #888; text-transform: uppercase; letter-spacing: 0.5px;
+      margin: 0 0 12px 4px;
+    }
+    #paid-timeline { position: relative; }
+    .ptl-hourline { position: absolute; left: 56px; right: 8px; border-top: 1px solid #f0f0f0; }
+    .ptl-hourlabel {
+      position: absolute; left: 0; width: 46px; text-align: right;
+      font-family: Arial, sans-serif; font-size: 12px; color: #999;
+      transform: translateY(-50%);
+    }
+    .ptl-midnight { position: absolute; left: 56px; right: 8px; border-top: 1px dashed #b0b0b0; }
+    .ptl-midlabel {
+      position: absolute; left: 136px; right: 8px; text-align: center;
+      transform: translateY(-50%);
+      font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; color: #8a8a8a;
+    }
+    .ptl-midlabel span { background: #fff; padding: 0 10px; }
+    .ptl-bar {
+      position: absolute; left: 96px; width: 26px;
+      border-radius: 7px; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+      z-index: 2;
+    }
+    .ptl-seg { position: absolute; left: 0; right: 0; }
+    .ptl-seg.paid { background: #1266f1; }
+    .ptl-seg.free { background: #7F1F89; }
+    .ptl-edge {
+      position: absolute; left: 88px; width: 42px; height: 3px;
+      background: #0C0243; border-radius: 2px;
+      transform: translateY(-50%); z-index: 3;
+    }
 
     #start-btn-container { 
       padding: 10px 14px; 
@@ -4835,6 +4879,10 @@
           <span class="detail-label">Yhteensä</span>
           <span class="detail-value" id="detail-total">0,00 €</span>
         </div>
+      </div>
+      <div id="paid-timeline-wrap">
+        <div id="paid-timeline-title">Maksullinen aika</div>
+        <div id="paid-timeline"></div>
       </div>
     </div>
   </div>
@@ -11930,6 +11978,9 @@
       return amount.toFixed(2).replace('.', ',') + ' €';
     }
 
+    // Valitun alueen maksuajat (mape/la/su) maksuerittelyn aikajanaa varten.
+    let _parkingAreaValid = null;
+    function _nfv(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
     let parkingMinutes=0, parkingMaxMinutes=1440, isIlmainen=false;
     let parkingStartTime = null;
     const PIXELS_PER_MINUTE=8, RADIANS_PER_PX=0.055, N_LINES=12;
@@ -12053,11 +12104,127 @@
       document.getElementById('detail-subtotal').textContent = formatPrice(price.subtotal);
       document.getElementById('detail-vat').textContent = formatPrice(price.vat);
       document.getElementById('detail-total').textContent = formatPrice(price.total);
+      renderPaidTimeline(mins);
       document.getElementById('price-detail-sheet').classList.add('open');
     }
 
     function closePriceDetail() {
       document.getElementById('price-detail-sheet').classList.remove('open');
+    }
+
+    // ── Maksuerittelyn aikajana ──────────────────────────────────────────
+    // Piirtää pystysuoran aikajanan (iOS-kalenterityyliin): tuntiviivat ja
+    // -otsikot vasemmalla, katkoviiva + "ti 7.7." vuorokauden vaihtuessa,
+    // ja kapea palkki pysäköinnin alusta loppuun. Palkin segmentit:
+    // sininen #1266f1 = maksullinen aika, lila #7F1F89 = ilmainen aika.
+    // Alku- ja loppuhetkellä tumma vaakaviiva.
+    function renderPaidTimeline(mins) {
+      const wrap = document.getElementById('paid-timeline-wrap');
+      const tl   = document.getElementById('paid-timeline');
+      if (!wrap || !tl) return;
+      // Näytetään vain pysäköintinäkymän yhteydessä (ei esim. kuittisivulla).
+      const overlayEl = document.getElementById('parking-overlay');
+      if (!overlayEl || !overlayEl.classList.contains('open')) {
+        wrap.classList.remove('visible');
+        return;
+      }
+      wrap.classList.add('visible');
+
+      if (!mins || mins <= 0) {
+        tl.style.height = 'auto';
+        tl.innerHTML = '<div style="font-family:Arial,sans-serif;font-size:13px;color:#999;padding:2px 4px 6px;">Aseta ensin pysäköintiaika, niin näet maksullisen ja ilmaisen ajan aikajanalla.</div>';
+        return;
+      }
+
+      const start = (parkingStartTime instanceof Date) ? new Date(parkingStartTime) : new Date();
+      const end   = new Date(start.getTime() + mins * 60000);
+
+      const PX = 34, TOP = 10, BOT = 14;
+      const origin = new Date(start); origin.setMinutes(0, 0, 0);
+      const endCeil = new Date(end);
+      if (end.getMinutes() || end.getSeconds()) endCeil.setHours(endCeil.getHours() + 1);
+      endCeil.setMinutes(0, 0, 0);
+      const totalH = (endCeil - origin) / 3600000;
+      tl.style.height = (TOP + totalH * PX + BOT) + 'px';
+      const yOf = t => TOP + (t - origin.getTime()) / 3600000 * PX;
+
+      // Maksuikkuna viikonpäivän mukaan. Jos KAIKKI kentät puuttuvat →
+      // ei tietoa → koko aika maksullista. Jos osa määritelty mutta tämän
+      // päivän ikkuna puuttuu (esim. su) → päivä on ilmainen.
+      const v = _parkingAreaValid || {};
+      const anyDef = [v.mapeFrom, v.mapeTo, v.laFrom, v.laTo, v.suFrom, v.suTo].some(x => x != null);
+      function winFor(d) {
+        if (!anyDef) return { from: 0, to: 24 };
+        const dow = d.getDay();
+        let f, t;
+        if (dow === 0)      { f = v.suFrom; t = v.suTo; }
+        else if (dow === 6) { f = v.laFrom; t = v.laTo; }
+        else                { f = v.mapeFrom; t = v.mapeTo; }
+        if (f == null || t == null) return null;
+        return { from: f, to: t };
+      }
+      function isPaidAt(ms) {
+        const d = new Date(ms);
+        const w = winFor(d);
+        if (!w) return false;
+        const h = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+        return h >= w.from && h < w.to;
+      }
+
+      // Segmenttirajat: alku, loppu, vuorokaudenvaihteet ja maksuikkunan
+      // reunat (from/to) jokaiselta aikavälin päivältä.
+      const bset = new Set([start.getTime(), end.getTime()]);
+      const dayIter = new Date(start); dayIter.setHours(0, 0, 0, 0);
+      for (; dayIter <= end; dayIter.setDate(dayIter.getDate() + 1)) {
+        const day0 = new Date(dayIter);
+        if (day0 > start && day0 < end) bset.add(day0.getTime());
+        const w = winFor(day0);
+        if (w) {
+          const a = new Date(day0); a.setHours(Math.floor(w.from), Math.round((w.from % 1) * 60), 0, 0);
+          const b = new Date(day0); b.setHours(Math.floor(w.to),   Math.round((w.to   % 1) * 60), 0, 0);
+          if (a > start && a < end) bset.add(a.getTime());
+          if (b > start && b < end) bset.add(b.getTime());
+        }
+      }
+      const bounds = Array.from(bset).sort((a, b) => a - b);
+
+      const dnames = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'];
+      let html = '';
+
+      // Tuntiviivat ja -otsikot; keskiyöllä katkoviiva + päivälabel.
+      for (let t = new Date(origin); t <= endCeil; t.setHours(t.getHours() + 1)) {
+        const yy = yOf(t.getTime()).toFixed(1);
+        const hh = t.getHours();
+        if (hh === 0 && t.getTime() > origin.getTime()) {
+          html += '<div class="ptl-midnight" style="top:' + yy + 'px"></div>';
+          html += '<div class="ptl-hourlabel" style="top:' + yy + 'px">0.00</div>';
+          html += '<div class="ptl-midlabel" style="top:' + yy + 'px"><span>' +
+                  dnames[t.getDay()] + ' ' + t.getDate() + '.' + (t.getMonth() + 1) + '.</span></div>';
+        } else {
+          html += '<div class="ptl-hourline" style="top:' + yy + 'px"></div>';
+          html += '<div class="ptl-hourlabel" style="top:' + yy + 'px">' + hh + '.00</div>';
+        }
+      }
+
+      // Palkki segmentteineen.
+      const yS = yOf(start.getTime());
+      const yE = yOf(end.getTime());
+      let segs = '';
+      for (let i = 0; i < bounds.length - 1; i++) {
+        const a = bounds[i], b = bounds[i + 1];
+        if (b <= a) continue;
+        const paid = isPaidAt((a + b) / 2);
+        segs += '<div class="ptl-seg ' + (paid ? 'paid' : 'free') + '" style="top:' +
+                (yOf(a) - yS).toFixed(1) + 'px;height:' + (yOf(b) - yOf(a)).toFixed(1) + 'px"></div>';
+      }
+      html += '<div class="ptl-bar" style="top:' + yS.toFixed(1) + 'px;height:' +
+              Math.max(2, yE - yS).toFixed(1) + 'px">' + segs + '</div>';
+      // Alku- ja loppuviivat.
+      html += '<div class="ptl-edge" style="top:' + yS.toFixed(1) + 'px"></div>';
+      html += '<div class="ptl-edge" style="top:' + yE.toFixed(1) + 'px"></div>';
+
+      tl.innerHTML = html;
+      wrap.scrollTop = 0;
     }
 
     let inertiaRAF=null,inertiaVel=0;
@@ -12356,6 +12523,11 @@
       // Disc / free area → open the parking-disc view instead of the
       // duration-based parking flow.
       if (isDiscOrFreeArea(p)) { openDiscOverlay(); return; }
+      _parkingAreaValid = {
+        mapeFrom: _nfv(p.valid),         mapeTo: _nfv(p.valid_mape_to),
+        laFrom:   _nfv(p.valid_la_from), laTo:   _nfv(p.valid_la_to),
+        suFrom:   _nfv(p.valid_su_from), suTo:   _nfv(p.valid_su_to)
+      };
       openParkingOverlay({
         'hel:id':            computeAreaCodeFromFeature(f[0]),
         'hel:kesto':         p.max_hours ? `${p.max_hours}h` : null,
@@ -12585,6 +12757,7 @@
         areaCode:      areaCode,
         paymentMethod: pm.name,
         maxHours:      parkingMaxMinutes / 60,
+        validTimes:    _parkingAreaValid,
         location:      { lat: center.lat, lng: center.lng }
       };
 
@@ -13956,6 +14129,7 @@
       if (!activeParkingSession) return;
       isExtendingSession    = true;
       extendDrumUserTouched = false;
+      _parkingAreaValid     = activeParkingSession.validTimes || null;
       hideActiveParkingBanner();
       // Add the extending-mode class first so the dim is in place from the
       // moment the overlay slides open (avoids any visual flash).
