@@ -3151,18 +3151,24 @@
     /* ── Maksuerittelyn aikajana ── */
     #price-detail-sheet .sheet-panel { display: flex; flex-direction: column; max-height: 86vh; }
     #price-detail-sheet .price-detail-content { flex-shrink: 0; }
+    /* Ikkunamainen kehys: pyöristetty suorakulmio, kiinteä korkeus, sisältö
+       vierii ikkunan sisällä jos aikajana on pidempi. */
+    #paid-timeline-section { display: none; margin: 0 16px 4px; flex-shrink: 0; }
+    #paid-timeline-section.visible { display: block; }
     #paid-timeline-wrap {
-      flex: 1 1 auto; min-height: 0;
+      height: 42vh;
       overflow-y: auto; -webkit-overflow-scrolling: touch;
-      margin: 0 12px; padding: 12px 8px 8px;
-      border-top: 1px solid #f0f0f0;
-      display: none;
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 14px;
+      padding: 10px 8px;
+      box-sizing: border-box;
     }
-    #paid-timeline-wrap.visible { display: block; }
+    #paid-timeline-wrap.ptl-empty { height: auto; }
     #paid-timeline-title {
       font-family: Arial, sans-serif; font-size: 12px; font-weight: bold;
       color: #888; text-transform: uppercase; letter-spacing: 0.5px;
-      margin: 0 0 12px 4px;
+      margin: 0 0 8px 4px;
     }
     #paid-timeline { position: relative; }
     .ptl-hourline { position: absolute; left: 56px; right: 8px; border-top: 1px solid #f0f0f0; }
@@ -3181,12 +3187,12 @@
     .ptl-bar {
       position: absolute; left: 96px; width: 26px;
       border-radius: 7px; overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.10);
       z-index: 2;
     }
     .ptl-seg { position: absolute; left: 0; right: 0; }
-    .ptl-seg.paid { background: #1266f1; }
-    .ptl-seg.free { background: #7F1F89; }
+    .ptl-seg.paid { background: rgba(18, 102, 241, 0.45); }
+    .ptl-seg.free { background: rgba(127, 31, 137, 0.45); }
     .ptl-edge {
       position: absolute; left: 88px; width: 42px; height: 3px;
       background: #0C0243; border-radius: 2px;
@@ -4858,6 +4864,12 @@
         <div class="sheet-title">Maksuerittely</div>
         <button class="sheet-close-btn" onclick="closePriceDetail()">✕</button>
       </div>
+      <div id="paid-timeline-section">
+        <div id="paid-timeline-title">Maksullinen aika</div>
+        <div id="paid-timeline-wrap">
+          <div id="paid-timeline"></div>
+        </div>
+      </div>
       <div class="price-detail-content">
         <div class="detail-row">
           <span class="detail-label">Pysäköintimaksu</span>
@@ -4879,10 +4891,6 @@
           <span class="detail-label">Yhteensä</span>
           <span class="detail-value" id="detail-total">0,00 €</span>
         </div>
-      </div>
-      <div id="paid-timeline-wrap">
-        <div id="paid-timeline-title">Maksullinen aika</div>
-        <div id="paid-timeline"></div>
       </div>
     </div>
   </div>
@@ -12119,22 +12127,25 @@
     // sininen #1266f1 = maksullinen aika, lila #7F1F89 = ilmainen aika.
     // Alku- ja loppuhetkellä tumma vaakaviiva.
     function renderPaidTimeline(mins) {
+      const sec  = document.getElementById('paid-timeline-section');
       const wrap = document.getElementById('paid-timeline-wrap');
       const tl   = document.getElementById('paid-timeline');
-      if (!wrap || !tl) return;
+      if (!sec || !wrap || !tl) return;
       // Näytetään vain pysäköintinäkymän yhteydessä (ei esim. kuittisivulla).
       const overlayEl = document.getElementById('parking-overlay');
       if (!overlayEl || !overlayEl.classList.contains('open')) {
-        wrap.classList.remove('visible');
+        sec.classList.remove('visible');
         return;
       }
-      wrap.classList.add('visible');
+      sec.classList.add('visible');
 
       if (!mins || mins <= 0) {
+        wrap.classList.add('ptl-empty');
         tl.style.height = 'auto';
         tl.innerHTML = '<div style="font-family:Arial,sans-serif;font-size:13px;color:#999;padding:2px 4px 6px;">Aseta ensin pysäköintiaika, niin näet maksullisen ja ilmaisen ajan aikajanalla.</div>';
         return;
       }
+      wrap.classList.remove('ptl-empty');
 
       const start = (parkingStartTime instanceof Date) ? new Date(parkingStartTime) : new Date();
       const end   = new Date(start.getTime() + mins * 60000);
@@ -12195,7 +12206,7 @@
       for (let t = new Date(origin); t <= endCeil; t.setHours(t.getHours() + 1)) {
         const yy = yOf(t.getTime()).toFixed(1);
         const hh = t.getHours();
-        if (hh === 0 && t.getTime() > origin.getTime()) {
+        if (hh === 0) {
           html += '<div class="ptl-midnight" style="top:' + yy + 'px"></div>';
           html += '<div class="ptl-hourlabel" style="top:' + yy + 'px">0.00</div>';
           html += '<div class="ptl-midlabel" style="top:' + yy + 'px"><span>' +
