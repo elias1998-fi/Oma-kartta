@@ -3211,6 +3211,12 @@
       font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; color: #0C0243;
       z-index: 3; white-space: nowrap;
     }
+    .ptl-now { position: absolute; left: 50px; right: 8px; border-top: 2px solid #ff3b30; z-index: 4; }
+    .ptl-nowdot {
+      position: absolute; left: 50px; width: 8px; height: 8px;
+      border-radius: 50%; background: #ff3b30;
+      transform: translate(-50%, -50%); z-index: 5;
+    }
 
     #start-btn-container { 
       padding: 10px 14px; 
@@ -4883,7 +4889,7 @@
         </div>
         <div id="ptl-legend">
           <span><i class="ptl-dot paid"></i>Maksullinen</span>
-          <span><i class="ptl-dot free"></i>Ilmainen</span>
+          <span><i class="ptl-dot free"></i>Ei maksua</span>
         </div>
       </div>
       <div class="price-detail-content">
@@ -12128,11 +12134,15 @@
       document.getElementById('detail-subtotal').textContent = formatPrice(price.subtotal);
       document.getElementById('detail-vat').textContent = formatPrice(price.vat);
       document.getElementById('detail-total').textContent = formatPrice(price.total);
+      _ptlMins = mins;
       renderPaidTimeline(mins);
+      if (_ptlTimer) clearInterval(_ptlTimer);
+      _ptlTimer = setInterval(() => renderPaidTimeline(_ptlMins), 20000);
       document.getElementById('price-detail-sheet').classList.add('open');
     }
 
     function closePriceDetail() {
+      if (_ptlTimer) { clearInterval(_ptlTimer); _ptlTimer = null; }
       document.getElementById('price-detail-sheet').classList.remove('open');
     }
 
@@ -12142,6 +12152,11 @@
     // ja kapea palkki pysäköinnin alusta loppuun. Palkin segmentit:
     // sininen #1266f1 = maksullinen aika, lila #7F1F89 = ilmainen aika.
     // Alku- ja loppuhetkellä tumma vaakaviiva.
+    // Live-päivitys: kun maksuerittely on auki, aikajana piirtyy uudelleen
+    // ~20 s välein, jolloin alkuaika (= nykyhetki) ja punainen nykyhetki-viiva
+    // seuraavat kelloa minuutin tarkkuudella.
+    let _ptlTimer = null;
+    let _ptlMins  = 0;
     function renderPaidTimeline(mins) {
       const sec  = document.getElementById('paid-timeline-section');
       const wrap = document.getElementById('paid-timeline-wrap');
@@ -12253,11 +12268,20 @@
       const hhmm = d => d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
       html += '<div class="ptl-edge" style="top:' + yS.toFixed(1) + 'px"></div>';
       html += '<div class="ptl-edge" style="top:' + yE.toFixed(1) + 'px"></div>';
-      html += '<div class="ptl-time" style="top:' + yS.toFixed(1) + 'px">' + hhmm(start) + '</div>';
-      html += '<div class="ptl-time" style="top:' + yE.toFixed(1) + 'px">' + hhmm(end) + '</div>';
+      html += '<div class="ptl-time" style="top:' + yS.toFixed(1) + 'px">Alkaa ' + hhmm(start) + '</div>';
+      html += '<div class="ptl-time" style="top:' + yE.toFixed(1) + 'px">Päättyy ' + hhmm(end) + '</div>';
 
+      // Nykyhetki: ohut punainen viiva pisteineen (kuten iOS-kalenterissa).
+      const nowMs = Date.now();
+      if (nowMs >= origin.getTime() && nowMs <= endCeil.getTime()) {
+        const yN = yOf(nowMs).toFixed(1);
+        html += '<div class="ptl-nowdot" style="top:' + yN + 'px"></div>';
+        html += '<div class="ptl-now" style="top:' + yN + 'px"></div>';
+      }
+
+      const savedScroll = wrap.scrollTop;
       tl.innerHTML = html;
-      wrap.scrollTop = 0;
+      wrap.scrollTop = savedScroll;
     }
 
     let inertiaRAF=null,inertiaVel=0;
