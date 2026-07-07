@@ -3140,6 +3140,9 @@
       border-bottom: 1px solid #f0f0f0;
     }
     .detail-row:last-child { border-bottom: none; }
+    /* Rivi juuri ennen "Yhteensä"-riviä (ALV): piilota vaalea alaviiva, jotta
+       ALV:n ja Yhteensän väliin jää vain yksi paksu viiva. */
+    .detail-row:has(+ .detail-row.total) { border-bottom: none; }
     .detail-row.total {
       font-weight: bold; font-size: 16px;
       border-top: 2px solid #ddd;
@@ -3217,6 +3220,13 @@
       border-radius: 50%; background: #ff3b30;
       transform: translate(-50%, -50%); z-index: 5;
     }
+    .ptl-startlabel {
+      position: absolute; left: 130px; right: 8px;
+      transform: translateY(-50%); text-align: left;
+      font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; color: #0C0243;
+      z-index: 6;
+    }
+    .ptl-startlabel span { background: #fff; padding: 0 8px; }
 
     #start-btn-container { 
       padding: 10px 14px; 
@@ -12137,7 +12147,7 @@
       _ptlMins = mins;
       renderPaidTimeline(mins);
       if (_ptlTimer) clearInterval(_ptlTimer);
-      _ptlTimer = setInterval(() => renderPaidTimeline(_ptlMins), 20000);
+      _ptlTimer = setInterval(() => renderPaidTimeline(_ptlMins), 15000);
       document.getElementById('price-detail-sheet').classList.add('open');
     }
 
@@ -12181,7 +12191,7 @@
       wrap.classList.remove('ptl-empty');
       if (legend) legend.classList.remove('hidden');
 
-      const start = (parkingStartTime instanceof Date) ? new Date(parkingStartTime) : new Date();
+      const start = new Date();   // aina nykyhetki → aikajana elää kellon mukaan
       const end   = new Date(start.getTime() + mins * 60000);
 
       const PX = 34, TOP = 10, BOT = 14;
@@ -12264,19 +12274,20 @@
       }
       html += '<div class="ptl-bar" style="top:' + yS.toFixed(1) + 'px;height:' +
               Math.max(2, yE - yS).toFixed(1) + 'px">' + segs + '</div>';
-      // Alku- ja loppuviivat + kellonajat (sama fontti/koko kuin päivälabel).
+      // Vain loppuviiva (alun musta viiva poistettu — punainen nykyhetki-viiva
+      // hoitaa alun merkinnän). Kellonajat samalla fontilla/koolla kuin päivälabel.
       const hhmm = d => d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
-      html += '<div class="ptl-edge" style="top:' + yS.toFixed(1) + 'px"></div>';
       html += '<div class="ptl-edge" style="top:' + yE.toFixed(1) + 'px"></div>';
-      html += '<div class="ptl-time" style="top:' + yS.toFixed(1) + 'px">Alkaa ' + hhmm(start) + '</div>';
       html += '<div class="ptl-time" style="top:' + yE.toFixed(1) + 'px">Päättyy ' + hhmm(end) + '</div>';
 
-      // Nykyhetki: ohut punainen viiva pisteineen (kuten iOS-kalenterissa).
-      const nowMs = Date.now();
+      // Nykyhetki = pysäköinnin alku: ohut punainen viiva pisteineen. Teksti
+      // "Alkaa HH:MM" katkaisee viivan keskeltä (kuten 00:00 päivälabel).
+      const nowMs = start.getTime();
       if (nowMs >= origin.getTime() && nowMs <= endCeil.getTime()) {
         const yN = yOf(nowMs).toFixed(1);
         html += '<div class="ptl-nowdot" style="top:' + yN + 'px"></div>';
         html += '<div class="ptl-now" style="top:' + yN + 'px"></div>';
+        html += '<div class="ptl-startlabel" style="top:' + yN + 'px"><span>Alkaa ' + hhmm(start) + '</span></div>';
       }
 
       const savedScroll = wrap.scrollTop;
