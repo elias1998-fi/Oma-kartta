@@ -3156,7 +3156,7 @@
     #paid-timeline-section { display: none; margin: 0 16px 4px; flex-shrink: 0; }
     #paid-timeline-section.visible { display: block; }
     #paid-timeline-wrap {
-      height: 42vh;
+      height: 21vh;
       overflow-y: auto; -webkit-overflow-scrolling: touch;
       background: #fff;
       border: 1px solid #e6e6e6;
@@ -3165,11 +3165,18 @@
       box-sizing: border-box;
     }
     #paid-timeline-wrap.ptl-empty { height: auto; }
-    #paid-timeline-title {
-      font-family: Arial, sans-serif; font-size: 12px; font-weight: bold;
-      color: #888; text-transform: uppercase; letter-spacing: 0.5px;
-      margin: 0 0 8px 4px;
+    #ptl-legend {
+      display: flex; gap: 18px; justify-content: center;
+      margin: 10px 16px 2px;
+      font-family: Arial, sans-serif; font-size: 12px; color: #555;
     }
+    #ptl-legend.hidden { display: none; }
+    #ptl-legend i {
+      display: inline-block; width: 12px; height: 12px;
+      border-radius: 3px; margin-right: 6px; vertical-align: -1px;
+    }
+    #ptl-legend .ptl-dot.paid { background: rgba(18, 102, 241, 0.45); }
+    #ptl-legend .ptl-dot.free { background: rgba(127, 31, 137, 0.45); }
     #paid-timeline { position: relative; }
     .ptl-hourline { position: absolute; left: 56px; right: 8px; border-top: 1px solid #f0f0f0; }
     .ptl-hourlabel {
@@ -3197,6 +3204,12 @@
       position: absolute; left: 88px; width: 42px; height: 3px;
       background: #0C0243; border-radius: 2px;
       transform: translateY(-50%); z-index: 3;
+    }
+    .ptl-time {
+      position: absolute; left: 134px;
+      transform: translateY(-50%);
+      font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; color: #0C0243;
+      z-index: 3; white-space: nowrap;
     }
 
     #start-btn-container { 
@@ -4865,9 +4878,12 @@
         <button class="sheet-close-btn" onclick="closePriceDetail()">✕</button>
       </div>
       <div id="paid-timeline-section">
-        <div id="paid-timeline-title">Maksullinen aika</div>
         <div id="paid-timeline-wrap">
           <div id="paid-timeline"></div>
+        </div>
+        <div id="ptl-legend">
+          <span><i class="ptl-dot paid"></i>Maksullinen</span>
+          <span><i class="ptl-dot free"></i>Ilmainen</span>
         </div>
       </div>
       <div class="price-detail-content">
@@ -12139,13 +12155,16 @@
       }
       sec.classList.add('visible');
 
+      const legend = document.getElementById('ptl-legend');
       if (!mins || mins <= 0) {
         wrap.classList.add('ptl-empty');
+        if (legend) legend.classList.add('hidden');
         tl.style.height = 'auto';
         tl.innerHTML = '<div style="font-family:Arial,sans-serif;font-size:13px;color:#999;padding:2px 4px 6px;">Aseta ensin pysäköintiaika, niin näet maksullisen ja ilmaisen ajan aikajanalla.</div>';
         return;
       }
       wrap.classList.remove('ptl-empty');
+      if (legend) legend.classList.remove('hidden');
 
       const start = (parkingStartTime instanceof Date) ? new Date(parkingStartTime) : new Date();
       const end   = new Date(start.getTime() + mins * 60000);
@@ -12230,9 +12249,12 @@
       }
       html += '<div class="ptl-bar" style="top:' + yS.toFixed(1) + 'px;height:' +
               Math.max(2, yE - yS).toFixed(1) + 'px">' + segs + '</div>';
-      // Alku- ja loppuviivat.
+      // Alku- ja loppuviivat + kellonajat (sama fontti/koko kuin päivälabel).
+      const hhmm = d => d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
       html += '<div class="ptl-edge" style="top:' + yS.toFixed(1) + 'px"></div>';
       html += '<div class="ptl-edge" style="top:' + yE.toFixed(1) + 'px"></div>';
+      html += '<div class="ptl-time" style="top:' + yS.toFixed(1) + 'px">' + hhmm(start) + '</div>';
+      html += '<div class="ptl-time" style="top:' + yE.toFixed(1) + 'px">' + hhmm(end) + '</div>';
 
       tl.innerHTML = html;
       wrap.scrollTop = 0;
