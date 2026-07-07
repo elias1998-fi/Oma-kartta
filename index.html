@@ -3146,8 +3146,6 @@
     .detail-row.total {
       font-weight: bold; font-size: 16px;
       border-top: 2px solid #ddd;
-      padding-top: 12px;
-      margin-top: 8px;
     }
     .detail-label { color: #555; }
     .detail-value { color: #222; }
@@ -12552,6 +12550,14 @@
         sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
         sheet.style.transform  = 'translateY(calc(100% - 153px))';
         currentY = sheet.offsetHeight - 153;
+        // Sync the map-dimming backdrop to the new (low) sheet position so the
+        // map returns to full brightness instead of staying faded. Uses the same
+        // formula as the drag handler (yields 0 at this low height).
+        if (typeof sheetBackdrop !== 'undefined' && sheetBackdrop) {
+          const op = 1 - (currentY / (sheet.clientHeight - 60));
+          sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (op - 0.5) * 2));
+        }
+        if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       }, 50);
     }
 
