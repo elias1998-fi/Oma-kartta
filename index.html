@@ -12180,10 +12180,8 @@
 
       const legend = document.getElementById('ptl-legend');
       if (!mins || mins <= 0) {
-        wrap.classList.add('ptl-empty');
-        if (legend) legend.classList.add('hidden');
-        tl.style.height = 'auto';
-        tl.innerHTML = '<div style="font-family:Arial,sans-serif;font-size:13px;color:#999;padding:2px 4px 6px;">Aseta ensin pysäköintiaika, niin näet maksullisen ja ilmaisen ajan aikajanalla.</div>';
+        // Aikaa ei asetettu → piilota koko aikajana-ikkuna (sheet jää pienemmäksi).
+        sec.classList.remove('visible');
         return;
       }
       wrap.classList.remove('ptl-empty');
@@ -12486,7 +12484,11 @@
     }
 
     const overlay=document.getElementById('parking-overlay');
+    let _sheetYBeforeParking = null;
     function openParkingOverlay(p){
+      // Muista bottom sheetin asento, jotta "Valittu alue" -paluu palaa
+      // täsmälleen samaan kohtaan (ylhäällä/alhaalla) mihin jäätiin.
+      _sheetYBeforeParking = currentY;
       const areaCode=p['hel:id']||'—',kesto=p['hel:kesto']||null;
       const tyyppi=getTypeName(p['hel:paikan_asento']);
       const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';
@@ -12549,19 +12551,22 @@
         stopExtendTicker();
         if (activeParkingSession) showActiveParkingBanner();
       }
-      // Open the bottom sheet to the 153px mid-level used when a P-marker is
-      // on a parking area, so the user can immediately drag it up or down.
+      // Restore the bottom sheet to exactly where it was when the parking view
+      // was opened (up or down), instead of forcing a fixed mid-level.
       setTimeout(() => {
+        const targetY = (_sheetYBeforeParking != null)
+          ? _sheetYBeforeParking
+          : (sheet.offsetHeight - 153);
         sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
-        sheet.style.transform  = 'translateY(calc(100% - 153px))';
-        currentY = sheet.offsetHeight - 153;
-        // Sync the map-dimming backdrop to the new (low) sheet position so the
-        // map returns to full brightness instead of staying faded. Uses the same
-        // formula as the drag handler (yields 0 at this low height).
+        sheet.style.transform  = `translateY(${targetY}px)`;
+        currentY = targetY;
+        // Sync the map-dimming backdrop to the restored sheet position (same
+        // formula as the drag handler) so the map brightness matches.
         if (typeof sheetBackdrop !== 'undefined' && sheetBackdrop) {
           const op = 1 - (currentY / (sheet.clientHeight - 60));
           sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (op - 0.5) * 2));
         }
+        if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
         if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       }, 50);
     }
