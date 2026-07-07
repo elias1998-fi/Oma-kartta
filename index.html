@@ -12347,6 +12347,10 @@
     let vehicles = loadVehicles();
     if (!vehicles.length) { vehicles = [{ plate:'FHY-857', name:'Äitin auto' }]; saveVehicles(vehicles); }
     let selectedVehicleIdx = 0;
+    // Pakottaa käyttäjän vahvistamaan ajoneuvon ennen pysäköinnin aloitusta:
+    // ensimmäinen "Aloita pysäköinti" -painallus avaa ajoneuvo-sheetin, ja vasta
+    // ajoneuvon valinnan jälkeen seuraava painallus aloittaa pysäköinnin.
+    let _vehicleConfirmedForStart = false;
 
     function renderVehicleDisplay() {
       vehicles = loadVehicles();
@@ -12372,7 +12376,7 @@
             <div class="option-name">${escapeHtml(v.name || '')}</div>
             <div class="option-reg">${escapeHtml(v.plate || '')}</div>
           </div>`;
-        row.addEventListener('click', () => { selectedVehicleIdx=i; renderVehicleDisplay(); closeVehicleSheet(); });
+        row.addEventListener('click', () => { selectedVehicleIdx=i; _vehicleConfirmedForStart=true; renderVehicleDisplay(); closeVehicleSheet(); });
         container.appendChild(row);
       });
       // Divider before "add new" entry
@@ -12488,6 +12492,7 @@
       const kestoText=kesto?`Max. ${kesto}`:'Rajoittamaton',luokka=p['hel:luokka_nimi']||'';
       isIlmainen=luokka.toLowerCase().includes('ilmainen');
       parkingMaxMinutes=kesto?kestoToMinutes(kesto):1440;
+      _vehicleConfirmedForStart = false;   // vaadi ajoneuvon vahvistus joka kerta
       // In extend mode, parkingMinutes/drumPhase are set by extendActiveParking()
       // immediately after this call. Don't zero them here or the button text
       // flickers from "Keskeytä pysäköinti" to "Vahvista uusi pysäköintiaika".
@@ -14239,6 +14244,10 @@
       }
       // Normal (non-extending) flow
       if (parkingMinutes === 0) { jiggleDrum(); return; }
+      // Vaadi ajoneuvon vahvistus ennen aloitusta: 1. painallus avaa "Valitse
+      // ajoneuvo" -sheetin. Ajoneuvon valinnan jälkeen (sheet sulkeutuu) seuraava
+      // painallus aloittaa pysäköinnin normaalisti.
+      if (!_vehicleConfirmedForStart) { openVehicleSheet(); return; }
       startNewParkingSession();
     });
 
