@@ -1838,6 +1838,15 @@
       text-align: center;
       line-height: 1.4;
     }
+    /* Ajanhetki (reference-time) row: clock on the left, drum on the right */
+    #ref-time-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+    #ref-time-left { flex: 1; }
+    #ref-time-label { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-family: Arial, sans-serif; }
+    #ref-time-value { font-size: 26px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color 0.2s ease; }
+    #ref-time-value.manual { color: #1266f1; }
+    #ref-time-day { font-size: 12px; color: #888; margin-top: 4px; font-family: Arial, sans-serif; }
+    #ref-time-reset { display: none; margin-top: 6px; border: none; background: none; padding: 0; font-size: 12px; font-weight: 600; color: #1266f1; cursor: pointer; font-family: Arial, sans-serif; text-decoration: underline; }
+    #ref-time-reset.visible { display: inline-block; }
 
     #slider-label { font-size: 15px; color: #222; margin-bottom: 10px; text-align: center; }
     #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
@@ -4720,6 +4729,23 @@
             <button class="seg-option" data-mode="free" onclick="setFreeFilterMode('free')">Ilmaiset</button>
           </div>
           <div id="free-mode-info">Näytetään kaikki pysäköintialueet kartalla</div>
+
+          <!-- Reference-time drum ("Ajanhetki"): the clock time the free/paid
+               evaluation uses. Defaults to the live clock (30-min steps) and
+               keeps following it until the user rolls the drum; the reset
+               link snaps it back to "now". Rolling past midnight advances the
+               weekday, so ma–pe / la / su fee windows stay correct. -->
+          <div id="ref-time-row">
+            <div id="ref-time-left">
+              <div id="ref-time-label">Ajanhetki</div>
+              <div id="ref-time-value">–</div>
+              <div id="ref-time-day">nykyhetki</div>
+              <button id="ref-time-reset" onclick="resetRefTime()">Palauta nykyhetkeen</button>
+            </div>
+            <div class="drum-scroll-zone" id="ref-drum-zone">
+              <canvas id="ref-drum-canvas" width="52" height="80"></canvas>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -5001,6 +5027,7 @@
   </div>
 
   <script>
+    console.log('BUILD: 2026-07-08 ajanhetki-rulla');
     // ── Lock screen orientation to portrait ────────────────────────────
     // Works reliably in PWA/standalone mode (when app is added to home screen).
     // Inside a regular browser tab, browsers restrict orientation lock — the
@@ -6921,6 +6948,37 @@
       }
     }
 
+    // Parses a validity-hour value ("9", "9:30", 9, 9.5) into a decimal hour
+    // (9:30 → 9.5). Returns -1 when the value is missing/invalid so MapLibre
+    // filter expressions can test it with a plain numeric comparison.
+    function hourValOf(v) {
+      if (v === null || v === undefined || v === '') return -1;
+      if (typeof v === 'number') return Number.isFinite(v) ? v : -1;
+      const s = String(v).trim();
+      if (s.indexOf(':') !== -1) {
+        const parts = s.split(':');
+        const hh = parseFloat(parts[0]), mm = parseFloat(parts[1]);
+        if (!Number.isFinite(hh)) return -1;
+        return hh + (Number.isFinite(mm) ? mm / 60 : 0);
+      }
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : -1;
+    }
+
+    // Numeric fee-window properties for the map filter (Ajanhetki drum):
+    // v_mf/v_mt = ma–pe from/to, v_lf/v_lt = la, v_sf/v_st = su, all as
+    // decimal hours (-1 = not defined). v_any = true if ANY window exists.
+    function validityProps(r) {
+      const p = {
+        v_mf: hourValOf(r.valid_mape_from), v_mt: hourValOf(r.valid_mape_to),
+        v_lf: hourValOf(r.valid_la_from),   v_lt: hourValOf(r.valid_la_to),
+        v_sf: hourValOf(r.valid_su_from),   v_st: hourValOf(r.valid_su_to)
+      };
+      p.v_any = (p.v_mf !== -1 || p.v_mt !== -1 || p.v_lf !== -1 ||
+                 p.v_lt !== -1 || p.v_sf !== -1 || p.v_st !== -1);
+      return p;
+    }
+
     let _lastMasterRows = null;
     let _lastHalliGeoJSON = null;
     async function renderMasterRows(rows) {
@@ -6940,7 +6998,8 @@
               valid_la_from: r.valid_la_from ?? '',
               valid_la_to: r.valid_la_to ?? '',
               valid_su_from: r.valid_su_from ?? '',
-              valid_su_to: r.valid_su_to ?? ''
+              valid_su_to: r.valid_su_to ?? '',
+              ...validityProps(r)
             },
             geometry: r.polygon_coordinates
           }));
@@ -10434,19 +10493,112 @@
       }
       filterResult.textContent=''; // Always empty now
     }
+    // ── Ajanhetki (reference time) for the free/paid map filter ─────────
+    // refMinutes = minutes from today 00:00 (may exceed 1440 when the drum is
+    // rolled past midnight → weekday advances, so ma–pe / la / su windows
+    // resolve correctly). Follows the live clock until the user touches the
+    // drum (refTimeManual); resetRefTime() returns to live mode.
+    const REF_STEP_MIN = 30;                  // drum snaps to 30-minute steps
+    const REF_PX_PER_MIN = 0.8;               // drag pixels per minute (≈24 px/step)
+    const REF_MAX_MIN = 7 * 1440 - REF_STEP_MIN; // at most a week ahead
+    let refTimeManual = false;
+    let refMinutes = 0;
+    let refDrumPhase = 0;
+    let refTickerId = null;
+    let _refLastApplied = -1;
+
+    function nowRefMinutes() {
+      const n = new Date();
+      const mins = n.getHours() * 60 + n.getMinutes();
+      return Math.floor(mins / REF_STEP_MIN) * REF_STEP_MIN;
+    }
+    function refRoundedMinutes() {
+      return Math.max(0, Math.min(Math.round(refMinutes / REF_STEP_MIN) * REF_STEP_MIN, REF_MAX_MIN));
+    }
+    function getRefDate() {
+      const d = new Date(); d.setHours(0, 0, 0, 0);
+      return new Date(d.getTime() + refRoundedMinutes() * 60000);
+    }
+    function updateRefTimeUI() {
+      const valEl = document.getElementById('ref-time-value');
+      if (!valEl) return;
+      const d = getRefDate();
+      valEl.textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+      valEl.classList.toggle('manual', refTimeManual);
+      const resetB = document.getElementById('ref-time-reset');
+      if (resetB) resetB.classList.toggle('visible', refTimeManual);
+      const dayEl = document.getElementById('ref-time-day');
+      if (dayEl) {
+        if (!refTimeManual) { dayEl.textContent = 'nykyhetki'; }
+        else {
+          const diffDays = Math.floor(refRoundedMinutes() / 1440);
+          if      (diffDays === 0) dayEl.textContent = 'tänään';
+          else if (diffDays === 1) dayEl.textContent = 'huomenna';
+          else {
+            const dn = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'];
+            dayEl.textContent = dn[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.';
+          }
+        }
+      }
+    }
+    // Re-applies the map filter, but only when the snapped 30-min step has
+    // actually changed (cheap enough to call on every drum-drag frame).
+    function refreshRefFilter(force) {
+      const r = refRoundedMinutes();
+      if (!force && r === _refLastApplied) { updateRefTimeUI(); return; }
+      _refLastApplied = r;
+      updateRefTimeUI();
+      updateFreeModeInfo();
+      applyRangeFilter();
+      requestAnimationFrame(checkParking);
+    }
+    function resetRefTime() {
+      refTimeManual = false;
+      refMinutes = nowRefMinutes();
+      refreshRefFilter(true);
+    }
+    function startRefTicker() {
+      stopRefTicker();
+      refTickerId = setInterval(() => {
+        if (!refTimeManual) { refMinutes = nowRefMinutes(); refreshRefFilter(); }
+      }, 30000);
+    }
+    function stopRefTicker() {
+      if (refTickerId) { clearInterval(refTickerId); refTickerId = null; }
+    }
+
     function applyRangeFilter(){
       if (!map.getLayer('master-poly-fill')) return;
       const parts = ['all'];
       const FREE_SOURCES = ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella'];
       // Source visibility
       let srcFilter = null;
+      const isFreeSrc = ['in', ['get','source'], ['literal', FREE_SOURCES]];
       if (!showFreeParking) {
-        // Free disabled → show paid only (hide free)
-        srcFilter = ['!', ['in', ['get','source'], ['literal', FREE_SOURCES]]];
-      } else if (freeFilterMode === 'paid') {
-        srcFilter = ['!', ['in', ['get','source'], ['literal', FREE_SOURCES]]];
-      } else if (freeFilterMode === 'free') {
-        srcFilter = ['in', ['get','source'], ['literal', FREE_SOURCES]];
+        // Free disabled → show paid only (hide free); no time evaluation
+        srcFilter = ['!', isFreeSrc];
+      } else if (freeFilterMode === 'paid' || freeFilterMode === 'free') {
+        // Time-aware free/paid: a *paid* area counts as free whenever the
+        // Ajanhetki clock falls outside its fee window (ma–pe / la / su).
+        // Rules (mirrors the payment-timeline logic):
+        //   – no window data at all          → paid around the clock
+        //   – other days defined, today not  → free the whole day
+        //   – otherwise paid when from ≤ h < to
+        const d = getRefDate();
+        const dow = d.getDay();
+        const fF = dow === 0 ? 'v_sf' : dow === 6 ? 'v_lf' : 'v_mf';
+        const fT = dow === 0 ? 'v_st' : dow === 6 ? 'v_lt' : 'v_mt';
+        const H = d.getHours() + d.getMinutes() / 60;
+        const paidNow = ['case',
+          ['!', ['to-boolean', ['coalesce', ['get','v_any'], false]]], true,
+          ['any', ['==', ['coalesce', ['get', fF], -1], -1],
+                  ['==', ['coalesce', ['get', fT], -1], -1]], false,
+          ['all', ['>=', H, ['to-number', ['coalesce', ['get', fF], -1]]],
+                  ['<',  H, ['to-number', ['coalesce', ['get', fT], -1]]]]
+        ];
+        srcFilter = (freeFilterMode === 'free')
+          ? ['any', isFreeSrc, ['!', paidNow]]   // inherently free OR fee not in force
+          : ['all', ['!', isFreeSrc], paidNow];  // paid area with fee in force
       } // 'all' → no source restriction
       if (srcFilter) parts.push(srcFilter);
       // Time range
@@ -10531,23 +10683,44 @@
         b.classList.toggle('active', b.dataset.mode === mode);
       });
       // Update explanatory text under the segmented control
-      const info = document.getElementById('free-mode-info');
-      if (info) {
-        if      (mode === 'paid') info.textContent = 'Näytetään maksulliset pysäköintialueet kartalla';
-        else if (mode === 'free') info.textContent = 'Näytetään tällä hetkellä ilmaiset pysäköintialueet kartalla';
-        else                      info.textContent = 'Näytetään kaikki pysäköintialueet kartalla';
-      }
+      updateFreeModeInfo();
       applyRangeFilter();
       requestAnimationFrame(checkParking);
+    }
+    // Explanatory text under the segmented control. Mentions the Ajanhetki
+    // clock when the user has rolled it away from the live time.
+    function updateFreeModeInfo() {
+      const info = document.getElementById('free-mode-info');
+      if (!info) return;
+      if (freeFilterMode === 'all') {
+        info.textContent = 'Näytetään kaikki pysäköintialueet kartalla';
+        return;
+      }
+      const kind = freeFilterMode === 'free' ? 'ilmaiset' : 'maksulliset';
+      if (refTimeManual) {
+        const d = getRefDate();
+        const t = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+        info.textContent = 'Näytetään klo ' + t + ' ' + kind + ' pysäköintialueet kartalla';
+      } else {
+        info.textContent = 'Näytetään tällä hetkellä ' + kind + ' pysäköintialueet kartalla';
+      }
     }
     function showFreeSegmented() {
       const seg = document.getElementById('free-mode-segmented');
       if (seg) seg.style.display = 'block';
+      // Ajanhetki drum: start from the live clock every time this opens
+      refTimeManual = false;
+      refMinutes = nowRefMinutes();
+      _refLastApplied = refRoundedMinutes();
+      updateRefTimeUI();
+      if (typeof drawRefDrum === 'function') drawRefDrum();
+      startRefTicker();
       setFreeFilterMode('all'); // default to all
     }
     function hideFreeSegmented() {
       const seg = document.getElementById('free-mode-segmented');
       if (seg) seg.style.display = 'none';
+      stopRefTicker();
     }
     // Show/hide the max-time slider controls. The selected range stays applied
     // either way — this toggle only reveals or hides the slider UI, it never
@@ -12029,7 +12202,8 @@
     const drumCanvas=document.getElementById('drum-canvas');
     const dctx=drumCanvas.getContext('2d');
 
-    function drawDrum(){dctx.clearRect(0,0,CW,CH);for(let x=0;x<CW;x++){const nx=(x-CW/2)/(CW/2);const shade=Math.sqrt(Math.max(0,1-nx*nx));const edge=Math.round(220+shade*20);dctx.fillStyle=`rgb(${edge},${edge},${edge})`;dctx.fillRect(x,0,1,CH);}for(let i=0;i<N_LINES;i++){const alpha=(i/N_LINES)*Math.PI*2+drumPhase;const a=((alpha%(Math.PI*2))+Math.PI*2)%(Math.PI*2);const cosA=Math.cos(a);if(cosA<0)continue;const sinA=Math.sin(a);const y=CY+R*sinA;if(y<1||y>CH-1)continue;const opacity=cosA*0.8;const lineWidth=0.8+cosA*2.2;const colorVal=Math.round(60+(1-cosA)*60);dctx.save();dctx.globalAlpha=opacity;dctx.strokeStyle=`rgb(${colorVal},${colorVal-5},${colorVal+20})`;dctx.lineWidth=lineWidth;dctx.lineCap='round';dctx.beginPath();dctx.moveTo(6,y);dctx.lineTo(CW-6,y);dctx.stroke();dctx.restore();}const tg=dctx.createLinearGradient(0,0,0,24);tg.addColorStop(0,'rgba(232,232,232,0.98)');tg.addColorStop(1,'rgba(232,232,232,0)');dctx.fillStyle=tg;dctx.fillRect(0,0,CW,24);const bg=dctx.createLinearGradient(0,CH-24,0,CH);bg.addColorStop(0,'rgba(232,232,232,0)');bg.addColorStop(1,'rgba(232,232,232,0.98)');dctx.fillStyle=bg;dctx.fillRect(0,CH-24,CW,24);dctx.save();dctx.strokeStyle='rgba(12,2,67,0.18)';dctx.lineWidth=1;dctx.setLineDash([2,2]);dctx.beginPath();dctx.moveTo(4,CY);dctx.lineTo(CW-4,CY);dctx.stroke();dctx.restore();}
+    function drawDrumOn(ctx, phase){ctx.clearRect(0,0,CW,CH);for(let x=0;x<CW;x++){const nx=(x-CW/2)/(CW/2);const shade=Math.sqrt(Math.max(0,1-nx*nx));const edge=Math.round(220+shade*20);ctx.fillStyle=`rgb(${edge},${edge},${edge})`;ctx.fillRect(x,0,1,CH);}for(let i=0;i<N_LINES;i++){const alpha=(i/N_LINES)*Math.PI*2+phase;const a=((alpha%(Math.PI*2))+Math.PI*2)%(Math.PI*2);const cosA=Math.cos(a);if(cosA<0)continue;const sinA=Math.sin(a);const y=CY+R*sinA;if(y<1||y>CH-1)continue;const opacity=cosA*0.8;const lineWidth=0.8+cosA*2.2;const colorVal=Math.round(60+(1-cosA)*60);ctx.save();ctx.globalAlpha=opacity;ctx.strokeStyle=`rgb(${colorVal},${colorVal-5},${colorVal+20})`;ctx.lineWidth=lineWidth;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(6,y);ctx.lineTo(CW-6,y);ctx.stroke();ctx.restore();}const tg=ctx.createLinearGradient(0,0,0,24);tg.addColorStop(0,'rgba(232,232,232,0.98)');tg.addColorStop(1,'rgba(232,232,232,0)');ctx.fillStyle=tg;ctx.fillRect(0,0,CW,24);const bg=ctx.createLinearGradient(0,CH-24,0,CH);bg.addColorStop(0,'rgba(232,232,232,0)');bg.addColorStop(1,'rgba(232,232,232,0.98)');ctx.fillStyle=bg;ctx.fillRect(0,CH-24,CW,24);ctx.save();ctx.strokeStyle='rgba(12,2,67,0.18)';ctx.lineWidth=1;ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(4,CY);ctx.lineTo(CW-4,CY);ctx.stroke();ctx.restore();}
+    function drawDrum(){drawDrumOn(dctx, drumPhase);}
 
     function formatTimeDisplay(mins){if(mins===0)return'0 min';mins=Math.max(1,Math.min(mins,parkingMaxMinutes));if(mins<60)return`${mins} min`;const h=Math.floor(mins/60),m=mins%60;return m>0?`${h} h ${m} min`:`${h} h`;}
 
@@ -12342,6 +12516,83 @@
     drumZone.addEventListener('mousedown',e=>{stopInertia();if(isExtendingSession){extendDrumUserTouched=true;stopExtendTicker();parkingStartTime=new Date();lastDisplayedMinutes=-1;updateDisplay();}mStartY=e.clientY;mStartMins=parkingMinutes;mStartPhase=drumPhase;mLastY=e.clientY;mLastT=Date.now();mVel=0;});
     window.addEventListener('mousemove',e=>{if(mStartY===null)return;const dt=Date.now()-mLastT;if(dt>0)mVel=(e.clientY-mLastY)/dt;mLastY=e.clientY;mLastT=Date.now();const fd=e.clientY-mStartY;drumPhase=mStartPhase+fd*RADIANS_PER_PX;parkingMinutes=Math.max(0,Math.min(mStartMins+fd/PIXELS_PER_MINUTE,parkingMaxMinutes));updateDisplay();});
     window.addEventListener('mouseup',()=>{if(mStartY===null)return;mStartY=null;inertiaVel=mVel;if(Math.abs(inertiaVel)>MIN_VEL)inertiaRAF=requestAnimationFrame(runInertia);});
+
+    // ── Ajanhetki drum (filter sheet) ──────────────────────────────────
+    // Same cylinder look & drag feel as the parking-time drum, but each
+    // ~24 px of drag = one 30-minute step. Dragging down moves the clock
+    // forward; past midnight the weekday advances (ma–pe / la / su).
+    const refDrumZone = document.getElementById('ref-drum-zone');
+    const refDrumCanvas = document.getElementById('ref-drum-canvas');
+    const refDctx = refDrumCanvas ? refDrumCanvas.getContext('2d') : null;
+    function drawRefDrum(){ if (refDctx) drawDrumOn(refDctx, refDrumPhase); }
+    let refDrumTouching = false;
+    let rStartY=null, rStartMin=0, rStartPhase=0, rLastY=0, rLastT=0, rVel=0, rInertiaVel=0, rInertiaRAF=null;
+    function stopRefInertia(){ if(rInertiaRAF){ cancelAnimationFrame(rInertiaRAF); rInertiaRAF=null; } }
+    // Snap the internal value onto the 30-min grid once the gesture settles,
+    // so successive drags don't accumulate sub-step drift.
+    function refSnap(){ refMinutes = refRoundedMinutes(); }
+    function refApplyDrag(deltaPx){
+      refMinutes = Math.max(0, Math.min(rStartMin + deltaPx / REF_PX_PER_MIN, REF_MAX_MIN));
+      refDrumPhase = rStartPhase + deltaPx * RADIANS_PER_PX;
+      refTimeManual = true;
+      drawRefDrum();
+      refreshRefFilter();
+    }
+    function runRefInertia(){
+      if(Math.abs(rInertiaVel) < MIN_VEL){ rInertiaRAF=null; refSnap(); refreshRefFilter(); drawRefDrum(); return; }
+      const dpx = rInertiaVel * 16;
+      refDrumPhase += dpx * RADIANS_PER_PX;
+      refMinutes = Math.max(0, Math.min(refMinutes + dpx / REF_PX_PER_MIN, REF_MAX_MIN));
+      drawRefDrum();
+      refreshRefFilter();
+      if(refMinutes <= 0 || refMinutes >= REF_MAX_MIN){ rInertiaRAF=null; refSnap(); return; }
+      rInertiaVel *= FRICTION;
+      rInertiaRAF = requestAnimationFrame(runRefInertia);
+    }
+    if (refDrumZone) {
+      refDrumZone.addEventListener('touchstart', e=>{
+        refDrumTouching = true; stopRefInertia();
+        rStartY = e.touches[0].clientY; rStartMin = refMinutes; rStartPhase = refDrumPhase;
+        rLastY = rStartY; rLastT = Date.now(); rVel = 0;
+      },{passive:true});
+      refDrumZone.addEventListener('touchmove', e=>{
+        if(rStartY === null) return;
+        const y = e.touches[0].clientY;
+        const now = Date.now(), dt = now - rLastT;
+        if(dt > 0) rVel = (y - rLastY) / dt;
+        rLastY = y; rLastT = now;
+        refApplyDrag(y - rStartY);
+      },{passive:true});
+      const refTouchEnd = ()=>{
+        refDrumTouching = false;
+        if(rStartY === null) return;
+        rStartY = null; rInertiaVel = rVel;
+        if(Math.abs(rInertiaVel) > MIN_VEL) rInertiaRAF = requestAnimationFrame(runRefInertia);
+        else { refSnap(); refreshRefFilter(); }
+      };
+      refDrumZone.addEventListener('touchend', refTouchEnd, {passive:true});
+      refDrumZone.addEventListener('touchcancel', refTouchEnd, {passive:true});
+      refDrumZone.addEventListener('mousedown', e=>{
+        refDrumTouching = true; stopRefInertia();
+        rStartY = e.clientY; rStartMin = refMinutes; rStartPhase = refDrumPhase;
+        rLastY = e.clientY; rLastT = Date.now(); rVel = 0;
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', e=>{
+        if(rStartY === null || !refDrumTouching) return;
+        const dt = Date.now() - rLastT;
+        if(dt > 0) rVel = (e.clientY - rLastY) / dt;
+        rLastY = e.clientY; rLastT = Date.now();
+        refApplyDrag(e.clientY - rStartY);
+      });
+      window.addEventListener('mouseup', ()=>{
+        if(!refDrumTouching || rStartY === null) return;
+        refDrumTouching = false; rStartY = null; rInertiaVel = rVel;
+        if(Math.abs(rInertiaVel) > MIN_VEL) rInertiaRAF = requestAnimationFrame(runRefInertia);
+        else { refSnap(); refreshRefFilter(); }
+      });
+      drawRefDrum();
+    }
     drawDrum();
 
     let vehicles = loadVehicles();
@@ -14344,7 +14595,7 @@
       // when the thumb itself is grabbed — touching the track passes through
       // (e.target becomes the track/container) and is allowed to scroll. This
       // covers BOTH the max-time and the charging-power sliders.
-      if(filterMode && (sliderTouching || (e.target && e.target.classList && e.target.classList.contains('range-input')))){
+      if(filterMode && (sliderTouching || refDrumTouching || (e.target && e.target.closest && e.target.closest('#ref-drum-zone')) || (e.target && e.target.classList && e.target.classList.contains('range-input')))){
         return;
       }
       // Track the gesture so we can tell a tap (activate a control) from a
