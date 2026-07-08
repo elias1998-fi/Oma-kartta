@@ -5027,7 +5027,7 @@
   </div>
 
   <script>
-    console.log('BUILD: 2026-07-08 ajanhetki-rulla');
+    console.log('BUILD: 2026-07-08 ajanhetki-v2 reaaliaika+värit');
     // ── Lock screen orientation to portrait ────────────────────────────
     // Works reliably in PWA/standalone mode (when app is added to home screen).
     // Inside a regular browser tab, browsers restrict orientation lock — the
@@ -10507,17 +10507,23 @@
     let refTickerId = null;
     let _refLastApplied = -1;
 
+    // Live mode ("nykyhetki") follows the real clock minute by minute — no
+    // rounding. Only manual drum values snap onto the 30-minute grid.
     function nowRefMinutes() {
       const n = new Date();
-      const mins = n.getHours() * 60 + n.getMinutes();
-      return Math.floor(mins / REF_STEP_MIN) * REF_STEP_MIN;
+      return n.getHours() * 60 + n.getMinutes();
     }
     function refRoundedMinutes() {
       return Math.max(0, Math.min(Math.round(refMinutes / REF_STEP_MIN) * REF_STEP_MIN, REF_MAX_MIN));
     }
+    // Effective minutes-from-today-00:00 the filter/UI uses: exact real time
+    // in live mode, 30-min-snapped drum value in manual mode.
+    function refEffectiveMinutes() {
+      return refTimeManual ? refRoundedMinutes() : nowRefMinutes();
+    }
     function getRefDate() {
       const d = new Date(); d.setHours(0, 0, 0, 0);
-      return new Date(d.getTime() + refRoundedMinutes() * 60000);
+      return new Date(d.getTime() + refEffectiveMinutes() * 60000);
     }
     function updateRefTimeUI() {
       const valEl = document.getElementById('ref-time-value');
@@ -10531,7 +10537,7 @@
       if (dayEl) {
         if (!refTimeManual) { dayEl.textContent = 'nykyhetki'; }
         else {
-          const diffDays = Math.floor(refRoundedMinutes() / 1440);
+          const diffDays = Math.floor(refEffectiveMinutes() / 1440);
           if      (diffDays === 0) dayEl.textContent = 'tänään';
           else if (diffDays === 1) dayEl.textContent = 'huomenna';
           else {
@@ -10541,10 +10547,11 @@
         }
       }
     }
-    // Re-applies the map filter, but only when the snapped 30-min step has
-    // actually changed (cheap enough to call on every drum-drag frame).
+    // Re-applies the map filter, but only when the effective time (exact
+    // minute in live mode, snapped 30-min step in manual mode) has actually
+    // changed (cheap enough to call on every drum-drag frame).
     function refreshRefFilter(force) {
-      const r = refRoundedMinutes();
+      const r = refEffectiveMinutes();
       if (!force && r === _refLastApplied) { updateRefTimeUI(); return; }
       _refLastApplied = r;
       updateRefTimeUI();
@@ -10561,7 +10568,7 @@
       stopRefTicker();
       refTickerId = setInterval(() => {
         if (!refTimeManual) { refMinutes = nowRefMinutes(); refreshRefFilter(); }
-      }, 30000);
+      }, 10000);
     }
     function stopRefTicker() {
       if (refTickerId) { clearInterval(refTickerId); refTickerId = null; }
@@ -10571,13 +10578,14 @@
       if (!map.getLayer('master-poly-fill')) return;
       const parts = ['all'];
       const FREE_SOURCES = ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella'];
-      // Source visibility
+      // Source visibility + time-aware colouring
       let srcFilter = null;
+      let freeAtRef = null;   // expression: "free at the Ajanhetki time" (null → static colours)
       const isFreeSrc = ['in', ['get','source'], ['literal', FREE_SOURCES]];
       if (!showFreeParking) {
         // Free disabled → show paid only (hide free); no time evaluation
         srcFilter = ['!', isFreeSrc];
-      } else if (freeFilterMode === 'paid' || freeFilterMode === 'free') {
+      } else {
         // Time-aware free/paid: a *paid* area counts as free whenever the
         // Ajanhetki clock falls outside its fee window (ma–pe / la / su).
         // Rules (mirrors the payment-timeline logic):
@@ -10596,10 +10604,11 @@
           ['all', ['>=', H, ['to-number', ['coalesce', ['get', fF], -1]]],
                   ['<',  H, ['to-number', ['coalesce', ['get', fT], -1]]]]
         ];
-        srcFilter = (freeFilterMode === 'free')
-          ? ['any', isFreeSrc, ['!', paidNow]]   // inherently free OR fee not in force
-          : ['all', ['!', isFreeSrc], paidNow];  // paid area with fee in force
-      } // 'all' → no source restriction
+        freeAtRef = ['any', isFreeSrc, ['!', paidNow]];
+        if      (freeFilterMode === 'free') srcFilter = freeAtRef;             // inherently free OR fee not in force
+        else if (freeFilterMode === 'paid') srcFilter = ['all', ['!', isFreeSrc], paidNow]; // fee in force
+        // 'all' → no source restriction, but colours still follow the clock
+      }
       if (srcFilter) parts.push(srcFilter);
       // Time range
       const a = parseInt(sliderMin.value), b = parseInt(sliderMax.value);
@@ -10611,7 +10620,29 @@
       const f = parts.length === 1 ? null : parts;
       map.setFilter('master-poly-fill', f);
       map.setFilter('master-poly-line', f);
+      applyTimeAwareColors(freeAtRef);
       updateHalliVisibility();   // garages are paid → follow the paid/free filter
+    }
+    // ── Time-aware map colours ──────────────────────────────────────────
+    // Paid areas whose fee is NOT in force at the Ajanhetki time render in
+    // the free purple. freeExpr=null restores the plain source-based colours
+    // (same values the layers were created with).
+    const TA_FREE_FILL = '#7F1F89', TA_PAID_FILL = '#1266f1';
+    const TA_FREE_LINE = '#611868', TA_PAID_LINE = '#0B49D0';
+    const TA_STATIC_FILL = ['match', ['get','source'],
+      'community', TA_FREE_FILL, 'hel_ilmainen_pitka', TA_FREE_FILL,
+      'hel_ilmainen_lyhyt', TA_FREE_FILL, 'hel_sallittu_kiellon_ulkopuolella', TA_FREE_FILL,
+      TA_PAID_FILL];
+    const TA_STATIC_LINE = ['match', ['get','source'],
+      'community', TA_FREE_LINE, 'hel_ilmainen_pitka', TA_FREE_LINE,
+      'hel_ilmainen_lyhyt', TA_FREE_LINE, 'hel_sallittu_kiellon_ulkopuolella', TA_FREE_LINE,
+      TA_PAID_LINE];
+    function applyTimeAwareColors(freeExpr) {
+      const fill = freeExpr ? ['case', freeExpr, TA_FREE_FILL, TA_PAID_FILL] : TA_STATIC_FILL;
+      const line = freeExpr ? ['case', freeExpr, TA_FREE_LINE, TA_PAID_LINE] : TA_STATIC_LINE;
+      if (map.getLayer('master-poly-fill'))       map.setPaintProperty('master-poly-fill', 'fill-color', fill);
+      if (map.getLayer('master-poly-line'))       map.setPaintProperty('master-poly-line', 'line-color', line);
+      if (map.getLayer('master-poly-group-fill')) map.setPaintProperty('master-poly-group-fill', 'fill-color', fill);
     }
     // Parking garages (halli-icons) are paid parking, so they are shown only when
     // paid areas are shown — i.e. NOT in the free-only view, and NOT in the
@@ -10711,7 +10742,7 @@
       // Ajanhetki drum: start from the live clock every time this opens
       refTimeManual = false;
       refMinutes = nowRefMinutes();
-      _refLastApplied = refRoundedMinutes();
+      _refLastApplied = refEffectiveMinutes();
       updateRefTimeUI();
       if (typeof drawRefDrum === 'function') drawRefDrum();
       startRefTicker();
@@ -12552,6 +12583,7 @@
     if (refDrumZone) {
       refDrumZone.addEventListener('touchstart', e=>{
         refDrumTouching = true; stopRefInertia();
+        if(!refTimeManual) refMinutes = nowRefMinutes();  // grab from the live clock
         rStartY = e.touches[0].clientY; rStartMin = refMinutes; rStartPhase = refDrumPhase;
         rLastY = rStartY; rLastT = Date.now(); rVel = 0;
       },{passive:true});
@@ -12574,6 +12606,7 @@
       refDrumZone.addEventListener('touchcancel', refTouchEnd, {passive:true});
       refDrumZone.addEventListener('mousedown', e=>{
         refDrumTouching = true; stopRefInertia();
+        if(!refTimeManual) refMinutes = nowRefMinutes();  // grab from the live clock
         rStartY = e.clientY; rStartMin = refMinutes; rStartPhase = refDrumPhase;
         rLastY = e.clientY; rLastT = Date.now(); rVel = 0;
         e.preventDefault();
