@@ -1566,6 +1566,13 @@
     }
     #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
     #filter-close-btn.visible { display: flex; }
+    /* "Palauta" pill — same shape as the Suodata button in Pysäköintitapahtumat,
+       but dark-blue text on white with a thin dark-blue outline. Sits just left
+       of the ✕, on the same line as the "Suodata karttanäkymää" title. Hidden
+       until a filter control differs from its app-open default. */
+    #filter-reset-btn { position: absolute; right: 52px; top: 11px; height: 26px; padding: 0 14px; background: #fff; border: 1px solid #0C0243; border-radius: 13px; font-size: 13px; font-weight: 500; color: #0C0243; cursor: pointer; font-family: Arial, sans-serif; display: none; align-items: center; justify-content: center; z-index: 5; }
+    #filter-reset-btn.visible { display: inline-flex; }
+    #filter-reset-btn:active { background: #f2f2f7; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
     #sheet-summary { padding: 13px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
     #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
@@ -4660,7 +4667,7 @@
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
     <div id="osm-attribution" style="position:absolute;top:-16px;left:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;pointer-events:none;transition:opacity 0.2s ease;">© OpenStreetMap</div>
     <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
-    <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-close-btn">✕</button></div>
+    <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-reset-btn" onclick="resetFilters()">Palauta</button><button id="filter-close-btn">✕</button></div>
     <div id="gps-warning">
       <span>GPS-sijaintisi saattaa olla epätarkka</span>
       <span class="gps-info-icon" onclick="openGpsInfo()">i</span>
@@ -5027,7 +5034,7 @@
   </div>
 
   <script>
-    console.log('BUILD: 2026-07-08 ajanhetki-v2 reaaliaika+värit');
+    console.log('BUILD: 2026-07-08 zoom13-kynnys');
     // ── Lock screen orientation to portrait ────────────────────────────
     // Works reliably in PWA/standalone mode (when app is added to home screen).
     // Inside a regular browser tab, browsers restrict orientation lock — the
@@ -7019,7 +7026,7 @@
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
 
         // Base fill layer
-        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13.8,
+        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
           paint:{ 'fill-opacity': 0.20,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -7036,7 +7043,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13.8,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
           paint:{ 'line-width': 1.0, 'line-opacity': 0.55,
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
@@ -7048,22 +7055,22 @@
           }
         });
         // Hover fill — red, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13.8,
+        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13,
           paint:{ 'fill-color':'#1266f1', 'fill-opacity': 0.45 },
           filter:['==', ['get','id'], '__none__']
         });
         // Hover outline — on the red hovered area, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13.8,
+        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13,
           paint:{ 'line-color':'#0B49D0', 'line-width': 2.5, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13.8,
+        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13,
           paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': 1.0 },
           filter:['==', ['get','id'], '__none__']
         });
         // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13.8,
+        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13,
           paint:{ 'fill-opacity': 0.50,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -7414,7 +7421,7 @@
         if (hoveredHalliId !== null) { hoveredHalliId = null; collapseCenterSheet(); }
         return false;
       };
-      if (map.getZoom() < 12 || !map.getLayer('halli-icons')) return leaveHalli();
+      if (map.getZoom() < 13 || !map.getLayer('halli-icons')) return leaveHalli();
       const hpt = map.project(map.getCenter()); hpt.y += 6.5;
       const hr = 1;
       const hhits = map.queryRenderedFeatures([[hpt.x-hr, hpt.y-hr],[hpt.x+hr, hpt.y+hr]], { layers:['halli-icons'] });
@@ -7443,7 +7450,7 @@
       if (window._navigationInProgress) return;
       // A charging station under the P-marker takes priority and reacts in real
       // time during the drag (no finger-lift needed), like parking areas.
-      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= 12) {
+      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= 13) {
         const ccpt = map.project(map.getCenter()); ccpt.y += 6.5;
         const cr = 1;
         const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
@@ -7641,8 +7648,8 @@
       // Filter view manages its own P-marker visibility (hidden); don't
       // fight it from here.
       const inFilter = (typeof filterMode !== 'undefined' && filterMode);
-      // Manage sheet height: zoom < 12 → slim 60px (GPS warning hidden),
-      // zoom ≥ 12 → 90px strip (GPS warning visible). Only when no area is
+      // Manage sheet height: zoom < 13 → slim 60px (GPS warning hidden),
+      // zoom ≥ 13 → 90px strip (GPS warning visible). Only when no area is
       // selected and we're not in a navigation or filter flow.
       const _noArea = !masterFeatureLocked && !hoveredPolyId &&
                       !(typeof hoveredChargingId !== 'undefined' && hoveredChargingId) &&
@@ -7650,18 +7657,18 @@
       const _bs = document.getElementById('bottom-sheet');
       if (_bs && _noArea && !inNav && !inFilter) {
         const _t = _bs.style.transform || '';
-        if (zoom < 13.8 && !_t.includes('- 60px')) {
+        if (zoom < 13 && !_t.includes('- 60px')) {
           _bs.style.transition = 'transform 0.3s ease';
           _bs.style.transform = 'translateY(calc(100% - 60px))';
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
-        } else if (zoom >= 13.8 && (_t === '' || _t.includes('- 60px'))) {
+        } else if (zoom >= 13 && (_t === '' || _t.includes('- 60px'))) {
           _bs.style.transition = 'transform 0.3s ease';
           _bs.style.transform = 'translateY(calc(100% - 90px))';
           currentY = _bs.offsetHeight - 90;
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
         }
       }
-      if (zoom < 13.8) {
+      if (zoom < 13) {
         setActionBtnText('Lähennä karttaa');
         btn.classList.remove('active');
         // Also hide the P-marker — polygons and halli icons are hidden by
@@ -7814,7 +7821,7 @@
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
       map.addLayer({
-        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13.8,
+        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
         layout: {
           'icon-image': 'halli-icon', 'icon-size': 0.50,
           'icon-allow-overlap': true, 'icon-anchor': 'center'
@@ -9560,6 +9567,9 @@
     const zoomIndicator = document.getElementById('zoom-indicator');
 
     function updateZoomIndicator() {
+      // Never show the zoom readout while the filter sheet is open — it would
+      // otherwise pop back on the next map move (openFilter hides it once).
+      if (filterMode) { zoomIndicator.style.display = 'none'; return; }
       const z = map.getZoom();
       if (z < 12) {
         zoomIndicator.style.display = 'none';
@@ -10622,6 +10632,7 @@
       map.setFilter('master-poly-line', f);
       applyTimeAwareColors(freeAtRef);
       updateHalliVisibility();   // garages are paid → follow the paid/free filter
+      updateResetBtnVisibility();
     }
     // ── Time-aware map colours ──────────────────────────────────────────
     // Paid areas whose fee is NOT in force at the Ajanhetki time render in
@@ -10761,6 +10772,7 @@
       const controls = document.getElementById('maxtime-controls');
       if (controls) controls.style.display = on ? 'block' : 'none';
       if (on) updateSliderUI();
+      updateResetBtnVisibility();
     }
 
     // Public EV charging points toggle (placeholder — data layer to be added later)
@@ -10779,6 +10791,7 @@
       setChargingVisibility(showEvCharging);
       applyChargingFilters();
       updateChargerCount();
+      updateResetBtnVisibility();
     }
     // ── Public charging stations (AFIR / Digitraffic open data) ──────────────
     // Renders charging-point locations as map markers, coloured by real-time
@@ -10952,7 +10965,7 @@
           } else {
             map.addSource('charging-points', { type: 'geojson', data: geojson });
             map.addLayer({
-              id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 12,
+              id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
               layout: {
                 'icon-image': ['case', ['get', 'available'], 'charging-green', 'charging-gray'],
                 'icon-size': 0.25, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
@@ -11336,6 +11349,7 @@
         });
       }
       map.getSource('charging-points').setData({ type:'FeatureCollection', features: feats });
+      updateResetBtnVisibility();
     }
     // Show a charging station's details in the bottom sheet — same presentation
     // as a parking area under the P-marker.
@@ -11930,6 +11944,7 @@
       sheet.style.transform=`translateY(${window.innerHeight*0.6}px)`;
       currentY=window.innerHeight*0.6;
       btnContainer.classList.add('hidden');
+      updateResetBtnVisibility();
     }
     // Size the filter scroll area so, when the sheet is at its top position
     // (80% of the viewport), the content fills exactly down to the screen
@@ -11943,6 +11958,7 @@
     }
     function closeFilter(){
       filterMode=false;
+      const _rb = document.getElementById('filter-reset-btn'); if (_rb) _rb.classList.remove('visible');
       document.body.classList.remove('filter-mode');
       filterBtn.classList.remove('active');
       filterBtn.classList.remove('filter-on');
@@ -11970,6 +11986,91 @@
     }
     // filterBtn click handled in menuItemClick above
     filterCloseBtn.addEventListener('click',closeFilter);
+
+    // ── "Palauta" (reset filters) ───────────────────────────────────────
+    // True when any filter control differs from its app-open default. Every
+    // sub-control lives behind one of the three group toggles OR the always-
+    // applied max-time range, so checking those covers every case; the extra
+    // sub-control checks add robustness and never fire at the default state.
+    function isFilterModified(){
+      const on = id => { const e = document.getElementById(id); return !!(e && e.checked); };
+      if (on('toggle-free-parking'))   return true;
+      if (on('toggle-maxtime-filter')) return true;
+      if (on('toggle-ev-charging'))    return true;
+      // Max-time range stays applied even if its toggle is later switched off.
+      if (parseInt(sliderMin.value) !== 0 || parseInt(sliderMax.value) !== 26) return true;
+      // Ajanhetki drum rolled away from live time / free segmented off default.
+      if (refTimeManual) return true;
+      if (freeFilterMode !== 'all') return true;
+      // EV sub-controls (only reachable with the EV toggle on, but harmless).
+      const pmin = document.getElementById('power-slider-min');
+      const pmax = document.getElementById('power-slider-max');
+      if (pmin && parseInt(pmin.value) !== 0) return true;
+      if (pmax && parseInt(pmax.value) !== 5) return true;
+      const vb = document.querySelector('#voltage-segmented .seg-option.active');
+      if (vb && vb.dataset.volt !== 'both') return true;
+      if (OPERATORS.length > 0 && _selectedOperators.size !== OPERATORS.length) return true;
+      return false;
+    }
+    function updateResetBtnVisibility(){
+      const btn = document.getElementById('filter-reset-btn');
+      if (!btn) return;
+      btn.classList.toggle('visible', filterMode && isFilterModified());
+    }
+    // Restore every filter control to the state it had when the app opened.
+    function resetFilters(){
+      // Group 1 — free parking + Ajanhetki
+      const fp = document.getElementById('toggle-free-parking');
+      if (fp) fp.checked = false;
+      showFreeParking = false;
+      freeFilterMode = 'all';
+      hideFreeTermsBox();
+      hideFreeSegmented();          // also stops the Ajanhetki ticker
+      refTimeManual = false;
+      refMinutes = nowRefMinutes();
+      refDrumPhase = 0;
+      _refLastApplied = refEffectiveMinutes();
+      setFreeFilterMode('all');     // resets segmented thumb + info text (hidden)
+      updateRefTimeUI();
+      if (typeof drawRefDrum === 'function') drawRefDrum();
+
+      // Group 2 — max parking time
+      const mt = document.getElementById('toggle-maxtime-filter');
+      if (mt) mt.checked = false;
+      const mtc = document.getElementById('maxtime-controls');
+      if (mtc) mtc.style.display = 'none';
+      sliderMin.value = 0; sliderMax.value = 26;
+      updateSliderUI();
+
+      // Group 3 — EV charging
+      const ev = document.getElementById('toggle-ev-charging');
+      if (ev) ev.checked = false;
+      showEvCharging = false;
+      const picker = document.getElementById('charger-picker');
+      if (picker) picker.classList.remove('visible');
+      setChargingVisibility(false);
+      _selectedChargerTypes.clear();
+      document.querySelectorAll('.charger-type-grid .charger-type-tile')
+        .forEach(t => t.classList.remove('selected'));
+      updateChargerCount();
+      const pmin = document.getElementById('power-slider-min');
+      const pmax = document.getElementById('power-slider-max');
+      if (pmin) pmin.value = 0;
+      if (pmax) pmax.value = 5;
+      const pfill = document.getElementById('power-range-fill');
+      if (pfill) { pfill.style.left = '0%'; pfill.style.width = '100%'; }
+      setVoltageMode('both');
+      _selectedOperators = (OPERATORS.length > 0) ? new Set(OPERATORS) : new Set();
+      updateOperatorUI();
+      const dd = document.getElementById('operator-dropdown');
+      if (dd) dd.classList.remove('open');
+
+      // Repaint the map with defaults, then hide the button
+      applyRangeFilter();
+      applyChargingFilters();
+      requestAnimationFrame(checkParking);
+      updateResetBtnVisibility();
+    }
 
     let moveTimer=null;
     // All map updates on moveend only — never on move (avoids 60fps queryRenderedFeatures freeze)
@@ -12042,8 +12143,8 @@
       const zoom=map.getZoom();
 
       // Hide P-marker when zoomed out (matches the master-poly / halli
-      // layer minzoom of 13.8)
-      if(zoom < 13.8) {
+      // layer minzoom of 13)
+      if(zoom < 13) {
         centerPointerEl.classList.add('hidden');
       } else {
         centerPointerEl.classList.remove('hidden');
@@ -12051,7 +12152,7 @@
 
       // A charging station directly under the P-marker takes priority and
       // shows its details in the sheet (same behaviour as a parking area).
-      if(zoom>=12 && showEvCharging && map.getLayer('charging-icons')){
+      if(zoom>=13 && showEvCharging && map.getLayer('charging-icons')){
         const ccpt = map.project(map.getCenter()); ccpt.y += 6.5;
         const cr = 1;
         const cb = [[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]];
@@ -12083,7 +12184,7 @@
       if(detectHalliUnderMarker()) return;
 
       // Highlight parking area under map center (works on mobile & desktop)
-      if(zoom>=13.8 && map.getLayer('master-poly-fill')){
+      if(zoom>=13 && map.getLayer('master-poly-fill')){
         const cpt = map.project(map.getCenter()); cpt.y += 6.5;
         // Detection at P-marker tip: 1px radius (2px diameter point)
         const radius = 1;
@@ -12137,7 +12238,7 @@
         }
       }
       
-      if(zoom<13.8){
+      if(zoom<13){
         summaryHeader.textContent=''; summaryType.textContent='';
         summaryOperator.textContent=''; details.innerHTML='';
         divider.style.display='none';
