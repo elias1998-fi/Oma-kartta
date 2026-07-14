@@ -1308,6 +1308,53 @@
       opacity: 0;
     }
     .settings-lang-option.selected .settings-lang-check { opacity: 1; }
+
+    /* Map style collapsible inside the Muut group — mirrors the language
+       selector's look but uses its own classes so the two lists never
+       cross-talk (selectLanguage() clears .selected from every
+       .settings-lang-option in the document). */
+    .settings-mapstyle-header {
+      cursor: pointer;
+      user-select: none;
+    }
+    .settings-mapstyle-current {
+      font-size: 14px;
+      color: #888;
+      margin-right: 4px;
+    }
+    .settings-mapstyle-chevron {
+      font-size: 18px;
+      color: #bbb;
+      transition: transform 0.22s ease;
+    }
+    .settings-mapstyle-header.open .settings-mapstyle-chevron {
+      transform: rotate(90deg);
+    }
+    .settings-mapstyle-options {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+      background: #fafafa;
+    }
+    .settings-mapstyle-options.open { max-height: 220px; }
+    .settings-mapstyle-option {
+      padding: 12px 20px;
+      font-size: 14px;
+      color: #222;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .settings-mapstyle-option:active { background: #eaeaea; }
+    .settings-mapstyle-check {
+      color: #0C0243;
+      font-weight: bold;
+      font-size: 16px;
+      opacity: 0;
+    }
+    .settings-mapstyle-option.selected .settings-mapstyle-check { opacity: 1; }
     .account-action-btn {
       width: 100%;
       padding: 14px 16px;
@@ -4284,14 +4331,29 @@
             <span class="ios-switch-track"></span>
           </label>
         </div>
-        <div class="settings-row-toggle">
+        <!-- Map style collapsible: header row shows the current style; tapping
+             opens a list of the three styles (Original / Tumma tila / Uusi tyyli).
+             Replaces the old boolean dark-mode switch. -->
+        <div class="settings-row-toggle settings-mapstyle-header" onclick="toggleMapStyleRow()">
           <div class="settings-row-text">
-            <div class="settings-row-title">Tumma tila</div>
+            <div class="settings-row-title">Kartan tyyli</div>
           </div>
-          <label class="ios-switch">
-            <input type="checkbox" id="setting-darkmode" onchange="onDarkModeToggle(this)">
-            <span class="ios-switch-track"></span>
-          </label>
+          <div class="settings-mapstyle-current" id="setting-mapstyle-current">Original</div>
+          <div class="settings-mapstyle-chevron" id="setting-mapstyle-chevron">›</div>
+        </div>
+        <div class="settings-mapstyle-options" id="setting-mapstyle-options">
+          <div class="settings-mapstyle-option" data-style="original" onclick="selectMapStyle('original', this)">
+            <span>Original</span>
+            <span class="settings-mapstyle-check">✓</span>
+          </div>
+          <div class="settings-mapstyle-option" data-style="dark" onclick="selectMapStyle('dark', this)">
+            <span>Tumma tila</span>
+            <span class="settings-mapstyle-check">✓</span>
+          </div>
+          <div class="settings-mapstyle-option" data-style="newstyle" onclick="selectMapStyle('newstyle', this)">
+            <span>Uusi tyyli</span>
+            <span class="settings-mapstyle-check">✓</span>
+          </div>
         </div>
         <!-- Off by default: the zoom read-out on the sheet only appears when on. -->
         <div class="settings-row-toggle">
@@ -5620,9 +5682,27 @@
       console.warn('[share] could not parse URL params:', e);
     }
 
-    // Dark-mode preference (persisted). Chooses which HSL style JSON to load.
-    let darkModeEnabled = (function(){ try { return localStorage.getItem('tp_darkmode') === '1'; } catch(e){ return false; } })();
-    const _mapStyleUrl = darkModeEnabled ? 'omakartta_style_darkmode.json' : 'omakartta_style.json';
+    // Map style preference (persisted): 'original' | 'dark' | 'newstyle'.
+    // Chooses which style JSON to load. Migrates from the legacy boolean
+    // tp_darkmode key when tp_mapstyle hasn't been written yet.
+    const MAP_STYLE_URLS = {
+      original: 'omakartta_style.json',
+      dark:     'omakartta_style_darkmode.json',
+      newstyle: 'omakartta_style_newstyle.json'
+    };
+    const MAP_STYLE_LABELS = {
+      original: 'Original',
+      dark:     'Tumma tila',
+      newstyle: 'Uusi tyyli'
+    };
+    let mapStyleChoice = (function(){
+      try {
+        const saved = localStorage.getItem('tp_mapstyle');
+        if (saved && MAP_STYLE_URLS[saved]) return saved;
+        return localStorage.getItem('tp_darkmode') === '1' ? 'dark' : 'original';
+      } catch(e){ return 'original'; }
+    })();
+    const _mapStyleUrl = MAP_STYLE_URLS[mapStyleChoice];
     const map = new maplibregl.Map({
       container: 'map',
       style: _mapStyleUrl,
@@ -9584,7 +9664,8 @@
         }
       }
     }
-    // ── Dark mode: swap the map style JSON. setStyle() wipes all custom sources
+    // ── Map style switch (Original / Tumma tila / Uusi tyyli): swap the map
+    //    style JSON. setStyle() wipes all custom sources
     //    and layers, so once the new style has loaded we re-add them from cached
     //    data (parking polygons, halli icons, charging icons). Everything else in
     //    the app is unaffected. ──
@@ -9615,11 +9696,30 @@
       // Charging icons — addChargingLayer() re-registers its own images.
       try { if (typeof showEvCharging !== 'undefined' && showEvCharging) addChargingLayer(); } catch(e){ console.error('reapply charging', e); }
     }
-    function onDarkModeToggle(input) {
-      onSettingToggle(input);
-      darkModeEnabled = input.checked;
-      try { localStorage.setItem('tp_darkmode', darkModeEnabled ? '1' : '0'); } catch(e){}
-      const url = darkModeEnabled ? 'omakartta_style_darkmode.json' : 'omakartta_style.json';
+    // Map style section: header toggles the collapsible list of style options
+    function toggleMapStyleRow() {
+      const hdr = document.querySelector('.settings-mapstyle-header');
+      const opts = document.getElementById('setting-mapstyle-options');
+      if (!hdr || !opts) return;
+      const isOpen = hdr.classList.toggle('open');
+      opts.classList.toggle('open', isOpen);
+    }
+    function selectMapStyle(choice, el) {
+      if (!MAP_STYLE_URLS[choice]) return;
+      // Update the header's "current style" label + row checkmarks
+      const current = document.getElementById('setting-mapstyle-current');
+      if (current) current.textContent = MAP_STYLE_LABELS[choice];
+      document.querySelectorAll('#setting-mapstyle-options .settings-mapstyle-option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.style === choice);
+      });
+      if (choice === mapStyleChoice) return; // already active — nothing to swap
+      mapStyleChoice = choice;
+      try {
+        localStorage.setItem('tp_mapstyle', choice);
+        // Keep the legacy boolean in sync so an older build (which only knows
+        // tp_darkmode) still opens with the expected base if rolled back.
+        localStorage.setItem('tp_darkmode', choice === 'dark' ? '1' : '0');
+      } catch(e){}
       // setStyle() wipes ALL custom sources, layers and images. Re-add them once
       // the new style is ready. 'style.load' can be missed, so we also poll
       // isStyleLoaded() and keep a timeout fallback; a guard prevents double runs.
@@ -9631,11 +9731,17 @@
         reapplyMapLayers();
       };
       map.once('style.load', doReapply);
-      map.setStyle(url, { diff: false });
+      map.setStyle(MAP_STYLE_URLS[choice], { diff: false });
       setTimeout(doReapply, 400);
     }
-    // Reflect the saved dark-mode state in the settings switch on startup.
-    (function(){ const cb = document.getElementById('setting-darkmode'); if (cb) cb.checked = darkModeEnabled; })();
+    // Reflect the saved map style in the settings selector on startup.
+    (function(){
+      const current = document.getElementById('setting-mapstyle-current');
+      if (current) current.textContent = MAP_STYLE_LABELS[mapStyleChoice] || 'Original';
+      document.querySelectorAll('#setting-mapstyle-options .settings-mapstyle-option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.style === mapStyleChoice);
+      });
+    })();
 
     // ── Zoom read-out toggle ─────────────────────────────────────────────
     // Off by default: the sheet's zoom indicator only shows when switched on.
