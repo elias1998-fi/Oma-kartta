@@ -3393,7 +3393,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 14,
+      "minzoom": 15,
       "filter": ["all", ["==", "class", "hospital"]],
       "layout": {
         "text-field": "{name}",
