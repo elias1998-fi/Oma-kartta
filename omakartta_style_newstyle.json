@@ -341,7 +341,7 @@
           ["in", "subclass", "pedestrian", "platform"]
         ]
       ],
-      "paint": {"fill-color": "#f7f7f7"}
+      "paint": {"fill-color": "#ece7e4"}
     },
     {
       "id": "road_bridge_area",
@@ -2391,7 +2391,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 13,
+      "minzoom": 14,
       "filter": [
         "all",
         ["==", "$type", "Point"],
