@@ -1646,7 +1646,9 @@
     .hours-time { font-weight: 500; }
     .price-label { font-size: 13px; color: #888; margin-top: 18px; margin-bottom: 4px; }
     .price-value { font-size: 14px; color: #333; }
-    #sheet-filter { display: none; flex-direction: column; padding: 0 24px 16px 16px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 18px); overflow-y: scroll; overflow-x: hidden; touch-action: none; position: relative; scrollbar-width: none; }
+    /* padding-top 42px = the mask overlay's 32px + the 10px gap the old in-flow
+       mask's margin used to provide, so content starts where it always did. */
+    #sheet-filter { display: none; flex-direction: column; padding: 42px 24px 16px 16px; flex: 1; font-family: Arial, sans-serif; max-height: calc(80vh - 18px); overflow-y: scroll; overflow-x: hidden; touch-action: none; position: relative; scrollbar-width: none; }
     #sheet-filter::-webkit-scrollbar { width: 0; height: 0; display: none; }
     #filter-scrollbar { position: absolute; right: 4px; width: 14px; z-index: 6; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     #filter-scrollbar.visible { opacity: 1; }
@@ -1663,16 +1665,19 @@
        pointer-events off so handle drags pass straight through it. */
     #filter-title { display: none; position: absolute; left: 16px; top: 28px; transform: translateY(-50%); z-index: 4; font-size: 16px; font-weight: bold; color: #222; pointer-events: none; font-family: Arial, sans-serif; }
     body.filter-mode #filter-title { display: block; }
-    /* Sticky white mask at the top of the scrollable filter content. Text-free
-       (the heading moved up to the drag-handle row). Tall enough to back the
-       lower halves of the Palauta/✕ buttons, which reach 42px from the sheet
-       top — the mask's bottom edge lands at 18px (sheet-filter start) + 31px
-       + 1px border = 50px, so scrolled content slides under white instead of
-       under the buttons. flex:0 0 auto is load-bearing: #sheet-filter is a
-       column flex container, and a flex item's default flex-shrink:1 let the
-       mask get compressed whenever a toggle revealed more content inside the
-       sheet — the mask visibly shrank on e.g. the free-parking switch. */
-    #filter-topmask { position: sticky; top: 0; z-index: 3; background: white; height: 31px; flex: 0 0 auto; margin: 0 -24px 10px -16px; border-bottom: 1px solid #eee; }
+    /* White mask overlaying the top of the scrollable filter content, so
+       scrolled content slides under white instead of under the Palauta/✕
+       buttons. Lives OUTSIDE #sheet-filter as an absolutely positioned child
+       of the sheet: as a sticky element inside the scroller it mis-rendered
+       for a moment whenever the sheet's transform animated (snap-back after
+       a partial drag), flashing over the heading — pinned geometry can't do
+       that, and the flex layout can't squeeze it either. Spans 18px
+       (sheet-filter start) + 31px + 1px border → bottom edge at 50px. The
+       box-shadow paints one extra 1px white line UNDER the grey divider so
+       the divider always reads as a line against scrolling content.
+       pointer-events:none lets drags and taps pass straight through. */
+    #filter-topmask { display: none; position: absolute; top: 18px; left: 0; right: 0; height: 31px; background: white; border-bottom: 1px solid #eee; box-shadow: 0 1px 0 white; z-index: 3; pointer-events: none; }
+    body.filter-mode #filter-topmask { display: block; }
     
     .filter-group {
       background: #f5f5f5;
@@ -4986,6 +4991,7 @@
     </div>
     <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
     <div id="drag-handle-area"><div id="drag-handle"></div><div id="filter-title">Suodata karttanäkymää</div><button id="filter-reset-btn" onclick="resetFilters()">Palauta</button><button id="filter-close-btn">✕</button></div>
+    <div id="filter-topmask"></div>
     <div id="gps-warning">
       <span>GPS-sijaintisi saattaa olla epätarkka</span>
       <span class="gps-info-icon" onclick="openGpsInfo()">i</span>
@@ -5032,7 +5038,6 @@
     </div>
     <div id="sheet-filter">
       <div id="filter-scrollbar"><div id="filter-scrollbar-thumb"></div></div>
-      <div id="filter-topmask"></div>
       <div id="filter-scroll-inner">
       
       <!-- Group 1: free parking visibility + segmented control -->
@@ -12443,10 +12448,9 @@
       centerPointerEl.classList.remove('hidden');
       sheetNormal.style.display='flex';
       sheetFilter.classList.remove('visible');
-      sliderMin.value=0;
-      sliderMax.value=26;
-      updateSliderUI();
-      applyRangeFilter();
+      // NOTE: deliberately no filter-state reset here. Closing with ✕ only
+      // hides the sheet — the chosen filters (e.g. the max-time range) stay
+      // applied. "Palauta" is the only thing that resets them.
       btnContainer.classList.remove('hidden');
       if (menuExpanded) {
         // Ball stays at X — just close the menu
