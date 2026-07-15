@@ -75,6 +75,11 @@
        modes (those overlays cover the map and have their own controls). */
     body.search-mode   #btn-container,
     body.plus-mode     #btn-container { opacity: 0 !important; pointer-events: none !important; }
+    /* Profile keeps the action button VISIBLE as part of the view underneath:
+       its normal z-index (9990) would float it above the panel, so while the
+       profile is open it drops under the dim (99) and the panel (100) — it
+       dims with the map in the right strip, and the dim blocks its taps. */
+    body.profile-mode  #btn-container { z-index: 90; }
 
     #cm-body {
       position: relative;
@@ -6112,17 +6117,28 @@
       // Safety net: if the slide is interrupted (or never starts) transitionend
       // won't fire, so make sure the loop always winds down.
       clearTimeout(_profileDimStop);
-      _profileDimStop = setTimeout(stopProfileDim, 700);
+      _profileDimStop = setTimeout(settleProfileDim, 700);
     }
     function stopProfileDim()  { if (_profileDimRAF != null) { cancelAnimationFrame(_profileDimRAF); _profileDimRAF = null; } }
+    // Settle everything that must wait for the slide to FINISH: snap the dim
+    // to its exact end value, and only then lift the button's z-index drop.
+    // Lifting it at close-time popped the button from under the still-dark
+    // dim to full brightness in one frame — a visible white flash.
+    function settleProfileDim(){
+      stopProfileDim();
+      const ov  = document.getElementById('profile-overlay');
+      const dim = document.getElementById('profile-dim');
+      const open = !!(ov && ov.classList.contains('open'));
+      if (dim) dim.style.opacity = open ? '1' : '0';
+      if (!open) document.body.classList.remove('profile-mode');
+    }
     (function(){
       const ov = document.getElementById('profile-overlay');
-      // Stop tracking once the slide has settled; snap to the exact end value.
+      // Settle once the slide has finished (state-driven, so an interrupted
+      // close followed by a reopen resolves correctly too).
       if (ov) ov.addEventListener('transitionend', (e) => {
         if (e.propertyName !== 'transform') return;
-        stopProfileDim();
-        const dim = document.getElementById('profile-dim');
-        if (dim) dim.style.opacity = ov.classList.contains('open') ? '1' : '0';
+        settleProfileDim();
       });
     })();
 
@@ -6131,9 +6147,9 @@
         document.getElementById('profile-overlay').classList.add('open');
         document.getElementById('profile-dim').classList.add('visible');
         startProfileDim();
-        // Hide the floating action button while the profile (and any nested
-        // sub-overlays like Pysäköintitapahtumat) is shown.
-        btnContainer.classList.add('hidden');
+        // The action button stays visible as part of the view underneath —
+        // body.profile-mode only drops its z-index below the dim + panel.
+        document.body.classList.add('profile-mode');
       });
     });
 
@@ -6170,11 +6186,13 @@
     function closeProfileOverlay() {
       document.getElementById('profile-overlay').classList.remove('open');
       document.getElementById('profile-dim').classList.remove('visible');
-      startProfileDim();   // keep tracking, so the strip lightens as it slides out
-      // Restore the floating action button now that the profile (and any
-      // nested sub-overlays underneath) are no longer covering the map.
-      btnContainer.classList.remove('hidden');
-      if (filterMode) closeFilter();
+      startProfileDim();   // keep tracking, so the dim lightens as it slides out
+      // profile-mode (the button's z-index drop) is lifted in
+      // settleProfileDim() AFTER the slide ends — lifting it here flashed the
+      // button bright over the still-dark dim. Nothing else to restore: the
+      // view underneath was never touched. (This used to closeFilter() too:
+      // dead code while opening force-closed the filter, but actively wrong
+      // now that overlays slide in over whatever is on screen.)
     }
     
     function closeSearchOverlay() {
