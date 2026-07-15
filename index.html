@@ -327,9 +327,24 @@
       display: flex; flex-direction: column;
       transform: translateX(-100%);
       transition: transform 0.30s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    /* The panel's shadow lives on a pseudo-element so it can FADE IN during
+       the slide. On the panel box itself it was already on screen while the
+       panel was still parked at translateX(-100%) — the closed panel's right
+       edge sits exactly at the screen's left edge, so the blur bled into view
+       the instant the overlay appeared, ahead of any movement. Same duration
+       and easing as the slide keeps the fade in step with the travel. */
+    #profile-overlay::after {
+      content: '';
+      position: absolute;
+      inset: 0;
       box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+      opacity: 0;
+      transition: opacity 0.30s cubic-bezier(0.25,0.46,0.45,0.94);
+      pointer-events: none;
     }
     #profile-overlay.open { transform: translateX(0); }
+    #profile-overlay.open::after { opacity: 1; }
     /* Dim layer covering the visible right strip while profile is open.
        It blocks taps on the map and adds focus to the profile content. */
     #profile-dim {
@@ -6054,18 +6069,11 @@
     });
 
     function menuItemClick(idx, action) {
-      // If filter is active, close it silently before switching
-      if (filterMode && idx !== 2) {
-        filterMode = false;
-        document.body.classList.remove('filter-mode');
-        filterBtn.classList.remove('active', 'filter-on');
-        filterCloseBtn.classList.remove('visible');
-        sheetNormal.style.display = 'flex';
-        sheetFilter.classList.remove('visible');
-        sliderMin.value = 0; sliderMax.value = 26;
-        updateSliderUI(); applyRangeFilter();
-        btnContainer.classList.remove('hidden');
-      }
+      // NOTE: overlays opened from the menu (profile, plus) slide in ON TOP of
+      // whatever is on screen — deliberately no silent filter-close here. The
+      // old close-and-reset swap made the sheet's content vanish mid-slide and
+      // wiped the chosen filters; now the screen underneath stays exactly as
+      // it was, and closing the overlay returns to it.
       // Ball stays put at X — pressed button briefly flashes light gray instead
       const btn = PILL_BTNS[idx];
       if (btn) btn.classList.add('pill-flash');
@@ -15903,3 +15911,4 @@
 
 </body>
 </html>
+  
