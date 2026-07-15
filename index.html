@@ -1623,15 +1623,15 @@
     .gps-info-icon:active {
       background: #f0f0f0;
     }
-    #filter-close-btn { position: absolute; right: 16px; top: 10px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
+    #filter-close-btn { position: absolute; right: 16px; top: 14px; width: 28px; height: 28px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; z-index: 5; }
     #filter-close-btn.visible { display: flex; }
     /* "Palauta" pill — same shape as the Suodata button in Pysäköintitapahtumat,
        but dark-blue text on white with a thin dark-blue outline. Sits just left
        of the ✕, on the same line as the "Suodata karttanäkymää" title. Hidden
        until a filter control differs from its app-open default. */
-    /* top:11 + height:26 centres at 24px — the same centre line as
-       #filter-close-btn (top:10 + height:28). */
-    #filter-reset-btn { position: absolute; right: 66px; top: 11px; height: 26px; padding: 0 14px; background: var(--tp-orange); border: 1px solid var(--tp-orange); border-radius: 13px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; font-family: Arial, sans-serif; display: none; align-items: center; justify-content: center; z-index: 5; }
+    /* top:15 + height:26 centres at 28px — the same centre line as
+       #filter-close-btn (top:14 + height:28). */
+    #filter-reset-btn { position: absolute; right: 66px; top: 15px; height: 26px; padding: 0 14px; background: var(--tp-orange); border: 1px solid var(--tp-orange); border-radius: 13px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; font-family: Arial, sans-serif; display: none; align-items: center; justify-content: center; z-index: 5; }
     #filter-reset-btn.visible { display: inline-flex; }
     #filter-reset-btn:active { background: var(--tp-orange-dark); border-color: var(--tp-orange-dark); }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
@@ -1658,18 +1658,18 @@
     #sheet-filter::-webkit-scrollbar-thumb { background: #c4c4cc; border-radius: 3px; }
     #sheet-filter::-webkit-scrollbar-track { background: transparent; }
     /* Filter heading — lives in the drag-handle row so its text sits on the
-       same line as the "Palauta" pill and the ✕ (all centred 24px from the
+       same line as the "Palauta" pill and the ✕ (all centred 28px from the
        sheet's top edge). Shown only in filter mode via body.filter-mode;
        pointer-events off so handle drags pass straight through it. */
-    #filter-title { display: none; position: absolute; left: 16px; top: 24px; transform: translateY(-50%); z-index: 4; font-size: 16px; font-weight: bold; color: #222; pointer-events: none; font-family: Arial, sans-serif; }
+    #filter-title { display: none; position: absolute; left: 16px; top: 28px; transform: translateY(-50%); z-index: 4; font-size: 16px; font-weight: bold; color: #222; pointer-events: none; font-family: Arial, sans-serif; }
     body.filter-mode #filter-title { display: block; }
     /* Sticky white mask at the top of the scrollable filter content. Text-free
        (the heading moved up to the drag-handle row). Tall enough to back the
-       lower halves of the Palauta/✕ buttons, which reach 38px from the sheet
-       top — the mask's bottom edge lands at 18px (sheet-filter start) + 31.5px
-       + 1px border = 50.5px, so scrolled content slides under white instead of
+       lower halves of the Palauta/✕ buttons, which reach 42px from the sheet
+       top — the mask's bottom edge lands at 18px (sheet-filter start) + 37px
+       + 1px border = 56px, so scrolled content slides under white instead of
        under the buttons. */
-    #filter-topmask { position: sticky; top: 0; z-index: 3; background: white; height: 31.5px; margin: 0 -24px 10px -16px; border-bottom: 1px solid #eee; }
+    #filter-topmask { position: sticky; top: 0; z-index: 3; background: white; height: 37px; margin: 0 -24px 10px -16px; border-bottom: 1px solid #eee; }
     
     .filter-group {
       background: #f5f5f5;
