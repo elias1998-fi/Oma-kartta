@@ -23,8 +23,9 @@
          retune both. NOTE: this is deliberately separate from the paid-area
          blue (#1266f1) and free-area purple (#7F1F89), which must keep matching
          the map's colours. */
-      --tp-orange: #E8720C;
-      --tp-orange-dark: #C75F06;   /* pressed state */
+      /* Accent = the paid-area blue, solid (no opacity). Deliberately no
+         pressed-state shade — the colour stays the same while tapped. */
+      --tp-accent: #1266f1;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
@@ -1631,9 +1632,8 @@
        until a filter control differs from its app-open default. */
     /* top:15 + height:26 centres at 28px — the same centre line as
        #filter-close-btn (top:14 + height:28). */
-    #filter-reset-btn { position: absolute; right: 66px; top: 15px; height: 26px; padding: 0 14px; background: var(--tp-orange); border: 1px solid var(--tp-orange); border-radius: 13px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; font-family: Arial, sans-serif; display: none; align-items: center; justify-content: center; z-index: 5; }
+    #filter-reset-btn { position: absolute; right: 66px; top: 15px; height: 26px; padding: 0 14px; background: var(--tp-accent); border: 1px solid var(--tp-accent); border-radius: 13px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; font-family: Arial, sans-serif; display: none; align-items: center; justify-content: center; z-index: 5; }
     #filter-reset-btn.visible { display: inline-flex; }
-    #filter-reset-btn:active { background: var(--tp-orange-dark); border-color: var(--tp-orange-dark); }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
     #sheet-summary { padding: 13px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
     #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
@@ -1937,13 +1937,13 @@
     #ref-time-left { flex: 1; }
     #ref-time-label { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-family: Arial, sans-serif; }
     #ref-time-value { font-size: 26px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color 0.2s ease; }
-    #ref-time-value.manual { color: var(--tp-orange); }
+    #ref-time-value.manual { color: var(--tp-accent); }
     #ref-time-day { font-size: 12px; color: #888; margin-top: 4px; font-family: Arial, sans-serif; }
     /* visibility (not display) so the link always reserves its space. With
        display:none the left column changed height when "Palauta nykyhetkeen"
        appeared, and because the row is centre-aligned the clock and drum
        jumped between "nykyhetki" and a manually set time. */
-    #ref-time-reset { display: inline-block; visibility: hidden; margin-top: 6px; border: none; background: none; padding: 0; font-size: 12px; font-weight: 600; color: var(--tp-orange); cursor: pointer; font-family: Arial, sans-serif; text-decoration: underline; }
+    #ref-time-reset { display: inline-block; visibility: hidden; margin-top: 6px; border: none; background: none; padding: 0; font-size: 12px; font-weight: 600; color: var(--tp-accent); cursor: pointer; font-family: Arial, sans-serif; text-decoration: underline; }
     #ref-time-reset.visible { visibility: visible; }
 
     /* Colour legend under the Ajanhetki drum */
@@ -3203,9 +3203,9 @@
       font-family: Arial, sans-serif; font-size: 13px; font-weight: 700;
       white-space: nowrap; cursor: pointer;
     }
-    #ajanhetki-pill-main svg { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--tp-orange); }
+    #ajanhetki-pill-main svg { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--tp-accent); }
     #ajanhetki-pill-main .ajanhetki-pill-label { color: #0C0243; }
-    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-orange); }
+    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); }
 
     /* Window face — pinned top-left and held at the FULL expanded width in px
        (set from JS) so its layout never reflows while the card animates; the
@@ -3239,11 +3239,11 @@
     .ajanhetki-float-left { flex: 1; min-width: 0; }
     .ajanhetki-float-title { display: block; font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
     #ref-time-value-2 { font-size: 26px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color .2s ease; }
-    #ref-time-value-2.manual { color: var(--tp-orange); }
+    #ref-time-value-2.manual { color: var(--tp-accent); }
     #ref-time-day-2 { font-size: 13px; color: #888; margin-top: 4px; font-family: Arial, sans-serif; }
     /* visibility (not display) so the link always reserves its space — otherwise
        the column changes height and the clock jumps when it appears. */
-    #ref-time-reset-2 { display: inline-block; visibility: hidden; margin-top: 6px; border: none; background: none; padding: 0; font-size: 13px; font-weight: 600; color: var(--tp-orange); cursor: pointer; font-family: Arial, sans-serif; text-decoration: underline; }
+    #ref-time-reset-2 { display: inline-block; visibility: hidden; margin-top: 6px; border: none; background: none; padding: 0; font-size: 13px; font-weight: 600; color: var(--tp-accent); cursor: pointer; font-family: Arial, sans-serif; text-decoration: underline; }
     #ref-time-reset-2.visible { visibility: visible; }
     /* No × in the window any more — dismissing lives on the pill. The drum
        therefore sits flush against the window's right edge. */
