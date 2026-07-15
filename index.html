@@ -1666,13 +1666,13 @@
     /* Sticky white mask at the top of the scrollable filter content. Text-free
        (the heading moved up to the drag-handle row). Tall enough to back the
        lower halves of the Palauta/✕ buttons, which reach 42px from the sheet
-       top — the mask's bottom edge lands at 18px (sheet-filter start) + 28px
-       + 1px border = 47px, so scrolled content slides under white instead of
+       top — the mask's bottom edge lands at 18px (sheet-filter start) + 31px
+       + 1px border = 50px, so scrolled content slides under white instead of
        under the buttons. flex:0 0 auto is load-bearing: #sheet-filter is a
        column flex container, and a flex item's default flex-shrink:1 let the
        mask get compressed whenever a toggle revealed more content inside the
        sheet — the mask visibly shrank on e.g. the free-parking switch. */
-    #filter-topmask { position: sticky; top: 0; z-index: 3; background: white; height: 28px; flex: 0 0 auto; margin: 0 -24px 10px -16px; border-bottom: 1px solid #eee; }
+    #filter-topmask { position: sticky; top: 0; z-index: 3; background: white; height: 31px; flex: 0 0 auto; margin: 0 -24px 10px -16px; border-bottom: 1px solid #eee; }
     
     .filter-group {
       background: #f5f5f5;
