@@ -1657,7 +1657,19 @@
     #sheet-filter::-webkit-scrollbar { width: 6px; }
     #sheet-filter::-webkit-scrollbar-thumb { background: #c4c4cc; border-radius: 3px; }
     #sheet-filter::-webkit-scrollbar-track { background: transparent; }
-    #filter-title { position: sticky; top: 0; z-index: 3; background: white; font-size: 16px; font-weight: bold; color: #222; margin: 0 -24px 10px -16px; padding: 12px 24px 12px 16px; border-bottom: 1px solid #eee; }
+    /* Filter heading — lives in the drag-handle row so its text sits on the
+       same line as the "Palauta" pill and the ✕ (all centred 24px from the
+       sheet's top edge). Shown only in filter mode via body.filter-mode;
+       pointer-events off so handle drags pass straight through it. */
+    #filter-title { display: none; position: absolute; left: 16px; top: 24px; transform: translateY(-50%); z-index: 4; font-size: 16px; font-weight: bold; color: #222; pointer-events: none; font-family: Arial, sans-serif; }
+    body.filter-mode #filter-title { display: block; }
+    /* Sticky white mask at the top of the scrollable filter content. Text-free
+       (the heading moved up to the drag-handle row) and deliberately short:
+       just tall enough to back the lower halves of the Palauta/✕ buttons,
+       which reach 38px from the sheet top — the mask's bottom edge lands at
+       18px (sheet-filter start) + 21px + 1px border = 40px, so scrolled
+       content slides under white instead of under the buttons. */
+    #filter-topmask { position: sticky; top: 0; z-index: 3; background: white; height: 21px; margin: 0 -24px 10px -16px; border-bottom: 1px solid #eee; }
     
     .filter-group {
       background: #f5f5f5;
@@ -3093,8 +3105,8 @@
 
     /* ── Ajanhetki pill + floating window ─────────────────────────────── */
     /* Anchor line sitting just above the sheet's top edge. It's a child of
-       #bottom-sheet, so it rides with the sheet exactly like the old
-       "© OpenStreetMap" credit did. Zero height: the pill and the window hang
+       #bottom-sheet, so it rides with the sheet exactly like the
+       "© OpenStreetMap" credit does. Zero height: the pill and the window hang
        off its bottom edge and grow UPWARD from there. */
     #ajanhetki-anchor {
       position: absolute;
@@ -4916,11 +4928,12 @@
 
   <div id="bottom-sheet">
     <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
-    <!-- Credit line, off for now. Uncomment this single div to bring it back —
-         updateOsmOpacity() already fades it with the sheet, and the pill's anchor
-         offset below is the only other thing to bump back to 22px.
+    <!-- Credit line. Shares its spot with the Ajanhetki pill: whenever the pill
+         is visible this is hidden, and it returns the moment the pill goes away
+         (dismissed, filter open, or zoom < 13). The swap lives in
+         updateAjanhetkiPillVisibility(); updateOsmOpacity() still fades it with
+         the sheet. -->
     <div id="osm-attribution" style="position:absolute;top:-16px;left:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;pointer-events:none;transition:opacity 0.2s ease;">&copy; OpenStreetMap</div>
-    -->
     <!-- Ajanhetki: rides with the sheet. The pill grows UPWARD into the window. -->
     <div id="ajanhetki-anchor">
       <!-- ONE morphing element. The card itself is what the user sees grow and
@@ -4969,7 +4982,7 @@
       </div>
     </div>
     <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
-    <div id="drag-handle-area"><div id="drag-handle"></div><button id="filter-reset-btn" onclick="resetFilters()">Palauta</button><button id="filter-close-btn">✕</button></div>
+    <div id="drag-handle-area"><div id="drag-handle"></div><div id="filter-title">Suodata karttanäkymää</div><button id="filter-reset-btn" onclick="resetFilters()">Palauta</button><button id="filter-close-btn">✕</button></div>
     <div id="gps-warning">
       <span>GPS-sijaintisi saattaa olla epätarkka</span>
       <span class="gps-info-icon" onclick="openGpsInfo()">i</span>
@@ -5016,7 +5029,7 @@
     </div>
     <div id="sheet-filter">
       <div id="filter-scrollbar"><div id="filter-scrollbar-thumb"></div></div>
-      <div id="filter-title">Suodata karttanäkymää</div>
+      <div id="filter-topmask"></div>
       <div id="filter-scroll-inner">
       
       <!-- Group 1: free parking visibility + segmented control -->
@@ -10029,6 +10042,7 @@
     map.on('zoom', () => {
       updateZoomIndicator();
       updateButtonText();
+      updateAjanhetkiPillVisibility();   // pill hides below z13, credit swaps back in
     });
     map.on('load', updateZoomIndicator);
 
@@ -12257,29 +12271,29 @@
       const sf = document.getElementById('sheet-filter');
       const bar = document.getElementById('filter-scrollbar');
       const thumb = document.getElementById('filter-scrollbar-thumb');
-      const titleEl = document.getElementById('filter-title');
+      const maskEl = document.getElementById('filter-topmask');
       const inner = document.getElementById('filter-scroll-inner');
       if(!sf || !bar || !thumb) return;
       // The track length follows the VISIBLE height of the sheet on screen, so
       // when the sheet is at mid-height the scrollbar spans only the visible
       // part, and grows to full length as the sheet is expanded.
       function metrics(){
-        const titleH = titleEl ? titleEl.offsetHeight : 0;
+        const maskH = maskEl ? maskEl.offsetHeight : 0;
         const clientH = sf.clientHeight, scrollH = sf.scrollHeight, st = sf.scrollTop;
         const rectTop = sf.getBoundingClientRect().top;
         const visibleH = Math.max(0, Math.min(clientH, window.innerHeight - rectTop));
-        const trackH = Math.max(0, visibleH - titleH);
-        const contentH = Math.max(1, scrollH - titleH);
+        const trackH = Math.max(0, visibleH - maskH);
+        const contentH = Math.max(1, scrollH - maskH);
         let thumbH = trackH > 0 ? (trackH * trackH) / contentH : 0;   // visible / total, scaled to track
         thumbH = Math.min(trackH, Math.max(Math.min(34, trackH), thumbH));
-        return { st, titleH, clientH, scrollH, trackH, contentH, thumbH };
+        return { st, maskH, clientH, scrollH, trackH, contentH, thumbH };
       }
       function update(){
         const m = metrics();
         // Always show the scrollbar while the filter view is open; only skip
         // drawing when there is essentially no visible track (sheet collapsed).
         if(m.trackH <= 4){ bar.classList.remove('visible'); return; }
-        bar.style.top = (m.st + m.titleH) + 'px';   // just below the sticky title (on screen)
+        bar.style.top = (m.st + m.maskH) + 'px';   // just below the sticky top mask (on screen)
         bar.style.height = m.trackH + 'px';          // = visible sheet content height
         let thumbTop = (m.st / m.contentH) * m.trackH;
         thumbTop = Math.max(0, Math.min(m.trackH - m.thumbH, thumbTop));
@@ -13240,7 +13254,7 @@
     }
     // ── Sheet-linked fade ────────────────────────────────────────────────
     // The anchor rides with the sheet and fades as the sheet is opened, exactly
-    // like the old © OpenStreetMap credit did. Read from the sheet's REAL
+    // like the © OpenStreetMap credit does. Read from the sheet's REAL
     // on-screen position each frame rather than the `currentY` variable: several
     // code paths (closeFilter among them) move the sheet without updating
     // currentY, which used to leave the pill stuck part-way faded.
@@ -13322,8 +13336,15 @@
     function updateAjanhetkiPillVisibility(){
       const card = document.getElementById('ajanhetki-card');
       if (!card) return;
-      const active = !ajanhetkiDismissed && showFreeParking && !filterMode;
+      // Below zoom 13 the pill hides, the same way the P-marker and the
+      // parking layers do (their threshold is 13 as well).
+      const zoomOk = map.getZoom() >= 13;
+      const active = zoomOk && !ajanhetkiDismissed && showFreeParking && !filterMode;
       card.classList.toggle('visible', active);
+      // The © OpenStreetMap credit shares the pill's spot: it stays visible on
+      // every zoom level EXCEPT while the pill occupies the space.
+      const osm = document.getElementById('osm-attribution');
+      if (osm) osm.style.visibility = active ? 'hidden' : 'visible';
       if (active) { applyAjanhetkiGeometry(); startAjanhetkiFade(); }
       else {
         stopAjanhetkiFade();
