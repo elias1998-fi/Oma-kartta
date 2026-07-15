@@ -345,20 +345,26 @@
     }
     #profile-overlay.open { transform: translateX(0); }
     #profile-overlay.open::after { opacity: 1; }
-    /* Dim layer covering the visible right strip while profile is open.
-       It blocks taps on the map and adds focus to the profile content. */
+    /* Full-screen dim layer UNDER the profile panel (z 99 vs the panel's
+       100). Because the panel is opaque and on top, the part of the dim the
+       eye actually sees is always exactly the area to the right of the
+       panel's travelling edge — so the uncovered side of the screen darkens
+       gradually as the panel slides, and once the panel settles at 80% the
+       visible grey is the same 20% strip as before. Not a pre-positioned
+       strip: the geometry never jumps, only the panel's coverage changes.
+       Blocks taps while open. */
     #profile-dim {
       position: fixed;
       top: 0; bottom: 0;
-      left: 80%;
+      left: 0;
       right: 0;
       background: rgba(0,0,0,0.4);
       z-index: 99;
       opacity: 0;
       pointer-events: none;
       /* No opacity transition of its own. The JS drives the opacity frame by
-         frame from the panel's actual position, so the strip greys out exactly
-         in step with the slide instead of racing ahead of it on its own timer. */
+         frame from the panel's actual position, so the darkening tracks the
+         slide exactly instead of racing ahead of it on its own timer. */
     }
     #profile-dim.visible {
       pointer-events: auto;
@@ -6085,11 +6091,12 @@
     }
 
     // ── Profile dim, driven by the panel's real position ──────────────────
-    // The strip of map left visible beside the profile panel greys out in step
-    // with the panel's travel: the further it has slid in, the darker the strip.
-    // Read from the panel's actual on-screen position each frame rather than
-    // running a parallel CSS fade, which used its own curve and got ahead of the
-    // slide (the grey looked like it appeared at once).
+    // The dim spans the whole screen under the panel, so everything to the
+    // right of the panel's travelling edge darkens in step with the travel:
+    // the further the panel has slid in, the darker the uncovered side. Read
+    // from the panel's actual on-screen position each frame rather than
+    // running a parallel CSS fade, which used its own curve and got ahead of
+    // the slide (the grey looked like it appeared at once).
     let _profileDimRAF = null, _profileDimStop = null;
     function profileDimFrame() {
       const ov  = document.getElementById('profile-overlay');
@@ -15911,4 +15918,3 @@
 
 </body>
 </html>
-  
