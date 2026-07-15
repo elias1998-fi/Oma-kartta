@@ -1951,9 +1951,14 @@
     .ref-legend-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #555; font-family: Arial, sans-serif; }
     .ref-legend-row + .ref-legend-row { margin-top: 9px; }
     .ref-legend-row .ah-bullet { margin-top: 0; }
-    .ref-legend-box { flex-shrink: 0; width: 15px; height: 15px; border-radius: 3px; }
-    .ref-legend-box.paid { background: #1266f1; }
-    .ref-legend-box.free { background: #7F1F89; }
+    /* Legend swatches mirror the map's actual base-layer rendering:
+       fill = master-poly-fill colours at fill-opacity 0.20, outline =
+       master-poly-line colours at line-opacity 0.55 and 1px width (the map's
+       line-width is 1.0). 2:1 box; border-box keeps the OUTER size at exactly
+       30×15 so the ratio holds with the border included. */
+    .ref-legend-box { flex-shrink: 0; box-sizing: border-box; width: 30px; height: 15px; border-radius: 3px; }
+    .ref-legend-box.paid { background: rgba(18, 102, 241, 0.20); border: 1px solid rgba(11, 73, 208, 0.55); }
+    .ref-legend-box.free { background: rgba(127, 31, 137, 0.20); border: 1px solid rgba(97, 24, 104, 0.55); }
 
     #slider-label { font-size: 15px; color: #222; margin-bottom: 10px; text-align: center; }
     #slider-value { font-weight: bold; color: #0C0243; font-size: 17px; }
@@ -12461,6 +12466,15 @@
       }
       if (refTimeManual) ajanhetkiDismissed = false;
       updateAjanhetkiPillVisibility();
+      // Session intro (see ajanhetkiIntroShown): only when the card actually
+      // ended up on screen — if it stayed hidden (e.g. zoom < 13), the intro
+      // is saved for the next qualifying close instead of burning silently.
+      const _ahCard = document.getElementById('ajanhetki-card');
+      if (refTimeManual && !ajanhetkiIntroShown && _ahCard && _ahCard.classList.contains('visible')) {
+        ajanhetkiIntroShown = true;
+        openAjanhetkiFloat();          // expands (medium) + refreshes value/drum
+        setAjanhetkiSize('large');     // ...and straight on to the large size
+      }
       checkParking();
     }
     // filterBtn click handled in menuItemClick above
@@ -13300,6 +13314,12 @@
     const AH_MAX_W  = 480;   // widest the expanded card ever gets
     let ajanhetkiState = 'collapsed';   // 'collapsed' | 'expanded'
     let ajanhetkiSize  = 'medium';      // 'medium' | 'large'  (while expanded)
+    // One-per-session intro: the first time the filter sheet closes with a
+    // manually set reference time, the card opens LARGE so the user sees what
+    // the map is now showing; every later close in the same session goes
+    // straight to the small pill. Plain page-lifetime variable by design —
+    // reloading the app starts a fresh session.
+    let ajanhetkiIntroShown = false;
 
     // Measure the three target boxes: pill, medium and large.
     function ajanhetkiMetrics(){
