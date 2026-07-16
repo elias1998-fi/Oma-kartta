@@ -5324,11 +5324,15 @@
           <span class="detail-value" id="detail-parking">0,00 €</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Palvelumaksu</span>
+          <span class="detail-label" id="detail-service-label">Palvelumaksu</span>
           <span class="detail-value" id="detail-service">0,00 €</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Sisältää ALV:n (25,5 %)</span>
+          <span class="detail-label">Hinta ilman ALV</span>
+          <span class="detail-value" id="detail-net">0,00 €</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">ALV (25,5%)</span>
           <span class="detail-value" id="detail-vat">0,00 €</span>
         </div>
         <div class="detail-row total">
@@ -12947,10 +12951,13 @@
       const start = (opts && opts.start) || parkingStartTime || new Date();
       const paidMinutes = flat ? minutes : chargeableMinutesFrom(start, minutes);
       const parking = (paidMinutes / 60) * rate;                    // incl. VAT
-      const service = Math.max(SERVICE_FEE_MIN, parking * SERVICE_FEE_PERCENT);
+      const servicePct = parking * SERVICE_FEE_PERCENT;
+      const serviceIsMin = SERVICE_FEE_MIN >= servicePct;           // which rule applied
+      const service = serviceIsMin ? SERVICE_FEE_MIN : servicePct;
       const total = parking + service;
-      const vat = total * VAT_PERCENT / (1 + VAT_PERCENT);          // included share
-      return { parking, service, subtotal: total, vat, total, paidMinutes };
+      const net = total / (1 + VAT_PERCENT);                        // hinta ilman ALV
+      const vat = total - net;                                      // = net × 25,5 %
+      return { parking, service, serviceIsMin, net, subtotal: total, vat, total, paidMinutes };
     }
 
     function formatPrice(amount) {
@@ -13081,7 +13088,11 @@
       const mins  = (typeof minutes === 'number') ? minutes : parkingMinutes;
       const price = calculatePrice(mins, { flat: !!flat });
       document.getElementById('detail-parking').textContent = formatPrice(price.parking);
+      // Palvelumaksun label kertoo kumpi sääntö osui: minimi vai prosentti.
+      document.getElementById('detail-service-label').textContent =
+        'Palvelumaksu ' + (price.serviceIsMin ? '(0,49€)' : '(10%)');
       document.getElementById('detail-service').textContent = formatPrice(price.service);
+      document.getElementById('detail-net').textContent = formatPrice(price.net);
       document.getElementById('detail-vat').textContent = formatPrice(price.vat);
       document.getElementById('detail-total').textContent = formatPrice(price.total);
       _ptlMins = mins;
