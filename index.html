@@ -3160,10 +3160,18 @@
     .time-big-number.at-max { color: #d32f2f; }
     @keyframes timeBounce { 0%{transform:scale(1)} 30%{transform:scale(1.18)} 60%{transform:scale(0.95)} 80%{transform:scale(1.07)} 100%{transform:scale(1)} }
     .time-big-number.bounce { animation: timeBounce 0.35s ease; }
-    #max-label { font-size: 13px; color: #d32f2f; font-family: Arial, sans-serif; margin-top: 3px; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+    /* Kiinteä korkeus varaa labelin rivin alusta asti: ilman sitä tyhjä
+       elementti oli 0 px korkea ja numero hyppäsi ylemmäs ensimmäisellä
+       max-käynnillä, kun teksti ilmestyi. Nyt numero istuu aina samalla
+       ("nousseella") korkeudella. */
+    #max-label { font-size: 13px; color: #d32f2f; font-family: Arial, sans-serif; margin-top: 3px; height: 15px; line-height: 15px; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
     #max-label.visible { opacity: 1; }
     .time-big-unit { font-size: 16px; color: #666; margin-top: 4px; font-family: Arial, sans-serif; }
-    .drum-scroll-zone { width: 52px; height: 80px; border: 1.5px solid #d8d8d8; border-radius: 12px; cursor: grab; user-select: none; flex-shrink: 0; overflow: hidden; position: relative; }
+    /* top: -10.5px keskittää rullan pystysuunnassa koko korttiin: otsikko-
+       lohko (~15 px) + epäsymmetrinen padding (12/6) painavat sisältöriviä
+       alaspäin, ja rullan keskikohta osui ~10,5 px kortin keskikohdan ala-
+       puolelle. Vain visuaalinen siirto — layout ja leveys eivät muutu. */
+    .drum-scroll-zone { width: 52px; height: 80px; border: 1.5px solid #d8d8d8; border-radius: 12px; cursor: grab; user-select: none; flex-shrink: 0; overflow: hidden; position: relative; top: -10.5px; }
     .drum-scroll-zone:active { cursor: grabbing; }
     #drum-canvas { display: block; width: 52px; height: 80px; }
 
