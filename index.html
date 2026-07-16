@@ -3984,7 +3984,7 @@
             <span class="summary-value" id="ed-payment">—</span>
           </div>
           <div class="summary-row summary-total-row">
-            <span class="summary-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail(_edPriceMinutes)">i</span></span>
+            <span class="summary-label" style="display:inline-flex;align-items:center;gap:7px;">Hinta<span class="info-icon" onclick="openPriceDetail(_edPriceMinutes, true)">i</span></span>
             <span class="summary-value summary-price" id="ed-price">—</span>
           </div>
         </div>
@@ -5324,15 +5324,11 @@
           <span class="detail-value" id="detail-parking">0,00 €</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Palvelumaksu (10%)</span>
+          <span class="detail-label">Palvelumaksu</span>
           <span class="detail-value" id="detail-service">0,00 €</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Välisumma (ilman ALV)</span>
-          <span class="detail-value" id="detail-subtotal">0,00 €</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">ALV 25,5%</span>
+          <span class="detail-label">Sisältää ALV:n (25,5 %)</span>
           <span class="detail-value" id="detail-vat">0,00 €</span>
         </div>
         <div class="detail-row total">
@@ -7232,7 +7228,12 @@
         rows.forEach(r => {
           const label = r.price_label
             || (r.price_per_hour != null ? `${String(r.price_per_hour).replace('.', ',')} €/h` : '');
-          m[`${(r.city || '').toLowerCase().trim()}|${r.zone_number}`] = label;
+          // Store BOTH the display label and the numeric €/h so the price
+          // calculation can use the real zone rate, not just the text.
+          const perHour = (r.price_per_hour != null)
+            ? Number(r.price_per_hour)
+            : (parseFloat(String(label).replace(',', '.')) || null);
+          m[`${(r.city || '').toLowerCase().trim()}|${r.zone_number}`] = { label, perHour };
         });
         parkingPrices = m;
       } catch (e) {
@@ -7988,8 +7989,9 @@
           const extraInfo = p.extra_info || '';
           // Use the actual zone (1, 2, or 3) for this feature. Prefer the
           // value stored in the DB; fall back to live computation if absent.
-          const featZone = (p.zone != null && p.zone !== '')
-            ? Number(p.zone)
+          const _zoneRaw = (p.zone_number ?? p.zone);
+          const featZone = (_zoneRaw != null && _zoneRaw !== '')
+            ? Number(_zoneRaw)
             : getZoneForGeometry(f.geometry);
           // Header / type / operator now come straight from the new schema
           // columns (area_name, parking_type, owner_parking_area). Older or
@@ -8042,8 +8044,13 @@
           // city/zone isn't in the table (or the table failed to load).
           const priceKey  = `${(p.location_city || '').toLowerCase().trim()}|${featZone}`;
           const zonePrice = (parkingPrices && parkingPrices[priceKey]) || null;
+          if (isMaksullinen && !isHalli && (p.zone_number ?? p.zone) == null) {
+            // Paid area without a zone in the data → the shown zone (and thus
+            // price) is a geometry guess. Surfaced so data gaps get noticed.
+            console.warn('Maksulliselta alueelta puuttuu zone_number — vyöhyke arvattu geometriasta:', featZone, p.area_name || p.id);
+          }
           if (isMaksullinen && !isHalli) {
-            priceText = zonePrice || 'Maksullinen';
+            priceText = (zonePrice && zonePrice.label) || 'Maksullinen';
           } else if (!isHalli) {
             priceText = 'Ilmainen';
           }
@@ -10259,7 +10266,7 @@
       const start  = new Date(ev.start_time);
       const end    = new Date(ev.end_time);
       const durMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
-      const price  = calculatePrice(durMin);
+      const price  = calculatePrice(durMin, { flat: true });
       const row = (l, v) => `<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;"><span style="color:#888;">${l}</span><span style="color:#222;font-weight:500;text-align:right;">${v}</span></div>`;
       const wrap = document.createElement('div');
       wrap.className = 'sup-pop';
@@ -12886,19 +12893,64 @@
       }
     }
 
-    const PARKING_RATE = 3;
+    // Pricing model: zone rates from the parking_prices table are CONSUMER
+    // prices (VAT included). The service fee is max(0,49 €, 10 % of the
+    // parking cost). VAT_PERCENT is informational — it's the share INSIDE
+    // the total, not added on top.
+    const RATE_FALLBACK_PER_HOUR = 3;   // €/h incl. VAT when the zone rate is unknown
+    const SERVICE_FEE_MIN = 0.49;       // €
     const SERVICE_FEE_PERCENT = 0.10;
     const VAT_PERCENT = 0.255;
 
-    function calculatePrice(minutes) {
-      if (minutes === 0) return { parking: 0, service: 0, subtotal: 0, vat: 0, total: 0 };
-      const hours = minutes / 60;
-      const parking = hours * PARKING_RATE;
-      const service = parking * SERVICE_FEE_PERCENT;
-      const subtotal = parking + service;
-      const vat = subtotal * VAT_PERCENT;
-      const total = subtotal + vat;
-      return { parking, service, subtotal, vat, total };
+    // Shared fee-window rules — the SAME logic drives the map's Ajanhetki
+    // colouring, the price-detail timeline and the price itself:
+    //   – no window data at all          → paid around the clock
+    //   – other days defined, today not  → free the whole day
+    //   – otherwise paid when from ≤ h < to
+    function _areaWinFor(d) {
+      const v = _parkingAreaValid || {};
+      const anyDef = [v.mapeFrom, v.mapeTo, v.laFrom, v.laTo, v.suFrom, v.suTo].some(x => x != null);
+      if (!anyDef) return { from: 0, to: 24 };
+      const dow = d.getDay();
+      let f, t;
+      if (dow === 0)      { f = v.suFrom; t = v.suTo; }
+      else if (dow === 6) { f = v.laFrom; t = v.laTo; }
+      else                { f = v.mapeFrom; t = v.mapeTo; }
+      if (f == null || t == null) return null;
+      return { from: f, to: t };
+    }
+    function _areaIsPaidAt(ms) {
+      const d = new Date(ms);
+      const w = _areaWinFor(d);
+      if (!w) return false;
+      const h = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+      return h >= w.from && h < w.to;
+    }
+    // Chargeable minutes: walk the span minute by minute (max 1440) and count
+    // the ones whose midpoint falls inside the area's fee window.
+    function chargeableMinutesFrom(startDate, minutes) {
+      let paid = 0;
+      const t0 = startDate.getTime();
+      for (let i = 0; i < minutes; i++) {
+        if (_areaIsPaidAt(t0 + (i + 0.5) * 60000)) paid++;
+      }
+      return paid;
+    }
+    // opts.flat  → ignore area context (history rows: no per-event area data)
+    // opts.start → price a span starting at a given time (default: now/live)
+    function calculatePrice(minutes, opts) {
+      if (!minutes || minutes <= 0) return { parking: 0, service: 0, subtotal: 0, vat: 0, total: 0, paidMinutes: 0 };
+      const flat = !!(opts && opts.flat);
+      const rate = (!flat && Number.isFinite(_parkingRatePerHour))
+        ? _parkingRatePerHour
+        : RATE_FALLBACK_PER_HOUR;
+      const start = (opts && opts.start) || parkingStartTime || new Date();
+      const paidMinutes = flat ? minutes : chargeableMinutesFrom(start, minutes);
+      const parking = (paidMinutes / 60) * rate;                    // incl. VAT
+      const service = Math.max(SERVICE_FEE_MIN, parking * SERVICE_FEE_PERCENT);
+      const total = parking + service;
+      const vat = total * VAT_PERCENT / (1 + VAT_PERCENT);          // included share
+      return { parking, service, subtotal: total, vat, total, paidMinutes };
     }
 
     function formatPrice(amount) {
@@ -12907,6 +12959,7 @@
 
     // Valitun alueen maksuajat (mape/la/su) maksuerittelyn aikajanaa varten.
     let _parkingAreaValid = null;
+    let _parkingRatePerHour = null;   // €/h (sis. ALV) valitulle alueelle; null → RATE_FALLBACK_PER_HOUR
     function _nfv(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
     let parkingMinutes=0, parkingMaxMinutes=1440, isIlmainen=false;
     let parkingStartTime = null;
@@ -13024,12 +13077,11 @@
       drawDrum();
     }
 
-    function openPriceDetail(minutes) {
+    function openPriceDetail(minutes, flat) {
       const mins  = (typeof minutes === 'number') ? minutes : parkingMinutes;
-      const price = calculatePrice(mins);
+      const price = calculatePrice(mins, { flat: !!flat });
       document.getElementById('detail-parking').textContent = formatPrice(price.parking);
       document.getElementById('detail-service').textContent = formatPrice(price.service);
-      document.getElementById('detail-subtotal').textContent = formatPrice(price.subtotal);
       document.getElementById('detail-vat').textContent = formatPrice(price.vat);
       document.getElementById('detail-total').textContent = formatPrice(price.total);
       _ptlMins = mins;
@@ -13092,25 +13144,10 @@
       // Maksuikkuna viikonpäivän mukaan. Jos KAIKKI kentät puuttuvat →
       // ei tietoa → koko aika maksullista. Jos osa määritelty mutta tämän
       // päivän ikkuna puuttuu (esim. su) → päivä on ilmainen.
-      const v = _parkingAreaValid || {};
-      const anyDef = [v.mapeFrom, v.mapeTo, v.laFrom, v.laTo, v.suFrom, v.suTo].some(x => x != null);
-      function winFor(d) {
-        if (!anyDef) return { from: 0, to: 24 };
-        const dow = d.getDay();
-        let f, t;
-        if (dow === 0)      { f = v.suFrom; t = v.suTo; }
-        else if (dow === 6) { f = v.laFrom; t = v.laTo; }
-        else                { f = v.mapeFrom; t = v.mapeTo; }
-        if (f == null || t == null) return null;
-        return { from: f, to: t };
-      }
-      function isPaidAt(ms) {
-        const d = new Date(ms);
-        const w = winFor(d);
-        if (!w) return false;
-        const h = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
-        return h >= w.from && h < w.to;
-      }
+      // Ikkunasäännöt jaetusta koneesta (_areaWinFor/_areaIsPaidAt), jota myös
+      // calculatePrice käyttää — hinta ja aikajana eivät voi erota toisistaan.
+      const winFor = _areaWinFor;
+      const isPaidAt = _areaIsPaidAt;
 
       // Segmenttirajat: alku, loppu, vuorokaudenvaihteet ja maksuikkunan
       // reunat (from/to) jokaiselta aikavälin päivältä.
@@ -13981,6 +14018,14 @@
         laFrom:   _nfv(p.valid_la_from), laTo:   _nfv(p.valid_la_to),
         suFrom:   _nfv(p.valid_su_from), suTo:   _nfv(p.valid_su_to)
       };
+      // Alueen vyöhykehinta parking_prices-taulusta (sama avain kuin sheetin
+      // hintalabelilla). null → laskenta käyttää RATE_FALLBACK_PER_HOUR:ia.
+      {
+        const zRaw = (p.zone_number ?? p.zone);
+        const zone = (zRaw != null && zRaw !== '') ? Number(zRaw) : getZoneForGeometry(f[0].geometry);
+        const entry = parkingPrices && parkingPrices[`${(p.location_city || '').toLowerCase().trim()}|${zone}`];
+        _parkingRatePerHour = (entry && Number.isFinite(entry.perHour)) ? entry.perHour : null;
+      }
       openParkingOverlay({
         'hel:id':            computeAreaCodeFromFeature(f[0]),
         'hel:kesto':         p.max_hours ? `${p.max_hours}h` : null,
@@ -14211,6 +14256,7 @@
         paymentMethod: pm.name,
         maxHours:      parkingMaxMinutes / 60,
         validTimes:    _parkingAreaValid,
+        ratePerHour:   _parkingRatePerHour,
         location:      { lat: center.lat, lng: center.lng }
       };
 
@@ -14335,7 +14381,7 @@
     function showParkingSummary(session, actualEnd) {
       const startDate = new Date(session.startTime);
       const durationMin = Math.max(0, Math.round((actualEnd.getTime() - startDate.getTime()) / 60000));
-      const price = calculatePrice(durationMin);
+      const price = calculatePrice(durationMin, { start: startDate });
 
       document.getElementById('summary-code').textContent     = session.areaCode;
       document.getElementById('summary-plate').textContent    =
@@ -14522,7 +14568,7 @@
       const start = new Date(ev.start_time);
       const end   = new Date(ev.end_time);
       const durMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
-      const price  = calculatePrice(durMin);
+      const price  = calculatePrice(durMin, { flat: true });
       const zone   = String(ev.area_code || '').match(/^(\d)/);
       // "Pysäköintialue" row: same format as the base view's header —
       // the DB area_name plus a "| Max. Xh" suffix. Falls back to a derived
@@ -15545,7 +15591,7 @@
       const endTm    = `${end.getHours()}:${String(end.getMinutes()).padStart(2,'0')}`;
       const durMin   = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
       const durStr   = formatDuration(durMin);
-      const price    = calculatePrice(durMin);
+      const price    = calculatePrice(durMin, { flat: true });
       const priceStr = formatPrice(price.total);
       // Derive zone from area code (first digit). All current sessions are
       // street parking, so operator is "Helsingin kaupunki". If garage
@@ -15583,6 +15629,7 @@
       isExtendingSession    = true;
       extendDrumUserTouched = false;
       _parkingAreaValid     = activeParkingSession.validTimes || null;
+      _parkingRatePerHour   = Number.isFinite(activeParkingSession.ratePerHour) ? activeParkingSession.ratePerHour : null;
       hideActiveParkingBanner();
       // Add the extending-mode class first so the dim is in place from the
       // moment the overlay slides open (avoids any visual flash).
