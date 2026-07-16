@@ -12897,11 +12897,11 @@
       }
     }
 
-    // Pricing model: zone rates from the parking_prices table are CONSUMER
-    // prices (VAT included). The service fee is max(0,49 €, 10 % of the
-    // parking cost). VAT_PERCENT is informational — it's the share INSIDE
-    // the total, not added on top.
-    const RATE_FALLBACK_PER_HOUR = 3;   // €/h incl. VAT when the zone rate is unknown
+    // Pricing model: zone rates (parking_prices) and the service fee are
+    // VAT-FREE amounts. Their sum is "Hinta ilman ALV", and VAT 25,5 % is
+    // added ON TOP of it: Yhteensä = (pysäköinti + palvelumaksu) × 1,255.
+    // The service fee is max(0,49 €, 10 % of the parking cost).
+    const RATE_FALLBACK_PER_HOUR = 3;   // €/h (ilman ALV) when the zone rate is unknown
     const SERVICE_FEE_MIN = 0.49;       // €
     const SERVICE_FEE_PERCENT = 0.10;
     const VAT_PERCENT = 0.255;
@@ -12950,13 +12950,18 @@
         : RATE_FALLBACK_PER_HOUR;
       const start = (opts && opts.start) || parkingStartTime || new Date();
       const paidMinutes = flat ? minutes : chargeableMinutesFrom(start, minutes);
-      const parking = (paidMinutes / 60) * rate;                    // incl. VAT
+      // Every money amount is rounded to cents at THIS level so the shown
+      // rows always add up exactly: parking + service = net, net + vat =
+      // total. Without this, e.g. 7,93 € parking gives a 0,793 € fee and the
+      // displayed rows would disagree with the total by a cent.
+      const round2 = v => Math.round(v * 100) / 100;
+      const parking = round2((paidMinutes / 60) * rate);            // ilman ALV
       const servicePct = parking * SERVICE_FEE_PERCENT;
       const serviceIsMin = SERVICE_FEE_MIN >= servicePct;           // which rule applied
-      const service = serviceIsMin ? SERVICE_FEE_MIN : servicePct;
-      const total = parking + service;
-      const net = total / (1 + VAT_PERCENT);                        // hinta ilman ALV
-      const vat = total - net;                                      // = net × 25,5 %
+      const service = round2(serviceIsMin ? SERVICE_FEE_MIN : servicePct); // ilman ALV
+      const net = round2(parking + service);                        // hinta ilman ALV
+      const total = round2(net * (1 + VAT_PERCENT));                // ALV 25,5 % päälle
+      const vat = round2(total - net);                              // ALV euroina
       return { parking, service, serviceIsMin, net, subtotal: total, vat, total, paidMinutes };
     }
 
