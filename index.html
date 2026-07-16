@@ -3155,8 +3155,8 @@
     .p-card.time-card { padding-bottom: 6px; }
     .p-card.time-card .p-card-title { margin-bottom: 2px; }
     .time-big-display { flex: 1; }
-    /* 26px = sama fontti ja koko kuin Ajanhetki-numerolla (#ref-time-value). */
-    .time-big-number { font-size: 26px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color 0.2s ease, transform 0.15s ease; }
+    /* 22px = sama fonttikoko kuin Yhteensä-summalla (.total-price-val). */
+    .time-big-number { font-size: 22px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color 0.2s ease, transform 0.15s ease; }
     .time-big-number.at-max { color: #d32f2f; }
     @keyframes timeBounce { 0%{transform:scale(1)} 30%{transform:scale(1.18)} 60%{transform:scale(0.95)} 80%{transform:scale(1.07)} 100%{transform:scale(1)} }
     .time-big-number.bounce { animation: timeBounce 0.35s ease; }
@@ -13021,15 +13021,15 @@
 
     let lastDisplayedMinutes=-1;
     let lastVibrateMinute=-1;
-    let maxLabelTimer=null;
     let wasAtMax=false;
 
+    // Ilmoitus näkyy koko sen ajan, kun aika on maksimissa — piilotus
+    // tapahtuu updateDisplayssa vasta kun rullaa vähennetään maksimin
+    // alle. Ei enää itsestään sammuvaa 2 s ajastinta.
     function showMaxLabel(){
       const lbl=document.getElementById('max-label');
       lbl.textContent=`(Max. ${formatTimeDisplay(parkingMaxMinutes)})`;
       lbl.classList.add('visible');
-      clearTimeout(maxLabelTimer);
-      maxLabelTimer=setTimeout(()=>{ lbl.classList.remove('visible'); },2000);
     }
 
     function triggerMaxBounce(){
@@ -13056,7 +13056,10 @@
         // still trying to scroll further
         triggerMaxBounce();
       }
-      if(!atMax){ el.classList.remove('at-max'); }
+      if(!atMax){
+        el.classList.remove('at-max');
+        document.getElementById('max-label').classList.remove('visible');
+      }
       wasAtMax=atMax;
 
       if(rounded!==lastDisplayedMinutes){
@@ -13942,7 +13945,6 @@
       lastDisplayedMinutes=-1;
       lastVibrateMinute=-1;
       wasAtMax=false;
-      clearTimeout(maxLabelTimer);
       document.getElementById('max-label').classList.remove('visible');
       document.getElementById('p-code').textContent=areaCode;
       // Row 2: "Helsinki, Vyöhyke N | Max. 2h" — N = actual zone (derived
