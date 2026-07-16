@@ -3149,8 +3149,14 @@
     .area-select-row:active { background: #f8f8f8; }
     .area-chevron { font-size: 18px; color: #888; line-height: 1; margin-left: auto; }
     .time-card-inner { display: flex; align-items: center; gap: 12px; }
+    /* Pysäköintiaika-kortti muita matalampi: sisältö (numero, teksti, rulla)
+       nousee lähemmäs otsikkoa ja pohjan tyhjä kapenee. Scoped .time-card-
+       luokalla, joten muut .p-card-kortit eivät muutu. */
+    .p-card.time-card { padding-bottom: 6px; }
+    .p-card.time-card .p-card-title { margin-bottom: 2px; }
     .time-big-display { flex: 1; }
-    .time-big-number { font-size: 28px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color 0.2s ease, transform 0.15s ease; }
+    /* 26px = sama fontti ja koko kuin Ajanhetki-numerolla (#ref-time-value). */
+    .time-big-number { font-size: 26px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color 0.2s ease, transform 0.15s ease; }
     .time-big-number.at-max { color: #d32f2f; }
     @keyframes timeBounce { 0%{transform:scale(1)} 30%{transform:scale(1.18)} 60%{transform:scale(0.95)} 80%{transform:scale(1.07)} 100%{transform:scale(1)} }
     .time-big-number.bounce { animation: timeBounce 0.35s ease; }
@@ -5407,7 +5413,7 @@
         </div>
       </div>
 
-      <div class="p-card">
+      <div class="p-card time-card">
         <div class="p-card-title">Pysäköintiaika</div>
         <div class="time-card-inner">
           <div class="time-big-display">
