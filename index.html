@@ -7746,8 +7746,14 @@
         // alkaa 1:stä ja korostus suodattaa ['get','id']-arvolla, joten ilman
         // etuliitettä maksullinen ja ilmainen alue voisivat jakaa saman id:n ja
         // korostua yhdessä.
+        // Maksullisilla on lisäksi large_area-lippu (Iso aluekokonaisuus). Jos
+        // saraketta ei vielä ole tietokannassa, ladataan ilman sitä, jotta
+        // alueet eivät katoa kartalta. Ilmaisilla lippua ei ole.
         const [paidRows, freeRows] = await Promise.all([
-          fetchAllParkingRows('parking_master', MASTER_SELECT),
+          fetchAllParkingRows('parking_master', MASTER_SELECT + ',large_area').catch(e => {
+            console.warn('large_area puuttuu tai lataus epäonnistui — ladataan ilman large_area-saraketta', e);
+            return fetchAllParkingRows('parking_master', MASTER_SELECT);
+          }),
           fetchAllParkingRows('parking_master_ilmaiset', MASTER_SELECT).catch(e => {
             console.error('parking_master_ilmaiset fetch error:', e);
             return [];   // ilmaisten epäonnistuminen ei kaada maksullisten latausta
@@ -7944,6 +7950,7 @@
             type: 'Feature',
             properties: {
               id: r.id, source: legacySourceFor(r.area_type, r.parking_type, r.max_hours), area_type: r.area_type,
+              large_area: r.large_area === true,
               area_name: r.area_name || '', parking_type: r.parking_type || '', owner_parking_area: r.owner_parking_area || '', location_city: r.location_city || '',
               extra_info: r.info_additional || '', max_hours: r.max_hours,
               max_minutes: r.max_minutes,
@@ -8119,9 +8126,14 @@
       const _lineClr = _isFree ? '#611868' : '#0B49D0';
       const _hoverFillClr = '#ff1744';   // hovered area → red (as before)
       const _groupFillClr = '#0C0243';   // same-group areas → black (as before)
+      // "Iso aluekokonaisuus" (large_area): p-merkin alla täyttö jää 20 %
+      // läpinäkyväksi (sama kuin alueiden perustäyttö), mutta ulkoreuna on
+      // silti täysin punainen. Tavallisilla alueilla täyttö on kokonaan
+      // punainen kuten ennen.
+      const _isLarge = props.large_area === true || props.large_area === 'true';
 
       map.setPaintProperty('master-poly-hover-fill', 'fill-color', _hoverFillClr);
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', _isLarge ? 0.20 : 1.0);
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
