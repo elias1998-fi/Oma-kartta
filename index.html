@@ -8163,19 +8163,22 @@
         );
       }
 
+      // Iso alue: samoilla tiedoilla olevat naapurialueet eivät reagoi lainkaan
+      // — ei ryhmäkorostusta. Tavallisilla alueilla korostus kuten ennen.
+      const _groupIds = _isLarge ? [] : groupMinusHov;
       // Subtle blue fill on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
         map.setPaintProperty('master-poly-group-fill', 'fill-color', _groupFillClr);
         map.setPaintProperty('master-poly-group-fill', 'fill-opacity', 1.0);
         map.setFilter('master-poly-group-fill',
-          groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
+          _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
         );
       }
       // Border on OTHER same-category areas → black, fully opaque
       map.setPaintProperty('master-poly-group-line', 'line-color', _groupFillClr);
       map.setPaintProperty('master-poly-group-line', 'line-opacity', 1.0);
       map.setFilter('master-poly-group-line',
-        groupMinusHov.length ? ['in', ['get','id'], ['literal', groupMinusHov]] : ['==','id','__none__']
+        _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
       );
 
       // No fill pulse, no comet — solid red only.
