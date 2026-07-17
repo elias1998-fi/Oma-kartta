@@ -4759,19 +4759,20 @@
           </svg>
           <span id="maptype-badge" style="position:absolute;bottom:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:white;color:#0C0243;border:1.5px solid #0C0243;font-size:11px;font-weight:bold;font-family:Arial,sans-serif;display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25);line-height:1;">1</span>
         </button>
-        <!-- Kontrollit pyöreinä palloina (kuten location/karttatyyli-pallo), pinottuna. -->
-        <button id="corner-minus-btn" onclick="handleMinusClick()" aria-label="Poista kulma" style="width:48px;height:48px;border:none;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="3" stroke-linecap="round" style="width:22px;height:22px;"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
-        <button onclick="showMidpointHandles()" aria-label="Lisää kulma" style="width:48px;height:48px;border:none;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="3" stroke-linecap="round" style="width:22px;height:22px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
+        <!-- +/− yhtenä pystypillerinä: − ylhäällä, + alhaalla, väliviiva erottaa.
+             Kaksi erillistä toimintoa (poista/lisää kulma) yhdessä pallossa. -->
+        <div style="display:flex;flex-direction:column;background:white;border-radius:24px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.22);">
+          <button id="corner-minus-btn" onclick="handleMinusClick()" aria-label="Poista kulma" style="width:48px;height:48px;border:none;background:transparent;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="width:22px;height:22px;"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div style="height:1px;background:#eee;margin:0 9px;"></div>
+          <button onclick="showMidpointHandles()" aria-label="Lisää kulma" style="width:48px;height:48px;border:none;background:transparent;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="width:22px;height:22px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
         <!-- Lukitus-pallo: ikoni ja väri vaihtuvat updateLockBtn():ssa (suljettu lukko/valkoinen = lukittu, avoin lukko/tumma = seuraa karttaa). -->
         <button id="area-lock-btn" onclick="toggleAreaLock()" aria-label="Lukitse paikkaan" style="width:48px;height:48px;border:none;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
           <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-        </button>
-        <button onclick="centerPolygonOnScreen()" aria-label="Keskitä" style="width:48px;height:48px;border:none;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="2.5" x2="12" y2="5.5"/><line x1="12" y1="18.5" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5.5" y2="12"/><line x1="18.5" y1="12" x2="21.5" y2="12"/></svg>
         </button>
         <button onclick="tuoPolygoniKartalle()" aria-label="Tuo polygoni" style="width:48px;height:48px;border:none;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
           <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M12 3v11"/><path d="M7.5 9.5 12 14l4.5-4.5"/><path d="M5 20h14"/></svg>
@@ -6350,6 +6351,7 @@
     let midpointMarkers = [];
     let areaRemoveMode = false;   // pulsing-corner remove mode
     let polygonMoved = false;     // tracks if any corner was dragged
+    let polyPixelOffsets = null;  // polygonin muoto pikseleinä (näyttökoko), talteen muokattaessa; "Tuo polygoni" käyttää
     let areaMapType = 0;            // 0 = HSL-vektori (oletus), 1 = OSM-rasteri, 2 = satelliitti
     let mapTypePending = false;     // karttatyylin vaihto odottaa tyylin latautumista
     let mapErrHooked = false;       // rasteritiilien error-kuuntelija liitetään vain kerran
@@ -6460,6 +6462,7 @@
         }
         if(!areaLocked)lockedPixelPos[idx]=clampPixelPos(areaMap.project(marker.getLngLat()));
         updateAreaLayer();
+        capturePolyPixels();
       });
     }
 
@@ -6515,6 +6518,7 @@
       areaCoords.splice(idx, 1);
       if (!areaLocked) lockedPixelPos.splice(idx, 1);
       updateAreaLayer(); updateMinusBtn(); updateAddBtn();
+      capturePolyPixels();
     }
     // ── End remove mode ──────────────────────────────────────────────────────
 
@@ -6544,6 +6548,7 @@
         if(!areaLocked)lockedPixelPos.push(clampPixelPos(areaMap.project([c[0],c[1]])));
       });
       updateAreaLayer(); updateMinusBtn(); updateAddBtn();
+      capturePolyPixels();
     }
 
     function toggleAreaLock() {
@@ -6560,14 +6565,31 @@
       areaMap.fitBounds(bounds,{padding:80,duration:500,maxZoom:19});
     }
 
+    // Tallentaa polygonin muodon PIKSELEINÄ (offsetit keskipisteestä) nykyisellä
+    // zoomilla. Kutsutaan aina kun polygonia luodaan tai muokataan, jotta
+    // "Tuo polygoni" voi palauttaa saman NÄYTTÖKOON riippumatta zoomista.
+    function capturePolyPixels() {
+      if (!areaMap || areaCoords.length < 3) { polyPixelOffsets = null; return; }
+      const pts = areaCoords.map(c => areaMap.project(c));
+      const cx = pts.reduce((s,p)=>s+p.x,0)/pts.length;
+      const cy = pts.reduce((s,p)=>s+p.y,0)/pts.length;
+      polyPixelOffsets = pts.map(p => ({ dx: p.x - cx, dy: p.y - cy }));
+    }
+
+    // Sijoittaa polygonin näytön keskelle SÄILYTTÄEN sen pikseli-/näyttökoon.
+    // → muoto pysyy samana, mutta maantieteellinen koko skaalautuu zoomin mukaan
+    //   (zoomattu ulos = sama muoto kattaa suuremman alueen, ja päinvastoin).
     function tuoPolygoniKartalle() {
       if(!areaMap||areaCoords.length<3)return;
       clearMidpointHandles(); exitRemoveMode();
-      const centLng=areaCoords.reduce((s,c)=>s+c[0],0)/areaCoords.length;
-      const centLat=areaCoords.reduce((s,c)=>s+c[1],0)/areaCoords.length;
-      const mc=areaMap.getCenter();
-      const dLng=mc.lng-centLng, dLat=mc.lat-centLat;
-      areaCoords=areaCoords.map(c=>[c[0]+dLng,c[1]+dLat]);
+      if(!polyPixelOffsets || polyPixelOffsets.length !== areaCoords.length) capturePolyPixels();
+      if(!polyPixelOffsets) return;
+      const canvas = areaMap.getCanvas();
+      const cx = canvas.clientWidth/2, cy = canvas.clientHeight/2;
+      areaCoords = polyPixelOffsets.map(o => {
+        const ll = areaMap.unproject([cx + o.dx, cy + o.dy]);
+        return [ll.lng, ll.lat];
+      });
       areaMarkers.forEach((m,i)=>m.setLngLat(areaCoords[i]));
       if(!areaLocked)lockedPixelPos=areaMarkers.map(m=>clampPixelPos(areaMap.project([m.getLngLat().lng,m.getLngLat().lat])));
       updateAreaLayer();
@@ -6606,6 +6628,7 @@
         setupMarkerEvents(marker); areaMarkers.push(marker);
       });
       updateMinusBtn(); updateAddBtn();
+      capturePolyPixels();
     }
 
     function initAreaMap() {
