@@ -4745,13 +4745,22 @@
             <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#0C0243" transform="rotate(45 12 12)"/>
           </svg>
         </button>
+        <!-- Karttatyyli-pallo: kolmiportainen HSL → OSM → satelliitti. Sama 48px
+             ympyrä kuin location-pallo; alakulmassa tilan numero (1 = OSM, 2 = sat). -->
+        <button id="maptype-btn" onclick="cycleMapType()" aria-label="Karttatyyli" style="position:relative;width:48px;height:48px;border:none;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span id="maptype-badge" style="position:absolute;bottom:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:white;color:#0C0243;border:1.5px solid #0C0243;font-size:11px;font-weight:bold;font-family:Arial,sans-serif;display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25);line-height:1;">1</span>
+        </button>
         <div style="display:flex;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.22);">
           <button id="corner-minus-btn" onclick="handleMinusClick()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;transition:opacity 0.2s;">−</button>
           <div style="width:1px;background:#eee;margin:8px 0;"></div>
           <button onclick="showMidpointHandles()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;">+</button>
         </div>
         <button id="area-lock-btn" onclick="toggleAreaLock()" style="height:36px;padding:0 14px;border:none;border-radius:10px;background:white;color:#0C0243;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.22);white-space:nowrap;">Seuraa karttaa</button>
-        <button id="sat-toggle-btn" onclick="toggleAreaSatellite()" style="height:36px;padding:0 14px;border-radius:10px;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;white-space:nowrap;background:white;color:#0C0243;border:2px solid #0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.22);">🛰 Satelliitti</button>
         <button onclick="centerPolygonOnScreen()" style="height:36px;padding:0 14px;border:none;border-radius:10px;background:white;color:#0C0243;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.22);white-space:nowrap;">⊙ Keskitä</button>
         <button onclick="tuoPolygoniKartalle()" style="height:36px;padding:0 14px;border:none;border-radius:10px;background:white;color:#0C0243;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.22);white-space:nowrap;">⤵ Tuo polygoni</button>
       </div>
@@ -5507,6 +5516,14 @@
     // Niin kauan kuin arvo on paikkamerkki, satelliittinappi vain vilauttaa
     // ohjeen eikä yritä ladata tiiliä.
     const MAPBOX_TOKEN = 'pk.eyJ1IjoiZWxpYXMxOTk4IiwiYSI6ImNtcm9td3dwMzNlbmQyeHF6OGUzNDc5enYifQ.09UVfLxCbFdL633TWPvNiA';
+
+    // ── OpenStreetMap-rasteritiilet (karttatyylin "OSM"-tila) ──────────
+    // Tämä on OSM:n oma vakiotyyli (sama ulkoasu kuin openstreetmap.org).
+    // HUOM: OSM:n tiilipalvelu on lahjoitusrahoitteinen eikä sitä ole tarkoitettu
+    // kaupalliseen/raskaaseen käyttöön — tuotannossa vaihda tähän kaupallisen
+    // palvelun URL (esim. MapTiler/Thunderforest/Stadia). Vaatii näkyvän
+    // "© OpenStreetMap" -maininnan (ks. viesti). Kehityksessä tämä toimii heti.
+    const OSM_RASTER_TILES = ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'];
 
     // Zoom the map settles on when a parking area, charging station or garage is
     // tapped. The P-marker lives at the map centre, so flying to the feature's
@@ -6320,10 +6337,9 @@
     let midpointMarkers = [];
     let areaRemoveMode = false;   // pulsing-corner remove mode
     let polygonMoved = false;     // tracks if any corner was dragged
-    let areaSatOn = false;          // satelliittitaso (Mapbox) näkyvissä rajausnäkymässä
-    let areaSatAuthHandled = false; // 401/403-ilmoitus näytetty kerran per päälläolo
-    let areaSatPending = false;     // toggle odottaa tyylin latautumista
-    let areaSatErrHooked = false;   // error-kuuntelija liitetään vain kerran
+    let areaMapType = 0;            // 0 = HSL-vektori (oletus), 1 = OSM-rasteri, 2 = satelliitti
+    let mapTypePending = false;     // karttatyylin vaihto odottaa tyylin latautumista
+    let mapErrHooked = false;       // rasteritiilien error-kuuntelija liitetään vain kerran
 
     function addPolygonLayers() {
       if (!areaMap) return;
@@ -6336,7 +6352,7 @@
         areaMap.addLayer({ id:'area-poly-fill', type:'fill', source:'area-poly', paint:{'fill-color':'#0C0243','fill-opacity':0.15} });
       if (!areaMap.getLayer('area-poly-line'))
         areaMap.addLayer({ id:'area-poly-line', type:'line', source:'area-poly', paint:{'line-color':'#0C0243','line-width':2.5,'line-opacity':0.95} });
-      ensureSatelliteLayer();   // satelliittitaso area-poly-fill:in alle (piilotettuna jos pois)
+      applyMapType();   // varmistaa OSM/satelliitti-tasot ja näyttää oikean nykyisen tilan mukaan
     }
 
     function createCornerEl() {
@@ -6574,7 +6590,7 @@
       const center=map.getCenter(), zoom=map.getZoom();
       // Jokainen rajaussessio alkaa vektoritaustalla; molemmat haarat alla
       // asettavat omakartta_style.json:n, joten nollataan lippu + nappi.
-      areaSatOn = false; areaSatAuthHandled = false; areaSatPending = false; updateSatBtn();
+      areaMapType = 0; mapTypePending = false; updateMapTypeBtn();
       if(!areaMap){
         areaMap=new maplibregl.Map({
           container:'area-map', style:'omakartta_style.json',
@@ -6583,14 +6599,19 @@
           dragRotate:false, touchPitch:false, pitchWithRotate:false,
           keyboard:false, attributionControl:false
         });
-        areaMap.on('load',()=>{
+        // Polygoni näkyviin heti kun TYYLI on valmis — ei odoteta tiilien
+        // latautumista (mikä oli 2–3 s viiveen syy). initOnce ajetaan sen
+        // tapahtuman kohdalla, joka ehtii ensin (style.load yleensä ennen load).
+        let _areaInited = false;
+        const initOnce = () => {
+          if (_areaInited) return; _areaInited = true;
           areaMap.touchZoomRotate.disableRotation(); areaMap.dragRotate.disable();
-          areaMap.resize();               // kontti animoitui juuri näkyviin → pakota oikea koko heti
+          areaMap.resize();
           initAreaCornersAndPolygon();
-          // Toinen resize + repaint seuraavassa framessa: ilman tätä polygoni ei
-          // aina piirry ennen kuin karttaa liikutetaan (kontin koko ehti asettua).
           requestAnimationFrame(() => { if (areaMap) { areaMap.resize(); areaMap.triggerRepaint(); } });
-        });
+        };
+        areaMap.on('style.load', initOnce);
+        areaMap.on('load', initOnce);
         areaMap.on('move',()=>{
           if(!areaLocked&&lockedPixelPos.length===areaMarkers.length){
             areaMarkers.forEach((m,i)=>{ const ll=areaMap.unproject(lockedPixelPos[i]); m.setLngLat(ll); areaCoords[i]=[ll.lng,ll.lat]; });
@@ -6599,102 +6620,102 @@
         });
       } else {
         areaMap.resize(); areaMap.setCenter([center.lng,center.lat]); areaMap.setZoom(zoom);
-        areaMap.setStyle('omakartta_style.json');
-        const safety=setTimeout(()=>{ initAreaCornersAndPolygon(); },8000);
-        areaMap.once('style.load',()=>{ clearTimeout(safety); initAreaCornersAndPolygon(); });
+        // EI setStyle-uudelleenlatausta: tyyli on jo ladattu, ja satelliitti/OSM
+        // ovat erillisiä rasteritasoja (ei tyylinvaihtoa). Aiempi setStyle latasi
+        // koko tyylin uudelleen joka avauksella → 2–3 s viive. Rakennetaan
+        // polygoni heti ja resize varmuudeksi.
+        initAreaCornersAndPolygon();
+        requestAnimationFrame(()=>{ if(areaMap){ areaMap.resize(); areaMap.triggerRepaint(); } });
       }
     }
 
-    // ── Satelliitti rajausnäkymässä (Mapbox-rasteri TASONA) ────────────
-    // Ei tyylinvaihtoa: satelliitti on oma rasteritaso vektorin PÄÄLLÄ mutta
-    // polygonin ALLA. Napista vain näytetään/piilotetaan (visibility). Näin:
-    //   - avaus ei vaadi tyylin uudelleenlatausta
-    //   - zoomaus ei voi tuhota tasoa (yksittäinen tiilihikka ei kaada mitään)
-    //   - päälle/pois on välitön, tiilet pysyvät välimuistissa
-    // Taso lisätään addPolygonLayers():n lopussa area-poly-fill:in ALLE, joten
-    // se peittää vektorin mutta polygoni piirtyy sen päälle.
+    // ── Karttatyylin vaihto rajausnäkymässä (HSL → OSM → satelliitti) ──
+    // Kolmiportainen nappi: 0 = HSL-vektori (oletus, nappi pois päältä),
+    // 1 = OpenStreetMap-rasteri (nappi aktiivinen, merkki "1"),
+    // 2 = Mapbox-satelliitti (merkki "2"). OSM ja satelliitti ovat erillisiä
+    // rasteritasoja vektorin PÄÄLLÄ mutta polygonin ALLA; vaihto on pelkkää
+    // näkyvyyden vaihtoa (ei tyylinvaihtoa → nopea, ei kaada polygonia/kuvaa).
 
-    function updateSatBtn() {
-      const btn = document.getElementById('sat-toggle-btn'); if (!btn) return;
-      // Aina klikattava; ulkoasu: reunoin (pois) / täytetty (päällä), kuten lukitusnappi.
-      btn.style.cursor = 'pointer';
-      btn.style.opacity = '1';
-      btn.style.border = '2px solid #0C0243';
-      if (areaSatOn) { btn.style.background = '#0C0243'; btn.style.color = 'white'; }
-      else           { btn.style.background = 'white';   btn.style.color = '#0C0243'; }
+    function updateMapTypeBtn() {
+      const btn = document.getElementById('maptype-btn');
+      const badge = document.getElementById('maptype-badge');
+      if (!btn) return;
+      const active = (areaMapType !== 0);
+      btn.style.background = active ? '#0C0243' : 'white';
+      const svg = btn.querySelector('svg');
+      if (svg) svg.style.stroke = active ? 'white' : '#0C0243';
+      if (badge) {
+        if (active) { badge.textContent = String(areaMapType); badge.style.display = 'flex'; }
+        else { badge.style.display = 'none'; }
+      }
     }
 
-    // Lisää satelliittilähteen + tason (piilotettuna) jos puuttuvat. Kutsutaan
-    // addPolygonLayers():stä, joten taso syntyy uudelleen jokaisen tyylin
-    // latauduttua. Piilotettu rasteritaso EI lataa tiiliä ennen kuin näkyy.
-    function ensureSatelliteLayer() {
+    // Lisää OSM- ja satelliittirasterit (piilotettuina) jos puuttuvat. Molemmat
+    // area-poly-fill:in ALLE → peittävät vektorin, polygoni piirtyy niiden päälle.
+    // Piilotettu rasteritaso EI lataa tiiliä ennen kuin se näytetään.
+    function ensureRasterLayers() {
       if (!areaMap || !areaMap.isStyleLoaded()) return;
-      if (!MAPBOX_TOKEN || MAPBOX_TOKEN.indexOf('TÄHÄN') !== -1) return;  // ei tokenia → ei tasoa
-      if (!areaMap.getSource('mapbox-sat')) {
-        areaMap.addSource('mapbox-sat', {
-          type: 'raster',
-          tiles: ['https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token=' + MAPBOX_TOKEN],
-          tileSize: 512, maxzoom: 22, attribution: '© Mapbox © Maxar'
+      const beforeId = areaMap.getLayer('area-poly-fill') ? 'area-poly-fill' : undefined;
+      // OpenStreetMap-rasteri (ei avainta).
+      if (!areaMap.getSource('osm-raster')) {
+        areaMap.addSource('osm-raster', {
+          type: 'raster', tiles: OSM_RASTER_TILES, tileSize: 256, maxzoom: 19,
+          attribution: '© OpenStreetMap-osallistujat'
         });
       }
-      if (!areaMap.getLayer('mapbox-sat')) {
-        const beforeId = areaMap.getLayer('area-poly-fill') ? 'area-poly-fill' : undefined;
-        areaMap.addLayer({
-          id: 'mapbox-sat', type: 'raster', source: 'mapbox-sat',
-          layout: { visibility: areaSatOn ? 'visible' : 'none' }
-        }, beforeId);
-      } else {
-        areaMap.setLayoutProperty('mapbox-sat', 'visibility', areaSatOn ? 'visible' : 'none');
+      if (!areaMap.getLayer('osm-raster')) {
+        areaMap.addLayer({ id:'osm-raster', type:'raster', source:'osm-raster', layout:{ visibility:'none' } }, beforeId);
+      }
+      // Satelliitti (Mapbox) — vain jos token on asetettu.
+      if (MAPBOX_TOKEN && MAPBOX_TOKEN.indexOf('TÄHÄN') === -1) {
+        if (!areaMap.getSource('mapbox-sat')) {
+          areaMap.addSource('mapbox-sat', {
+            type:'raster',
+            tiles:['https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token=' + MAPBOX_TOKEN],
+            tileSize:512, maxzoom:22, attribution:'© Mapbox © Maxar'
+          });
+        }
+        if (!areaMap.getLayer('mapbox-sat')) {
+          areaMap.addLayer({ id:'mapbox-sat', type:'raster', source:'mapbox-sat', layout:{ visibility:'none' } }, beforeId);
+        }
       }
       hookAreaSat();
     }
 
-    function toggleAreaSatellite() {
-      if (!areaMap) return;
-      // Token puuttuu → vilautetaan ohje napissa.
-      if (!MAPBOX_TOKEN || MAPBOX_TOKEN.indexOf('TÄHÄN') !== -1) {
-        const btn = document.getElementById('sat-toggle-btn'); if (!btn) return;
-        const prev = btn.textContent; btn.textContent = 'Lisää Mapbox-token';
-        setTimeout(() => { btn.textContent = prev; }, 2000);
-        return;
-      }
-      // Tyyli ei vielä valmis (heti avauksen jälkeen) → odota ja yritä kerran.
-      if (!areaMap.isStyleLoaded()) {
-        if (areaSatPending) return;
-        areaSatPending = true;
-        areaMap.once('idle', () => { areaSatPending = false; toggleAreaSatellite(); });
-        return;
-      }
-      ensureSatelliteLayer();
-      if (!areaMap.getLayer('mapbox-sat')) return;   // varmuus
-      areaSatOn = !areaSatOn;
-      if (areaSatOn) areaSatAuthHandled = false;      // salli token-ohje uudelleen tällä päälläololla
-      areaMap.setLayoutProperty('mapbox-sat', 'visibility', areaSatOn ? 'visible' : 'none');
-      updateSatBtn();
+    // Näyttää oikean rasterin nykyisen tilan mukaan. Turvallinen kutsua usein
+    // (esim. addPolygonLayers():stä joka avauksella).
+    function applyMapType() {
+      if (!areaMap || !areaMap.isStyleLoaded()) return;
+      ensureRasterLayers();
+      const setVis = (id, on) => { if (areaMap.getLayer(id)) areaMap.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'); };
+      setVis('osm-raster', areaMapType === 1);
+      setVis('mapbox-sat', areaMapType === 2);
+      updateMapTypeBtn();
     }
 
-    // Liitetään kerran map-tasolle (kuuntelijat säilyvät tyylin latausten yli).
-    // TÄRKEÄÄ: tämä EI KOSKAAN piilota satelliittitasoa — aiempi versio piilotti
-    // sen ensimmäisestä tiilivirheestä, mikä sai kuvan katoamaan zoomatessa.
-    // Nyt vain logataan; jos autentikointi (401/403) pettää eikä kuvaa tule,
-    // näytetään napissa ohje kerran, mutta taso jää paikalleen.
+    function cycleMapType() {
+      if (!areaMap) return;
+      // Tyyli ei vielä valmis (heti avauksen jälkeen) → odota ja yritä kerran.
+      if (!areaMap.isStyleLoaded()) {
+        if (mapTypePending) return;
+        mapTypePending = true;
+        areaMap.once('idle', () => { mapTypePending = false; cycleMapType(); });
+        return;
+      }
+      areaMapType = (areaMapType + 1) % 3;   // 0 → 1 → 2 → 0
+      applyMapType();
+    }
+
+    // Liitetään kerran map-tasolle. EI KOSKAAN piilota rasteritasoa (se sai kuvan
+    // katoamaan zoomatessa) — vain logataan tiilivirheet konsoliin.
     function hookAreaSat() {
-      if (areaSatErrHooked || !areaMap) return;
-      areaSatErrHooked = true;
+      if (mapErrHooked || !areaMap) return;
+      mapErrHooked = true;
       areaMap.on('error', (e) => {
-        if (!areaSatOn) return;
-        if (e && e.sourceId && e.sourceId !== 'mapbox-sat') return;
+        const src = e && e.sourceId;
+        if (src && src !== 'mapbox-sat' && src !== 'osm-raster') return;
         const status = e && e.error && e.error.status;
-        console.warn('[TotalParking] Satelliittitiili:', status || '(ei statusta)', e && e.error);
-        if (areaSatAuthHandled) return;
-        if (status !== 401 && status !== 403) return;            // vain autentikointivirhe
-        areaSatAuthHandled = true;
-        const btn = document.getElementById('sat-toggle-btn');
-        if (btn) {
-          btn.textContent = (status === 401) ? 'Satelliitti: token ei kelpaa'
-                                             : 'Satelliitti: tarkista token-rajaus';
-          setTimeout(() => { btn.textContent = '🛰 Satelliitti'; }, 3500);
-        }
+        console.warn('[TotalParking] Karttatiili:', src || '', status || '(ei statusta)', e && e.error);
       });
     }
     // =====================================
