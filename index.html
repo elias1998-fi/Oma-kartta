@@ -4793,18 +4793,18 @@
             <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.22s ease;"></span>
           </div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:4px 16px 16px 16px;">
+        <div style="display:flex;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:10px;padding:4px 16px 16px 16px;">
           <!-- karttatyyli (HSL → OSM → satelliitti); tilanumero alakulmassa -->
-          <button id="maptype-btn" onclick="cycleMapType()" aria-label="Karttatyyli" style="position:relative;width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button id="maptype-btn" onclick="cycleMapType()" aria-label="Karttatyyli" style="position:relative;width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
             <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;">
               <polygon points="12 2 2 7 12 12 22 7 12 2"/>
               <polyline points="2 17 12 22 22 17"/>
               <polyline points="2 12 12 17 22 12"/>
             </svg>
             <span id="maptype-badge" style="position:absolute;bottom:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:white;color:#0C0243;border:1.5px solid #0C0243;font-size:11px;font-weight:bold;font-family:Arial,sans-serif;display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25);line-height:1;">1</span>
-          </button>
+          </button><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Kartta<br>taso</div></div>
           <!-- +/− vaakapilleri: − vasemmalla, + oikealla, väliviiva erottaa -->
-          <div style="display:flex;flex-direction:row;background:#eef0f2;border-radius:24px;overflow:hidden;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="display:flex;flex-direction:row;background:#eef0f2;border-radius:24px;overflow:hidden;">
             <button id="corner-minus-btn" onclick="handleMinusClick()" aria-label="Poista kulma" style="width:48px;height:48px;border:none;background:transparent;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="width:22px;height:22px;"><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
@@ -4812,20 +4812,20 @@
             <button id="corner-plus-btn" onclick="handlePlusClick()" aria-label="Lisää kulma" style="width:48px;height:48px;border:none;background:transparent;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="width:22px;height:22px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-          </div>
+          </div><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Poista / Lisää<br>kulmapiste</div></div>
           <!-- lukko -->
-          <button id="area-lock-btn" onclick="toggleAreaLock()" aria-label="Lukitse paikkaan" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button id="area-lock-btn" onclick="toggleAreaLock()" aria-label="Lukitse paikkaan" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
             <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-          </button>
+          </button><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Alueen<br>vapautus</div></div>
           <!-- tuo polygoni -->
-          <button onclick="flashCtrlBlue(this);tuoPolygoniKartalle()" aria-label="Tuo polygoni" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button onclick="flashCtrlBlue(this);tuoPolygoniKartalle()" aria-label="Tuo polygoni" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M12 3v11"/><path d="M7.5 9.5 12 14l4.5-4.5"/><path d="M5 20h14"/></svg>
-          </button>
+          </button><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Tuo<br>alue</div></div>
           <!-- salli näytön rotaatio: päällä karttaa voi pyörittää vapaasti;
                uudelleen painamalla lukitaan takaisin pohjoiseen. -->
-          <button id="rotate-btn" onclick="toggleAreaRotation()" aria-label="Salli näytön rotaatio" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button id="rotate-btn" onclick="toggleAreaRotation()" aria-label="Salli näytön rotaatio" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-          </button>
+          </button><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Kartan<br>rotaatio</div></div>
         </div>
       </div>
     </div>
@@ -8126,14 +8126,14 @@
       const _lineClr = _isFree ? '#611868' : '#0B49D0';
       const _hoverFillClr = '#ff1744';   // hovered area → red (as before)
       const _groupFillClr = '#0C0243';   // same-group areas → black (as before)
-      // "Iso aluekokonaisuus" (large_area): p-merkin alla täyttö jää 20 %
-      // läpinäkyväksi (sama kuin alueiden perustäyttö), mutta ulkoreuna on
-      // silti täysin punainen. Tavallisilla alueilla täyttö on kokonaan
-      // punainen kuten ennen.
+      // "Iso aluekokonaisuus" (large_area): p-merkin alla EI punaista täyttöä
+      // lainkaan — vain täysin punainen ulkoreuna. Sininen perustäyttö jää
+      // näkyviin alle. Tavallisilla alueilla täyttö on kokonaan punainen kuten
+      // ennen.
       const _isLarge = props.large_area === true || props.large_area === 'true';
 
       map.setPaintProperty('master-poly-hover-fill', 'fill-color', _hoverFillClr);
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', _isLarge ? 0.20 : 1.0);
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', _isLarge ? 0 : 1.0);
       map.setFilter('master-poly-hover-fill',
         hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
