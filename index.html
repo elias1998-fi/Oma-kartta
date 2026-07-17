@@ -6308,6 +6308,8 @@
     let polygonMoved = false;     // tracks if any corner was dragged
     let areaSatOn = false;        // satelliittitausta (Mapbox) päällä rajausnäkymässä
     let areaSatStyleLoading = false;  // estää päällekkäiset tyylinvaihdot
+    let areaSatReverting = false;     // estää monta peruutusta samasta tiilivirhesarjasta
+    let areaSatErrHooked = false;     // error-kuuntelija liitetään vain kerran
 
     function addPolygonLayers() {
       if (!areaMap) return;
@@ -6543,7 +6545,7 @@
       const center=map.getCenter(), zoom=map.getZoom();
       // Jokainen rajaussessio alkaa vektoritaustalla; molemmat haarat alla
       // asettavat omakartta_style.json:n, joten nollataan lippu + nappi.
-      areaSatOn = false; areaSatStyleLoading = false; updateSatBtn();
+      areaSatOn = false; areaSatStyleLoading = false; areaSatReverting = false; updateSatBtn();
       if(!areaMap){
         areaMap=new maplibregl.Map({
           container:'area-map', style:'omakartta_style.json',
@@ -6582,6 +6584,7 @@
             type: 'raster',
             tiles: ['https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token=' + MAPBOX_TOKEN],
             tileSize: 512,
+            maxzoom: 22,
             attribution: '© Mapbox © Maxar'
           }
         },
@@ -6614,6 +6617,7 @@
       if (areaSatStyleLoading) return;   // odota käynnissä oleva vaihto loppuun
       areaSatStyleLoading = true;
       areaSatOn = !areaSatOn;
+      if (areaSatOn) { areaSatReverting = false; hookAreaSatErrors(); }
       updateSatBtn();
 
       const reAddPolygon = () => {
@@ -6624,6 +6628,35 @@
       const safety = setTimeout(reAddPolygon, 8000);
       areaMap.once('style.load', () => { clearTimeout(safety); reAddPolygon(); });
       areaMap.setStyle(areaSatOn ? mapboxSatelliteStyle() : 'omakartta_style.json');
+    }
+
+    // Liitetään kerran: jos satelliittitiilet epäonnistuvat (yleensä 401/403
+    // token-rajauksesta), ei jätetä mustaa ruutua vaan kerrotaan syy ja
+    // peruutetaan takaisin vektoriin. Muut virheet vain logataan.
+    function hookAreaSatErrors() {
+      if (areaSatErrHooked || !areaMap) return;
+      areaSatErrHooked = true;
+      areaMap.on('error', (e) => {
+        if (!areaSatOn) return;                                  // vain satelliittitilassa
+        const src = e && e.sourceId;
+        if (src && src !== 'mapbox-sat') return;                 // vain satelliittilähde
+        const status = e && e.error && e.error.status;
+        console.warn('[TotalParking] Satelliittitiili epäonnistui', status || '(ei statusta)', e && e.error);
+        const authFail = (status === 401 || status === 403);
+        if (!authFail || areaSatReverting) return;
+        areaSatReverting = true;
+        const btn = document.getElementById('sat-toggle-btn');
+        if (btn) {
+          btn.textContent = (status === 401) ? 'Satelliitti: token ei kelpaa'
+                                             : 'Satelliitti: tarkista token-rajaus';
+          setTimeout(() => { btn.textContent = '🛰 Satelliitti'; }, 3500);
+        }
+        areaSatOn = false; updateSatBtn();
+        const back = () => { areaSatStyleLoading = false; addPolygonLayers(); updateAreaLayer(); };
+        const safety = setTimeout(back, 8000);
+        areaMap.once('style.load', () => { clearTimeout(safety); back(); });
+        areaMap.setStyle('omakartta_style.json');
+      });
     }
     // =====================================
 
