@@ -7982,7 +7982,7 @@
 
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
-          paint:{ 'fill-opacity': 0.20,
+          paint:{ 'fill-opacity': 0.20, 'fill-opacity-transition': { duration: 0 },
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
               'hel_ilmainen_pitka', '#7F1F89',
@@ -8126,17 +8126,24 @@
       const _lineClr = _isFree ? '#611868' : '#0B49D0';
       const _hoverFillClr = '#ff1744';   // hovered area → red (as before)
       const _groupFillClr = '#0C0243';   // same-group areas → black (as before)
-      // "Iso aluekokonaisuus" (large_area): p-merkin alla EI punaista täyttöä
-      // lainkaan — vain täysin punainen ulkoreuna. Sininen perustäyttö jää
-      // näkyviin alle. Tavallisilla alueilla täyttö on kokonaan punainen kuten
-      // ennen.
+      // "Iso aluekokonaisuus" (large_area): p-merkin alla EI täyttöä lainkaan —
+      // ei punaista eikä sinistä, vain punainen reuna. Punainen hover-täyttö
+      // suodatetaan tältä alueelta kokonaan pois (ei hetkellistä vilahdusta), ja
+      // perustäyttö piilotetaan samalta alueelta. Tavallisilla alueilla täyttö on
+      // kokonaan punainen kuten ennen.
       const _isLarge = props.large_area === true || props.large_area === 'true';
 
       map.setPaintProperty('master-poly-hover-fill', 'fill-color', _hoverFillClr);
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', _isLarge ? 0 : 1.0);
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
       map.setFilter('master-poly-hover-fill',
-        hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
+        (hovId && !_isLarge) ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
+      // Perustäyttö: piilota vain hoverattu iso alue (0), muut ennallaan (0.20).
+      if (map.getLayer('master-poly-fill')) {
+        map.setPaintProperty('master-poly-fill', 'fill-opacity',
+          (hovId && _isLarge) ? ['case', ['==', ['get','id'], hovId], 0, 0.20] : 0.20
+        );
+      }
 
       // Hide the BASE border for the hovered area only. Case expression
       // returns 0 opacity for the matching id, 0.30 for everything else.
@@ -8262,6 +8269,10 @@
       // Restore the base border opacity for every area.
       if (map.getLayer('master-poly-line')) {
         map.setPaintProperty('master-poly-line', 'line-opacity', 0.55);
+      }
+      // Restore the base fill for every area (iso alue palautuu normaaliksi).
+      if (map.getLayer('master-poly-fill')) {
+        map.setPaintProperty('master-poly-fill', 'fill-opacity', 0.20);
       }
     }
 
