@@ -4738,6 +4738,13 @@
       </button>
       <!-- Floating controls -->
       <div style="position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:10;display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+        <!-- Location-pallo: perusnäkymän paikka (oikea yläkulma). Muut painikkeet
+             tulevat sen alle. Sama 48px valkoinen ympyrä + nuoli-ikoni. -->
+        <button onclick="goToMyLocationInAreaMap()" aria-label="Sijaintini" style="width:48px;height:48px;border:none;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;">
+            <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#0C0243" transform="rotate(45 12 12)"/>
+          </svg>
+        </button>
         <div style="display:flex;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.22);">
           <button id="corner-minus-btn" onclick="handleMinusClick()" style="width:44px;height:44px;border:none;background:transparent;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0C0243;font-weight:bold;transition:opacity 0.2s;">−</button>
           <div style="width:1px;background:#eee;margin:8px 0;"></div>
@@ -4747,13 +4754,6 @@
         <button id="sat-toggle-btn" onclick="toggleAreaSatellite()" style="height:36px;padding:0 14px;border-radius:10px;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;white-space:nowrap;background:white;color:#0C0243;border:2px solid #0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.22);">🛰 Satelliitti</button>
         <button onclick="centerPolygonOnScreen()" style="height:36px;padding:0 14px;border:none;border-radius:10px;background:white;color:#0C0243;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.22);white-space:nowrap;">⊙ Keskitä</button>
         <button onclick="tuoPolygoniKartalle()" style="height:36px;padding:0 14px;border:none;border-radius:10px;background:white;color:#0C0243;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.22);white-space:nowrap;">⤵ Tuo polygoni</button>
-        <!-- "Sijaintini" korvattu perusnäkymän pyöreällä location-pallolla: sama
-             48px valkoinen ympyrä + nuoli-ikoni, sama toiminto. -->
-        <button onclick="goToMyLocationInAreaMap()" aria-label="Sijaintini" style="width:48px;height:48px;border:none;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;">
-            <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="#0C0243" transform="rotate(45 12 12)"/>
-          </svg>
-        </button>
       </div>
     </div>
     <div style="background:white;padding:12px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid #eee;flex-shrink:0;">
@@ -6321,10 +6321,9 @@
     let areaRemoveMode = false;   // pulsing-corner remove mode
     let polygonMoved = false;     // tracks if any corner was dragged
     let areaSatOn = false;          // satelliittitaso (Mapbox) näkyvissä rajausnäkymässä
-    let areaSatTileOk = false;      // true kun vähintään yksi satelliittitiili on latautunut
     let areaSatAuthHandled = false; // 401/403-ilmoitus näytetty kerran per päälläolo
     let areaSatPending = false;     // toggle odottaa tyylin latautumista
-    let areaSatErrHooked = false;   // data/error-kuuntelijat liitetään vain kerran
+    let areaSatErrHooked = false;   // error-kuuntelija liitetään vain kerran
 
     function addPolygonLayers() {
       if (!areaMap) return;
@@ -6538,7 +6537,21 @@
 
     function goToMyLocationInAreaMap() {
       if(!areaMap)return;
-      if(userLocation) areaMap.flyTo({center:[userLocation.lon,userLocation.lat],duration:800});
+      // Jos sijainti on jo tiedossa, lennä heti (nopea palaute).
+      if(userLocation) areaMap.flyTo({center:[userLocation.lon,userLocation.lat],zoom:16,duration:800});
+      // Pyydä joka tapauksessa tuore sijainti ja lennä siihen — toimii vaikka
+      // sijaintia ei olisi vielä perusnäkymässä haettu. Napautus antaa iOS:lle
+      // vaaditun käyttäjäeleen lupakyselyä varten.
+      if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(
+          (pos)=>{
+            userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+            areaMap.flyTo({center:[pos.coords.longitude,pos.coords.latitude],zoom:16,duration:800});
+          },
+          (err)=>{ console.warn('[TotalParking] Sijaintia ei saatu:', err && err.message); },
+          { enableHighAccuracy:true, timeout:10000, maximumAge:60000 }
+        );
+      }
     }
 
     function initAreaCornersAndPolygon() {
@@ -6561,7 +6574,7 @@
       const center=map.getCenter(), zoom=map.getZoom();
       // Jokainen rajaussessio alkaa vektoritaustalla; molemmat haarat alla
       // asettavat omakartta_style.json:n, joten nollataan lippu + nappi.
-      areaSatOn = false; areaSatTileOk = false; areaSatAuthHandled = false; areaSatPending = false; updateSatBtn();
+      areaSatOn = false; areaSatAuthHandled = false; areaSatPending = false; updateSatBtn();
       if(!areaMap){
         areaMap=new maplibregl.Map({
           container:'area-map', style:'omakartta_style.json',
@@ -6570,7 +6583,14 @@
           dragRotate:false, touchPitch:false, pitchWithRotate:false,
           keyboard:false, attributionControl:false
         });
-        areaMap.on('load',()=>{ areaMap.touchZoomRotate.disableRotation(); areaMap.dragRotate.disable(); initAreaCornersAndPolygon(); });
+        areaMap.on('load',()=>{
+          areaMap.touchZoomRotate.disableRotation(); areaMap.dragRotate.disable();
+          areaMap.resize();               // kontti animoitui juuri näkyviin → pakota oikea koko heti
+          initAreaCornersAndPolygon();
+          // Toinen resize + repaint seuraavassa framessa: ilman tätä polygoni ei
+          // aina piirry ennen kuin karttaa liikutetaan (kontin koko ehti asettua).
+          requestAnimationFrame(() => { if (areaMap) { areaMap.resize(); areaMap.triggerRepaint(); } });
+        });
         areaMap.on('move',()=>{
           if(!areaLocked&&lockedPixelPos.length===areaMarkers.length){
             areaMarkers.forEach((m,i)=>{ const ll=areaMap.unproject(lockedPixelPos[i]); m.setLngLat(ll); areaCoords[i]=[ll.lng,ll.lat]; });
@@ -6648,33 +6668,25 @@
       ensureSatelliteLayer();
       if (!areaMap.getLayer('mapbox-sat')) return;   // varmuus
       areaSatOn = !areaSatOn;
-      if (areaSatOn) {
-        // Uusi päälläolo: nollaa "toimii jo"-lippu ja anna 4 s armonaika, jonka
-        // jälkeen tiilivirheitä ei enää tulkita token-ongelmaksi (vain logataan).
-        areaSatTileOk = false; areaSatAuthHandled = false;
-        setTimeout(() => { areaSatTileOk = true; }, 4000);
-      }
+      if (areaSatOn) areaSatAuthHandled = false;      // salli token-ohje uudelleen tällä päälläololla
       areaMap.setLayoutProperty('mapbox-sat', 'visibility', areaSatOn ? 'visible' : 'none');
       updateSatBtn();
     }
 
     // Liitetään kerran map-tasolle (kuuntelijat säilyvät tyylin latausten yli).
-    // data: merkitään että satelliitti latautui → sen jälkeen tiilivirheitä ei
-    // enää käsitellä token-ongelmana (estää katoamisen zoomatessa).
-    // error: vain jos EI vielä latautunut JA kyse on 401/403:sta, näytetään
-    // ohje kerran ja piilotetaan taso — koko näkymää EI pureta.
+    // TÄRKEÄÄ: tämä EI KOSKAAN piilota satelliittitasoa — aiempi versio piilotti
+    // sen ensimmäisestä tiilivirheestä, mikä sai kuvan katoamaan zoomatessa.
+    // Nyt vain logataan; jos autentikointi (401/403) pettää eikä kuvaa tule,
+    // näytetään napissa ohje kerran, mutta taso jää paikalleen.
     function hookAreaSat() {
       if (areaSatErrHooked || !areaMap) return;
       areaSatErrHooked = true;
-      areaMap.on('data', (e) => {
-        if (e && e.sourceId === 'mapbox-sat' && e.tile && e.tile.state === 'loaded') areaSatTileOk = true;
-      });
       areaMap.on('error', (e) => {
         if (!areaSatOn) return;
         if (e && e.sourceId && e.sourceId !== 'mapbox-sat') return;
         const status = e && e.error && e.error.status;
         console.warn('[TotalParking] Satelliittitiili:', status || '(ei statusta)', e && e.error);
-        if (areaSatTileOk || areaSatAuthHandled) return;         // toimii jo tai jo ilmoitettu
+        if (areaSatAuthHandled) return;
         if (status !== 401 && status !== 403) return;            // vain autentikointivirhe
         areaSatAuthHandled = true;
         const btn = document.getElementById('sat-toggle-btn');
@@ -6683,9 +6695,6 @@
                                              : 'Satelliitti: tarkista token-rajaus';
           setTimeout(() => { btn.textContent = '🛰 Satelliitti'; }, 3500);
         }
-        areaSatOn = false;
-        if (areaMap.getLayer('mapbox-sat')) areaMap.setLayoutProperty('mapbox-sat', 'visibility', 'none');
-        updateSatBtn();
       });
     }
     // =====================================
