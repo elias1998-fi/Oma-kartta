@@ -1236,33 +1236,34 @@
     }
 
     /* iOS-style switch — track + thumb. Dark blue (#0C0243) when checked. */
+    /* Yhtenaistetty vastaamaan .toggle-switchia (suodatin-sheetin kytkin), jotta
+       kaikki sovelluksen kytkimet nayttavat samalta. */
     .ios-switch {
       position: relative;
       display: inline-block;
-      width: 51px;
-      height: 31px;
+      width: 48px;
+      height: 28px;
       flex-shrink: 0;
     }
     .ios-switch input { opacity: 0; width: 0; height: 0; }
     .ios-switch-track {
       position: absolute;
       inset: 0;
-      background: #e0e0e0;
-      border-radius: 16px;
-      transition: background 0.22s ease;
+      background: #ccc;
+      border-radius: 28px;
+      transition: 0.3s;
       cursor: pointer;
     }
     .ios-switch-track::before {
       content: '';
       position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 27px;
-      height: 27px;
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
       background: white;
       border-radius: 50%;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
-      transition: transform 0.22s ease;
+      transition: 0.3s;
     }
     .ios-switch input:checked + .ios-switch-track { background: #0C0243; }
     .ios-switch input:checked + .ios-switch-track::before { transform: translateX(20px); }
@@ -3813,49 +3814,7 @@
         </div>
       </div>
 
-      <!-- Admin tools. Hidden unless "Näytä admin muokkaustyökalut" is switched
-           on in Asetukset → Muut. -->
-      <div class="settings-section" id="profile-admin-section" style="display:none;">
-        <div class="settings-item settings-expander" id="muut-expander" onclick="toggleMuutSection()">
-          <div class="settings-item-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-              <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-              <circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-            </svg>
-          </div>
-          <div class="settings-item-text">
-            <div class="settings-item-label">Muut</div>
-          </div>
-          <div class="settings-item-chevron" id="muut-chevron">›</div>
-        </div>
-        <div id="muut-content" class="settings-collapsible">
-          <div class="settings-item" onclick="openAdminOverlay()">
-            <div class="settings-item-icon">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/>
-              </svg>
-            </div>
-            <div class="settings-item-text">
-              <div class="settings-item-label">Hallinto</div>
-            </div>
-            <div class="settings-item-chevron">›</div>
-          </div>
-          <div class="settings-item" onclick="openAreaEditor()">
-            <div class="settings-item-icon">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/>
-                <line x1="9" y1="4" x2="9" y2="20"/>
-                <line x1="15" y1="6" x2="15" y2="22"/>
-              </svg>
-            </div>
-            <div class="settings-item-text">
-              <div class="settings-item-label">Alueiden muokkaus</div>
-            </div>
-            <div class="settings-item-chevron">›</div>
-          </div>
-        </div>
-      </div>
+
     </div>
   </div>
 
@@ -4496,17 +4455,6 @@
             <span class="ios-switch-track"></span>
           </label>
         </div>
-        <!-- Off by default. When on, the "Muut" group (Hallinto / Alueiden
-             muokkaus) appears in the profile view. -->
-        <div class="settings-row-toggle">
-          <div class="settings-row-text">
-            <div class="settings-row-title">Näytä admin muokkaustyökalut</div>
-          </div>
-          <label class="ios-switch">
-            <input type="checkbox" id="setting-admin-tools" onchange="onAdminToolsToggle(this)">
-            <span class="ios-switch-track"></span>
-          </label>
-        </div>
         <!-- Language collapsible: header row shows current language; tapping
              opens a list of language options. -->
         <div class="settings-row-toggle settings-lang-header" onclick="toggleLanguageRow()">
@@ -4750,6 +4698,14 @@
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
           </svg>
           <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:white;text-align:center;line-height:1.3;">Lisää uusi ilmainen pysäköintialue</span>
+        </button>
+        <button onclick="openAdminOverlay()" style="width:100%;min-height:120px;background:#0C0243;border:none;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(12,2,67,0.25);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;" onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'" ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:white;text-align:center;line-height:1.3;">Hallinto</span>
+        </button>
+        <button onclick="openAreaEditor()" style="width:100%;min-height:120px;background:#0C0243;border:none;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 4px 16px rgba(12,2,67,0.25);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;" onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'" ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/><line x1="9" y1="4" x2="9" y2="20"/><line x1="15" y1="6" x2="15" y2="22"/></svg>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:white;text-align:center;line-height:1.3;">Alueiden muokkaus</span>
         </button>
       </div>
     </div>
@@ -10743,7 +10699,7 @@
     // ── Admin tools toggle ───────────────────────────────────────────────
     // Off by default. The profile's "Muut" group (Hallinto / Alueiden muokkaus)
     // only exists in the UI while this is on.
-    let adminToolsEnabled = (function(){ try { return localStorage.getItem('tp_admin_tools') === '1'; } catch(e){ return false; } })();
+    let adminToolsEnabled = false;   // admin-osio siirretty "Ilmoita alueesta" -nakymaan
     function applyAdminToolsVisibility() {
       const sec = document.getElementById('profile-admin-section');
       if (sec) sec.style.display = adminToolsEnabled ? '' : 'none';
@@ -16904,7 +16860,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7d</span>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7e</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
