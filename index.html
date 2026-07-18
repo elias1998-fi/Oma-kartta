@@ -4876,7 +4876,7 @@
       </div>
     </div>
     <div style="background:white;padding:12px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid #eee;flex-shrink:0;">
-      <button id="submit-parking-btn" onclick="submitParking()" style="width:100%;height:54px;background:#0C0243;border:none;border-radius:14px;color:white;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:not-allowed;opacity:0.4;transition:opacity 0.2s;">Lähetä pysäköintipaikka</button>
+      <button id="submit-parking-btn" onclick="submitParking()" style="width:100%;height:54px;background:#0C0243;border:none;border-radius:999px;color:white;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:not-allowed;opacity:0.4;transition:opacity 0.2s;">Lähetä pysäköintipaikka</button>
     </div>
   </div>
 
@@ -7932,12 +7932,16 @@
     function afterAdminAction(refreshMain) {
       const doneId = currentSubmission ? String(currentSubmission.id) : null;
       loadPendingSubmissions();
-      if (refreshMain && typeof loadApprovedSubmissions === 'function') loadApprovedSubmissions();
+      // Paakartta paivittyy laiskasti kun sinne palataan. EI raskasta
+      // loadViewportTiles()-latausta tassa - se jumitti sovelluksen ja toi
+      // perusnakyman toimintonapin ("Siirra kursori...") hyvaksymisnakyman paalle.
+      if (refreshMain) { try { masterDataLoaded = false; } catch(e){} }
       if (_adminMapMode === 'all') {
         _allPendingRows = _allPendingRows.filter(r => String(r.id) !== doneId);
         currentSubmission = null;
         if (adminPreviewMap) adminSetAreas(subFeatureCollection(adminVisibleRows()));
         adminShowAllHint();
+        adminSheetSetExpanded(false, true);   // sheet siistiin yhteenveto-tilaan
         if (!_allPendingRows.length) closeAdminDetail();
       } else {
         closeAdminDetail();
@@ -16938,7 +16942,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7f</span>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7g</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
