@@ -7931,18 +7931,18 @@
     // yksittäisessä sulje näkymä. Aina päivitä lista (ja tarvittaessa pääkartta).
     function afterAdminAction(refreshMain) {
       const doneId = currentSubmission ? String(currentSubmission.id) : null;
-      loadPendingSubmissions();
-      // Paakartta paivittyy laiskasti kun sinne palataan. EI raskasta
-      // loadViewportTiles()-latausta tassa - se jumitti sovelluksen ja toi
-      // perusnakyman toimintonapin ("Siirra kursori...") hyvaksymisnakyman paalle.
+      currentSubmission = null;
+      // Paakartta paivittyy laiskasti vasta kun sinne palataan (ei raskasta
+      // latausta tassa). Lista paivitetaan kutsujassa verkkotoiminnon jalkeen.
       if (refreshMain) { try { masterDataLoaded = false; } catch(e){} }
       if (_adminMapMode === 'all') {
         _allPendingRows = _allPendingRows.filter(r => String(r.id) !== doneId);
-        currentSubmission = null;
+        if (!_allPendingRows.length) { closeAdminDetail(); return; }
+        // Jaa hyvaksymisnakyman kartalle (kaikki-tila): valitse seuraava alue.
+        adminHideMainButton(true);   // varmista ettei perusnakyman nappi jaa paalle
         if (adminPreviewMap) adminSetAreas(subFeatureCollection(adminVisibleRows()));
         adminShowAllHint();
-        adminSheetSetExpanded(false, true);   // sheet siistiin yhteenveto-tilaan
-        if (!_allPendingRows.length) closeAdminDetail();
+        adminSheetSetExpanded(false, true);
       } else {
         closeAdminDetail();
       }
@@ -7950,8 +7950,10 @@
 
     async function approveCurrentSubmission() {
       if (!currentSubmission) return;
+      const _id = currentSubmission.id;
+      afterAdminAction(true);   // paivita kayttoliittyma HETI (optimistinen); RPC taustalla
       try {
-        // Call the approve_submission DB function — copies to master + deletes from submissions
+        // approve_submission: kopioi masteriin + poistaa ilmoituksista
         await fetch(
           `${SUPABASE_URL}/rest/v1/rpc/approve_submission`,
           {
@@ -7961,18 +7963,20 @@
               'apikey':        SUPABASE_KEY,
               'Authorization': `Bearer ${SUPABASE_KEY}`
             },
-            body: JSON.stringify({ submission_id: currentSubmission.id })
+            body: JSON.stringify({ submission_id: _id })
           }
         );
       } catch(e) { console.error(e); }
-      afterAdminAction(true);
+      loadPendingSubmissions();   // paivita Hallinto-lista RPC:n jalkeen
     }
 
     async function rejectCurrentSubmission() {
       if (!currentSubmission) return;
+      const _id = currentSubmission.id;
+      afterAdminAction(false);   // optimistinen; PATCH taustalla
       try {
         await fetch(
-          `${SUPABASE_URL}/rest/v1/parking_submissions2?id=eq.${currentSubmission.id}`,
+          `${SUPABASE_URL}/rest/v1/parking_submissions2?id=eq.${_id}`,
           {
             method: 'PATCH',
             headers: {
@@ -7985,7 +7989,7 @@
           }
         );
       } catch(e) { console.error(e); }
-      afterAdminAction(false);
+      loadPendingSubmissions();
     }
 
     // ── Zone migration: compute and persist the parking zone for every
@@ -16942,7 +16946,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7g</span>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7h</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
