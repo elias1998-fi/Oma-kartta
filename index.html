@@ -27,9 +27,10 @@
          retune both. NOTE: this is deliberately separate from the paid-area
          blue (#1266f1) and free-area purple (#7F1F89), which must keep matching
          the map's colours. */
-      /* Accent = the paid-area blue, solid (no opacity). Deliberately no
-         pressed-state shade — the colour stays the same while tapped. */
-      --tp-accent: #1266f1;
+      /* Accent = oranssi. Ohjaa Ajanhetki-pillerin aikaa/ikonia, "Palauta
+         nykyhetkeen" -tekstiä ja Palauta-pilleriä. Erillinen kartan maksullisen
+         alueen sinisestä (#1266f1) — kartan värit eivät muutu. */
+      --tp-accent: #F57C00;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
@@ -6487,8 +6488,45 @@
     let mapTypePending = false;     // karttatyylin vaihto odottaa tyylin latautumista
     let mapErrHooked = false;       // rasteritiilien error-kuuntelija liitetään vain kerran
 
+    // Jo tietokantaan lisätyt pysäköintialueet taustalle "alueen lisääminen"
+    // -näkymään: vain polygonit, ei vuorovaikutusta eikä tietoja. Data tulee
+    // pääkartalle ladatuista riveistä (_lastMasterRows); värit vastaavat kartan
+    // maksullinen sininen / ilmainen lila -väritystä. Piirretään piirrettävän
+    // polygonin ALLE.
+    function existingAreasFC() {
+      const rows = (typeof _lastMasterRows !== 'undefined' && _lastMasterRows) ? _lastMasterRows : [];
+      const features = rows
+        .filter(r => r.polygon_coordinates &&
+                     (r.polygon_coordinates.type === 'Polygon' || r.polygon_coordinates.type === 'MultiPolygon') &&
+                     r.parking_type !== 'Pysäköintihalli')
+        .map(r => ({ type:'Feature',
+          properties:{ source: legacySourceFor(r.area_type, r.parking_type, r.max_hours) },
+          geometry: r.polygon_coordinates }));
+      return { type:'FeatureCollection', features };
+    }
+    function ensureExistingAreaLayers() {
+      if (!areaMap) return;
+      const fc = existingAreasFC();
+      if (!areaMap.getSource('existing-areas')) {
+        areaMap.addSource('existing-areas', { type:'geojson', data: fc });
+      } else {
+        areaMap.getSource('existing-areas').setData(fc);
+      }
+      const before = areaMap.getLayer('area-poly-fill') ? 'area-poly-fill' : undefined;
+      if (!areaMap.getLayer('existing-areas-fill'))
+        areaMap.addLayer({ id:'existing-areas-fill', type:'fill', source:'existing-areas',
+          paint:{ 'fill-opacity':0.20, 'fill-color':['match',['get','source'],
+            'community','#7F1F89','hel_ilmainen_pitka','#7F1F89','hel_ilmainen_lyhyt','#7F1F89',
+            'hel_sallittu_kiellon_ulkopuolella','#7F1F89','#1266f1'] } }, before);
+      if (!areaMap.getLayer('existing-areas-line'))
+        areaMap.addLayer({ id:'existing-areas-line', type:'line', source:'existing-areas',
+          paint:{ 'line-width':1.0, 'line-opacity':0.55, 'line-color':['match',['get','source'],
+            'community','#611868','hel_ilmainen_pitka','#611868','hel_ilmainen_lyhyt','#611868',
+            'hel_sallittu_kiellon_ulkopuolella','#611868','#0B49D0'] } }, before);
+    }
     function addPolygonLayers() {
       if (!areaMap) return;
+      ensureExistingAreaLayers();   // jo lisätyt alueet taustalle
       if (!areaMap.getSource('area-poly')) {
         areaMap.addSource('area-poly', { type:'geojson', data: getAreaGeoJSON() });
       } else {
