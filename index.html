@@ -7327,6 +7327,8 @@
     let adminRefreshInterval = null;
     let adminPreviewMap      = null;
     let currentSubmission    = null;   // full row object being previewed
+    let _adminMapMode        = null;   // 'single' | 'all'
+    let _allPendingRows      = [];     // kaikki odottavat (all-tila)
 
     const TYPE_LABEL = {
       kiekko:     'Kiekkopysäköinti',
@@ -7509,73 +7511,172 @@
         currentSubmission = rows[0];
       } catch(e) { console.error(e); return; }
 
-      const r = currentSubmission;
-      const shortId = String(r.id).split('-')[0];
-      document.getElementById('admin-detail-title').textContent = `#${shortId}`;
+      // Yksittäinen alue: näytä sen tiedot sheetissä ja se yksin kartalla.
+      _adminMapMode = 'single';
+      renderAdminSheet(currentSubmission);
+      document.getElementById('admin-detail-overlay').classList.add('open');
+      setTimeout(() => {
+        const r = currentSubmission; if (!r) return;
+        ensureAdminMap(() => {
+          adminSetAreas(subFeatureCollection([r]));
+          adminFitTo(subFeatureCollection([r]));
+        });
+      }, 300);
+    }
 
-      // Info strip
+    // Näytä KAIKKI hyväksymistä odottavat alueet samalla karttanäkymällä.
+    async function openAllPendingMap() {
+      let rows = [];
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/parking_submissions2?status=eq.pending&order=created_at.desc`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        rows = await res.json();
+      } catch(e) { console.error(e); return; }
+      _allPendingRows = (rows||[]).filter(r => (r.polygon_coordinates?.coordinates?.[0]?.length || 0) >= 3);
+      _adminMapMode = 'all';
+      currentSubmission = null;
+      adminShowAllHint();
+      document.getElementById('admin-detail-overlay').classList.add('open');
+      setTimeout(() => {
+        ensureAdminMap(() => {
+          const fc = subFeatureCollection(_allPendingRows);
+          adminSetAreas(fc);
+          adminFitTo(fc);
+        });
+      }, 300);
+    }
+
+    function adminShowAllHint() {
+      document.getElementById('admin-detail-sheet-title').textContent = 'Hyväksymistä odottavat alueet';
+      document.getElementById('admin-detail-info').innerHTML =
+        `<span>${_allPendingRows.length} aluetta kartalla \u2014 napauta aluetta hyväksyäksesi tai hylätäksesi.</span>`;
+      document.getElementById('admin-detail-actions').style.display = 'none';
+    }
+
+    function renderAdminSheet(r) {
+      if (!r) return;
+      const shortId = String(r.id).split('-')[0];
+      document.getElementById('admin-detail-sheet-title').textContent = 'Alue #' + shortId;
       const parts = [];
       if (r.area_type)     parts.push(TYPE_LABEL[r.area_type] || r.area_type);
       if (r.location_type) parts.push(LOC_LABEL[r.location_type] || r.location_type);
       if (r.max_hours || r.max_minutes) parts.push(`Max. ${r.max_hours||0}h ${r.max_minutes||0}min`);
-      if (r.info_additional) parts.push(`"${r.info_additional}"`);
-      document.getElementById('admin-detail-info').innerHTML =
-        parts.map(p=>`<span>${p}</span>`).join('<span style="color:#ddd;">|</span>');
+      if (r.info_additional) parts.push(`\u201d${r.info_additional}\u201d`);
+      const dt = new Date(r.created_at);
+      if (!isNaN(dt)) parts.push(`Ilmoitettu ${dt.getDate()}.${dt.getMonth()+1}.${dt.getFullYear()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`);
+      document.getElementById('admin-detail-info').innerHTML = parts.map(p=>`<span>${p}</span>`).join('');
+      document.getElementById('admin-detail-actions').style.display = 'flex';
+    }
 
-      // Open overlay
-      document.getElementById('admin-detail-overlay').classList.add('open');
-      setTimeout(() => initAdminPreviewMap(r), 300);
+    function subFeatureCollection(rows) {
+      return { type:'FeatureCollection', features: (rows||[])
+        .filter(r => r.polygon_coordinates)
+        .map(r => ({ type:'Feature', properties:{ subId:String(r.id) }, geometry:r.polygon_coordinates })) };
     }
 
     function closeAdminDetail() {
       document.getElementById('admin-detail-overlay').classList.remove('open');
       currentSubmission = null;
+      _adminMapMode = null;
     }
 
-    function initAdminPreviewMap(submission) {
-      const coords = submission.polygon_coordinates?.coordinates?.[0];
-
-      // Compute centroid
-      let cx = 24.9354, cy = 60.1699, zoom = 15;
-      if (coords && coords.length >= 3) {
-        cx = coords.reduce((s,c)=>s+c[0],0)/coords.length;
-        cy = coords.reduce((s,c)=>s+c[1],0)/coords.length;
-      }
-
+    function ensureAdminMap(cb) {
       if (!adminPreviewMap) {
         adminPreviewMap = new maplibregl.Map({
           container: 'admin-preview-map',
           style: 'omakartta_style.json',
-          center: [cx, cy], zoom,
+          center: [24.9354, 60.1699], zoom: 14,
           dragRotate: false, touchPitch: false, pitchWithRotate: false,
           keyboard: false, attributionControl: false, transformRequest
         });
         adminPreviewMap.on('load', () => {
           adminPreviewMap.touchZoomRotate.disableRotation();
           adminPreviewMap.dragRotate.disable();
-          addAdminPreviewLayers(submission);
+          adminPreviewMap.on('click', 'admin-sub-fill', onAdminAreaClick);
+          adminPreviewMap.on('mouseenter', 'admin-sub-fill', () => { adminPreviewMap.getCanvas().style.cursor = 'pointer'; });
+          adminPreviewMap.on('mouseleave', 'admin-sub-fill', () => { adminPreviewMap.getCanvas().style.cursor = ''; });
+          cb();
         });
       } else {
         adminPreviewMap.resize();
-        adminPreviewMap.flyTo({ center:[cx,cy], zoom, duration:400 });
-        // Remove old submission layer & re-add
-        ['admin-sub-fill','admin-sub-line'].forEach(id => {
-          if (adminPreviewMap.getLayer(id)) adminPreviewMap.removeLayer(id);
-        });
-        if (adminPreviewMap.getSource('admin-sub')) adminPreviewMap.removeSource('admin-sub');
-        addAdminPreviewLayers(submission);
+        cb();
       }
     }
 
-    function addAdminPreviewLayers(submission) {
-      const coords = submission.polygon_coordinates?.coordinates?.[0];
-      if (!coords || coords.length < 3) return;
-      const geojson = { type:'Feature', geometry: submission.polygon_coordinates };
-      adminPreviewMap.addSource('admin-sub', { type:'geojson', data: geojson });
+    function adminSetAreas(fc) {
+      ['admin-sub-fill','admin-sub-line'].forEach(id => { if (adminPreviewMap.getLayer(id)) adminPreviewMap.removeLayer(id); });
+      if (adminPreviewMap.getSource('admin-sub')) adminPreviewMap.removeSource('admin-sub');
+      if (!fc.features.length) return;
+      adminPreviewMap.addSource('admin-sub', { type:'geojson', data: fc });
       adminPreviewMap.addLayer({ id:'admin-sub-fill', type:'fill', source:'admin-sub',
         paint:{'fill-color':'#f39c12','fill-opacity':0.35} });
       adminPreviewMap.addLayer({ id:'admin-sub-line', type:'line', source:'admin-sub',
         paint:{'line-color':'#e67e22','line-width':3,'line-opacity':1} });
+    }
+
+    function adminFitTo(fc) {
+      let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity,has=false;
+      (fc.features||[]).forEach(f => {
+        const rings = f.geometry.type==='MultiPolygon' ? f.geometry.coordinates.flat() : f.geometry.coordinates;
+        (rings||[]).forEach(ring => (ring||[]).forEach(c => { has=true;
+          if(c[0]<minX)minX=c[0]; if(c[0]>maxX)maxX=c[0]; if(c[1]<minY)minY=c[1]; if(c[1]>maxY)maxY=c[1]; }));
+      });
+      if (!has || !adminPreviewMap) return;
+      if (minX===maxX && minY===maxY) { adminPreviewMap.flyTo({ center:[minX,minY], zoom:16, duration:500 }); return; }
+      adminPreviewMap.fitBounds([[minX,minY],[maxX,maxY]], { padding:{ top:90, bottom:260, left:50, right:50 }, duration:500, maxZoom:17 });
+    }
+
+    function adminFlyToArea(coords) {
+      if (!coords || coords.length < 3 || !adminPreviewMap) return;
+      const cx = coords.reduce((s,c)=>s+c[0],0)/coords.length;
+      const cy = coords.reduce((s,c)=>s+c[1],0)/coords.length;
+      adminPreviewMap.flyTo({ center:[cx,cy], zoom:16, duration:500 });
+    }
+
+    // Alueen napautus kartalla: kaikki-tilassa kohdistaa kyseiseen alueeseen ja
+    // näyttää sen tiedot + Hyväksy/Hylkää.
+    function onAdminAreaClick(e) {
+      const f = e.features && e.features[0]; if (!f) return;
+      const subId = f.properties && f.properties.subId;
+      const r = (_adminMapMode === 'all')
+        ? _allPendingRows.find(x => String(x.id) === String(subId))
+        : currentSubmission;
+      if (!r) return;
+      currentSubmission = r;
+      renderAdminSheet(r);
+      adminFlyToArea(r.polygon_coordinates?.coordinates?.[0]);
+    }
+
+    function adminDetailLocate() {
+      if (!adminPreviewMap) return;
+      if (userLocation) adminPreviewMap.flyTo({ center:[userLocation.lon,userLocation.lat], zoom:16, duration:800 });
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos)=>{ userLocation = { lat:pos.coords.latitude, lon:pos.coords.longitude };
+            adminPreviewMap.flyTo({ center:[pos.coords.longitude,pos.coords.latitude], zoom:16, duration:800 }); },
+          (err)=>{ console.warn('[TotalParking] Sijaintia ei saatu:', err && err.message); },
+          { enableHighAccuracy:true, timeout:10000, maximumAge:60000 }
+        );
+      }
+    }
+
+    // Käsittelyn jälkeen: kaikki-tilassa poista alue kartalta ja jää näkymään;
+    // yksittäisessä sulje näkymä. Aina päivitä lista (ja tarvittaessa pääkartta).
+    function afterAdminAction(refreshMain) {
+      const doneId = currentSubmission ? String(currentSubmission.id) : null;
+      loadPendingSubmissions();
+      if (refreshMain && typeof loadApprovedSubmissions === 'function') loadApprovedSubmissions();
+      if (_adminMapMode === 'all') {
+        _allPendingRows = _allPendingRows.filter(r => String(r.id) !== doneId);
+        currentSubmission = null;
+        if (adminPreviewMap) adminSetAreas(subFeatureCollection(_allPendingRows));
+        adminShowAllHint();
+        if (!_allPendingRows.length) closeAdminDetail();
+      } else {
+        closeAdminDetail();
+      }
     }
 
     async function approveCurrentSubmission() {
@@ -7595,9 +7696,7 @@
           }
         );
       } catch(e) { console.error(e); }
-      closeAdminDetail();
-      loadPendingSubmissions();
-      loadApprovedSubmissions();   // refresh main map
+      afterAdminAction(true);
     }
 
     async function rejectCurrentSubmission() {
@@ -7617,8 +7716,7 @@
           }
         );
       } catch(e) { console.error(e); }
-      closeAdminDetail();
-      loadPendingSubmissions();
+      afterAdminAction(false);
     }
 
     // ── Zone migration: compute and persist the parking zone for every
@@ -16583,11 +16681,12 @@
         <button onclick="loadPendingSubmissions()" style="width:34px;height:34px;background:#f0f0f0;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;" title="Päivitä">↻</button>
       </div>
     </div>
-    <!-- One-shot maintenance actions (separate from the live-refreshed list below) -->
-    <div id="admin-actions" style="background:white;padding:14px 16px;border-bottom:1px solid #eee;font-family:Arial,sans-serif;flex-shrink:0;">
-      <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Kertaluonteiset tehtävät</div>
-      <button id="zone-migration-btn" onclick="runZoneMigration()" style="height:42px;padding:0 16px;background:#0C0243;border:none;border-radius:10px;color:white;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;transition:opacity 0.2s;">Päivitä vyöhykkeet</button>
-      <div id="zone-migration-status" style="font-size:12px;color:#888;margin-top:8px;min-height:16px;"></div>
+    <!-- Näytä kaikki hyväksymistä odottavat alueet kartalla -->
+    <div style="background:white;padding:12px 16px;border-bottom:1px solid #eee;font-family:Arial,sans-serif;flex-shrink:0;">
+      <button onclick="openAllPendingMap()" style="width:100%;height:44px;background:#0C0243;border:none;border-radius:12px;color:white;font-size:14px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        Näytä kartalla
+      </button>
     </div>
     <div id="admin-list-content" style="flex:1;overflow-y:auto;font-family:Arial,sans-serif;">
       <div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">Ladataan...</div>
@@ -16599,18 +16698,25 @@
 
   <!-- ══ ADMIN: Detail / map preview ══ -->
   <div id="admin-detail-overlay" class="settings-detail-overlay" style="z-index:103;">
-    <div class="overlay-header">
-      <button class="overlay-back-btn" onclick="closeAdminDetail()">←</button>
-      <div class="overlay-title" id="admin-detail-title">Ilmoitus</div>
-    </div>
-    <!-- Info strip -->
-    <div id="admin-detail-info" style="background:white;padding:10px 16px;border-bottom:1px solid #eee;font-family:Arial,sans-serif;font-size:13px;color:#555;flex-shrink:0;display:flex;gap:16px;flex-wrap:wrap;"></div>
-    <!-- Map -->
-    <div id="admin-preview-map" style="flex:1;min-height:200px;"></div>
-    <!-- Action buttons -->
-    <div style="display:flex;gap:12px;padding:14px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));background:white;border-top:1px solid #eee;flex-shrink:0;">
-      <button onclick="rejectCurrentSubmission()" style="flex:1;height:58px;background:#f5f5f5;border:2px solid #ddd;border-radius:16px;font-size:28px;cursor:pointer;transition:background 0.15s;" onmousedown="this.style.background='#ffe0e0'" onmouseup="this.style.background='#f5f5f5'">✕</button>
-      <button onclick="approveCurrentSubmission()" style="flex:1;height:58px;background:#0C0243;border:none;border-radius:16px;color:white;font-size:28px;cursor:pointer;transition:opacity 0.15s;" onmousedown="this.style.opacity='0.8'" onmouseup="this.style.opacity='1'">✓</button>
+    <!-- Koko näytön kartta -->
+    <div id="admin-preview-map" style="position:absolute;inset:0;"></div>
+    <!-- Takaisin-pallura (vasen yläkulma) -->
+    <button onclick="closeAdminDetail()" aria-label="Takaisin" style="position:absolute;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));z-index:10;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    </button>
+    <!-- Location-pallura (oikea yläkulma) -->
+    <button onclick="adminDetailLocate()" aria-label="Sijaintini" style="position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:10;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/></svg>
+    </button>
+    <!-- Alasheet: alueen tiedot + Hyväksy / Hylkää -->
+    <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);padding-bottom:max(14px,env(safe-area-inset-bottom));">
+      <div style="width:100%;padding:10px 0 4px 0;display:flex;justify-content:center;"><div style="width:40px;height:4px;border-radius:2px;background:#e0e0e0;"></div></div>
+      <div id="admin-detail-sheet-title" style="padding:2px 18px 0;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;color:#0C0243;"></div>
+      <div id="admin-detail-info" style="padding:8px 18px 4px;font-family:Arial,sans-serif;font-size:13.5px;color:#555;display:flex;flex-direction:column;gap:5px;"></div>
+      <div id="admin-detail-actions" style="display:flex;gap:10px;padding:12px 16px 4px;">
+        <button onclick="rejectCurrentSubmission()" style="flex:1;height:52px;background:#fff;border:2px solid #e53935;border-radius:26px;color:#e53935;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hylkää alue</button>
+        <button onclick="approveCurrentSubmission()" style="flex:1;height:52px;background:#1e8e3e;border:none;border-radius:26px;color:white;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hyväksy alue</button>
+      </div>
     </div>
   </div>
 
