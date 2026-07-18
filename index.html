@@ -7540,6 +7540,7 @@
       // Yksittäinen alue: näytä sen tiedot sheetissä ja se yksin kartalla.
       _adminMapMode = 'single';
       renderAdminSheet(currentSubmission);
+      adminHideMainButton(true);
       document.getElementById('admin-detail-overlay').classList.add('open');
       setTimeout(adminOpenSheetInit, 60);
       setTimeout(() => {
@@ -7565,6 +7566,7 @@
       _adminMapMode = 'all';
       currentSubmission = null;
       adminShowAllHint();
+      adminHideMainButton(true);
       document.getElementById('admin-detail-overlay').classList.add('open');
       setTimeout(adminOpenSheetInit, 60);
       setTimeout(() => {
@@ -7637,10 +7639,17 @@
         .map(r => ({ type:'Feature', properties:{ subId:String(r.id) }, geometry:r.polygon_coordinates })) };
     }
 
+    // Piilota/näytä perusnäkymän kelluva toimintonappi (#btn-container, z-index
+    // 9990), joka muuten peittäisi hyväksymisnäkymän oman toimintopalkin.
+    function adminHideMainButton(hide) {
+      const bc = document.getElementById('btn-container');
+      if (bc) bc.style.display = hide ? 'none' : '';
+    }
     function closeAdminDetail() {
       document.getElementById('admin-detail-overlay').classList.remove('open');
       currentSubmission = null;
       _adminMapMode = null;
+      adminHideMainButton(false);
     }
 
     function ensureAdminMap(cb) {
@@ -16857,7 +16866,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7b</span>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7c</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
