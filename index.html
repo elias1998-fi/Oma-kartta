@@ -7586,12 +7586,13 @@
       return _allPendingRows.filter(r => (r.submitted_by || '').toLowerCase().includes(q));
     }
     function adminShowAllHint() {
-      document.getElementById('admin-detail-sheet-title').textContent = 'Hyväksymistä odottavat alueet';
       const n = adminVisibleRows().length;
       const val = (_adminUserFilter || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-      document.getElementById('admin-detail-info').innerHTML =
-        `<span id="admin-count-text">${n} kpl alueita odottaa hyväksyntää</span>` +
-        `<input id="admin-user-search" type="text" value="${val}" oninput="adminOnUserFilter(this.value)" placeholder="Hae lisääjän mukaan (sähköposti)" style="margin-top:8px;width:100%;box-sizing:border-box;border:1.5px solid #e3e3e6;border-radius:10px;padding:10px 12px;font-size:14px;font-family:Arial,sans-serif;color:#0C0243;outline:none;">`;
+      document.getElementById('admin-sheet-peek').innerHTML =
+        `<div style="font-size:17px;font-weight:bold;color:#0C0243;margin-bottom:8px;">Hyväksymistä odottavat alueet</div>` +
+        `<div id="admin-count-text" style="font-size:13.5px;color:#555;">${n} kpl alueita odottaa hyväksyntää</div>` +
+        `<input id="admin-user-search" type="text" value="${val}" oninput="adminOnUserFilter(this.value)" placeholder="Hae lisääjän mukaan (sähköposti)" style="margin-top:10px;width:100%;box-sizing:border-box;border:1.5px solid #e3e3e6;border-radius:10px;padding:10px 12px;font-size:14px;font-family:Arial,sans-serif;color:#0C0243;outline:none;">`;
+      document.getElementById('admin-sheet-more').innerHTML = '';
       setAdminAction('select');
     }
     // Kirjoitettaessa: suodata kartta ja päivitä lukumäärä (ei piirretä koko
@@ -7618,18 +7619,52 @@
       }
     }
 
+    // Alueen tyyppi -> badge (lyhyt nimi + väri). area_type on koko nimi.
+    function adminAreaKind(t) {
+      const x = (t || '').toLowerCase();
+      if (x.indexOf('maksull') !== -1)                               return { label:'Maksullinen', bg:'#1266f1' };
+      if (x.indexOf('kiekoton') !== -1 || x.indexOf('ilmais') !== -1) return { label:'Ilmainen',    bg:'#7F1F89' };
+      if (x.indexOf('kiekko') !== -1)                                return { label:'Kiekko',      bg:'#0C0243' };
+      return { label:(t || 'Alue'), bg:'#0C0243' };
+    }
+    function adminValidityRows(r) {
+      const rows = [];
+      const add = (lbl,f,t) => { if (f || t) rows.push(`${lbl}  ${f||''}${(f&&t)?'\u2013':''}${t||''}`); };
+      add('Ma\u2013Pe', r.valid_mape_from, r.valid_mape_to);
+      add('La',          r.valid_la_from,   r.valid_la_to);
+      add('Su',          r.valid_su_from,   r.valid_su_to);
+      return rows;
+    }
+    // Näyttää valitun alueen tiedot perusnäkymän tyyliin: badge + otsikkorivi +
+    // sijainti (peek, aina näkyvissä); voimassaoloajat + lisätiedot (more,
+    // näkyvät kun sheettiä kasvattaa). Kaupunki/omistaja/hinta eivät ole
+    // ilmoituksen tiedoissa, joten niitä ei näytetä.
     function renderAdminSheet(r) {
       if (!r) return;
-      const shortId = String(r.id).split('-')[0];
-      document.getElementById('admin-detail-sheet-title').textContent = 'Alue #' + shortId;
-      const parts = [];
-      if (r.area_type)     parts.push(TYPE_LABEL[r.area_type] || r.area_type);
-      if (r.location_type) parts.push(LOC_LABEL[r.location_type] || r.location_type);
-      if (r.max_hours || r.max_minutes) parts.push(`Max. ${r.max_hours||0}h ${r.max_minutes||0}min`);
-      if (r.info_additional) parts.push(`\u201d${r.info_additional}\u201d`);
+      const kind = adminAreaKind(r.area_type);
+      const typeFull = r.area_type || kind.label;
+      const maxTxt = (r.max_hours || r.max_minutes)
+        ? `Max. ${r.max_hours||0}h${r.max_minutes ? ' ' + r.max_minutes + 'min' : ''}` : '';
+      const loc = r.location_type ? (LOC_LABEL[r.location_type] || r.location_type) : '';
+      let peek = `<div style="margin-bottom:7px;"><span style="display:inline-block;background:${kind.bg};color:#fff;font-size:11px;font-weight:bold;padding:3px 9px;border-radius:6px;letter-spacing:0.3px;">${kind.label}</span></div>`;
+      peek += `<div style="font-size:16px;font-weight:bold;color:#0C0243;line-height:1.25;">${typeFull}${maxTxt ? '  |  ' + maxTxt : ''}</div>`;
+      if (loc) peek += `<div style="font-size:13.5px;color:#555;margin-top:3px;">${loc}</div>`;
+      document.getElementById('admin-sheet-peek').innerHTML = peek;
+      let more = '';
+      const vr = adminValidityRows(r);
+      if (vr.length) {
+        more += `<div style="margin-top:14px;font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Voimassaoloaika</div>`;
+        more += vr.map(x=>`<div style="font-size:13.5px;color:#333;margin-top:4px;">${x}</div>`).join('');
+      }
+      if (r.info_additional) {
+        more += `<div style="margin-top:14px;font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Lisätiedot</div>`;
+        more += `<div style="font-size:13.5px;color:#333;margin-top:4px;">${String(r.info_additional)}</div>`;
+      }
       const dt = new Date(r.created_at);
-      if (!isNaN(dt)) parts.push(`Ilmoitettu ${dt.getDate()}.${dt.getMonth()+1}.${dt.getFullYear()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`);
-      document.getElementById('admin-detail-info').innerHTML = parts.map(p=>`<span>${p}</span>`).join('');
+      if (!isNaN(dt)) {
+        more += `<div style="margin-top:14px;font-size:12px;color:#aaa;">Ilmoitettu ${dt.getDate()}.${dt.getMonth()+1}.${dt.getFullYear()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}</div>`;
+      }
+      document.getElementById('admin-sheet-more').innerHTML = more;
       setAdminAction('selected');
     }
 
@@ -7723,6 +7758,7 @@
       if (!r) return;
       currentSubmission = r;
       renderAdminSheet(r);
+      adminSheetSetExpanded(false, true);
       adminFlyToArea(r.polygon_coordinates?.coordinates?.[0]);
     }
 
@@ -7745,7 +7781,9 @@
     function adminSheetCollapsedY() {
       const s=document.getElementById('admin-detail-sheet'), h=document.getElementById('admin-sheet-handle');
       if(!s||!h) return 0;
-      return Math.max(0, s.offsetHeight - h.offsetHeight - adminBarH());   // vain kahva jää palkin yläpuolelle
+      const peek=document.getElementById('admin-sheet-peek');
+      const peekH=h.offsetHeight + (peek ? peek.offsetHeight : 0);   // kahva + yhteenveto jäävät palkin yläpuolelle
+      return Math.max(0, s.offsetHeight - peekH - adminBarH());
     }
     function adminSheetSetY(y, animate) {
       const s=document.getElementById('admin-detail-sheet'); if(!s) return;
@@ -7760,7 +7798,7 @@
     function adminOpenSheetInit() {
       const s=document.getElementById('admin-detail-sheet'); if(s) s.style.paddingBottom = (adminBarH()+10) + 'px';
       initAdminSheetDrag();
-      adminSheetSetExpanded(true, false);
+      adminSheetSetExpanded(false, false);   // näytä yhteenveto; lisätiedot vetämällä auki
     }
     function initAdminSheetDrag() {
       const handle = document.getElementById('admin-sheet-handle');
@@ -16866,7 +16904,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7c</span>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7d</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
@@ -16904,16 +16942,16 @@
     <!-- Alasheet: alueen tiedot + Hyväksy / Hylkää -->
     <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);transform:translateY(240px);will-change:transform;">
       <div id="admin-sheet-handle" style="width:100%;padding:10px 0 8px 0;display:flex;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;"><div style="width:40px;height:4px;border-radius:2px;background:#d8d8dd;"></div></div>
-      <div id="admin-detail-sheet-title" style="padding:2px 18px 0;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;color:#0C0243;"></div>
-      <div id="admin-detail-info" style="padding:8px 18px 18px;font-family:Arial,sans-serif;font-size:13.5px;color:#555;display:flex;flex-direction:column;gap:5px;"></div>
+      <div id="admin-sheet-peek" style="padding:4px 18px 8px;font-family:Arial,sans-serif;"></div>
+      <div id="admin-sheet-more" style="padding:0 18px 18px;font-family:Arial,sans-serif;"></div>
     </div>
     <!-- Iso toimintopalkki: AINA näkyvissä; sheet lähtee tämän yläpuolelta. -->
     <div id="admin-action-bar" style="position:absolute;left:0;right:0;bottom:0;z-index:13;background:white;padding:10px 16px;padding-bottom:max(14px,env(safe-area-inset-bottom));box-shadow:0 -1px 12px rgba(0,0,0,0.08);">
-      <button id="admin-btn-select" style="width:100%;height:54px;background:#eef0f2;border:none;border-radius:999px;color:#0C0243;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:default;">Valitse alue</button>
-      <div id="admin-btn-triple" style="display:none;width:100%;height:54px;border-radius:999px;overflow:hidden;">
-        <button onclick="adminApprove()" style="flex:1;height:100%;background:#1e8e3e;border:none;color:white;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hyväksy</button>
-        <button onclick="adminReject()" style="flex:1;height:100%;background:#e53935;border:none;border-left:2px solid #fff;color:white;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hylkää</button>
-        <button onclick="adminEdit()" style="flex:1;height:100%;background:#0C0243;border:none;border-left:2px solid #fff;color:white;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Muokkaa</button>
+      <button id="admin-btn-select" style="width:100%;height:54px;background:#0C0243;border:none;border-radius:999px;color:#fff;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:default;">Valitse alue</button>
+      <div id="admin-btn-triple" style="display:none;width:100%;height:54px;border:2px solid #0C0243;box-sizing:border-box;border-radius:999px;overflow:hidden;">
+        <button onclick="adminApprove()" style="flex:1;height:100%;background:#e3f4e9;border:none;color:#0C0243;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hyväksy</button>
+        <button onclick="adminReject()" style="flex:1;height:100%;background:#fce8e6;border:none;border-left:1.5px solid #0C0243;color:#0C0243;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hylkää</button>
+        <button onclick="adminEdit()" style="flex:1;height:100%;background:#fdecd8;border:none;border-left:1.5px solid #0C0243;color:#0C0243;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Muokkaa</button>
       </div>
     </div>
   </div>
