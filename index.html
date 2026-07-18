@@ -7274,12 +7274,13 @@
         valid_su_from:   (kiekkoTimesOn() && validDayOn('su'))   ? (document.getElementById('valid-su-from')?.value   || null) : null,
         valid_su_to:     (kiekkoTimesOn() && validDayOn('su'))   ? (document.getElementById('valid-su-to')?.value     || null) : null,
         info_additional: document.getElementById('area-extra-info')?.value.trim() || null,
-        status:         'pending'
+        status:         'pending',
+        submitted_by:   ((typeof loadAccount === 'function' && loadAccount()) || {}).email || null
       };
 
       // Send to Supabase
       try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/parking_submissions2`, {
+        const _postSub = (body) => fetch(`${SUPABASE_URL}/rest/v1/parking_submissions2`, {
           method: 'POST',
           headers: {
             'Content-Type':  'application/json',
@@ -7287,8 +7288,14 @@
             'Authorization': `Bearer ${SUPABASE_KEY}`,
             'Prefer':        'return=minimal'
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(body)
         });
+        let res = await _postSub(payload);
+        if (!res.ok && ('submitted_by' in payload)) {
+          // submitted_by-saraketta ei ehkä ole vielä → lähetä ilman sitä
+          const p2 = Object.assign({}, payload); delete p2.submitted_by;
+          res = await _postSub(p2);
+        }
         if (!res.ok) {
           const err = await res.text();
           console.error('Supabase error:', res.status, err);
@@ -7562,18 +7569,51 @@
       setTimeout(adminOpenSheetInit, 60);
       setTimeout(() => {
         ensureAdminMap(() => {
-          const fc = subFeatureCollection(_allPendingRows);
-          adminSetAreas(fc);
-          adminFitTo(fc);
+          adminSetAreas(subFeatureCollection(adminVisibleRows()));
+          adminCenterOnUser(13);
         });
       }, 300);
     }
 
+    let _adminUserFilter = '';
+    // Kartalla näytettävät rivit = kaikki odottavat, suodatettuna lisääjän
+    // (submitted_by) mukaan. Tyhjä haku näyttää kaikki.
+    function adminVisibleRows() {
+      const q = (_adminUserFilter || '').trim().toLowerCase();
+      if (!q) return _allPendingRows;
+      return _allPendingRows.filter(r => (r.submitted_by || '').toLowerCase().includes(q));
+    }
     function adminShowAllHint() {
       document.getElementById('admin-detail-sheet-title').textContent = 'Hyväksymistä odottavat alueet';
+      const n = adminVisibleRows().length;
+      const val = (_adminUserFilter || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       document.getElementById('admin-detail-info').innerHTML =
-        `<span>${_allPendingRows.length} aluetta kartalla \u2014 napauta aluetta hyväksyäksesi tai hylätäksesi.</span>`;
+        `<span id="admin-count-text">${n} kpl alueita odottaa hyväksyntää</span>` +
+        `<input id="admin-user-search" type="text" value="${val}" oninput="adminOnUserFilter(this.value)" placeholder="Hae lisääjän mukaan (sähköposti)" style="margin-top:8px;width:100%;box-sizing:border-box;border:1.5px solid #e3e3e6;border-radius:10px;padding:10px 12px;font-size:14px;font-family:Arial,sans-serif;color:#0C0243;outline:none;">`;
       setAdminAction('select');
+    }
+    // Kirjoitettaessa: suodata kartta ja päivitä lukumäärä (ei piirretä koko
+    // sheettiä uudelleen, jotta hakukentän fokus säilyy).
+    function adminOnUserFilter(q) {
+      _adminUserFilter = q || '';
+      const rows = adminVisibleRows();
+      if (adminPreviewMap) adminSetAreas(subFeatureCollection(rows));
+      const ct = document.getElementById('admin-count-text');
+      if (ct) ct.textContent = rows.length + ' kpl alueita odottaa hyväksyntää';
+    }
+    // Keskitä hyväksymisnäkymän kartta nykyiseen sijaintiin (ei fitBounds).
+    function adminCenterOnUser(zoom) {
+      if (!adminPreviewMap) return;
+      if (typeof userLocation !== 'undefined' && userLocation) {
+        adminPreviewMap.jumpTo({ center:[userLocation.lon, userLocation.lat], zoom: zoom });
+      }
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos)=>{ userLocation = { lat:pos.coords.latitude, lon:pos.coords.longitude };
+            adminPreviewMap.easeTo({ center:[pos.coords.longitude,pos.coords.latitude], zoom: zoom, duration: 500 }); },
+          ()=>{}, { enableHighAccuracy:true, timeout:8000, maximumAge:60000 }
+        );
+      }
     }
 
     function renderAdminSheet(r) {
@@ -7605,19 +7645,26 @@
 
     function ensureAdminMap(cb) {
       if (!adminPreviewMap) {
+        const _ac = (typeof userLocation !== 'undefined' && userLocation) ? [userLocation.lon, userLocation.lat] : [24.9354, 60.1699];
+        const _az = (typeof userLocation !== 'undefined' && userLocation) ? 13 : 14;
         adminPreviewMap = new maplibregl.Map({
           container: 'admin-preview-map',
           style: 'omakartta_style.json',
-          center: [24.9354, 60.1699], zoom: 14,
+          center: _ac, zoom: _az,
           dragRotate: false, touchPitch: false, pitchWithRotate: false,
           keyboard: false, attributionControl: false, transformRequest
         });
         adminPreviewMap.on('load', () => {
           adminPreviewMap.touchZoomRotate.disableRotation();
           adminPreviewMap.dragRotate.disable();
-          adminPreviewMap.on('click', 'admin-sub-fill', onAdminAreaClick);
-          adminPreviewMap.on('mouseenter', 'admin-sub-fill', () => { adminPreviewMap.getCanvas().style.cursor = 'pointer'; });
-          adminPreviewMap.on('mouseleave', 'admin-sub-fill', () => { adminPreviewMap.getCanvas().style.cursor = ''; });
+          // Yleinen klikkikäsittelijä + queryRenderedFeatures. Toimii vaikka
+          // 'admin-sub-fill' -kerros lisätään vasta myöhemmin tai poistetaan ja
+          // lisätään uudelleen (kerroskohtainen kuuntelija ei aina laukennut).
+          adminPreviewMap.on('click', (e) => {
+            if (!adminPreviewMap.getLayer('admin-sub-fill')) return;
+            const feats = adminPreviewMap.queryRenderedFeatures(e.point, { layers: ['admin-sub-fill'] });
+            if (feats && feats.length) onAdminAreaClick({ features: feats });
+          });
           cb();
         });
       } else {
@@ -7808,7 +7855,7 @@
       if (_adminMapMode === 'all') {
         _allPendingRows = _allPendingRows.filter(r => String(r.id) !== doneId);
         currentSubmission = null;
-        if (adminPreviewMap) adminSetAreas(subFeatureCollection(_allPendingRows));
+        if (adminPreviewMap) adminSetAreas(subFeatureCollection(adminVisibleRows()));
         adminShowAllHint();
         if (!_allPendingRows.length) closeAdminDetail();
       } else {
@@ -16810,7 +16857,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7b</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
