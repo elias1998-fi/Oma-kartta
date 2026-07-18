@@ -7398,7 +7398,6 @@
     const LOC_LABEL = { maanpaallinen:'Maanpäällinen', maanalainen:'Maanalainen' };
 
     function openAdminOverlay() {
-      document.getElementById('profile-overlay').classList.remove('open');
       document.getElementById('admin-overlay').classList.add('open');
       // Always start in normal (non-select) mode
       _adminSelectMode = false;
@@ -7416,7 +7415,8 @@
     function closeAdminOverlay() {
       document.getElementById('admin-overlay').classList.remove('open');
       clearInterval(adminRefreshInterval);
-      document.getElementById('profile-overlay').classList.add('open');   // return to profile, not the map
+      // Ei avata profiilia: "Hallinto" avataan "Ilmoita alueesta" -näkymästä,
+      // joka jää taustalle ja paljastuu tästä sulkiessa.
     }
 
     // ── Hallinto: Valitse-tila (joukkohyväksyntä) ──────────────────────
@@ -9282,7 +9282,6 @@
     function closeMergeOverlay()   { closeAreaEditor(); }
 
     function openAreaEditor() {
-      document.getElementById('profile-overlay').classList.remove('open');
       document.getElementById('area-editor-overlay').classList.add('open');
       // Hide the main-map floating button (z-index 9990) so it doesn't overlap the editor
       const bc = document.getElementById('btn-container');
@@ -9300,7 +9299,8 @@
       editorDrawActive = false;
       _updateBrushBtn();
       if (editorCanvas) editorCanvas.style.pointerEvents = 'none';
-      document.getElementById('profile-overlay').classList.add('open');   // return to profile, not the map
+      // Ei avata profiilia: "Alueiden muokkaus" avataan "Ilmoita alueesta"
+      // -näkymästä, joka jää taustalle ja paljastuu tästä sulkiessa.
     }
 
     function selectEditorAction(action) {
@@ -16946,7 +16946,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7h</span>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7i</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
