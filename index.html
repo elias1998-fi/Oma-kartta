@@ -6468,6 +6468,7 @@
     }
     function closeAddParkingArea() {
       document.getElementById('add-parking-overlay').style.transform = 'translateX(100%)';
+      _adminEditSub = null; _adminEditPreloadCoords = null;
     }
     function openAreaDetails() {
       document.getElementById('area-details-overlay').style.transform = 'translateX(0)';
@@ -6612,6 +6613,7 @@
 
     function handleConfirmClick() {
       if (!polygonMoved) return;
+      if (typeof _adminEditSub !== 'undefined' && _adminEditSub) { saveAdminEditedPolygon(); return; }
       openAreaDetails();
     }
 
@@ -6864,6 +6866,23 @@
       });
       updateMinusBtn(); updateAddBtn();
       capturePolyPixels();
+      // Hyväksymisnäkymän "Muokkaa": korvaa oletusnelikulmio ilmoituksen
+      // polygonilla ja sovita näkymä siihen. Vain kun muokkaus on käynnissä.
+      if (typeof _adminEditPreloadCoords !== 'undefined' && _adminEditPreloadCoords && _adminEditPreloadCoords.length >= 3) {
+        areaMarkers.forEach(m=>m.remove()); areaMarkers=[];
+        areaCoords = _adminEditPreloadCoords.map(c=>[c[0],c[1]]);
+        _adminEditPreloadCoords = null;
+        addPolygonLayers();
+        areaCoords.forEach(coord=>{
+          const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true,anchor:'center'}).setLngLat(coord).addTo(areaMap);
+          setupMarkerEvents(marker); areaMarkers.push(marker);
+        });
+        updateMinusBtn(); updateAddBtn(); capturePolyPixels();
+        polygonMoved = true; updateConfirmBtn();
+        let mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
+        areaCoords.forEach(c=>{ if(c[0]<mnX)mnX=c[0]; if(c[0]>mxX)mxX=c[0]; if(c[1]<mnY)mnY=c[1]; if(c[1]>mxY)mxY=c[1]; });
+        try { areaMap.fitBounds([[mnX,mnY],[mxX,mxY]], { padding:70, duration:0, maxZoom:17 }); } catch(e){}
+      }
     }
 
     function initAreaMap() {
@@ -7515,6 +7534,7 @@
       _adminMapMode = 'single';
       renderAdminSheet(currentSubmission);
       document.getElementById('admin-detail-overlay').classList.add('open');
+      setTimeout(adminOpenSheetInit, 60);
       setTimeout(() => {
         const r = currentSubmission; if (!r) return;
         ensureAdminMap(() => {
@@ -7539,6 +7559,7 @@
       currentSubmission = null;
       adminShowAllHint();
       document.getElementById('admin-detail-overlay').classList.add('open');
+      setTimeout(adminOpenSheetInit, 60);
       setTimeout(() => {
         ensureAdminMap(() => {
           const fc = subFeatureCollection(_allPendingRows);
@@ -7552,7 +7573,7 @@
       document.getElementById('admin-detail-sheet-title').textContent = 'Hyväksymistä odottavat alueet';
       document.getElementById('admin-detail-info').innerHTML =
         `<span>${_allPendingRows.length} aluetta kartalla \u2014 napauta aluetta hyväksyäksesi tai hylätäksesi.</span>`;
-      document.getElementById('admin-detail-actions').style.display = 'none';
+      setAdminAction('select');
     }
 
     function renderAdminSheet(r) {
@@ -7567,7 +7588,7 @@
       const dt = new Date(r.created_at);
       if (!isNaN(dt)) parts.push(`Ilmoitettu ${dt.getDate()}.${dt.getMonth()+1}.${dt.getFullYear()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`);
       document.getElementById('admin-detail-info').innerHTML = parts.map(p=>`<span>${p}</span>`).join('');
-      document.getElementById('admin-detail-actions').style.display = 'flex';
+      setAdminAction('selected');
     }
 
     function subFeatureCollection(rows) {
@@ -7659,6 +7680,122 @@
           (err)=>{ console.warn('[TotalParking] Sijaintia ei saatu:', err && err.message); },
           { enableHighAccuracy:true, timeout:10000, maximumAge:60000 }
         );
+      }
+    }
+
+    // ── Hyväksymisnäkymän vedettävä sheet (sama malli kuin lisäysnäkymässä) ──
+    let _adminSheetY = 0, _adminSheetExpanded = false, _adminSheetDrag = null;
+    function adminBarH() { const b=document.getElementById('admin-action-bar'); return b ? b.offsetHeight : 72; }
+    function adminSheetCollapsedY() {
+      const s=document.getElementById('admin-detail-sheet'), h=document.getElementById('admin-sheet-handle');
+      if(!s||!h) return 0;
+      return Math.max(0, s.offsetHeight - h.offsetHeight - adminBarH());   // vain kahva jää palkin yläpuolelle
+    }
+    function adminSheetSetY(y, animate) {
+      const s=document.getElementById('admin-detail-sheet'); if(!s) return;
+      _adminSheetY=y;
+      s.style.transition = animate ? 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+      s.style.transform = 'translateY(' + y + 'px)';
+    }
+    function adminSheetSetExpanded(exp, animate) {
+      _adminSheetExpanded = exp;
+      adminSheetSetY(exp ? 0 : adminSheetCollapsedY(), animate);
+    }
+    function adminOpenSheetInit() {
+      const s=document.getElementById('admin-detail-sheet'); if(s) s.style.paddingBottom = (adminBarH()+10) + 'px';
+      initAdminSheetDrag();
+      adminSheetSetExpanded(true, false);
+    }
+    function initAdminSheetDrag() {
+      const handle = document.getElementById('admin-sheet-handle');
+      if (!handle || handle._asHooked) return;
+      handle._asHooked = true;
+      const down = (clientY, pointerId) => {
+        _adminSheetDrag = { startY: clientY, startTranslate: _adminSheetY, lastY: clientY, lastT: Date.now(), vel: 0, moved: false, maxY: adminSheetCollapsedY() };
+        const s = document.getElementById('admin-detail-sheet'); if (s) s.style.transition = 'none';
+        if (pointerId != null && handle.setPointerCapture) { try { handle.setPointerCapture(pointerId); } catch (e) {} }
+      };
+      const move = (clientY) => {
+        if (!_adminSheetDrag) return;
+        const now = Date.now(), dt = now - _adminSheetDrag.lastT;
+        if (dt > 0) _adminSheetDrag.vel = (clientY - _adminSheetDrag.lastY) / dt;
+        _adminSheetDrag.lastY = clientY; _adminSheetDrag.lastT = now;
+        const dy = clientY - _adminSheetDrag.startY;
+        if (Math.abs(dy) > 4) _adminSheetDrag.moved = true;
+        let y = _adminSheetDrag.startTranslate + dy;
+        y = Math.max(0, Math.min(_adminSheetDrag.maxY, y));
+        adminSheetSetY(y, false);
+      };
+      const up = () => {
+        if (!_adminSheetDrag) return;
+        const d = _adminSheetDrag; _adminSheetDrag = null;
+        if (!d.moved) { adminSheetSetExpanded(!_adminSheetExpanded, true); return; }
+        const mid = d.maxY / 2;
+        let expand;
+        if (d.vel < -0.3) expand = true;
+        else if (d.vel > 0.3) expand = false;
+        else expand = _adminSheetY < mid;
+        adminSheetSetExpanded(expand, true);
+      };
+      handle.addEventListener('pointerdown', (e) => { e.preventDefault(); down(e.clientY, e.pointerId); });
+      handle.addEventListener('pointermove', (e) => { move(e.clientY); });
+      handle.addEventListener('pointerup', () => { up(); });
+      handle.addEventListener('pointercancel', () => { _adminSheetDrag = null; });
+    }
+
+    // Toimintopalkin tila: 'select' = "Valitse alue"; 'selected' = kolmiosainen.
+    function setAdminAction(state) {
+      const sel = document.getElementById('admin-btn-select');
+      const tri = document.getElementById('admin-btn-triple');
+      if (!sel || !tri) return;
+      if (state === 'selected') { sel.style.display = 'none'; tri.style.display = 'flex'; }
+      else { sel.style.display = 'block'; tri.style.display = 'none'; }
+    }
+    function adminApprove() { if (currentSubmission) approveCurrentSubmission(); }
+    function adminReject()  { if (currentSubmission) rejectCurrentSubmission(); }
+    function adminEdit()    { if (typeof editSubmissionPolygon === 'function' && currentSubmission) editSubmissionPolygon(currentSubmission); }
+
+    // "Muokkaa": avaa sama editori kuin uutta aluetta lisättäessä, valmiiksi
+    // tämän ilmoituksen polygonilla (kaikki työkalut käytössä). Editorin
+    // "Vahvista alueen muoto" tallentaa muodon takaisin ilmoitukseen ja palaa
+    // hyväksymisnäkymään. Vartioitu: kun _adminEditSub on tyhjä, lisäysvirta
+    // toimii ennallaan.
+    var _adminEditSub = null;
+    var _adminEditPreloadCoords = null;
+    function editSubmissionPolygon(sub) {
+      const ring = sub && sub.polygon_coordinates && sub.polygon_coordinates.coordinates && sub.polygon_coordinates.coordinates[0];
+      if (!ring || ring.length < 3) { alert('Alueella ei ole muokattavaa polygonia.'); return; }
+      let coords = ring.map(c=>[c[0],c[1]]);
+      if (coords.length >= 2) {
+        const a=coords[0], b=coords[coords.length-1];
+        if (a[0]===b[0] && a[1]===b[1]) coords = coords.slice(0, coords.length-1);   // poista toistettu sulkupiste
+      }
+      _adminEditSub = sub;
+      _adminEditPreloadCoords = coords;
+      openAddParkingArea();
+    }
+    async function saveAdminEditedPolygon() {
+      const sub = _adminEditSub; _adminEditSub = null;
+      if (!sub) { closeAddParkingArea(); return; }
+      const ring = areaCoords.map(c=>[c[0],c[1]]);
+      if (ring.length >= 3) ring.push([ring[0][0], ring[0][1]]);   // sulje rengas
+      const geom = { type:'Polygon', coordinates:[ring] };
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/parking_submissions2?id=eq.${sub.id}`, {
+          method:'PATCH',
+          headers:{ 'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal' },
+          body: JSON.stringify({ polygon_coordinates: geom })
+        });
+      } catch(e){ console.error(e); }
+      sub.polygon_coordinates = geom;
+      if (currentSubmission && String(currentSubmission.id)===String(sub.id)) currentSubmission.polygon_coordinates = geom;
+      const i = _allPendingRows.findIndex(r=>String(r.id)===String(sub.id));
+      if (i>=0) _allPendingRows[i].polygon_coordinates = geom;
+      closeAddParkingArea();
+      if (adminPreviewMap) {
+        const fc = (_adminMapMode==='all') ? subFeatureCollection(_allPendingRows) : subFeatureCollection([currentSubmission].filter(Boolean));
+        adminSetAreas(fc);
+        if (currentSubmission) adminFlyToArea(currentSubmission.polygon_coordinates && currentSubmission.polygon_coordinates.coordinates && currentSubmission.polygon_coordinates.coordinates[0]);
       }
     }
 
@@ -16709,13 +16846,18 @@
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/></svg>
     </button>
     <!-- Alasheet: alueen tiedot + Hyväksy / Hylkää -->
-    <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);padding-bottom:max(14px,env(safe-area-inset-bottom));">
-      <div style="width:100%;padding:10px 0 4px 0;display:flex;justify-content:center;"><div style="width:40px;height:4px;border-radius:2px;background:#e0e0e0;"></div></div>
+    <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);transform:translateY(240px);will-change:transform;">
+      <div id="admin-sheet-handle" style="width:100%;padding:10px 0 8px 0;display:flex;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;"><div style="width:40px;height:4px;border-radius:2px;background:#d8d8dd;"></div></div>
       <div id="admin-detail-sheet-title" style="padding:2px 18px 0;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;color:#0C0243;"></div>
-      <div id="admin-detail-info" style="padding:8px 18px 4px;font-family:Arial,sans-serif;font-size:13.5px;color:#555;display:flex;flex-direction:column;gap:5px;"></div>
-      <div id="admin-detail-actions" style="display:flex;gap:10px;padding:12px 16px 4px;">
-        <button onclick="rejectCurrentSubmission()" style="flex:1;height:52px;background:#fff;border:2px solid #e53935;border-radius:26px;color:#e53935;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hylkää alue</button>
-        <button onclick="approveCurrentSubmission()" style="flex:1;height:52px;background:#1e8e3e;border:none;border-radius:26px;color:white;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hyväksy alue</button>
+      <div id="admin-detail-info" style="padding:8px 18px 18px;font-family:Arial,sans-serif;font-size:13.5px;color:#555;display:flex;flex-direction:column;gap:5px;"></div>
+    </div>
+    <!-- Iso toimintopalkki: AINA näkyvissä; sheet lähtee tämän yläpuolelta. -->
+    <div id="admin-action-bar" style="position:absolute;left:0;right:0;bottom:0;z-index:13;background:white;padding:10px 16px;padding-bottom:max(14px,env(safe-area-inset-bottom));box-shadow:0 -1px 12px rgba(0,0,0,0.08);">
+      <button id="admin-btn-select" style="width:100%;height:54px;background:#eef0f2;border:none;border-radius:999px;color:#0C0243;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:default;">Valitse alue</button>
+      <div id="admin-btn-triple" style="display:none;width:100%;height:54px;border-radius:999px;overflow:hidden;">
+        <button onclick="adminApprove()" style="flex:1;height:100%;background:#1e8e3e;border:none;color:white;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hyväksy</button>
+        <button onclick="adminReject()" style="flex:1;height:100%;background:#e53935;border:none;border-left:2px solid #fff;color:white;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hylkää</button>
+        <button onclick="adminEdit()" style="flex:1;height:100%;background:#0C0243;border:none;border-left:2px solid #fff;color:white;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Muokkaa</button>
       </div>
     </div>
   </div>
