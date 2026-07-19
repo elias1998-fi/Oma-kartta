@@ -4750,7 +4750,11 @@
             <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.22s ease;"></span>
           </div>
         </div>
-        <div style="padding:0 18px 2px 18px;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#0C0243;">Työkalut</div>
+        <!-- "Työkalut" samalla fontilla/fonttikoolla ja samassa kohdassa sheetiä
+             kuin "Suodata karttanäkymää" (#filter-title): kahvarivin vasen reuna,
+             absoluuttinen sijainti. pointer-events:none jotta kahvan veto menee
+             läpi. -->
+        <div style="position:absolute;left:16px;top:16px;transform:translateY(-50%);z-index:4;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#222;pointer-events:none;">Työkalut</div>
         <div style="display:flex;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:3px;padding:4px 4px 16px 4px;">
           <!-- karttatyyli (HSL → OSM → satelliitti); tilanumero alakulmassa -->
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button id="maptype-btn" onclick="cycleMapType()" aria-label="Karttatyyli" style="position:relative;width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
@@ -4827,19 +4831,27 @@
 
       <!-- Max. pysäköintiaika (shown after type selected) -->
       <div id="max-parking-section" style="display:none;background:white;border-radius:14px;padding:16px;font-family:Arial,sans-serif;">
-        <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Max. pysäköintiaika</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <select id="max-parking-hours" class="tp-select">
-            <option value="">–</option>
-            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option>
-          </select>
-          <div style="font-size:14px;color:#555;font-family:Arial,sans-serif;">h</div>
-          <select id="max-parking-mins" class="tp-select">
-            <option value="">–</option>
-            <option value="0">0</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
-          </select>
-          <div style="font-size:14px;color:#555;font-family:Arial,sans-serif;">min</div>
-          <div id="max-parking-optional" style="flex:1;font-size:13px;color:#aaa;font-family:Arial,sans-serif;">(valinnainen)</div>
+        <!-- Otsikko + kytkin samalla tasolla oikeassa reunassa (kuten
+             Voimassaoloaika). Oletuksena pois; päälle laittamalla aikakentät
+             tulevat näkyviin. -->
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Max. pysäköintiaika</div>
+          <label class="toggle-switch"><input type="checkbox" id="max-parking-toggle" onchange="toggleMaxParking(this)"><span class="toggle-slider"></span></label>
+        </div>
+        <div id="max-parking-rows" style="display:none;margin-top:16px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <select id="max-parking-hours" class="tp-select">
+              <option value="">–</option>
+              <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option>
+            </select>
+            <div style="font-size:14px;color:#555;font-family:Arial,sans-serif;">h</div>
+            <select id="max-parking-mins" class="tp-select">
+              <option value="">–</option>
+              <option value="0">0</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+            </select>
+            <div style="font-size:14px;color:#555;font-family:Arial,sans-serif;">min</div>
+            <div id="max-parking-optional" style="flex:1;font-size:13px;color:#aaa;font-family:Arial,sans-serif;">(valinnainen)</div>
+          </div>
         </div>
       </div>
 
@@ -6150,27 +6162,32 @@
     // MapLibre creates the dot only after the first successful geolocate, so
     // we re-check whenever a heading update arrives.
     function ensureUserDotArrow() {
-      const dot = document.querySelector('.maplibregl-user-location-dot');
-      if (!dot) return false;
-      if (!dot.querySelector('.user-dot-arrow')) {
-        const arrow = document.createElement('div');
-        arrow.className = 'user-dot-arrow';
-        dot.appendChild(arrow);
-      }
-      dot.classList.add('has-heading');
+      // Käsittele kaikki sijaintipisteet: perusnäkymän (GeolocateControl) sekä
+      // hyväksymisnäkymän oma piste (ensureAdminUserDot), jotta suuntanuoli
+      // näkyy molemmissa.
+      const dots = document.querySelectorAll('.maplibregl-user-location-dot');
+      if (!dots.length) return false;
+      dots.forEach(dot => {
+        if (!dot.querySelector('.user-dot-arrow')) {
+          const arrow = document.createElement('div');
+          arrow.className = 'user-dot-arrow';
+          dot.appendChild(arrow);
+        }
+        dot.classList.add('has-heading');
+      });
       return true;
     }
 
     function applyHeadingToUserDot() {
       if (_currentHeading == null) return;
       if (!ensureUserDotArrow()) return;
-      const arrow = document.querySelector('.maplibregl-user-location-dot .user-dot-arrow');
-      if (!arrow) return;
       // Order matters: center-then-rotate-then-push-outward. Result: the
       // triangle orbits around the dot's center, base on the dot's edge,
       // tip pointing away in the direction of the compass heading.
-      arrow.style.transform =
-        `translate(-50%, -50%) rotate(${_currentHeading}deg) translateY(-22px)`;
+      document.querySelectorAll('.maplibregl-user-location-dot .user-dot-arrow').forEach(arrow => {
+        arrow.style.transform =
+          `translate(-50%, -50%) rotate(${_currentHeading}deg) translateY(-22px)`;
+      });
     }
 
     // If a geolocate happens after compass is already enabled, MapLibre may
@@ -6689,29 +6706,10 @@
       });
       ch.on('dragend', () => { cS=null; cSC=null; capturePolyPixels(); positionAreaHandles(false,-1); });
       areaCenterHandle = ch;
-      // Sivukahvat: kokonaisen sivun (molemmat päätepisteet) siirto
-      const n = areaCoords.length;
-      for (let i=0;i<n;i++) {
-        const a0=areaCoords[i], b0=areaCoords[(i+1)%n];
-        const eh = new maplibregl.Marker({element:createEdgeHandleEl(), draggable:true, anchor:'center'}).setLngLat([(a0[0]+b0[0])/2,(a0[1]+b0[1])/2]).addTo(areaMap);
-        const iA=i, iB=(i+1)%n;
-        let eS=null, aS=null, bS=null;
-        eh.on('dragstart', () => { pushAreaUndo(); eS=eh.getLngLat(); aS=[areaCoords[iA][0],areaCoords[iA][1]]; bS=[areaCoords[iB][0],areaCoords[iB][1]]; });
-        eh.on('drag', () => {
-          if (!eS) return;
-          const p=eh.getLngLat(), dx=p.lng-eS.lng, dy=p.lat-eS.lat;
-          areaCoords[iA]=[aS[0]+dx, aS[1]+dy];
-          areaCoords[iB]=[bS[0]+dx, bS[1]+dy];
-          if(areaMarkers[iA]) areaMarkers[iA].setLngLat(areaCoords[iA]);
-          if(areaMarkers[iB]) areaMarkers[iB].setLngLat(areaCoords[iB]);
-          if(!areaLocked){ lockedPixelPos[iA]=areaMap.project(areaCoords[iA]); lockedPixelPos[iB]=areaMap.project(areaCoords[iB]); }
-          positionAreaHandles(false, iA);
-          updateAreaLayer();
-          if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
-        });
-        eh.on('dragend', () => { eS=null; capturePolyPixels(); positionAreaHandles(false,-1); });
-        areaEdgeHandles.push(eh);
-      }
+      // Sivukahvat (sivujen siirtokahvat) poistettu käytöstä: vain keskikahva
+      // (koko polygonin siirto) jää. areaEdgeHandles pidetään tyhjänä, jolloin
+      // positionAreaHandles / setAreaHandlesVisible ovat sivukahvojen osalta
+      // no-op. Kulmapisteet (areaMarkers) toimivat edelleen normaalisti.
       if (areaAddMode || areaRemoveMode) setAreaHandlesVisible(false);
     }
 
@@ -7311,6 +7309,16 @@
       const t = document.getElementById('kiekko-times-toggle');
       return !!(t && t.checked);
     }
+    // Max. pysäköintiajan kytkin: näyttää/piilottaa aikakentät (kuten
+    // Voimassaoloaika-kytkin). Pois päältä = ei aikarajaa.
+    function toggleMaxParking(input) {
+      const rows = document.getElementById('max-parking-rows');
+      if (rows) rows.style.display = input.checked ? 'block' : 'none';
+    }
+    function maxParkingOn() {
+      const t = document.getElementById('max-parking-toggle');
+      return !!(t && t.checked);
+    }
 
     let selectedAreaType = '';
     let selectedLocation = '';
@@ -7382,7 +7390,9 @@
       onAtypeChange();
       const mh=document.getElementById('max-parking-hours'); if(mh) mh.value = (sub.max_hours!=null ? String(sub.max_hours) : '');
       const mm=document.getElementById('max-parking-mins');  if(mm) mm.value = (sub.max_minutes!=null ? String(sub.max_minutes) : '');
-      if (typeKey === 'kiekko') {
+      { const _mt=document.getElementById('max-parking-toggle');
+        if(_mt){ _mt.checked = (sub.max_hours!=null || sub.max_minutes!=null); if (typeof toggleMaxParking==='function') toggleMaxParking(_mt); } }
+      if (typeKey === 'kiekko' || typeKey === 'ilmainen') {
         const hasValidity = !!(sub.valid_mape_from||sub.valid_mape_to||sub.valid_la_from||sub.valid_la_to||sub.valid_su_from||sub.valid_su_to);
         const kt=document.getElementById('kiekko-times-toggle');
         if (kt) { kt.checked = hasValidity; if (typeof toggleKiekkoTimes==='function') toggleKiekkoTimes(kt); }
@@ -7412,6 +7422,8 @@
       const maxDiv=document.getElementById('max-parking-section');if(maxDiv)maxDiv.style.display='none';
       const maxH=document.getElementById('max-parking-hours');if(maxH)maxH.value='';
       const maxM=document.getElementById('max-parking-mins');if(maxM)maxM.value='';
+      const maxT=document.getElementById('max-parking-toggle');if(maxT)maxT.checked=false;
+      const maxR=document.getElementById('max-parking-rows');if(maxR)maxR.style.display='none';
       const extraDiv=document.getElementById('area-extra-section');if(extraDiv)extraDiv.style.display='none';
       const extraTA=document.getElementById('area-extra-info');if(extraTA)extraTA.value='';
       const submitBtn=document.getElementById('submit-parking-btn');if(submitBtn){submitBtn.style.opacity='0.4';submitBtn.style.cursor='not-allowed';submitBtn.textContent='Lähetä pysäköintipaikka';}
@@ -7460,7 +7472,7 @@
       const ready = !!(ptype && atype);
       const maxDiv = document.getElementById('max-parking-section'); if (maxDiv) maxDiv.style.display = ready ? 'block' : 'none';
       const maxOpt = document.getElementById('max-parking-optional'); if (maxOpt) maxOpt.style.display = ptype==='kiekko' ? 'none' : 'block';
-      const kiekkoDiv = document.getElementById('kiekko-times'); if (kiekkoDiv) kiekkoDiv.style.display = (ready && ptype==='kiekko') ? 'block' : 'none';
+      const kiekkoDiv = document.getElementById('kiekko-times'); if (kiekkoDiv) kiekkoDiv.style.display = (ready && (ptype==='kiekko' || ptype==='ilmainen')) ? 'block' : 'none';
       const extraDiv = document.getElementById('area-extra-section'); if (extraDiv) extraDiv.style.display = ready ? 'block' : 'none';
       const sb = document.getElementById('submit-parking-btn'); if (sb) { sb.style.opacity = ready ? '1' : '0.4'; sb.style.cursor = ready ? 'pointer' : 'not-allowed'; }
     }
@@ -7476,8 +7488,8 @@
         polygon_coordinates: areaCoords.length >= 3
                           ? { type:'Polygon', coordinates:[[...areaCoords, areaCoords[0]]] }
                           : null,
-        max_hours:      parseInt(document.getElementById('max-parking-hours')?.value) || null,
-        max_minutes:    parseInt(document.getElementById('max-parking-mins')?.value)  || null,
+        max_hours:      maxParkingOn() ? (parseInt(document.getElementById('max-parking-hours')?.value) || null) : null,
+        max_minutes:    maxParkingOn() ? (parseInt(document.getElementById('max-parking-mins')?.value)  || null) : null,
         valid_mape_from: (kiekkoTimesOn() && validDayOn('mape')) ? (document.getElementById('valid-mape-from')?.value || null) : null,
         valid_mape_to:   (kiekkoTimesOn() && validDayOn('mape')) ? (document.getElementById('valid-mape-to')?.value   || null) : null,
         valid_la_from:   (kiekkoTimesOn() && validDayOn('la'))   ? (document.getElementById('valid-la-from')?.value   || null) : null,
@@ -7537,6 +7549,8 @@
       const maxDiv=document.getElementById('max-parking-section');if(maxDiv)maxDiv.style.display='none';
       const maxH=document.getElementById('max-parking-hours');if(maxH)maxH.value='';
       const maxM=document.getElementById('max-parking-mins');if(maxM)maxM.value='';
+      const maxT=document.getElementById('max-parking-toggle');if(maxT)maxT.checked=false;
+      const maxR=document.getElementById('max-parking-rows');if(maxR)maxR.style.display='none';
       const locDisp=document.getElementById('area-location-display');if(locDisp){locDisp.textContent='Valitse sijainti...';locDisp.style.color='#aaa';}
       selectedLocation='';
       const extraDiv=document.getElementById('area-extra-section');if(extraDiv)extraDiv.style.display='none';
@@ -7823,16 +7837,38 @@
       const ct = document.getElementById('admin-count-text');
       if (ct) ct.textContent = rows.length + ' kpl alueita odottaa hyväksyntää';
     }
+    // Oman sijainnin piste hyväksymisnäkymän kartalle — sama sininen piste (+
+    // suuntanuoli) kuin perusnäkymässä. Sama .maplibregl-user-location-dot
+    // -tyyli; piste pysyy sijainnissa vaikka karttaa siirretään alueeseen.
+    let _adminUserDotMarker = null;
+    function ensureAdminUserDot() {
+      if (!adminPreviewMap) return;
+      if (typeof userLocation === 'undefined' || !userLocation) return;
+      const lngLat = [userLocation.lon, userLocation.lat];
+      if (!_adminUserDotMarker) {
+        const el = document.createElement('div');
+        el.className = 'maplibregl-user-location-dot';
+        const arrow = document.createElement('div');
+        arrow.className = 'user-dot-arrow';
+        el.appendChild(arrow);
+        if (_compassEnabled) el.classList.add('has-heading');
+        _adminUserDotMarker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(lngLat).addTo(adminPreviewMap);
+        if (_currentHeading != null && typeof applyHeadingToUserDot === 'function') applyHeadingToUserDot();
+      } else {
+        _adminUserDotMarker.setLngLat(lngLat);
+      }
+    }
     // Keskitä hyväksymisnäkymän kartta nykyiseen sijaintiin (ei fitBounds).
     function adminCenterOnUser(zoom) {
       if (!adminPreviewMap) return;
       if (typeof userLocation !== 'undefined' && userLocation) {
         adminPreviewMap.jumpTo({ center:[userLocation.lon, userLocation.lat], zoom: zoom });
+        ensureAdminUserDot();
       }
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos)=>{ userLocation = { lat:pos.coords.latitude, lon:pos.coords.longitude };
-            adminPreviewMap.easeTo({ center:[pos.coords.longitude,pos.coords.latitude], zoom: zoom, duration: 500 }); },
+            adminPreviewMap.easeTo({ center:[pos.coords.longitude,pos.coords.latitude], zoom: zoom, duration: 500 }); ensureAdminUserDot(); },
           ()=>{}, { enableHighAccuracy:true, timeout:8000, maximumAge:60000 }
         );
       }
@@ -7935,10 +7971,12 @@
             }
           });
           cb();
+          ensureAdminUserDot();
         });
       } else {
         adminPreviewMap.resize();
         cb();
+        ensureAdminUserDot();
       }
     }
 
@@ -8010,11 +8048,11 @@
 
     function adminDetailLocate() {
       if (!adminPreviewMap) return;
-      if (userLocation) adminPreviewMap.flyTo({ center:[userLocation.lon,userLocation.lat], zoom:16, duration:800 });
+      if (userLocation) { adminPreviewMap.flyTo({ center:[userLocation.lon,userLocation.lat], zoom:16, duration:800 }); ensureAdminUserDot(); }
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos)=>{ userLocation = { lat:pos.coords.latitude, lon:pos.coords.longitude };
-            adminPreviewMap.flyTo({ center:[pos.coords.longitude,pos.coords.latitude], zoom:16, duration:800 }); },
+            adminPreviewMap.flyTo({ center:[pos.coords.longitude,pos.coords.latitude], zoom:16, duration:800 }); ensureAdminUserDot(); },
           (err)=>{ console.warn('[TotalParking] Sijaintia ei saatu:', err && err.message); },
           { enableHighAccuracy:true, timeout:10000, maximumAge:60000 }
         );
@@ -8047,13 +8085,20 @@
       adminSheetSetExpanded(false, false);   // näytä yhteenveto; lisätiedot vetämällä auki
     }
     function initAdminSheetDrag() {
-      const handle = document.getElementById('admin-sheet-handle');
-      if (!handle || handle._asHooked) return;
-      handle._asHooked = true;
-      const down = (clientY, pointerId) => {
-        _adminSheetDrag = { startY: clientY, startTranslate: _adminSheetY, lastY: clientY, lastT: Date.now(), vel: 0, moved: false, maxY: adminSheetCollapsedY() };
-        const s = document.getElementById('admin-detail-sheet'); if (s) s.style.transition = 'none';
-        if (pointerId != null && handle.setPointerCapture) { try { handle.setPointerCapture(pointerId); } catch (e) {} }
+      const sheetEl = document.getElementById('admin-detail-sheet');
+      const handle  = document.getElementById('admin-sheet-handle');
+      if (!sheetEl || sheetEl._asHooked) return;
+      sheetEl._asHooked = true;
+      // Veto onnistuu koko sheetistä (kuten perusnäkymässä), ei vain kahvasta.
+      // Interaktiivisilta kentiltä (haku, napit) ei aloiteta vetoa, jotta ne
+      // toimivat normaalisti. Pelkkä napautus vaihtaa tilaa vain kahvasta;
+      // muualta napautus (ilman liikettä) ei tee mitään.
+      const isInteractive = (el) => !!(el && el.closest && el.closest('input,textarea,select,button,a,[contenteditable="true"]'));
+      const onHandle = (el) => !!(handle && el && (el === handle || handle.contains(el)));
+      const down = (clientY, pointerId, fromHandle) => {
+        _adminSheetDrag = { startY: clientY, startTranslate: _adminSheetY, lastY: clientY, lastT: Date.now(), vel: 0, moved: false, maxY: adminSheetCollapsedY(), fromHandle: fromHandle };
+        sheetEl.style.transition = 'none';
+        if (pointerId != null && sheetEl.setPointerCapture) { try { sheetEl.setPointerCapture(pointerId); } catch (e) {} }
       };
       const move = (clientY) => {
         if (!_adminSheetDrag) return;
@@ -8069,7 +8114,7 @@
       const up = () => {
         if (!_adminSheetDrag) return;
         const d = _adminSheetDrag; _adminSheetDrag = null;
-        if (!d.moved) { adminSheetSetExpanded(!_adminSheetExpanded, true); return; }
+        if (!d.moved) { if (d.fromHandle) adminSheetSetExpanded(!_adminSheetExpanded, true); return; }
         const mid = d.maxY / 2;
         let expand;
         if (d.vel < -0.3) expand = true;
@@ -8077,10 +8122,14 @@
         else expand = _adminSheetY < mid;
         adminSheetSetExpanded(expand, true);
       };
-      handle.addEventListener('pointerdown', (e) => { e.preventDefault(); down(e.clientY, e.pointerId); });
-      handle.addEventListener('pointermove', (e) => { move(e.clientY); });
-      handle.addEventListener('pointerup', () => { up(); });
-      handle.addEventListener('pointercancel', () => { _adminSheetDrag = null; });
+      sheetEl.addEventListener('pointerdown', (e) => {
+        if (isInteractive(e.target)) return;   // anna kenttien/nappien toimia normaalisti
+        e.preventDefault();
+        down(e.clientY, e.pointerId, onHandle(e.target));
+      });
+      sheetEl.addEventListener('pointermove', (e) => { move(e.clientY); });
+      sheetEl.addEventListener('pointerup', () => { up(); });
+      sheetEl.addEventListener('pointercancel', () => { _adminSheetDrag = null; });
     }
 
     // Toimintopalkin tila: 'select' = "Valitse alue"; 'selected' = kolmiosainen.
@@ -17279,7 +17328,10 @@
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/></svg>
     </button>
     <!-- Alasheet: alueen tiedot + Hyväksy / Hylkää -->
-    <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);min-height:58vh;transform:translateY(240px);will-change:transform;">
+    <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);min-height:80vh;transform:translateY(240px);will-change:transform;touch-action:none;">
+      <!-- "© OpenStreetMap" sheetin yläpuolella vasemmassa yläkulmassa (kuten
+           perusnäkymässä ja lisäysnäkymässä). Kulkee sheetin mukana. -->
+      <div id="admin-osm-attribution" style="position:absolute;top:-16px;left:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;pointer-events:none;text-shadow:0 0 2px rgba(255,255,255,0.85);">&copy; OpenStreetMap</div>
       <div id="admin-sheet-handle" style="width:100%;padding:10px 0 8px 0;display:flex;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;"><div style="width:40px;height:4px;border-radius:2px;background:#d8d8dd;"></div></div>
       <div id="admin-sheet-peek" style="padding:4px 18px 8px;font-family:Arial,sans-serif;"></div>
       <div id="admin-sheet-more" style="padding:0 18px 18px;font-family:Arial,sans-serif;"></div>
