@@ -4754,8 +4754,8 @@
              kuin "Suodata karttanäkymää" (#filter-title): kahvarivin vasen reuna,
              absoluuttinen sijainti. pointer-events:none jotta kahvan veto menee
              läpi. -->
-        <div style="position:absolute;left:16px;top:16px;transform:translateY(-50%);z-index:4;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#222;pointer-events:none;">Työkalut</div>
-        <div style="display:flex;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:3px;padding:4px 4px 16px 4px;">
+        <div style="position:absolute;left:16px;top:28px;transform:translateY(-50%);z-index:4;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#222;pointer-events:none;">Työkalut</div>
+        <div style="display:flex;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:3px;padding:20px 4px 16px 4px;">
           <!-- karttatyyli (HSL → OSM → satelliitti); tilanumero alakulmassa -->
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button id="maptype-btn" onclick="cycleMapType()" aria-label="Karttatyyli" style="position:relative;width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
             <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;">
@@ -4911,9 +4911,13 @@
   </div>
 
   <!-- Toast notification -->
-  <div id="submit-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:36px 36px 32px 36px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1);">
-    <button onclick="closeToast()" style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:rgba(255,255,255,0.6);font-size:22px;cursor:pointer;line-height:1;padding:0;">✕</button>
+  <div id="submit-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:32px 32px 28px 32px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1);">
     <div style="font-size:18px;line-height:1.6;font-weight:500;">Kiitos ilmoituksestasi. Tiimimme varmentaa paikan tiedot sekä lisää uuden alueen kartalle.</div>
+    <!-- Banneri pysyy näytöllä; käyttäjä valitsee jatkon. -->
+    <div style="display:flex;gap:12px;margin-top:24px;">
+      <button onclick="submitBannerAddNew()" style="flex:1;height:48px;background:#fff;color:#0C0243;border:none;border-radius:999px;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Lisää uusi</button>
+      <button onclick="submitBannerExit()" style="flex:1;height:48px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,0.55);border-radius:999px;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Poistu</button>
+    </div>
   </div>
 
   <!-- Generic toast — message is set at runtime via showCustomToast(text, ms) -->
@@ -7566,8 +7570,19 @@
       const t=document.getElementById('submit-toast');
       t.style.display='block';
       setTimeout(()=>{ t.style.opacity='1'; t.style.transform='translate(-50%,-50%) scale(1)'; },10);
-      clearTimeout(toastTimer);
-      toastTimer=setTimeout(()=>closeToast(),6000);
+      clearTimeout(toastTimer);   // ei automaattista sulkeutumista — käyttäjä valitsee "Lisää uusi" tai "Poistu"
+    }
+
+    // "Lähetä pysäköintialue" -vahvistusbanneri: kaksi valintaa.
+    // "Lisää uusi" → takaisin lisäysnäkymään tuoreella polygonilla; siitä voi
+    //               jatkaa uuden alueen rajaamisen. "Poistu" → sulje banneri,
+    //               jää perusnäkymään (overlayt on jo suljettu lähetyksessä).
+    function submitBannerAddNew() {
+      closeToast();
+      openAddParkingArea();
+    }
+    function submitBannerExit() {
+      closeToast();
     }
 
     function closeToast() {
@@ -8069,15 +8084,37 @@
       const peekH=h.offsetHeight + (peek ? peek.offsetHeight : 0);   // kahva + yhteenveto jäävät palkin yläpuolelle
       return Math.max(0, s.offsetHeight - peekH - adminBarH());
     }
+    // Auki-asema kuten perusnäkymän sheet: jätä näkyviin 80% ikkunan
+    // korkeudesta (yläreuna ~20% kohdalle). Lasketaan JS:llä window.innerHeight
+    // -pohjalta, jotta korkeus vastaa pääsheettiä myös mobiilissa (jossa CSS-vh
+    // ja innerHeight voivat erota).
+    function adminSheetExpandedY() {
+      const s=document.getElementById('admin-detail-sheet'); if(!s) return 0;
+      return Math.max(0, s.offsetHeight - window.innerHeight * 0.8);
+    }
     function adminSheetSetY(y, animate) {
       const s=document.getElementById('admin-detail-sheet'); if(!s) return;
       _adminSheetY=y;
       s.style.transition = animate ? 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
       s.style.transform = 'translateY(' + y + 'px)';
+      adminUpdateOsmOpacity(y);
+    }
+    // Haalista "© OpenStreetMap" sitä mukaa kuin sheet vedetään auki — sama
+    // malli kuin perusnäkymässä (updateOsmOpacity): täysin näkyvissä matalalla,
+    // haalistuu nollaan kun sheet on täysin auki.
+    function adminUpdateOsmOpacity(ty) {
+      const el=document.getElementById('admin-osm-attribution');
+      const s=document.getElementById('admin-detail-sheet');
+      if(!el || !s || typeof ty !== 'number') return;
+      const fullOpen  = adminSheetExpandedY();
+      const fadeStart = Math.min(s.offsetHeight - 153, adminSheetCollapsedY());
+      const denom = (fadeStart - fullOpen) || 1;
+      const o = (ty - fullOpen) / denom;
+      el.style.opacity = Math.max(0, Math.min(1, o));
     }
     function adminSheetSetExpanded(exp, animate) {
       _adminSheetExpanded = exp;
-      adminSheetSetY(exp ? 0 : adminSheetCollapsedY(), animate);
+      adminSheetSetY(exp ? adminSheetExpandedY() : adminSheetCollapsedY(), animate);
     }
     function adminOpenSheetInit() {
       const s=document.getElementById('admin-detail-sheet'); if(s) s.style.paddingBottom = (adminBarH()+10) + 'px';
@@ -8096,7 +8133,7 @@
       const isInteractive = (el) => !!(el && el.closest && el.closest('input,textarea,select,button,a,[contenteditable="true"]'));
       const onHandle = (el) => !!(handle && el && (el === handle || handle.contains(el)));
       const down = (clientY, pointerId, fromHandle) => {
-        _adminSheetDrag = { startY: clientY, startTranslate: _adminSheetY, lastY: clientY, lastT: Date.now(), vel: 0, moved: false, maxY: adminSheetCollapsedY(), fromHandle: fromHandle };
+        _adminSheetDrag = { startY: clientY, startTranslate: _adminSheetY, lastY: clientY, lastT: Date.now(), vel: 0, moved: false, minY: adminSheetExpandedY(), maxY: adminSheetCollapsedY(), fromHandle: fromHandle };
         sheetEl.style.transition = 'none';
         if (pointerId != null && sheetEl.setPointerCapture) { try { sheetEl.setPointerCapture(pointerId); } catch (e) {} }
       };
@@ -8108,14 +8145,14 @@
         const dy = clientY - _adminSheetDrag.startY;
         if (Math.abs(dy) > 4) _adminSheetDrag.moved = true;
         let y = _adminSheetDrag.startTranslate + dy;
-        y = Math.max(0, Math.min(_adminSheetDrag.maxY, y));
+        y = Math.max(_adminSheetDrag.minY, Math.min(_adminSheetDrag.maxY, y));
         adminSheetSetY(y, false);
       };
       const up = () => {
         if (!_adminSheetDrag) return;
         const d = _adminSheetDrag; _adminSheetDrag = null;
         if (!d.moved) { if (d.fromHandle) adminSheetSetExpanded(!_adminSheetExpanded, true); return; }
-        const mid = d.maxY / 2;
+        const mid = (d.minY + d.maxY) / 2;
         let expand;
         if (d.vel < -0.3) expand = true;
         else if (d.vel > 0.3) expand = false;
@@ -17328,7 +17365,7 @@
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/></svg>
     </button>
     <!-- Alasheet: alueen tiedot + Hyväksy / Hylkää -->
-    <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);min-height:80vh;transform:translateY(240px);will-change:transform;touch-action:none;">
+    <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);height:100vh;transform:translateY(240px);will-change:transform;touch-action:none;">
       <!-- "© OpenStreetMap" sheetin yläpuolella vasemmassa yläkulmassa (kuten
            perusnäkymässä ja lisäysnäkymässä). Kulkee sheetin mukana. -->
       <div id="admin-osm-attribution" style="position:absolute;top:-16px;left:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;pointer-events:none;text-shadow:0 0 2px rgba(255,255,255,0.85);">&copy; OpenStreetMap</div>
