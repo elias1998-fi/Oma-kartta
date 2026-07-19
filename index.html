@@ -4691,16 +4691,16 @@
         Tue yhteisöä ja ilmoita havaitsemastasi ilmaisesta parkkialueesta!
       </div>
       <div style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
-        <button onclick="openAddParkingArea()" style="width:100%;min-height:120px;background:#fff;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 2px 10px rgba(12,2,67,0.10);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
+        <button onclick="openAddParkingArea()" style="width:100%;min-height:120px;background:#0C0243;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 2px 10px rgba(12,2,67,0.10);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;"
           onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'"
           ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
           </svg>
-          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Lisää uusi ilmainen pysäköintialue</span>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#fff;text-align:center;line-height:1.3;">Lisää uusi ilmainen pysäköintialue</span>
         </button>
         <button onclick="openAllPendingMap()" style="width:100%;min-height:120px;background:#fff;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 2px 10px rgba(12,2,67,0.10);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;" onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'" ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
           <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Tarkasta muiden käyttäjien lisäämiä ilmaisia alueita</span>
         </button>
         <button onclick="openAreaEditor()" style="width:100%;min-height:120px;background:#fff;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 2px 10px rgba(12,2,67,0.10);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;" onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'" ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
@@ -4750,7 +4750,8 @@
             <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.22s ease;"></span>
           </div>
         </div>
-        <div style="display:flex;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:10px;padding:4px 16px 16px 16px;">
+        <div style="padding:0 18px 2px 18px;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#0C0243;">Työkalut</div>
+        <div style="display:flex;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:3px;padding:4px 4px 16px 4px;">
           <!-- karttatyyli (HSL → OSM → satelliitti); tilanumero alakulmassa -->
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button id="maptype-btn" onclick="cycleMapType()" aria-label="Karttatyyli" style="position:relative;width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
             <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;">
@@ -4779,7 +4780,7 @@
             <button id="area-redo-btn" onclick="redoArea()" aria-label="Tee uudelleen" style="width:48px;height:48px;border:none;background:transparent;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;opacity:0.35;">
               <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
             </button>
-          </div><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Kumoa / Tee uudelleen</div></div>
+          </div><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Kumoa /<br>Tee uudelleen</div></div>
           <!-- tuo polygoni -->
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button onclick="flashCtrlBlue(this);tuoPolygoniKartalle()" aria-label="Tuo polygoni" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M12 3v11"/><path d="M7.5 9.5 12 14l4.5-4.5"/><path d="M5 20h14"/></svg>
@@ -4804,13 +4805,24 @@
       <div class="overlay-title">Lisää pysäköintialueen tiedot</div>
     </div>
     <div class="overlay-content" style="padding:16px;gap:12px;overflow-y:auto;">
-      <!-- Alueen tyyppi -->
+      <!-- Pysäköinnin tyyppi (alasvetovalikko) -->
       <div style="background:white;border-radius:14px;padding:16px;font-family:Arial,sans-serif;">
+        <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Pysäköinnin tyyppi</div>
+        <select id="ptype-select" onchange="onPtypeChange()" style="width:100%;box-sizing:border-box;padding:12px 12px;border:1.5px solid #eee;border-radius:10px;background:white;font-size:15px;font-family:Arial,sans-serif;color:#222;outline:none;">
+          <option value="">Valitse tyyppi...</option>
+          <option value="kiekko">Kiekkopysäköinti</option>
+          <option value="ilmainen">Kiekoton ilmaisparkki</option>
+        </select>
+      </div>
+
+      <!-- Alueen tyyppi (näkyy kun Pysäköinnin tyyppi valittu) -->
+      <div id="atype-section" style="display:none;background:white;border-radius:14px;padding:16px;font-family:Arial,sans-serif;">
         <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Alueen tyyppi</div>
-        <div onclick="openAreaTypeSheet()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #eee;border-radius:10px;cursor:pointer;background:white;">
-          <div id="area-type-display" style="flex:1;font-size:15px;color:#aaa;font-family:Arial,sans-serif;">Valitse tyyppi...</div>
-          <div style="font-size:18px;color:#888;line-height:1;">⌄</div>
-        </div>
+        <select id="atype-select" onchange="onAtypeChange()" style="width:100%;box-sizing:border-box;padding:12px 12px;border:1.5px solid #eee;border-radius:10px;background:white;font-size:15px;font-family:Arial,sans-serif;color:#222;outline:none;">
+          <option value="">Valitse...</option>
+          <option value="kadunvarsi">Kadunvarsipysäköinti</option>
+          <option value="alue">Pysäköintialue</option>
+        </select>
       </div>
 
       <!-- Max. pysäköintiaika (shown after type selected) -->
@@ -4878,7 +4890,7 @@
       <!-- Lisätiedot -->
       <div id="area-extra-section" style="display:none;background:white;border-radius:14px;padding:16px;font-family:Arial,sans-serif;">
         <div style="font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Lisätiedot (valinnainen)</div>
-        <textarea id="area-extra-info" placeholder="Kirjoita mahdolliset tärkeät lisätiedot pysäköintialueesta..." style="width:100%;min-height:90px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:12px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color 0.2s;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'"></textarea>
+        <textarea id="area-extra-info" placeholder="Kirjoita tähän lyhyesti mahdolliset tärkeät lisätiedot pysäköintialueesta." style="width:100%;min-height:90px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:Arial,sans-serif;padding:12px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color 0.2s;" onfocus="this.style.borderColor='#0C0243'" onblur="this.style.borderColor='#ddd'"></textarea>
       </div>
     </div>
     <div style="background:white;padding:12px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid #eee;flex-shrink:0;">
@@ -6605,6 +6617,7 @@
       });
       updateAreaLayer(); updateMinusBtn(); updateAddBtn();
       capturePolyPixels();
+      if (typeof buildAreaHandles === 'function') buildAreaHandles();
       if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
     }
     function undoArea() {
@@ -6626,6 +6639,82 @@
       if(r){ r.style.opacity = areaRedoStack.length ? '1' : '0.35'; r.style.pointerEvents = areaRedoStack.length ? 'auto' : 'none'; }
     }
 
+    // ── Koko polygonin siirto (keskikahva) + sivujen siirto (sivukahvat) ──
+    let areaCenterHandle = null;
+    let areaEdgeHandles = [];
+    function _areaCentroid() { let x=0,y=0; areaCoords.forEach(c=>{x+=c[0];y+=c[1];}); const n=areaCoords.length||1; return [x/n, y/n]; }
+    function createCenterHandleEl() {
+      const w=document.createElement('div');
+      w.style.cssText='width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
+      w.innerHTML='<div style="width:36px;height:36px;background:#0C0243;border:3px solid white;border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;pointer-events:none;"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 15 22 12 19 9"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg></div>';
+      return w;
+    }
+    function createEdgeHandleEl() {
+      const w=document.createElement('div');
+      w.style.cssText='width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
+      w.innerHTML='<div style="width:28px;height:15px;background:white;border:2.5px solid #0C0243;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:11px;height:2px;background:#0C0243;border-radius:1px;"></div></div>';
+      return w;
+    }
+    function positionAreaHandles(skipCenter, skipEdgeIdx) {
+      if (areaCenterHandle && !skipCenter) areaCenterHandle.setLngLat(_areaCentroid());
+      const n = areaCoords.length;
+      areaEdgeHandles.forEach((h, i) => {
+        if (i === skipEdgeIdx) return;
+        const a = areaCoords[i], b = areaCoords[(i+1)%n];
+        if (a && b) h.setLngLat([(a[0]+b[0])/2, (a[1]+b[1])/2]);
+      });
+    }
+    function setAreaHandlesVisible(show) {
+      const d = show ? '' : 'none';
+      if (areaCenterHandle) areaCenterHandle.getElement().style.display = d;
+      areaEdgeHandles.forEach(h => { h.getElement().style.display = d; });
+    }
+    function refreshAreaHandlesVis() { setAreaHandlesVisible(!(areaAddMode || areaRemoveMode)); }
+    function buildAreaHandles() {
+      if (areaCenterHandle) { areaCenterHandle.remove(); areaCenterHandle = null; }
+      areaEdgeHandles.forEach(h=>h.remove()); areaEdgeHandles = [];
+      if (!areaMap || areaCoords.length < 3) return;
+      // Keskikahva: koko polygonin siirto
+      const ch = new maplibregl.Marker({element:createCenterHandleEl(), draggable:true, anchor:'center'}).setLngLat(_areaCentroid()).addTo(areaMap);
+      let cS=null, cSC=null;
+      ch.on('dragstart', () => { pushAreaUndo(); cS=ch.getLngLat(); cSC=areaCoords.map(c=>[c[0],c[1]]); });
+      ch.on('drag', () => {
+        if (!cS) return;
+        const p=ch.getLngLat(), dx=p.lng-cS.lng, dy=p.lat-cS.lat;
+        areaCoords = cSC.map(c=>[c[0]+dx, c[1]+dy]);
+        areaMarkers.forEach((m,i)=>{ if(areaCoords[i]){ m.setLngLat(areaCoords[i]); if(!areaLocked)lockedPixelPos[i]=areaMap.project(areaCoords[i]); } });
+        positionAreaHandles(true, -1);
+        updateAreaLayer();
+        if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
+      });
+      ch.on('dragend', () => { cS=null; cSC=null; capturePolyPixels(); positionAreaHandles(false,-1); });
+      areaCenterHandle = ch;
+      // Sivukahvat: kokonaisen sivun (molemmat päätepisteet) siirto
+      const n = areaCoords.length;
+      for (let i=0;i<n;i++) {
+        const a0=areaCoords[i], b0=areaCoords[(i+1)%n];
+        const eh = new maplibregl.Marker({element:createEdgeHandleEl(), draggable:true, anchor:'center'}).setLngLat([(a0[0]+b0[0])/2,(a0[1]+b0[1])/2]).addTo(areaMap);
+        const iA=i, iB=(i+1)%n;
+        let eS=null, aS=null, bS=null;
+        eh.on('dragstart', () => { pushAreaUndo(); eS=eh.getLngLat(); aS=[areaCoords[iA][0],areaCoords[iA][1]]; bS=[areaCoords[iB][0],areaCoords[iB][1]]; });
+        eh.on('drag', () => {
+          if (!eS) return;
+          const p=eh.getLngLat(), dx=p.lng-eS.lng, dy=p.lat-eS.lat;
+          areaCoords[iA]=[aS[0]+dx, aS[1]+dy];
+          areaCoords[iB]=[bS[0]+dx, bS[1]+dy];
+          if(areaMarkers[iA]) areaMarkers[iA].setLngLat(areaCoords[iA]);
+          if(areaMarkers[iB]) areaMarkers[iB].setLngLat(areaCoords[iB]);
+          if(!areaLocked){ lockedPixelPos[iA]=areaMap.project(areaCoords[iA]); lockedPixelPos[iB]=areaMap.project(areaCoords[iB]); }
+          positionAreaHandles(false, iA);
+          updateAreaLayer();
+          if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
+        });
+        eh.on('dragend', () => { eS=null; capturePolyPixels(); positionAreaHandles(false,-1); });
+        areaEdgeHandles.push(eh);
+      }
+      if (areaAddMode || areaRemoveMode) setAreaHandlesVisible(false);
+    }
+
     function setupMarkerEvents(marker) {
       marker.on('dragstart', () => { pushAreaUndo(); });
       marker.on('drag', () => {
@@ -6633,6 +6722,7 @@
         const ll=marker.getLngLat(); areaCoords[idx]=[ll.lng,ll.lat];
         if(!areaLocked)lockedPixelPos[idx]=areaMap.project([ll.lng,ll.lat]);
         updateAreaLayer();
+        if(typeof positionAreaHandles==='function') positionAreaHandles(false,-1);
         if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
       });
       marker.on('dragend', () => {
@@ -6644,6 +6734,7 @@
         if(!areaLocked)lockedPixelPos[idx]=clampPixelPos(areaMap.project(marker.getLngLat()));
         updateAreaLayer();
         capturePolyPixels();
+        if(typeof positionAreaHandles==='function') positionAreaHandles(false,-1);
       });
     }
 
@@ -6731,6 +6822,7 @@
         marker.getElement().addEventListener('click', handler);
       });
       updateCornerModeBtns();
+      if(typeof refreshAreaHandlesVis==='function') refreshAreaHandlesVis();
     }
 
     function exitRemoveMode() {
@@ -6744,6 +6836,7 @@
         if (h) { marker.getElement().removeEventListener('click', h); marker.getElement()._removeHandler = null; }
       });
       updateCornerModeBtns();
+      if(typeof refreshAreaHandlesVis==='function') refreshAreaHandlesVis();
     }
 
     function enterAddMode() {
@@ -6751,11 +6844,13 @@
       areaAddMode = true;
       showMidpointHandles();
       updateCornerModeBtns();
+      if(typeof refreshAreaHandlesVis==='function') refreshAreaHandlesVis();
     }
     function exitAddMode() {
       areaAddMode = false;
       clearMidpointHandles();
       updateCornerModeBtns();
+      if(typeof refreshAreaHandlesVis==='function') refreshAreaHandlesVis();
     }
 
     function removeCornerAt(idx) {
@@ -6767,6 +6862,7 @@
       if (!areaLocked) lockedPixelPos.splice(idx, 1);
       updateAreaLayer(); updateMinusBtn(); updateAddBtn();
       capturePolyPixels();
+      if (typeof buildAreaHandles === 'function') buildAreaHandles();
     }
     // ── End remove mode ──────────────────────────────────────────────────────
 
@@ -6798,6 +6894,7 @@
       });
       updateAreaLayer(); updateMinusBtn(); updateAddBtn();
       capturePolyPixels();
+      if (typeof buildAreaHandles === 'function') buildAreaHandles();
     }
 
     function toggleAreaLock() {
@@ -6843,6 +6940,7 @@
       areaMarkers.forEach((m,i)=>m.setLngLat(areaCoords[i]));
       if(!areaLocked)lockedPixelPos=areaMarkers.map(m=>clampPixelPos(areaMap.project([m.getLngLat().lng,m.getLngLat().lat])));
       updateAreaLayer();
+      if (typeof buildAreaHandles === 'function') buildAreaHandles();
     }
 
     function goToMyLocationInAreaMap() {
@@ -6897,6 +6995,7 @@
         areaCoords.forEach(c=>{ if(c[0]<mnX)mnX=c[0]; if(c[0]>mxX)mxX=c[0]; if(c[1]<mnY)mnY=c[1]; if(c[1]>mxY)mxY=c[1]; });
         try { areaMap.fitBounds([[mnX,mnY],[mxX,mxY]], { padding:70, duration:0, maxZoom:17 }); } catch(e){}
       }
+      if (typeof buildAreaHandles === 'function') buildAreaHandles();
     }
 
     function initAreaMap() {
@@ -7276,7 +7375,11 @@
       if (at.indexOf('maksull') !== -1)                                { typeKey='maksullinen'; typeLabel='Maksullinen pysäköinti'; }
       else if (at.indexOf('kiekoton') !== -1 || at.indexOf('ilmais') !== -1) { typeKey='ilmainen';    typeLabel='Kiekoton ilmaisparkki'; }
       else if (at.indexOf('kiekko') !== -1)                           { typeKey='kiekko';      typeLabel='Kiekkopysäköinti'; }
-      selectAreaType(typeKey, typeLabel);   // näyttää osiot + aktivoi napin
+      { const _pt=document.getElementById('ptype-select'); if(_pt) _pt.value=typeKey; }
+      onPtypeChange();
+      { const _loc=(sub.location_type||''); const _at=document.getElementById('atype-select');
+        if(_at) _at.value = /kadunvarsi/i.test(_loc) ? 'kadunvarsi' : (_loc ? 'alue' : ''); }
+      onAtypeChange();
       const mh=document.getElementById('max-parking-hours'); if(mh) mh.value = (sub.max_hours!=null ? String(sub.max_hours) : '');
       const mm=document.getElementById('max-parking-mins');  if(mm) mm.value = (sub.max_minutes!=null ? String(sub.max_minutes) : '');
       if (typeKey === 'kiekko') {
@@ -7302,6 +7405,7 @@
     // tallennuksen jalkeen.
     function resetAreaDetailsForm() {
       selectedAreaType='';
+      { const _pt=document.getElementById('ptype-select'); if(_pt)_pt.value=''; const _at=document.getElementById('atype-select'); if(_at)_at.value=''; const _as=document.getElementById('atype-section'); if(_as)_as.style.display='none'; }
       const disp=document.getElementById('area-type-display'); if(disp){disp.textContent='Valitse tyyppi...';disp.style.color='#aaa';}
       ['kiekko','maksullinen','ilmainen'].forEach(v=>{const el=document.getElementById('opt-check-'+v);if(el)el.className='option-check';});
       const kiekkoDiv=document.getElementById('kiekko-times');if(kiekkoDiv)kiekkoDiv.style.display='none';
@@ -7341,8 +7445,28 @@
       }
     }
 
+    // Kaksi alasvetovalikkoa: "Pysäköinnin tyyppi" ja "Alueen tyyppi".
+    // Max/voimassaolo/lisätiedot/lähetys tulevat vasta kun molemmat valittu.
+    function onPtypeChange() {
+      const v = (document.getElementById('ptype-select')||{}).value || '';
+      selectedAreaType = v;
+      const sec = document.getElementById('atype-section'); if (sec) sec.style.display = v ? 'block' : 'none';
+      updateDetailsSections();
+    }
+    function onAtypeChange() { updateDetailsSections(); }
+    function updateDetailsSections() {
+      const ptype = (document.getElementById('ptype-select')||{}).value || '';
+      const atype = (document.getElementById('atype-select')||{}).value || '';
+      const ready = !!(ptype && atype);
+      const maxDiv = document.getElementById('max-parking-section'); if (maxDiv) maxDiv.style.display = ready ? 'block' : 'none';
+      const maxOpt = document.getElementById('max-parking-optional'); if (maxOpt) maxOpt.style.display = ptype==='kiekko' ? 'none' : 'block';
+      const kiekkoDiv = document.getElementById('kiekko-times'); if (kiekkoDiv) kiekkoDiv.style.display = (ready && ptype==='kiekko') ? 'block' : 'none';
+      const extraDiv = document.getElementById('area-extra-section'); if (extraDiv) extraDiv.style.display = ready ? 'block' : 'none';
+      const sb = document.getElementById('submit-parking-btn'); if (sb) { sb.style.opacity = ready ? '1' : '0.4'; sb.style.cursor = ready ? 'pointer' : 'not-allowed'; }
+    }
+
     async function submitParking() {
-      if (!selectedAreaType) return;
+      if (!selectedAreaType || !((document.getElementById('atype-select')||{}).value)) return;
 
       // Collect form data — maps to the parking_submissions2 schema.
       // area_type stored as full name; location_type intentionally dropped.
@@ -7362,6 +7486,7 @@
         valid_su_to:     (kiekkoTimesOn() && validDayOn('su'))   ? (document.getElementById('valid-su-to')?.value     || null) : null,
         info_additional: document.getElementById('area-extra-info')?.value.trim() || null,
         status:         'pending',
+        location_type:  (function(){ var m={kadunvarsi:'Kadunvarsipysäköinti',alue:'Pysäköintialue'}; var v=(document.getElementById('atype-select')||{}).value||''; return m[v]||null; })(),
         submitted_by:   ((typeof loadAccount === 'function' && loadAccount()) || {}).email || null
       };
 
@@ -7382,9 +7507,10 @@
           body: JSON.stringify(body)
         });
         let res = await _postSub(payload);
-        if (!res.ok && ('submitted_by' in payload)) {
-          // submitted_by-saraketta ei ehkä ole vielä → lähetä ilman sitä
-          const p2 = Object.assign({}, payload); delete p2.submitted_by;
+        if (!res.ok) {
+          // Joku valinnainen sarake (submitted_by / location_type) ei ehkä ole
+          // tietokannassa → lähetä ilman niitä.
+          const p2 = Object.assign({}, payload); delete p2.submitted_by; delete p2.location_type;
           res = await _postSub(p2);
         }
         if (!res.ok) {
@@ -7402,6 +7528,7 @@
 
       // Reset form
       selectedAreaType='';
+      { const _pt=document.getElementById('ptype-select'); if(_pt)_pt.value=''; const _at=document.getElementById('atype-select'); if(_at)_at.value=''; const _as=document.getElementById('atype-section'); if(_as)_as.style.display='none'; }
       const disp=document.getElementById('area-type-display');
       if(disp){disp.textContent='Valitse tyyppi...';disp.style.color='#aaa';}
       ['kiekko','maksullinen','ilmainen'].forEach(v=>{const el=document.getElementById('opt-check-'+v);if(el)el.className='option-check';});
@@ -7741,6 +7868,7 @@
       let peek = `<div style="margin-bottom:7px;"><span style="display:inline-block;background:${kind.bg};color:#fff;font-size:11px;font-weight:bold;padding:3px 9px;border-radius:6px;letter-spacing:0.3px;">${kind.label}</span></div>`;
       peek += `<div style="font-size:16px;font-weight:bold;color:#0C0243;line-height:1.25;">${typeFull}${maxTxt ? '  |  ' + maxTxt : ''}</div>`;
       if (loc) peek += `<div style="font-size:13.5px;color:#555;margin-top:3px;">${loc}</div>`;
+      peek += `<div style="font-size:13.5px;color:#555;margin-top:3px;">Käyttäjän ilmoittama</div>`;
       document.getElementById('admin-sheet-peek').innerHTML = peek;
       let more = '';
       const vr = adminValidityRows(r);
@@ -17115,7 +17243,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7n</span>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7q</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
@@ -17151,7 +17279,7 @@
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/></svg>
     </button>
     <!-- Alasheet: alueen tiedot + Hyväksy / Hylkää -->
-    <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);transform:translateY(240px);will-change:transform;">
+    <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);min-height:58vh;transform:translateY(240px);will-change:transform;">
       <div id="admin-sheet-handle" style="width:100%;padding:10px 0 8px 0;display:flex;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;"><div style="width:40px;height:4px;border-radius:2px;background:#d8d8dd;"></div></div>
       <div id="admin-sheet-peek" style="padding:4px 18px 8px;font-family:Arial,sans-serif;"></div>
       <div id="admin-sheet-more" style="padding:0 18px 18px;font-family:Arial,sans-serif;"></div>
