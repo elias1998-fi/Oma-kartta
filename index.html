@@ -4699,13 +4699,13 @@
           </svg>
           <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Lisää uusi ilmainen pysäköintialue</span>
         </button>
-        <button onclick="openAdminOverlay()" style="width:100%;min-height:120px;background:#fff;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 2px 10px rgba(12,2,67,0.10);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;" onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'" ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
+        <button onclick="openAllPendingMap()" style="width:100%;min-height:120px;background:#fff;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 2px 10px rgba(12,2,67,0.10);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;" onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'" ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg>
-          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Hallinto</span>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Tarkasta muiden käyttäjien lisäämiä ilmaisia alueita</span>
         </button>
         <button onclick="openAreaEditor()" style="width:100%;min-height:120px;background:#fff;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 2px 10px rgba(12,2,67,0.10);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;" onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'" ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/><line x1="9" y1="4" x2="9" y2="20"/><line x1="15" y1="6" x2="15" y2="22"/></svg>
-          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Alueiden muokkaus</span>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Alueiden muokkaus (Vain ylläpitäjille)</span>
         </button>
       </div>
     </div>
@@ -4770,10 +4770,16 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="width:22px;height:22px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
           </div><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Poista / Lisää<br>kulmapiste</div></div>
-          <!-- lukko -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button id="area-lock-btn" onclick="toggleAreaLock()" aria-label="Lukitse paikkaan" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-          </button><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Alueen<br>vapautus</div></div>
+          <!-- Kumoa / Tee uudelleen -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="display:flex;flex-direction:row;background:#eef0f2;border-radius:24px;overflow:hidden;">
+            <button id="area-undo-btn" onclick="undoArea()" aria-label="Kumoa" style="width:48px;height:48px;border:none;background:transparent;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;opacity:0.35;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+            </button>
+            <div style="width:1px;background:#dcdfe3;margin:9px 0;"></div>
+            <button id="area-redo-btn" onclick="redoArea()" aria-label="Tee uudelleen" style="width:48px;height:48px;border:none;background:transparent;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;opacity:0.35;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+            </button>
+          </div><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Kumoa / Tee uudelleen</div></div>
           <!-- tuo polygoni -->
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button onclick="flashCtrlBlue(this);tuoPolygoniKartalle()" aria-label="Tuo polygoni" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M12 3v11"/><path d="M7.5 9.5 12 14l4.5-4.5"/><path d="M5 20h14"/></svg>
@@ -6574,7 +6580,54 @@
       openAreaDetails();
     }
 
+    // ── Kumoa / Tee uudelleen: lisäysnäkymän polygonin muokkaushistoria ──
+    var areaUndoStack = [];
+    var areaRedoStack = [];
+    function _areaSnapshot() { return areaCoords.map(c=>[c[0],c[1]]); }
+    function pushAreaUndo() {
+      areaUndoStack.push(_areaSnapshot());
+      if (areaUndoStack.length > 80) areaUndoStack.shift();
+      areaRedoStack = [];
+      updateUndoRedoBtns();
+    }
+    function resetAreaUndo() { areaUndoStack = []; areaRedoStack = []; updateUndoRedoBtns(); }
+    function applyAreaSnapshot(coords) {
+      if (!coords || coords.length < 3 || !areaMap) return;
+      if (typeof clearMidpointHandles === 'function') clearMidpointHandles();
+      if (typeof exitRemoveMode === 'function') exitRemoveMode();
+      if (typeof exitAddMode === 'function') exitAddMode();
+      areaMarkers.forEach(m=>m.remove()); areaMarkers=[]; lockedPixelPos=[];
+      areaCoords = coords.map(c=>[c[0],c[1]]);
+      areaCoords.forEach(c=>{
+        const marker=new maplibregl.Marker({element:createCornerEl(),draggable:true,anchor:'center'}).setLngLat(c).addTo(areaMap);
+        setupMarkerEvents(marker); areaMarkers.push(marker);
+        if(!areaLocked)lockedPixelPos.push(clampPixelPos(areaMap.project([c[0],c[1]])));
+      });
+      updateAreaLayer(); updateMinusBtn(); updateAddBtn();
+      capturePolyPixels();
+      if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
+    }
+    function undoArea() {
+      if (!areaUndoStack.length) return;
+      areaRedoStack.push(_areaSnapshot());
+      applyAreaSnapshot(areaUndoStack.pop());
+      updateUndoRedoBtns();
+    }
+    function redoArea() {
+      if (!areaRedoStack.length) return;
+      areaUndoStack.push(_areaSnapshot());
+      applyAreaSnapshot(areaRedoStack.pop());
+      updateUndoRedoBtns();
+    }
+    function updateUndoRedoBtns() {
+      const u=document.getElementById('area-undo-btn');
+      if(u){ u.style.opacity = areaUndoStack.length ? '1' : '0.35'; u.style.pointerEvents = areaUndoStack.length ? 'auto' : 'none'; }
+      const r=document.getElementById('area-redo-btn');
+      if(r){ r.style.opacity = areaRedoStack.length ? '1' : '0.35'; r.style.pointerEvents = areaRedoStack.length ? 'auto' : 'none'; }
+    }
+
     function setupMarkerEvents(marker) {
+      marker.on('dragstart', () => { pushAreaUndo(); });
       marker.on('drag', () => {
         const idx=areaMarkers.indexOf(marker); if(idx===-1)return;
         const ll=marker.getLngLat(); areaCoords[idx]=[ll.lng,ll.lat];
@@ -6707,6 +6760,7 @@
 
     function removeCornerAt(idx) {
       if (areaCoords.length <= 3) return;
+      pushAreaUndo();
       areaMarkers[idx].remove();
       areaMarkers.splice(idx, 1);
       areaCoords.splice(idx, 1);
@@ -6734,6 +6788,7 @@
 
     function insertCornerAt(idx, coord) {
       if (areaCoords.length >= 10) return;
+      pushAreaUndo();
       areaCoords.splice(idx,0,coord);
       areaMarkers.forEach(m=>m.remove()); areaMarkers=[]; lockedPixelPos=[];
       areaCoords.forEach(c=>{
@@ -6774,6 +6829,7 @@
     // → muoto pysyy samana, mutta maantieteellinen koko skaalautuu zoomin mukaan
     //   (zoomattu ulos = sama muoto kattaa suuremman alueen, ja päinvastoin).
     function tuoPolygoniKartalle() {
+      pushAreaUndo();
       if(!areaMap||areaCoords.length<3)return;
       clearMidpointHandles(); exitRemoveMode();
       if(!polyPixelOffsets || polyPixelOffsets.length !== areaCoords.length) capturePolyPixels();
@@ -6814,6 +6870,7 @@
       areaMarkers=[]; areaCoords=[]; lockedPixelPos=[];
       areaLocked=true; updateLockBtn();
       polygonMoved=false; updateConfirmBtn();
+      resetAreaUndo();
       const c=areaMap.getCenter(), off=0.00045;
       areaCoords=[[c.lng-off,c.lat+off],[c.lng+off,c.lat+off],[c.lng+off,c.lat-off],[c.lng-off,c.lat-off]];
       addPolygonLayers();
@@ -7605,8 +7662,9 @@
       setTimeout(adminOpenSheetInit, 60);
       setTimeout(() => {
         ensureAdminMap(() => {
+          adminSetMasterAreas();
           adminSetAreas(subFeatureCollection(adminVisibleRows()));
-          adminCenterOnUser(13);
+          adminCenterOnUser(16);
         });
       }, 300);
     }
@@ -7724,7 +7782,7 @@
     function ensureAdminMap(cb) {
       if (!adminPreviewMap) {
         const _ac = (typeof userLocation !== 'undefined' && userLocation) ? [userLocation.lon, userLocation.lat] : [24.9354, 60.1699];
-        const _az = (typeof userLocation !== 'undefined' && userLocation) ? 13 : 14;
+        const _az = (typeof userLocation !== 'undefined' && userLocation) ? 16 : 14;
         adminPreviewMap = new maplibregl.Map({
           container: 'admin-preview-map',
           style: 'omakartta_style.json',
@@ -7739,9 +7797,14 @@
           // 'admin-sub-fill' -kerros lisätään vasta myöhemmin tai poistetaan ja
           // lisätään uudelleen (kerroskohtainen kuuntelija ei aina laukennut).
           adminPreviewMap.on('click', (e) => {
-            if (!adminPreviewMap.getLayer('admin-sub-fill')) return;
-            const feats = adminPreviewMap.queryRenderedFeatures(e.point, { layers: ['admin-sub-fill'] });
-            if (feats && feats.length) onAdminAreaClick({ features: feats });
+            const feats = adminPreviewMap.getLayer('admin-sub-fill') ? adminPreviewMap.queryRenderedFeatures(e.point, { layers: ['admin-sub-fill'] }) : [];
+            if (feats && feats.length) { onAdminAreaClick({ features: feats }); return; }
+            // Klikattiin tyhjää: kaikki-tilassa poista valinta ja palaa listanäkymään
+            if (_adminMapMode === 'all' && currentSubmission) {
+              currentSubmission = null;
+              adminShowAllHint();
+              adminSheetSetExpanded(false, true);
+            }
           });
           cb();
         });
@@ -7751,6 +7814,27 @@
       }
     }
 
+    // Jo tietokantaan lisätyt alueet (ilmaiset lila, maksulliset sininen) taustalle
+    // moderointikartalle. Vain polygonit; ei vuorovaikutusta. Data pääkartalta.
+    function adminMasterFC() {
+      const rows = (typeof _lastMasterRows !== 'undefined' && _lastMasterRows) ? _lastMasterRows : [];
+      return { type:'FeatureCollection', features: rows
+        .filter(r => r.polygon_coordinates && (r.polygon_coordinates.type==='Polygon'||r.polygon_coordinates.type==='MultiPolygon') && r.parking_type !== 'Pysäköintihalli')
+        .map(r => ({ type:'Feature', properties:{ source: legacySourceFor(r.area_type, r.parking_type, r.max_hours) }, geometry: r.polygon_coordinates })) };
+    }
+    function adminSetMasterAreas() {
+      if (!adminPreviewMap) return;
+      const fc = adminMasterFC();
+      if (adminPreviewMap.getSource('admin-master')) { adminPreviewMap.getSource('admin-master').setData(fc); return; }
+      adminPreviewMap.addSource('admin-master', { type:'geojson', data: fc });
+      const before = adminPreviewMap.getLayer('admin-sub-fill') ? 'admin-sub-fill' : undefined;
+      adminPreviewMap.addLayer({ id:'admin-master-fill', type:'fill', source:'admin-master',
+        paint:{ 'fill-opacity':0.20, 'fill-color':['match',['get','source'],
+          'community','#7F1F89','hel_ilmainen_pitka','#7F1F89','hel_ilmainen_lyhyt','#7F1F89','hel_sallittu_kiellon_ulkopuolella','#7F1F89','#1266f1'] } }, before);
+      adminPreviewMap.addLayer({ id:'admin-master-line', type:'line', source:'admin-master',
+        paint:{ 'line-width':1.0, 'line-opacity':0.55, 'line-color':['match',['get','source'],
+          'community','#611868','hel_ilmainen_pitka','#611868','hel_ilmainen_lyhyt','#611868','hel_sallittu_kiellon_ulkopuolella','#611868','#0B49D0'] } }, before);
+    }
     function adminSetAreas(fc) {
       ['admin-sub-fill','admin-sub-line'].forEach(id => { if (adminPreviewMap.getLayer(id)) adminPreviewMap.removeLayer(id); });
       if (adminPreviewMap.getSource('admin-sub')) adminPreviewMap.removeSource('admin-sub');
@@ -17031,7 +17115,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7l</span>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7n</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
