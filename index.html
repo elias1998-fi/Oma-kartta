@@ -9283,6 +9283,7 @@
 
     function openAreaEditor() {
       document.getElementById('area-editor-overlay').classList.add('open');
+      setTimeout(editorSheetInit, 60);
       // Hide the main-map floating button (z-index 9990) so it doesn't overlap the editor
       const bc = document.getElementById('btn-container');
       if (bc) bc.style.display = 'none';
@@ -9349,6 +9350,74 @@
         btn.style.border = '2px solid #ddd';
         btn.style.color = '#0C0243';
       }
+    }
+
+    // ── Alueiden muokkaus -sheetin veto (sama logiikka kuin lisäysnäkymässä) ──
+    let editorSheetExpanded = false;
+    let _editorSheetY = 400;
+    let _esDrag = null;
+    function editorSheetCollapsedY() {
+      const sheet = document.getElementById('editor-sheet');
+      const handle = document.getElementById('editor-sheet-handle');
+      if (!sheet || !handle) return 0;
+      return Math.max(0, sheet.offsetHeight - handle.offsetHeight);
+    }
+    function editorSheetSetY(y, animate) {
+      const sheet = document.getElementById('editor-sheet'); if (!sheet) return;
+      _editorSheetY = y;
+      sheet.style.transition = animate ? 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+      sheet.style.transform = 'translateY(' + y + 'px)';
+    }
+    function updateEditorSheetChevron() {
+      const ch = document.getElementById('editor-sheet-chevron'); if (!ch) return;
+      const sp = ch.querySelectorAll('span'); if (sp.length < 2) return;
+      if (editorSheetExpanded) { sp[0].style.transform = 'rotate(13deg)';  sp[1].style.transform = 'rotate(-13deg)'; }
+      else                     { sp[0].style.transform = 'rotate(-13deg)'; sp[1].style.transform = 'rotate(13deg)';  }
+    }
+    function editorSheetSetExpanded(expanded, animate) {
+      editorSheetExpanded = expanded;
+      editorSheetSetY(expanded ? 0 : editorSheetCollapsedY(), animate);
+      updateEditorSheetChevron();
+    }
+    function editorSheetInit() {
+      initEditorSheetDrag();
+      editorSheetSetExpanded(true, false);
+    }
+    function initEditorSheetDrag() {
+      const handle = document.getElementById('editor-sheet-handle');
+      if (!handle || handle._esHooked) return;
+      handle._esHooked = true;
+      const down = (clientY, pointerId) => {
+        _esDrag = { startY: clientY, startTranslate: _editorSheetY, lastY: clientY, lastT: Date.now(), vel: 0, moved: false, maxY: editorSheetCollapsedY() };
+        const sheet = document.getElementById('editor-sheet'); if (sheet) sheet.style.transition = 'none';
+        if (pointerId != null && handle.setPointerCapture) { try { handle.setPointerCapture(pointerId); } catch (e) {} }
+      };
+      const move = (clientY) => {
+        if (!_esDrag) return;
+        const now = Date.now(), dt = now - _esDrag.lastT;
+        if (dt > 0) _esDrag.vel = (clientY - _esDrag.lastY) / dt;
+        _esDrag.lastY = clientY; _esDrag.lastT = now;
+        const dy = clientY - _esDrag.startY;
+        if (Math.abs(dy) > 4) _esDrag.moved = true;
+        let y = _esDrag.startTranslate + dy;
+        y = Math.max(0, Math.min(_esDrag.maxY, y));
+        editorSheetSetY(y, false);
+      };
+      const up = () => {
+        if (!_esDrag) return;
+        const d = _esDrag; _esDrag = null;
+        if (!d.moved) { editorSheetSetExpanded(!editorSheetExpanded, true); return; }
+        const mid = d.maxY / 2;
+        let expand;
+        if (d.vel < -0.3) expand = true;
+        else if (d.vel > 0.3) expand = false;
+        else expand = _editorSheetY < mid;
+        editorSheetSetExpanded(expand, true);
+      };
+      handle.addEventListener('pointerdown', (e) => { e.preventDefault(); down(e.clientY, e.pointerId); });
+      handle.addEventListener('pointermove', (e) => { move(e.clientY); });
+      handle.addEventListener('pointerup', () => { up(); });
+      handle.addEventListener('pointercancel', () => { _esDrag = null; });
     }
 
     function editorLocate() {
@@ -16962,7 +17031,7 @@
     <div class="overlay-header" style="justify-content:space-between;">
       <div style="display:flex;align-items:center;">
         <button class="overlay-back-btn" onclick="closeAdminOverlay()">←</button>
-        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7k</span>
+        <div class="overlay-title">Hallinto</div><span style="margin-left:8px;font-size:10px;color:#c4c4c4;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.3px;">build&nbsp;18.7l</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-right:4px;">
         <button id="admin-select-all-btn" class="header-action-btn" onclick="adminSelectAll()" style="display:none;">Valitse kaikki</button>
@@ -17031,11 +17100,39 @@
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/></svg>
     </button>
     <!-- Alapaneeli: status + työkalut + iso toimintonäppäin -->
-    <div style="position:absolute;left:0;right:0;bottom:0;z-index:13;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 22px rgba(0,0,0,0.18);padding-bottom:max(14px,env(safe-area-inset-bottom));">
-      <div style="width:100%;padding:10px 0 4px 0;display:flex;justify-content:center;"><div style="width:40px;height:4px;border-radius:2px;background:#d8d8dd;"></div></div>
+    <div id="editor-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:13;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 22px rgba(0,0,0,0.18);padding-bottom:max(14px,env(safe-area-inset-bottom));transform:translateY(400px);will-change:transform;">
+      <div id="editor-sheet-handle" style="width:100%;padding:10px 0 8px 0;display:flex;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;">
+        <div id="editor-sheet-chevron" style="position:relative;width:44px;height:11px;">
+          <span style="position:absolute;top:3px;left:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:left center;transition:transform 0.22s ease;"></span>
+          <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.22s ease;"></span>
+        </div>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 18px 8px;font-family:Arial,sans-serif;font-size:13px;color:#555;">
         <span id="editor-status">Valitse alue tai alueet</span>
         <span id="editor-count" style="font-weight:bold;color:#0C0243;"></span>
+      </div>
+      <!-- Ylärivi: lisäysnäkymän työkalut (visuaalinen; toiminnot alueiden muokkauksessa vielä määrittelemättä) -->
+      <div style="display:flex;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:10px;padding:2px 12px 8px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <button style="width:48px;height:48px;border-radius:12px;border:2px solid #ddd;background:white;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.08);-webkit-tap-highlight-color:transparent;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></button>
+          <div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;">Kartta<br>taso</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <button style="width:48px;height:48px;border-radius:12px;border:2px solid #ddd;background:white;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.08);-webkit-tap-highlight-color:transparent;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>
+          <div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;">Poista / Lisää<br>kulmapiste</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <button style="width:48px;height:48px;border-radius:12px;border:2px solid #ddd;background:white;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.08);-webkit-tap-highlight-color:transparent;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0"/></svg></button>
+          <div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;">Alueen<br>vapautus</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <button style="width:48px;height:48px;border-radius:12px;border:2px solid #ddd;background:white;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.08);-webkit-tap-highlight-color:transparent;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+          <div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;">Tuo<br>alue</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <button style="width:48px;height:48px;border-radius:12px;border:2px solid #ddd;background:white;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.08);-webkit-tap-highlight-color:transparent;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+          <div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;">Kartan<br>rotaatio</div>
+        </div>
       </div>
       <div style="display:flex;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:10px;padding:2px 12px 12px;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
