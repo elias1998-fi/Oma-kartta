@@ -6563,9 +6563,8 @@
 
     function createCornerEl() {
       const wrapper = document.createElement('div');
-      // Tartunta-alue palautettu alkuperäiseen (56px). Tahattoman polygonin
-      // siirron esto hoidetaan täyttö-vedon puolella: täytössä on kuollut
-      // alue kulmapisteiden ympärillä (ks. setupPolygonFillDrag).
+      // Tartunta-alue alkuperäisessä koossaan (56px). Koko polygonin siirto
+      // tehdään keskellä olevasta siirtokahvasta, ei täytöstä.
       wrapper.style.cssText = 'width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
       const dot = document.createElement('div');
       dot.className = 'corner-dot';
@@ -6705,8 +6704,12 @@
     let areaCenterHandle = null;    // siirtokahva (move) polygonin keskellä
     let areaEdgeHandles = [];
     function _areaCentroid() { let x=0,y=0; areaCoords.forEach(c=>{x+=c[0];y+=c[1];}); const n=areaCoords.length||1; return [x/n, y/n]; }
-    // createCenterHandleEl ja createEdgeHandleEl poistettu — siirto- ja
-    // sivukahvat eivät ole enää käytössä (ks. buildAreaHandles).
+    function createCenterHandleEl() {
+      const w=document.createElement('div');
+      w.style.cssText='width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
+      w.innerHTML='<div style="width:28px;height:28px;background:#0C0243;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;pointer-events:none;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 15 22 12 19 9"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg></div>';
+      return w;
+    }
     function positionAreaHandles(skipCenter, skipEdgeIdx) {
       if (areaCenterHandle && !skipCenter) areaCenterHandle.setLngLat(_areaCentroid());   // siirtokahva pysyy keskipisteessä
       const n = areaCoords.length;
@@ -6765,10 +6768,24 @@
     function buildAreaHandles() {
       areaEdgeHandles.forEach(h=>h.remove()); areaEdgeHandles = [];
       if (areaCenterHandle) { areaCenterHandle.remove(); areaCenterHandle = null; }
-      // Siirtokahva ja sivukahvat (drag handlet) on poistettu käytöstä
-      // kokonaan. Koko polygonin siirto tehdään polygonin täytöstä vetämällä
-      // (setupPolygonFillDrag); yksittäisiä sivuja ei voi enää vetää — vain
-      // kulmapisteitä (areaMarkers).
+      if (!areaMap || areaCoords.length < 3) return;
+      // Siirtokahva (koko polygonin siirto) — polygonin KESKIPISTEESSÄ.
+      // Sivukahvat pysyvät poistettuina; kulmapisteet toimivat normaalisti.
+      const ch = new maplibregl.Marker({element:createCenterHandleEl(), draggable:true, anchor:'center'}).setLngLat(_areaCentroid()).addTo(areaMap);
+      let cS=null, cSC=null;
+      ch.on('dragstart', () => { pushAreaUndo(); cS=ch.getLngLat(); cSC=areaCoords.map(c=>[c[0],c[1]]); });
+      ch.on('drag', () => {
+        if (!cS) return;
+        const p=ch.getLngLat(), dx=p.lng-cS.lng, dy=p.lat-cS.lat;
+        areaCoords = cSC.map(c=>[c[0]+dx, c[1]+dy]);
+        areaMarkers.forEach((m,i)=>{ if(areaCoords[i]){ m.setLngLat(areaCoords[i]); if(!areaLocked)lockedPixelPos[i]=areaMap.project(areaCoords[i]); } });
+        positionAreaHandles(true, -1);   // keskikahvaa ei siirretä tässä (maplibre hoitaa sen vedon)
+        updateAreaLayer();
+        if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
+      });
+      ch.on('dragend', () => { cS=null; cSC=null; capturePolyPixels(); positionAreaHandles(false,-1); });
+      areaCenterHandle = ch;
+      if (areaAddMode || areaRemoveMode) setAreaHandlesVisible(false);
     }
 
     function setupMarkerEvents(marker) {
@@ -7062,57 +7079,8 @@
       if (typeof buildAreaHandles === 'function') buildAreaHandles();
     }
 
-    // Koko polygonin siirto sen TÄYTÖSTÄ vetämällä (sormi/hiiri): tartunta
-    // täyttöön ja raahaus siirtää polygonia heti. Kulmapisteiden ympärillä on
-    // täytössä KUOLLUT ALUE (FILL_CORNER_SAFE_PX alla), jolta siirto ei ala.
-    // Rekisteröidään kerran; toimii aina kun 'area-poly-fill' -taso on olemassa.
-    let _polyFillDragHooked = false;
-    // Kuollut alue täytössä kulmapisteiden ympärillä (px kulman keskipisteestä):
-    // tällä etäisyydellä painallus täyttöön EI aloita polygonin siirtoa, koska
-    // käyttäjä todennäköisesti yritti tarttua kulmapisteeseen ja sormi lipsahti
-    // hieman täytön puolelle. Kulman oma tartunta-alue (56px kääre) kattaa 28px
-    // säteen, joten kuollut alue kattaa "hiukan ohi" -kaistan sen ympärillä.
-    const FILL_CORNER_SAFE_PX = 56;
-    function setupPolygonFillDrag() {
-      if (!areaMap || _polyFillDragHooked) return;
-      _polyFillDragHooked = true;
-      const onFillDown = (e) => {
-        if (areaAddMode || areaRemoveMode) return;            // ei siirretä lisäys-/poistomoodissa
-        if (e.points && e.points.length > 1) return;          // kosketus: vain yhdellä sormella
-        // TURVA-ALUE: painallus kulmapisteen lähelle → ei polygonin siirtoa.
-        // Oletusta ei estetä, joten kartta käyttäytyy normaalisti.
-        for (let i = 0; i < areaCoords.length; i++) {
-          const cp = areaMap.project(areaCoords[i]);
-          if (Math.hypot(cp.x - e.point.x, cp.y - e.point.y) < FILL_CORNER_SAFE_PX) return;
-        }
-        e.preventDefault();                                   // estä kartan panorointi
-        const start = e.lngLat;
-        const startCoords = areaCoords.map(c => [c[0], c[1]]);
-        let moved = false;
-        const onMove = (ev) => {
-          if (!moved) { moved = true; pushAreaUndo(); }       // undo vasta kun polygonia oikeasti liikutetaan
-          const dx = ev.lngLat.lng - start.lng, dy = ev.lngLat.lat - start.lat;
-          areaCoords = startCoords.map(c => [c[0]+dx, c[1]+dy]);
-          areaMarkers.forEach((m,i)=>{ if(areaCoords[i]){ m.setLngLat(areaCoords[i]); if(!areaLocked)lockedPixelPos[i]=areaMap.project(areaCoords[i]); } });
-          updateAreaLayer();
-          if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
-        };
-        const onUp = () => {
-          areaMap.off('mousemove', onMove); areaMap.off('touchmove', onMove);
-          areaMap.off('mouseup', onUp);     areaMap.off('touchend', onUp);
-          areaMap.off('touchcancel', onUp);
-          if (moved) capturePolyPixels();
-        };
-        areaMap.on('mousemove', onMove); areaMap.on('touchmove', onMove);
-        areaMap.on('mouseup', onUp);     areaMap.on('touchend', onUp);
-        areaMap.on('touchcancel', onUp);
-      };
-      areaMap.on('mousedown', 'area-poly-fill', onFillDown);
-      areaMap.on('touchstart', 'area-poly-fill', onFillDown);
-      // Osoitin vihjaa siirrettävyydestä täytön päällä (työpöytä).
-      areaMap.on('mouseenter', 'area-poly-fill', () => { if(!areaAddMode && !areaRemoveMode) areaMap.getCanvas().style.cursor = 'move'; });
-      areaMap.on('mouseleave', 'area-poly-fill', () => { areaMap.getCanvas().style.cursor = ''; });
-    }
+    // Polygonin siirto täytöstä vetämällä on POISTETTU: koko polygonin
+    // siirto tehdään keskellä olevasta siirtokahvasta (buildAreaHandles).
 
     function initAreaMap() {
       const center=map.getCenter(), zoom=map.getZoom();
@@ -7137,7 +7105,6 @@
           areaMap.touchZoomRotate.disableRotation(); areaMap.dragRotate.disable();
           areaMap.resize();
           initAreaCornersAndPolygon();
-          setupPolygonFillDrag();   // koko polygonin siirto täytöstä sormella/hiirellä vetämällä
           requestAnimationFrame(() => { if (areaMap) { areaMap.resize(); areaMap.triggerRepaint(); } });
         };
         areaMap.on('style.load', initOnce);
@@ -7669,6 +7636,12 @@
       // takaisin, sulkee myös lisäysnäkymän closeAddParkingArea:n kautta).
       closeAreaDetails();
       closePlusOverlay();
+      // Palauta perusnäkymän sheet perustasolle EKSPLISIITTISESTI. Jos sheet
+      // jäi pikselimuotoiseen transformiin (esim. suodatinnäkymän
+      // translateY(innerHeight*0.6) tai raahauksen snap-asento), checkParkingin
+      // automaattinen palautus ei tunnista sitä (se vertaa vain calc-muotoja
+      // '- 60px'/'- 90px') → sheet jäi jumiin puoleen väliin näyttöä tyhjänä.
+      collapseCenterSheet();
       // Pääkartta on ollut koko lisäysflown overlayjen alla — varmista että se
       // piirtyy oikean kokoisena heti paljastuessaan.
       requestAnimationFrame(() => { try { map.resize(); map.triggerRepaint(); } catch(e){} });
@@ -7722,6 +7695,7 @@
       closeToast();
       closeAreaDetails();
       closePlusOverlay();
+      collapseCenterSheet();   // sama eksplisiittinen sheet-palautus kuin lähetyksessä
       try { map.resize(); } catch(e){}
     }
 
