@@ -7030,10 +7030,14 @@
       if (typeof buildAreaHandles === 'function') buildAreaHandles();
     }
 
-    // Koko polygonin siirto sen TÄYTÖSTÄ vetämällä (sormi/hiiri). Rekisteröidään
-    // kerran; toimii aina kun 'area-poly-fill' -taso on olemassa. Kulmapisteet
-    // (areaMarkers) ovat DOM-elementtejä täytön PÄÄLLÄ, joten niiden
-    // painallukset eivät laukaise tätä.
+    // Koko polygonin siirto sen TÄYTÖSTÄ vetämällä (sormi/hiiri) — mutta vasta
+    // PAINALLUKSEN JA PIDON jälkeen, ei pelkästä pyyhkäisystä. Jos sormi
+    // liikkuu ennen pitoajan täyttymistä, tulkitaan tavalliseksi pyyhkäisyksi/
+    // panoroinniksi eikä polygonia siirretä (emme preventDefault:ia etukäteen,
+    // joten kartan oma dragPan saa hoitaa sen normaalisti). Rekisteröidään
+    // kerran; toimii aina kun 'area-poly-fill' -taso on olemassa.
+    const FILL_DRAG_HOLD_MS = 320;     // painallus+pito tämän verran ennen kuin veto aktivoituu
+    const FILL_DRAG_CANCEL_PX = 9;     // jos sormi liikkuu tämän verran ennen pitoa → tulkitaan pyyhkäisyksi
     let _polyFillDragHooked = false;
     function setupPolygonFillDrag() {
       if (!areaMap || _polyFillDragHooked) return;
@@ -7041,25 +7045,56 @@
       const onFillDown = (e) => {
         if (areaAddMode || areaRemoveMode) return;            // ei siirretä lisäys-/poistomoodissa
         if (e.points && e.points.length > 1) return;          // kosketus: vain yhdellä sormella
-        e.preventDefault();                                   // estä kartan panorointi
-        const start = e.lngLat;
-        const startCoords = areaCoords.map(c => [c[0], c[1]]);
-        let moved = false;
-        const onMove = (ev) => {
-          if (!moved) { moved = true; pushAreaUndo(); }       // undo vasta kun polygonia oikeasti liikutetaan
-          const dx = ev.lngLat.lng - start.lng, dy = ev.lngLat.lat - start.lat;
+        const downPoint = e.point;
+        let holdTimer = null;
+        let armed = false, moved = false;
+        let startLngLat = null, startCoords = null;
+
+        const detachPreArm = () => {
+          areaMap.off('mousemove', onPreArmMove); areaMap.off('touchmove', onPreArmMove);
+          areaMap.off('mouseup', onPreArmEnd);     areaMap.off('touchend', onPreArmEnd);
+          areaMap.off('touchcancel', onPreArmEnd);
+        };
+        const cancelHold = () => { clearTimeout(holdTimer); detachPreArm(); };
+
+        const onPreArmMove = (mev) => {
+          const dx = mev.point.x - downPoint.x, dy = mev.point.y - downPoint.y;
+          if (Math.hypot(dx, dy) > FILL_DRAG_CANCEL_PX) cancelHold();   // liikahti liikaa ennen pitoa → tavallinen pyyhkäisy/panorointi
+        };
+        const onPreArmEnd = () => { cancelHold(); };   // nostettiin ennen pitoaikaa → ei siirretä
+
+        const onDragMove = (ev) => {
+          if (!armed) return;
+          if (!moved) { moved = true; pushAreaUndo(); }
+          const dx = ev.lngLat.lng - startLngLat.lng, dy = ev.lngLat.lat - startLngLat.lat;
           areaCoords = startCoords.map(c => [c[0]+dx, c[1]+dy]);
           areaMarkers.forEach((m,i)=>{ if(areaCoords[i]){ m.setLngLat(areaCoords[i]); if(!areaLocked)lockedPixelPos[i]=areaMap.project(areaCoords[i]); } });
           updateAreaLayer();
           if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
         };
-        const onUp = () => {
-          areaMap.off('mousemove', onMove); areaMap.off('touchmove', onMove);
-          areaMap.off('mouseup', onUp);     areaMap.off('touchend', onUp);
+        const onDragEnd = () => {
+          areaMap.off('mousemove', onDragMove); areaMap.off('touchmove', onDragMove);
+          areaMap.off('mouseup', onDragEnd);     areaMap.off('touchend', onDragEnd);
+          areaMap.off('touchcancel', onDragEnd);
+          if (armed) areaMap.dragPan.enable();
           if (moved) capturePolyPixels();
         };
-        areaMap.on('mousemove', onMove); areaMap.on('touchmove', onMove);
-        areaMap.on('mouseup', onUp);     areaMap.on('touchend', onUp);
+
+        holdTimer = setTimeout(() => {
+          detachPreArm();
+          armed = true;
+          e.preventDefault();                 // estä kartan panorointi nyt kun veto on vahvistettu
+          areaMap.dragPan.disable();           // pysäytä mahdollisesti jo alkanut panorointi
+          startLngLat = e.lngLat;
+          startCoords = areaCoords.map(c => [c[0], c[1]]);
+          areaMap.on('mousemove', onDragMove); areaMap.on('touchmove', onDragMove);
+          areaMap.on('mouseup', onDragEnd);     areaMap.on('touchend', onDragEnd);
+          areaMap.on('touchcancel', onDragEnd);
+        }, FILL_DRAG_HOLD_MS);
+
+        areaMap.on('mousemove', onPreArmMove); areaMap.on('touchmove', onPreArmMove);
+        areaMap.on('mouseup', onPreArmEnd);     areaMap.on('touchend', onPreArmEnd);
+        areaMap.on('touchcancel', onPreArmEnd);
       };
       areaMap.on('mousedown', 'area-poly-fill', onFillDown);
       areaMap.on('touchstart', 'area-poly-fill', onFillDown);
@@ -7641,7 +7676,7 @@
       const submitBtn=document.getElementById('submit-parking-btn');if(submitBtn){submitBtn.style.opacity='0.4';submitBtn.style.cursor='not-allowed';}
 
       // Fly main map to current location
-      if(userLocation) map.flyTo({center:[userLocation.lon,userLocation.lat],zoom:15,duration:1500});
+      if(userLocation) map.flyTo({center:[userLocation.lon,userLocation.lat],zoom:16,duration:1500});
       showToast();
     }
 
@@ -7654,14 +7689,18 @@
 
     // "Lähetä pysäköintialue" -vahvistusbanneri: kaksi valintaa.
     // "Lisää uusi" → takaisin lisäysnäkymään tuoreella polygonilla; siitä voi
-    //               jatkaa uuden alueen rajaamisen. "Poistu" → sulje banneri,
-    //               jää perusnäkymään (overlayt on jo suljettu lähetyksessä).
+    //               jatkaa uuden alueen rajaamisen. "Poistu" → sulje banneri
+    //               JA palauta perusnäkymä kunnolla (toimintonäppäin yms.) —
+    //               submit-vaiheessa suljetaan vain overlayt itse, ei niiden
+    //               ympärillä olevaa plus-tilaa (btnContainer jäi piiloon).
     function submitBannerAddNew() {
       closeToast();
       openAddParkingArea();
     }
     function submitBannerExit() {
       closeToast();
+      closePlusOverlay();
+      if(userLocation) map.flyTo({center:[userLocation.lon,userLocation.lat],zoom:16,duration:800});
     }
 
     function closeToast() {
