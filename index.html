@@ -4732,6 +4732,16 @@
             <path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/>
           </svg>
         </button>
+        <!-- Karttatyyli (HSL → OSM → satelliitti); tilanumero alakulmassa.
+             Siirretty työkaluriviltä location-napin alle. -->
+        <button id="maptype-btn" onclick="cycleMapType()" aria-label="Karttatyyli" style="position:relative;width:48px;height:48px;border:none;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span id="maptype-badge" style="position:absolute;bottom:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:white;color:#0C0243;border:1.5px solid #0C0243;font-size:11px;font-weight:bold;font-family:Arial,sans-serif;display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25);line-height:1;">1</span>
+        </button>
       </div>
 
       <!-- ── Vedettävä sheet (kuten perusnäkymässä) ─────────────────────
@@ -4756,15 +4766,15 @@
              läpi. -->
         <div style="position:absolute;left:16px;top:28px;transform:translateY(-50%);z-index:4;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#222;pointer-events:none;">Työkalut</div>
         <div style="display:flex;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:3px;padding:20px 4px 16px 4px;">
-          <!-- karttatyyli (HSL → OSM → satelliitti); tilanumero alakulmassa -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button id="maptype-btn" onclick="cycleMapType()" aria-label="Karttatyyli" style="position:relative;width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;">
-              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-              <polyline points="2 17 12 22 22 17"/>
-              <polyline points="2 12 12 17 22 12"/>
+          <!-- Säädä kulmia: POIS PÄÄLTÄ (oletus) kulmaa vedettäessä viereiset
+               sivut säilyttävät suuntansa ja vain pitenevät/lyhenevät (drag
+               handle -tyyli); PÄÄLLÄ kulmat liikkuvat vapaasti vedon mukana. -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><button id="corner-adjust-btn" onclick="toggleCornerAdjust()" aria-label="Säädä kulmia" style="width:48px;height:48px;border:none;border-radius:50%;background:#eef0f2;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;">
+              <rect x="3" y="3" width="4" height="4"/><rect x="17" y="3" width="4" height="4"/><rect x="17" y="17" width="4" height="4"/><rect x="3" y="17" width="4" height="4"/>
+              <path d="M7 5h10M5 7v10M19 7v10M7 19h10"/>
             </svg>
-            <span id="maptype-badge" style="position:absolute;bottom:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:white;color:#0C0243;border:1.5px solid #0C0243;font-size:11px;font-weight:bold;font-family:Arial,sans-serif;display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25);line-height:1;">1</span>
-          </button><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Kartta<br>taso</div></div>
+          </button><div style="font-size:10px;line-height:1.15;color:#0C0243;text-align:center;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap;">Säädä<br>kulmia</div></div>
           <!-- +/− vaakapilleri: − vasemmalla, + oikealla, väliviiva erottaa -->
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="display:flex;flex-direction:row;background:#eef0f2;border-radius:24px;overflow:hidden;">
             <button id="corner-minus-btn" onclick="handleMinusClick()" aria-label="Poista kulma" style="width:48px;height:48px;border:none;background:transparent;color:#0C0243;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:opacity 0.2s;">
@@ -6788,12 +6798,70 @@
       if (areaAddMode || areaRemoveMode) setAreaHandlesVisible(false);
     }
 
+    // "Säädä kulmia" -tila: PÄÄLLÄ kulmapisteet liikkuvat vapaasti vedon mukana
+    // (entinen käytös). POIS PÄÄLTÄ (oletus) kulmaveto toimii drag handle
+    // -tyylisesti: kulmaan kytkeytyvät sivut säilyttävät suuntansa ja vain
+    // pitenevät/lyhenevät, polygoni ei vinoudu.
+    let cornerAdjustMode = false;
+    function updateCornerAdjustBtn() {
+      const btn = document.getElementById('corner-adjust-btn'); if (!btn) return;
+      btn.style.background = cornerAdjustMode ? '#0C0243' : '#eef0f2';
+      btn.style.color = cornerAdjustMode ? 'white' : '#0C0243';
+    }
+    function toggleCornerAdjust() { cornerAdjustMode = !cornerAdjustMode; updateCornerAdjustBtn(); }
+    // Suorien (p1 + t·d1) ja (p2 + s·d2) leikkauspiste; null jos ~yhdensuuntaiset.
+    function lineIntersect(p1, d1, p2, d2) {
+      const det = d1.x * d2.y - d1.y * d2.x;
+      if (Math.abs(det) < 1e-9) return null;
+      const t = ((p2.x - p1.x) * d2.y - (p2.y - p1.y) * d2.x) / det;
+      return { x: p1.x + t * d1.x, y: p1.y + t * d1.y };
+    }
+    // Rajoitettu kulmaveto ("Säädä kulmia" pois päältä): kulmaan kytkeytyvät
+    // sivut säilyttävät SUUNTANSA ja vain pitenevät/lyhenevät. Laskenta
+    // pikseliavaruudessa vedon ALKUTILANTEESTA (SP): vedetty kulma seuraa
+    // sormea; kumpikin naapurikulma siirretään pisteeseen, jossa vedettyyn
+    // kulmaan kytkeytyvän sivun suora (alkuperäinen suunta, uusi paikka)
+    // leikkaa naapurin TOISEN sivun alkuperäisen suoran — se sivu pysyy siis
+    // täsmälleen paikallaan ja vain pitenee/lyhenee. Muut kulmat eivät liiku.
+    // Nelikulmiossa tämä on täsmälleen kuvankäsittelyohjelmien kulmakahva.
+    function constrainedCornerDrag(idx, pNew, SP) {
+      const n = SP.length;
+      const P0 = SP[idx];
+      const prev = (idx - 1 + n) % n, next = (idx + 1) % n;
+      const prev2 = (idx - 2 + n) % n, next2 = (idx + 2) % n;
+      const dPrev = { x: P0.x - SP[prev].x,     y: P0.y - SP[prev].y };       // sivu prev→i
+      const dNext = { x: SP[next].x - P0.x,     y: SP[next].y - P0.y };       // sivu i→next
+      const dPrevFar = { x: SP[prev].x - SP[prev2].x, y: SP[prev].y - SP[prev2].y }; // sivu prev2→prev
+      const dNextFar = { x: SP[next2].x - SP[next].x, y: SP[next2].y - SP[next].y }; // sivu next→next2
+      const newPrev = lineIntersect(pNew, dPrev, SP[prev2], dPrevFar) || SP[prev];
+      const newNext = lineIntersect(pNew, dNext, SP[next2], dNextFar) || SP[next];
+      const out = SP.map(p => ({ x: p.x, y: p.y }));
+      out[idx] = { x: pNew.x, y: pNew.y }; out[prev] = newPrev; out[next] = newNext;
+      for (let k = 0; k < n; k++) {
+        const llk = areaMap.unproject([out[k].x, out[k].y]);
+        areaCoords[k] = [llk.lng, llk.lat];
+        if (k !== idx && areaMarkers[k]) areaMarkers[k].setLngLat(areaCoords[k]);   // vedettyä hoitaa maplibre
+        if (!areaLocked) lockedPixelPos[k] = areaMap.project(areaCoords[k]);
+      }
+    }
     function setupMarkerEvents(marker) {
-      marker.on('dragstart', () => { pushAreaUndo(); });
+      marker.on('dragstart', () => {
+        pushAreaUndo();
+        // Rajoitettua kulmavetoa varten: polygonin pikselitilanne vedon alussa.
+        marker._dragStartPx = areaCoords.map(c => areaMap.project(c));
+      });
       marker.on('drag', () => {
         const idx=areaMarkers.indexOf(marker); if(idx===-1)return;
-        const ll=marker.getLngLat(); areaCoords[idx]=[ll.lng,ll.lat];
-        if(!areaLocked)lockedPixelPos[idx]=areaMap.project([ll.lng,ll.lat]);
+        const ll=marker.getLngLat();
+        if (!cornerAdjustMode && marker._dragStartPx && marker._dragStartPx.length === areaCoords.length && areaCoords.length >= 4) {
+          // Oletus: sivut säilyttävät suuntansa, vain pituudet muuttuvat.
+          constrainedCornerDrag(idx, areaMap.project(ll), marker._dragStartPx);
+        } else {
+          // "Säädä kulmia" päällä (tai kolmio, jossa rajoitus ei ole
+          // geometrisesti mahdollinen): kulma liikkuu vapaasti.
+          areaCoords[idx]=[ll.lng,ll.lat];
+          if(!areaLocked)lockedPixelPos[idx]=areaMap.project([ll.lng,ll.lat]);
+        }
         updateAreaLayer();
         if(typeof positionAreaHandles==='function') positionAreaHandles(false,-1);
         if(typeof updateEdgeHandleVisibility==='function') updateEdgeHandleVisibility();
@@ -6801,6 +6869,7 @@
       });
       marker.on('dragend', () => {
         const idx=areaMarkers.indexOf(marker); if(idx===-1)return;
+        marker._dragStartPx = null;
         const px=areaMap.project(marker.getLngLat()), cl=clampPixelPos(px);
         if(Math.abs(cl.x-px.x)>0.5||Math.abs(cl.y-px.y)>0.5){
           const ll=areaMap.unproject([cl.x,cl.y]); marker.setLngLat(ll); areaCoords[idx]=[ll.lng,ll.lat];
@@ -7048,6 +7117,7 @@
       areaMarkers.forEach(m=>m.remove());
       areaMarkers=[]; areaCoords=[]; lockedPixelPos=[];
       areaLocked=true; updateLockBtn();
+      cornerAdjustMode = false; updateCornerAdjustBtn();   // "Säädä kulmia" oletuksena pois
       polygonMoved=false; updateConfirmBtn();
       resetAreaUndo();
       const c=areaMap.getCenter(), off=0.00045;
@@ -7159,7 +7229,7 @@
       }
       if (!btn) return;
       const active = (areaMapType !== 0);
-      btn.style.background = active ? '#0C0243' : '#eef0f2';
+      btn.style.background = active ? '#0C0243' : 'white';
       const svg = btn.querySelector('svg');
       if (svg) svg.style.stroke = active ? 'white' : '#0C0243';
       if (badge) {
