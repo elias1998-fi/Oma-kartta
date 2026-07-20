@@ -6564,11 +6564,12 @@
     function createCornerEl() {
       const wrapper = document.createElement('div');
       // Kääre on kulmapisteen TARTUNTA-/TURVA-ALUE: näkymätön, mutta nappaa
-      // kosketuksen ennen kuin se osuu kartan canvasiin. Se ulottuu 36px joka
-      // suuntaan pisteestä — siis reilusti myös polygonin täytön päälle —
-      // jolloin kulmasta tarttuminen ei vahingossa siirrä koko polygonia
-      // (täyttö-veto ei laukea kääreen alueelta).
-      wrapper.style.cssText = 'width:72px;height:72px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
+      // kosketuksen ennen kuin se osuu kartan canvasiin. Ulottuu 48px joka
+      // suuntaan pisteestä — sormen ei tarvitse osua tarkalleen pisteeseen,
+      // ja reilusti täytön päälle ulottuvana se estää myös koko polygonin
+      // tahattoman siirron kulmasta tartuttaessa (täyttö-veto ei laukea
+      // kääreen alueelta). Näkyvä piste pysyy 16px:ssä.
+      wrapper.style.cssText = 'width:96px;height:96px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
       const dot = document.createElement('div');
       dot.className = 'corner-dot';
       dot.style.cssText = 'width:16px;height:16px;background:#0C0243;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.55);flex-shrink:0;pointer-events:none;transition:background 0.2s;';
@@ -7653,10 +7654,16 @@
         console.error('Network error:', e);
       }
 
-      // Close overlays
-      document.getElementById('area-details-overlay').style.transform='translateX(100%)';
-      document.getElementById('add-parking-overlay').style.transform='translateX(100%)';
-      document.getElementById('plus-overlay').classList.remove('open');
+      // Palaa VÄLITTÖMÄSTI perusnäkymään. Pelkkä overlayjen liu'utus (vanha
+      // toteutus) jätti body.plus-mode -tilan päälle ja toimintonapin piiloon,
+      // jolloin näkymä jäi tyhjän/valkoisen näköiseksi. closePlusOverlay
+      // palauttaa perusnäkymän tilan kokonaan (plus-mode pois, toimintonappi
+      // takaisin, sulkee myös lisäysnäkymän closeAddParkingArea:n kautta).
+      closeAreaDetails();
+      closePlusOverlay();
+      // Pääkartta on ollut koko lisäysflown overlayjen alla — varmista että se
+      // piirtyy oikean kokoisena heti paljastuessaan.
+      requestAnimationFrame(() => { try { map.resize(); map.triggerRepaint(); } catch(e){} });
 
       // Reset form
       selectedAreaType='';
@@ -7678,7 +7685,7 @@
       const submitBtn=document.getElementById('submit-parking-btn');if(submitBtn){submitBtn.style.opacity='0.4';submitBtn.style.cursor='not-allowed';}
 
       // Fly main map to current location
-      if(userLocation) map.flyTo({center:[userLocation.lon,userLocation.lat],zoom:16,duration:1500});
+      if(userLocation) map.flyTo({center:[userLocation.lon,userLocation.lat],zoom:16,duration:800});
       showToast();
     }
 
@@ -7689,20 +7696,25 @@
       clearTimeout(toastTimer);   // ei automaattista sulkeutumista — käyttäjä valitsee "Lisää uusi" tai "Poistu"
     }
 
-    // "Lähetä pysäköintialue" -vahvistusbanneri: kaksi valintaa.
-    // "Lisää uusi" → takaisin lisäysnäkymään tuoreella polygonilla; siitä voi
-    //               jatkaa uuden alueen rajaamisen. "Poistu" → sulje banneri
-    //               JA palauta perusnäkymä kunnolla (toimintonäppäin yms.) —
-    //               submit-vaiheessa suljetaan vain overlayt itse, ei niiden
-    //               ympärillä olevaa plus-tilaa (btnContainer jäi piiloon).
+    // "Lähetä pysäköintialue" -vahvistusbanneri: kaksi valintaa. Perusnäkymä
+    // palautetaan kokonaan jo LÄHETYSVAIHEESSA (ks. submitParking), joten
+    // "Poistu" vain sulkee bannerin (+ idempotentit varmistukset).
+    // "Lisää uusi" → palauta sama näkymäpino kuin valikosta avattaessa
+    // (plus-näkymä taustalle, plus-tila bodyyn, toimintonappi piiloon — muuten
+    // nappi z-index 9990 näkyisi lisäysnäkymän läpi) ja avaa lisäysnäkymä
+    // tuoreella polygonilla.
     function submitBannerAddNew() {
       closeToast();
+      document.getElementById('plus-overlay').classList.add('open');
+      document.body.classList.add('plus-mode');
+      btnContainer.classList.add('hidden');
       openAddParkingArea();
     }
     function submitBannerExit() {
       closeToast();
+      closeAreaDetails();
       closePlusOverlay();
-      if(userLocation) map.flyTo({center:[userLocation.lon,userLocation.lat],zoom:16,duration:800});
+      try { map.resize(); } catch(e){}
     }
 
     function closeToast() {
