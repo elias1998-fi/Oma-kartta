@@ -6673,6 +6673,13 @@
     let areaEdgeHandles = [];
     let areaRotHandle = null;       // kääntökahva (rotate) polygonin alapuolella
     let _areaRotState = null;       // kääntövedon tila (null kun ei vedetä)
+    // Kääntökahvan ANKKURI polygonin OMASSA koordinaatistossa (yksikkövektori
+    // keskipisteestä kahvan suuntaan, pikseliavaruudessa). Pysyy samana kun
+    // polygonia liikutetaan/venytetään, mutta KIERTYY polygonin mukana aina kun
+    // sitä käännetään kääntökahvalla — näin kahva pysyy aina samassa kohdassa
+    // polygoniin nähden (kuten esim. Wordin kuvan kääntökahva), ei näytöllä
+    // kiinteässä kohdassa. Oletus: suoraan alaspäin (0,1).
+    let _rotAnchor = { x: 0, y: 1 };
     const BELOW_HANDLE_OFFSET_PX = 50;    // kahvojen etäisyys polygonin alareunasta (px)
     const BELOW_HANDLE_HALF_GAP  = 28;    // puolet siirto- ja kääntökahvan välistä (px)
     function _areaCentroid() { let x=0,y=0; areaCoords.forEach(c=>{x+=c[0];y+=c[1];}); const n=areaCoords.length||1; return [x/n, y/n]; }
@@ -6702,19 +6709,31 @@
     // vaakasuunnassa keskipisteen kohdalla, jonkin matkan päässä alareunasta.
     // Palauttaa molempien geo-paikat pikselilaskennan kautta. move = vasen
     // (koko polygonin siirto), rot = oikea (kääntö).
-    // Kiertokahvan paikka: polygonin alapuolella KESKELLÄ (siirtokahva poistettu).
-    function belowHandlePositions() {
+    // Kiertokahvan paikka: keskipisteestä _rotAnchor-suuntaan, sen verran ulos
+    // että kahva jää polygonin ulkopuolelle kyseiseen suuntaan (+ kiinteä väli).
+    // Koska _rotAnchor kiertyy polygonin mukana (ks. rh.on('drag')), kahva
+    // pysyy aina samassa kohdassa polygoniin nähden — myös käännön jälkeen.
+    function rotateHandleLngLat() {
       if (!areaMap || areaCoords.length < 3) return null;
       const cpx = areaMap.project(_areaCentroid());
-      let maxY = -Infinity;
-      areaCoords.forEach(c => { const p = areaMap.project(c); if (p.y > maxY) maxY = p.y; });
-      const r = areaMap.unproject([cpx.x, maxY + BELOW_HANDLE_OFFSET_PX]);
-      return { rot: [r.lng, r.lat] };
+      let maxProj = 0;
+      areaCoords.forEach(c => {
+        const p = areaMap.project(c);
+        const proj = (p.x - cpx.x) * _rotAnchor.x + (p.y - cpx.y) * _rotAnchor.y;
+        if (proj > maxProj) maxProj = proj;
+      });
+      const dist = maxProj + BELOW_HANDLE_OFFSET_PX;
+      const r = areaMap.unproject([cpx.x + _rotAnchor.x * dist, cpx.y + _rotAnchor.y * dist]);
+      return [r.lng, r.lat];
+    }
+    function belowHandlePositions() {
+      const r = rotateHandleLngLat();
+      return r ? { rot: r } : null;
     }
     function positionAreaHandles(skipCenter, skipEdgeIdx) {
       const bp = belowHandlePositions();
       if (bp) {
-        if (areaRotHandle && !_areaRotState) areaRotHandle.setLngLat(bp.rot);       // kääntökahva (ei vedon aikana)
+        if (areaRotHandle) areaRotHandle.setLngLat(bp.rot);       // kääntökahva — aina ankkurin mukaan (myös vedon aikana)
       }
       const n = areaCoords.length;
       areaEdgeHandles.forEach((h, i) => {
@@ -6784,43 +6803,62 @@
       for (let i = 0; i < areaCoords.length; i++) {
         const ni0 = (i+1) % areaCoords.length;
         const pm0 = areaMap.project(areaCoords[i]), pn0 = areaMap.project(areaCoords[ni0]);
-        const eh = new maplibregl.Marker({element:createEdgeHandleEl(), draggable:true, anchor:'center'})
+        const el = createEdgeHandleEl();
+        const eh = new maplibregl.Marker({element:el, draggable:false, anchor:'center'})
           .setLngLat(areaMap.unproject([(pm0.x+pn0.x)/2, (pm0.y+pn0.y)/2]))
           .addTo(areaMap);
         const ia = i;
-        let eNX=0, eNY=0, ePaX=0, ePaY=0, ePbX=0, ePbY=0, eSX=0, eSY=0, eIb=ni0;
-        eh.on('dragstart', () => {
+        // Oma pointer-veto (ei maplibren draggable): maplibren sisäinen
+        // vetologiikka ei aina noudattanut kohtisuoraa rajausta luotettavasti
+        // joka sivulla. Nyt sijainti lasketaan suoraan raa'asta pointer-
+        // pikselistä joka framella, ja kartan panorointi (dragPan) estetään
+        // eksplisiittisesti vedon ajaksi.
+        el.addEventListener('pointerdown', (ev) => {
+          if (ev.button !== undefined && ev.button !== 0) return;
+          ev.preventDefault(); ev.stopPropagation();
+          try { el.setPointerCapture(ev.pointerId); } catch(e){}
           pushAreaUndo();
-          eIb = (ia+1) % areaCoords.length;
-          const pa = areaMap.project(areaCoords[ia]), pb = areaMap.project(areaCoords[eIb]);
+          const wasDragPanEnabled = areaMap.dragPan.isEnabled();
+          areaMap.dragPan.disable();
+          const ib = (ia+1) % areaCoords.length;
+          const pa = areaMap.project(areaCoords[ia]), pb = areaMap.project(areaCoords[ib]);
           const ex = pb.x - pa.x, ey = pb.y - pa.y, len = Math.hypot(ex, ey) || 1;
-          eNX = -ey/len; eNY = ex/len;                       // sivun normaali (kohtisuora yksikkövektori, px)
-          ePaX=pa.x; ePaY=pa.y; ePbX=pb.x; ePbY=pb.y;
-          const hpx = areaMap.project(eh.getLngLat());
-          eSX = hpx.x; eSY = hpx.y;                           // kahvan aloituspikseli (sivun keskipiste)
+          const nx = -ey/len, ny = ex/len;                  // sivun normaali (kohtisuora yksikkövektori, px)
+          const paX=pa.x, paY=pa.y, pbX=pb.x, pbY=pb.y;
+          const rect = areaMap.getCanvasContainer().getBoundingClientRect();
+          const sX = ev.clientX - rect.left, sY = ev.clientY - rect.top;   // aloituspikseli kartan koordinaatistossa
+          const onMove = (mev) => {
+            const cx = mev.clientX - rect.left, cy = mev.clientY - rect.top;
+            const proj = (cx - sX)*nx + (cy - sY)*ny;       // vain kohtisuora komponentti
+            const ox = proj*nx, oy = proj*ny;
+            const llA = areaMap.unproject([paX+ox, paY+oy]);
+            const llB = areaMap.unproject([pbX+ox, pbY+oy]);
+            areaCoords[ia] = [llA.lng, llA.lat];
+            areaCoords[ib] = [llB.lng, llB.lat];
+            [ia, ib].forEach(k => { const m=areaMarkers[k]; if(m && areaCoords[k]){ m.setLngLat(areaCoords[k]); if(!areaLocked)lockedPixelPos[k]=areaMap.project(areaCoords[k]); } });
+            eh.setLngLat(areaMap.unproject([(paX+pbX)/2+ox, (paY+pbY)/2+oy]));   // kahva pakotetaan sivun keskelle
+            positionAreaHandles(false, ia);
+            updateAreaLayer();
+            if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
+          };
+          const onUp = () => {
+            el.removeEventListener('pointermove', onMove);
+            el.removeEventListener('pointerup', onUp);
+            el.removeEventListener('pointercancel', onUp);
+            if (wasDragPanEnabled) areaMap.dragPan.enable();
+            capturePolyPixels(); positionAreaHandles(false,-1); updateEdgeHandleVisibility();
+          };
+          el.addEventListener('pointermove', onMove);
+          el.addEventListener('pointerup', onUp);
+          el.addEventListener('pointercancel', onUp);
         });
-        eh.on('drag', () => {
-          const hpx = areaMap.project(eh.getLngLat());        // maplibre asetti kohdistimen mukaan
-          const proj = (hpx.x - eSX)*eNX + (hpx.y - eSY)*eNY; // vain kohtisuora komponentti
-          const ox = proj*eNX, oy = proj*eNY;
-          const llA = areaMap.unproject([ePaX+ox, ePaY+oy]);
-          const llB = areaMap.unproject([ePbX+ox, ePbY+oy]);
-          areaCoords[ia] = [llA.lng, llA.lat];
-          areaCoords[eIb] = [llB.lng, llB.lat];
-          [ia, eIb].forEach(k => { const m=areaMarkers[k]; if(m && areaCoords[k]){ m.setLngLat(areaCoords[k]); if(!areaLocked)lockedPixelPos[k]=areaMap.project(areaCoords[k]); } });
-          eh.setLngLat(areaMap.unproject([(ePaX+ePbX)/2+ox, (ePaY+ePbY)/2+oy]));   // pakota kahva sivun keskelle (kohtisuoralle linjalle)
-          positionAreaHandles(false, ia);
-          updateAreaLayer();
-          if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
-        });
-        eh.on('dragend', () => { capturePolyPixels(); positionAreaHandles(false,-1); updateEdgeHandleVisibility(); });
         areaEdgeHandles.push(eh);
       }
-      // Kääntökahva (rotate) polygonin alapuolella KESKELLÄ: sitä pyörittämällä
-      // koko polygoni kääntyy keskipisteensä ympäri. Kahva pysyy samassa paikassa
-      // polygoniin nähden ja orbitoi keskipisteen ympäri polygonin mukana myös
-      // liikkeen aikana (ei jää kohdistimen alle eikä hyppää lopussa). Kääntö
-      // pikseliavaruudessa keskipisteen ympäri (oikein myös kartta käännettynä).
+      // Kääntökahva (rotate) polygonin alapuolella: sitä pyörittämällä koko
+      // polygoni kääntyy keskipisteensä ympäri. Kahva pysyy AINA samassa
+      // kohdassa polygoniin nähden (kuten esim. Wordin kuvan kääntökahva) —
+      // sekä käännön AIKANA että sen jälkeen — koska sen paikka lasketaan
+      // _rotAnchor-vektorista, jota käännetään polygonin mukana joka framella.
       const rhPos = _bp0 ? _bp0.rot : null;
       if (rhPos) {
         const rh = new maplibregl.Marker({element:createRotateHandleEl(), draggable:true, anchor:'center'}).setLngLat(rhPos).addTo(areaMap);
@@ -6828,7 +6866,7 @@
           pushAreaUndo();
           const cpx = areaMap.project(_areaCentroid());
           const hpx = areaMap.project(rh.getLngLat());
-          _areaRotState = { cx: cpx.x, cy: cpx.y, corners: areaCoords.map(c => areaMap.project(c)), startAngle: Math.atan2(hpx.y - cpx.y, hpx.x - cpx.x), hOffX: hpx.x - cpx.x, hOffY: hpx.y - cpx.y };
+          _areaRotState = { cx: cpx.x, cy: cpx.y, corners: areaCoords.map(c => areaMap.project(c)), startAngle: Math.atan2(hpx.y - cpx.y, hpx.x - cpx.x), anchorStart: { x: _rotAnchor.x, y: _rotAnchor.y } };
         });
         rh.on('drag', () => {
           if (!_areaRotState) return;
@@ -6841,12 +6879,10 @@
             return [ll.lng, ll.lat];
           });
           areaMarkers.forEach((m,i)=>{ if(areaCoords[i]){ m.setLngLat(areaCoords[i]); if(!areaLocked)lockedPixelPos[i]=areaMap.project(areaCoords[i]); } });
-          // Kahva orbitoi keskipisteen ympäri samalla kulmalla kuin polygoni →
-          // pysyy samassa paikassa polygoniin nähden koko käännön ajan.
-          const ox = _areaRotState.hOffX*cos - _areaRotState.hOffY*sin;
-          const oy = _areaRotState.hOffX*sin + _areaRotState.hOffY*cos;
-          rh.setLngLat(areaMap.unproject([_areaRotState.cx + ox, _areaRotState.cy + oy]));
-          positionAreaHandles(true, -1);   // sivukahvat seuraavat; kääntökahvaa ei siirretä tässä (_areaRotState estää), koska orbitoidaan yllä
+          // Ankkuri kiertyy polygonin mukana samalla kulmalla → kahva pysyy
+          // samassa kohdassa polygoniin nähden koko käännön ajan.
+          _rotAnchor = { x: _areaRotState.anchorStart.x*cos - _areaRotState.anchorStart.y*sin, y: _areaRotState.anchorStart.x*sin + _areaRotState.anchorStart.y*cos };
+          positionAreaHandles(true, -1);   // sivukahvat + kääntökahva itse (ankkurin mukaan) päivittyvät
           updateAreaLayer();
           if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
         });
@@ -6906,6 +6942,9 @@
     // päälle → karttaa voi pyörittää vapaasti; uudelleen → lukitaan takaisin ja
     // palautetaan pohjoiseen (bearing + pitch 0).
     let areaRotationOn = false;
+    // Kun rotaatio on päällä, polygoni pysyy paikoillaan NÄYTÖLLÄ ja kartta
+    // liikkuu sen alla (pikselilukitus, ks. move-käsittelijä).
+    function polyScreenPinned() { return areaRotationOn; }
     function updateRotateBtn() {
       const btn = document.getElementById('rotate-btn'); if (!btn) return;
       btn.style.background = areaRotationOn ? '#0C0243' : '#eef0f2';
@@ -6915,12 +6954,16 @@
       if (!areaMap) return;
       areaRotationOn = !areaRotationOn;
       if (areaRotationOn) {
+        // Kiinnitä polygonin nykyiset pikselipaikat, jotta se pysyy paikoillaan
+        // näytöllä kun karttaa pyöritetään taustalla.
+        lockedPixelPos = areaMarkers.map(m=>clampPixelPos(areaMap.project([m.getLngLat().lng,m.getLngLat().lat])));
         areaMap.dragRotate.enable();
         areaMap.touchZoomRotate.enableRotation();
       } else {
+        // Rotaatio pois: kartta jää nykyiseen suuntaansa, EI palauteta
+        // pohjoiseen. Polygoni jää paikkaansa.
         areaMap.dragRotate.disable();
         areaMap.touchZoomRotate.disableRotation();
-        areaMap.easeTo({ bearing: 0, pitch: 0, duration: 400 });   // takaisin pohjoiseen
       }
       updateRotateBtn();
     }
@@ -7113,6 +7156,7 @@
       areaLocked=true; updateLockBtn();
       polygonMoved=false; updateConfirmBtn();
       resetAreaUndo();
+      _rotAnchor = { x: 0, y: 1 };   // kääntökahvan ankkuri nollaan (suoraan alas) uudessa polygonissa
       const c=areaMap.getCenter(), off=0.00045;
       areaCoords=[[c.lng-off,c.lat+off],[c.lng+off,c.lat+off],[c.lng+off,c.lat-off],[c.lng-off,c.lat-off]];
       addPolygonLayers();
@@ -7225,8 +7269,15 @@
         };
         areaMap.on('style.load', initOnce);
         areaMap.on('load', initOnce);
+        // Kun polygoni on kiinnitetty näyttöön (lukko auki TAI rotaatio päällä),
+        // otetaan sen nykyiset pikselipaikat talteen kartan liikkeen ALKAESSA.
+        areaMap.on('movestart',()=>{
+          if((!areaLocked||polyScreenPinned()) && areaMarkers.length>=3){
+            lockedPixelPos=areaMarkers.map(m=>clampPixelPos(areaMap.project([m.getLngLat().lng,m.getLngLat().lat])));
+          }
+        });
         areaMap.on('move',()=>{
-          if(!areaLocked&&lockedPixelPos.length===areaMarkers.length){
+          if((!areaLocked||polyScreenPinned())&&lockedPixelPos.length===areaMarkers.length){
             areaMarkers.forEach((m,i)=>{ const ll=areaMap.unproject(lockedPixelPos[i]); m.setLngLat(ll); areaCoords[i]=[ll.lng,ll.lat]; });
             updateAreaLayer();
             if(typeof positionAreaHandles==='function') positionAreaHandles(false,-1);
