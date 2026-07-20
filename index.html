@@ -6718,7 +6718,10 @@
       areaEdgeHandles.forEach((h, i) => {
         if (i === skipEdgeIdx) return;
         const a = areaCoords[i], b = areaCoords[(i+1)%n];
-        if (a && b) h.setLngLat([(a[0]+b[0])/2, (a[1]+b[1])/2]);
+        if (a && b) {
+          const pa = areaMap.project(a), pb = areaMap.project(b);
+          h.setLngLat(areaMap.unproject([(pa.x+pb.x)/2, (pa.y+pb.y)/2]));   // reunan pikselikeskipiste → tarkalleen reunan päällä
+        }
       });
       updateEdgeHandleRotations();   // kahvat sivujen suuntaisiksi
     }
@@ -6783,49 +6786,44 @@
       });
       ch.on('dragend', () => { cS=null; cSC=null; capturePolyPixels(); positionAreaHandles(false,-1); });
       areaCenterHandle = ch;
-      // Sivukahvat: yksi jokaisen sivun keskellä, sivun päällä. Vetämällä
-      // siirtää KOKO sivun KOHTISUORAAN (sivun normaalin suuntaan) — ei vapaasti.
-      // Oma pointer-veto (ei maplibren draggable), jotta liike voidaan rajata ja
-      // kahva pitää sivun keskellä. Näkyvät vain jos sivulla on tilaa.
+      // Sivukahvat: yksi jokaisen sivun keskellä, sivun päällä (reunan
+      // pikselikeskipisteessä). Vetämällä siirtää KOKO sivun KOHTISUORAAN sivun
+      // suhteen (ei vapaasti). Käytetään maplibren draggablea (estää kartan
+      // panoroinnin vedon aikana), mutta liike rajataan sivun normaaliin ja
+      // kahva pidetään sivun keskellä. Näkyvät vain jos sivulla on tilaa.
       for (let i = 0; i < areaCoords.length; i++) {
         const ni0 = (i+1) % areaCoords.length;
-        const el = createEdgeHandleEl();
-        const eh = new maplibregl.Marker({element:el, draggable:false, anchor:'center'})
-          .setLngLat([(areaCoords[i][0]+areaCoords[ni0][0])/2, (areaCoords[i][1]+areaCoords[ni0][1])/2])
+        const pm0 = areaMap.project(areaCoords[i]), pn0 = areaMap.project(areaCoords[ni0]);
+        const eh = new maplibregl.Marker({element:createEdgeHandleEl(), draggable:true, anchor:'center'})
+          .setLngLat(areaMap.unproject([(pm0.x+pn0.x)/2, (pm0.y+pn0.y)/2]))
           .addTo(areaMap);
         const ia = i;
-        el.addEventListener('pointerdown', (ev) => {
-          ev.preventDefault(); ev.stopPropagation();
-          try { el.setPointerCapture(ev.pointerId); } catch(e){}
+        let eNX=0, eNY=0, ePaX=0, ePaY=0, ePbX=0, ePbY=0, eSX=0, eSY=0, eIb=ni0;
+        eh.on('dragstart', () => {
           pushAreaUndo();
-          const ib = (ia+1) % areaCoords.length;
-          const pa = areaMap.project(areaCoords[ia]), pb = areaMap.project(areaCoords[ib]);
+          eIb = (ia+1) % areaCoords.length;
+          const pa = areaMap.project(areaCoords[ia]), pb = areaMap.project(areaCoords[eIb]);
           const ex = pb.x - pa.x, ey = pb.y - pa.y, len = Math.hypot(ex, ey) || 1;
-          const nx = -ey/len, ny = ex/len;                 // sivun normaali (kohtisuora yksikkövektori, px)
-          const paX=pa.x, paY=pa.y, pbX=pb.x, pbY=pb.y, sX=ev.clientX, sY=ev.clientY;
-          const move = (mev) => {
-            const proj = (mev.clientX - sX)*nx + (mev.clientY - sY)*ny;   // vain kohtisuora komponentti
-            const ox = proj*nx, oy = proj*ny;
-            const llA = areaMap.unproject([paX+ox, paY+oy]);
-            const llB = areaMap.unproject([pbX+ox, pbY+oy]);
-            areaCoords[ia] = [llA.lng, llA.lat];
-            areaCoords[ib] = [llB.lng, llB.lat];
-            [ia, ib].forEach(k => { const m=areaMarkers[k]; if(m && areaCoords[k]){ m.setLngLat(areaCoords[k]); if(!areaLocked)lockedPixelPos[k]=areaMap.project(areaCoords[k]); } });
-            eh.setLngLat(areaMap.unproject([(paX+pbX)/2+ox, (paY+pbY)/2+oy]));   // kahva pysyy sivun keskellä
-            positionAreaHandles(false, ia);
-            updateAreaLayer();
-            if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
-          };
-          const up = () => {
-            el.removeEventListener('pointermove', move);
-            el.removeEventListener('pointerup', up);
-            el.removeEventListener('pointercancel', up);
-            capturePolyPixels(); positionAreaHandles(false,-1); updateEdgeHandleVisibility();
-          };
-          el.addEventListener('pointermove', move);
-          el.addEventListener('pointerup', up);
-          el.addEventListener('pointercancel', up);
+          eNX = -ey/len; eNY = ex/len;                       // sivun normaali (kohtisuora yksikkövektori, px)
+          ePaX=pa.x; ePaY=pa.y; ePbX=pb.x; ePbY=pb.y;
+          const hpx = areaMap.project(eh.getLngLat());
+          eSX = hpx.x; eSY = hpx.y;                           // kahvan aloituspikseli (sivun keskipiste)
         });
+        eh.on('drag', () => {
+          const hpx = areaMap.project(eh.getLngLat());        // maplibre asetti kohdistimen mukaan
+          const proj = (hpx.x - eSX)*eNX + (hpx.y - eSY)*eNY; // vain kohtisuora komponentti
+          const ox = proj*eNX, oy = proj*eNY;
+          const llA = areaMap.unproject([ePaX+ox, ePaY+oy]);
+          const llB = areaMap.unproject([ePbX+ox, ePbY+oy]);
+          areaCoords[ia] = [llA.lng, llA.lat];
+          areaCoords[eIb] = [llB.lng, llB.lat];
+          [ia, eIb].forEach(k => { const m=areaMarkers[k]; if(m && areaCoords[k]){ m.setLngLat(areaCoords[k]); if(!areaLocked)lockedPixelPos[k]=areaMap.project(areaCoords[k]); } });
+          eh.setLngLat(areaMap.unproject([(ePaX+ePbX)/2+ox, (ePaY+ePbY)/2+oy]));   // pakota kahva sivun keskelle (kohtisuoralle linjalle)
+          positionAreaHandles(false, ia);
+          updateAreaLayer();
+          if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
+        });
+        eh.on('dragend', () => { capturePolyPixels(); positionAreaHandles(false,-1); updateEdgeHandleVisibility(); });
         areaEdgeHandles.push(eh);
       }
       // Kääntökahva (rotate) polygonin alapuolella, siirtokahvan vieressä
