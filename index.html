@@ -5936,6 +5936,35 @@
     });
     map.touchZoomRotate.disableRotation();
 
+    // "Tuplanapautus + veto" -zoomaus (yhden sormen tuplanapautus, sitten pito
+    // ja veto ylös/alas zoomaa jatkuvasti) ei sammu doubleClickZoom:false
+    // -asetuksella, koska se on osa MapLibren touchZoomRotate-käsittelijän
+    // sisäistä "tap-drag zoom" -toimintoa, jota ei voi kytkeä pois erikseen
+    // pinch-zoomin (kahdella sormella) säilyttäen julkisen APIn kautta. Siksi
+    // tunnistetaan tuplanapautus itse SÄILIÖ-elementin CAPTURE-vaiheessa (eli
+    // ennen kuin MapLibren oma, kartan canvasiin kiinnitetty kuuntelija näkee
+    // tapahtuman) ja pysäytetään sen eteneminen — pinch-zoom kahdella
+    // sormella toimii edelleen normaalisti, vain tämä yhden sormen
+    // tuplanapautus+veto-yhdistelmä estyy.
+    function blockTapDragZoom(containerId) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      let lastT = 0, lastX = 0, lastY = 0;
+      const TAP_MS = 320, TAP_PX = 30;
+      el.addEventListener('touchstart', (ev) => {
+        if (ev.touches.length !== 1) { lastT = 0; return; }
+        const t = ev.touches[0];
+        const now = Date.now();
+        if (now - lastT < TAP_MS && Math.abs(t.clientX - lastX) < TAP_PX && Math.abs(t.clientY - lastY) < TAP_PX) {
+          ev.stopPropagation();   // toinen napautus tuli liian nopeasti perään → estä MapLibren tuplanapautus-zoom
+          lastT = 0;
+          return;
+        }
+        lastT = now; lastX = t.clientX; lastY = t.clientY;
+      }, { capture: true, passive: true });
+    }
+    ['map', 'area-map', 'admin-preview-map', 'editor-map', 'loc-edit-map'].forEach(blockTapDragZoom);
+
     let currentMarker = null;
     
     function createPinElement() {
@@ -7036,7 +7065,7 @@
     // panoroinniksi eikä polygonia siirretä (emme preventDefault:ia etukäteen,
     // joten kartan oma dragPan saa hoitaa sen normaalisti). Rekisteröidään
     // kerran; toimii aina kun 'area-poly-fill' -taso on olemassa.
-    const FILL_DRAG_HOLD_MS = 320;     // painallus+pito tämän verran ennen kuin veto aktivoituu
+    const FILL_DRAG_HOLD_MS = 160;     // painallus+pito tämän verran ennen kuin veto aktivoituu
     const FILL_DRAG_CANCEL_PX = 9;     // jos sormi liikkuu tämän verran ennen pitoa → tulkitaan pyyhkäisyksi
     let _polyFillDragHooked = false;
     function setupPolygonFillDrag() {
@@ -8076,6 +8105,29 @@
       adminHideMainButton(false);
     }
 
+    // Tarkistusnäkymän kartan rotaatio: oletuksena lukittu pohjoiseen (sama
+    // periaate kuin lisäysnäkymässä). Napista päälle → karttaa voi pyörittää
+    // vapaasti; uudelleen → lukitaan takaisin ja palautetaan pohjoiseen.
+    let adminRotationOn = false;
+    function updateAdminRotateBtn() {
+      const btn = document.getElementById('admin-rotate-btn'); if (!btn) return;
+      btn.style.background = adminRotationOn ? '#0C0243' : '#fff';
+      btn.style.color = adminRotationOn ? 'white' : '#0C0243';
+    }
+    function toggleAdminRotation() {
+      if (!adminPreviewMap) return;
+      adminRotationOn = !adminRotationOn;
+      if (adminRotationOn) {
+        adminPreviewMap.dragRotate.enable();
+        adminPreviewMap.touchZoomRotate.enableRotation();
+      } else {
+        adminPreviewMap.dragRotate.disable();
+        adminPreviewMap.touchZoomRotate.disableRotation();
+        adminPreviewMap.easeTo({ bearing: 0, pitch: 0, duration: 400 });   // takaisin pohjoiseen
+      }
+      updateAdminRotateBtn();
+    }
+
     function ensureAdminMap(cb) {
       if (!adminPreviewMap) {
         const _ac = (typeof userLocation !== 'undefined' && userLocation) ? [userLocation.lon, userLocation.lat] : [24.9354, 60.1699];
@@ -8090,6 +8142,7 @@
         adminPreviewMap.on('load', () => {
           adminPreviewMap.touchZoomRotate.disableRotation();
           adminPreviewMap.dragRotate.disable();
+          adminRotationOn = false; updateAdminRotateBtn();
           // Yleinen klikkikäsittelijä + queryRenderedFeatures. Toimii vaikka
           // 'admin-sub-fill' -kerros lisätään vasta myöhemmin tai poistetaan ja
           // lisätään uudelleen (kerroskohtainen kuuntelija ei aina laukennut).
@@ -8108,6 +8161,12 @@
         });
       } else {
         adminPreviewMap.resize();
+        // Jokainen avauskerta alkaa lukittuna pohjoiseen (sama kuin lisäysnäkymä).
+        adminRotationOn = false;
+        adminPreviewMap.dragRotate.disable();
+        adminPreviewMap.touchZoomRotate.disableRotation();
+        adminPreviewMap.easeTo({ bearing: 0, pitch: 0, duration: 0 });
+        updateAdminRotateBtn();
         cb();
         ensureAdminUserDot();
       }
@@ -17479,6 +17538,10 @@
     <!-- Location-pallura (oikea yläkulma) -->
     <button onclick="adminDetailLocate()" aria-label="Sijaintini" style="position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:10;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/></svg>
+    </button>
+    <!-- Kartan rotaatio -pallura (locate-napin alla) -->
+    <button id="admin-rotate-btn" onclick="toggleAdminRotation()" aria-label="Salli näytön rotaatio" style="position:absolute;top:calc(max(16px,env(safe-area-inset-top)) + 60px);right:max(16px,env(safe-area-inset-right));z-index:10;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
     </button>
     <!-- Alasheet: alueen tiedot + Hyväksy / Hylkää -->
     <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);height:100vh;transform:translateY(240px);will-change:transform;touch-action:none;">
