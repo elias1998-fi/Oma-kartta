@@ -6563,13 +6563,10 @@
 
     function createCornerEl() {
       const wrapper = document.createElement('div');
-      // Kääre on kulmapisteen TARTUNTA-/TURVA-ALUE: näkymätön, mutta nappaa
-      // kosketuksen ennen kuin se osuu kartan canvasiin. Ulottuu 48px joka
-      // suuntaan pisteestä — sormen ei tarvitse osua tarkalleen pisteeseen,
-      // ja reilusti täytön päälle ulottuvana se estää myös koko polygonin
-      // tahattoman siirron kulmasta tartuttaessa (täyttö-veto ei laukea
-      // kääreen alueelta). Näkyvä piste pysyy 16px:ssä.
-      wrapper.style.cssText = 'width:96px;height:96px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
+      // Tartunta-alue palautettu alkuperäiseen (56px). Tahattoman polygonin
+      // siirron esto hoidetaan täyttö-vedon puolella: täytössä on kuollut
+      // alue kulmapisteiden ympärillä (ks. setupPolygonFillDrag).
+      wrapper.style.cssText = 'width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
       const dot = document.createElement('div');
       dot.className = 'corner-dot';
       dot.style.cssText = 'width:16px;height:16px;background:#0C0243;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.55);flex-shrink:0;pointer-events:none;transition:background 0.2s;';
@@ -7067,16 +7064,27 @@
 
     // Koko polygonin siirto sen TÄYTÖSTÄ vetämällä (sormi/hiiri): tartunta
     // täyttöön ja raahaus siirtää polygonia heti. Kulmapisteiden ympärillä on
-    // laajennettu tartunta-alue (ks. createCornerEl), joka ulottuu täytön
-    // päälle — kulmasta tarttuminen ei siis vahingossa siirrä koko polygonia.
+    // täytössä KUOLLUT ALUE (FILL_CORNER_SAFE_PX alla), jolta siirto ei ala.
     // Rekisteröidään kerran; toimii aina kun 'area-poly-fill' -taso on olemassa.
     let _polyFillDragHooked = false;
+    // Kuollut alue täytössä kulmapisteiden ympärillä (px kulman keskipisteestä):
+    // tällä etäisyydellä painallus täyttöön EI aloita polygonin siirtoa, koska
+    // käyttäjä todennäköisesti yritti tarttua kulmapisteeseen ja sormi lipsahti
+    // hieman täytön puolelle. Kulman oma tartunta-alue (56px kääre) kattaa 28px
+    // säteen, joten kuollut alue kattaa "hiukan ohi" -kaistan sen ympärillä.
+    const FILL_CORNER_SAFE_PX = 56;
     function setupPolygonFillDrag() {
       if (!areaMap || _polyFillDragHooked) return;
       _polyFillDragHooked = true;
       const onFillDown = (e) => {
         if (areaAddMode || areaRemoveMode) return;            // ei siirretä lisäys-/poistomoodissa
         if (e.points && e.points.length > 1) return;          // kosketus: vain yhdellä sormella
+        // TURVA-ALUE: painallus kulmapisteen lähelle → ei polygonin siirtoa.
+        // Oletusta ei estetä, joten kartta käyttäytyy normaalisti.
+        for (let i = 0; i < areaCoords.length; i++) {
+          const cp = areaMap.project(areaCoords[i]);
+          if (Math.hypot(cp.x - e.point.x, cp.y - e.point.y) < FILL_CORNER_SAFE_PX) return;
+        }
         e.preventDefault();                                   // estä kartan panorointi
         const start = e.lngLat;
         const startCoords = areaCoords.map(c => [c[0], c[1]]);
@@ -7969,9 +7977,11 @@
       const n = adminVisibleRows().length;
       const val = (_adminUserFilter || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       document.getElementById('admin-sheet-peek').innerHTML =
+        `<div style="padding:13px 20px 12px 20px;">` +
         `<div style="font-size:17px;font-weight:bold;color:#0C0243;margin-bottom:8px;">Hyväksymistä odottavat alueet</div>` +
         `<div id="admin-count-text" style="font-size:13.5px;color:#555;">${n} kpl alueita odottaa hyväksyntää</div>` +
-        `<input id="admin-user-search" type="text" value="${val}" oninput="adminOnUserFilter(this.value)" placeholder="Hae lisääjän mukaan (sähköposti)" style="margin-top:10px;width:100%;box-sizing:border-box;border:1.5px solid #e3e3e6;border-radius:10px;padding:10px 12px;font-size:14px;font-family:Arial,sans-serif;color:#0C0243;outline:none;">`;
+        `<input id="admin-user-search" type="text" value="${val}" oninput="adminOnUserFilter(this.value)" placeholder="Hae lisääjän mukaan (sähköposti)" style="margin-top:10px;width:100%;box-sizing:border-box;border:1.5px solid #e3e3e6;border-radius:10px;padding:10px 12px;font-size:14px;font-family:Arial,sans-serif;color:#0C0243;outline:none;">` +
+        `</div>`;
       document.getElementById('admin-sheet-more').innerHTML = '';
       setAdminAction('select');
     }
@@ -8037,27 +8047,35 @@
       if (!r) return;
       const kind = adminAreaKind(r.area_type);
       const typeFull = r.area_type || kind.label;
-      const maxTxt = (r.max_hours || r.max_minutes)
-        ? `Max. ${r.max_hours||0}h${r.max_minutes ? ' ' + r.max_minutes + 'min' : ''}` : '';
+      // Max-pääte täsmälleen perusnäkymän tapaan: tunnit TAI minuutit.
+      const _has = v => v !== null && v !== undefined && v !== '';
+      let maxSuffix = '';
+      if (_has(r.max_hours)) maxSuffix = `  |  Max. ${r.max_hours}h`;
+      else if (_has(r.max_minutes)) maxSuffix = `  |  Max. ${r.max_minutes} min`;
       const loc = r.location_type ? (LOC_LABEL[r.location_type] || r.location_type) : '';
-      // Badge vasempaan yläkulmaan kuten perusnäkymässä: ilmais-/kiekkoalueilla
-      // pieni parkkikiekko-ikoni (sama DISC_BADGE_SVG kuin perusnäkymän
-      // sheetissä), ei tekstipilleriä. Maksullisille (ei pitäisi esiintyä tässä
-      // näkymässä) jätetään vanha värillinen pilleri varalle.
+      // Sheetin sisältö TÄSMÄLLEEN perusnäkymän sheetin rakenteella ja
+      // tyyleillä (#area-code-badge / #sheet-summary / #summary-header /
+      // #summary-type / #summary-operator / #sheet-divider / #sheet-details):
+      // ilmais-/kiekkoalueilla pieni parkkikiekko-ikoni absoluuttisesti
+      // sheetin vasemmassa yläkulmassa (top:16px, left:16px) kuten
+      // perusnäkymässä; otsikko 15px lihavoitu #222, tyyppi- ja
+      // ilmoittajarivit 14px #555.
       const isFree = /kiekko|ilmais/i.test(typeFull);
       let peek = isFree
-        ? `<div style="margin-bottom:7px;height:23px;display:flex;align-items:center;">${DISC_BADGE_SVG}</div>`
-        : `<div style="margin-bottom:7px;"><span style="display:inline-block;background:${kind.bg};color:#fff;font-size:11px;font-weight:bold;padding:3px 9px;border-radius:6px;letter-spacing:0.3px;">${kind.label}</span></div>`;
-      peek += `<div style="font-size:16px;font-weight:bold;color:#0C0243;line-height:1.25;">${typeFull}${maxTxt ? '  |  ' + maxTxt : ''}</div>`;
-      if (loc) peek += `<div style="font-size:13.5px;color:#555;margin-top:3px;">${loc}</div>`;
-      peek += `<div style="font-size:13.5px;color:#555;margin-top:3px;">Käyttäjän ilmoittama</div>`;
+        ? `<div style="position:absolute;top:16px;left:16px;z-index:5;pointer-events:none;">${DISC_BADGE_SVG}</div>`
+        : `<div style="position:absolute;top:16px;left:16px;z-index:5;background:${kind.bg};color:white;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;">${kind.label}</div>`;
+      peek += `<div style="padding:13px 20px 8px 20px;">`;
+      peek += `<div style="font-size:15px;font-weight:bold;color:#222;margin-bottom:3px;">${typeFull}${maxSuffix}</div>`;
+      if (loc) peek += `<div style="font-size:14px;color:#555;">${loc}</div>`;
+      peek += `<div style="font-size:14px;color:#555;margin-top:2px;">Käyttäjän ilmoittama</div>`;
+      peek += `</div>`;
+      peek += `<hr style="border:none;border-top:1px solid #eee;margin:5px 20px 0 20px;">`;
       document.getElementById('admin-sheet-peek').innerHTML = peek;
-      // Lisäosa perusnäkymän sheetin tyyliin: Päivät | Tunnit | Hinta -taulukko
-      // (kaikki kolme riviä; puuttuva aika viivalla) + Lisätiedot samoilla
-      // price-label/price-value -luokilla kuin perusnäkymässä.
-      let more = '';
-      const has = v => v !== null && v !== undefined && v !== '';
-      const rng = (a,b) => (has(a) && has(b)) ? `${a}–${b}` : '';
+      // Lisäosa: sama Päivät | Tunnit | Hinta -taulukko kuin perusnäkymässä
+      // (identtinen spacer + margin-top:-25px -rakenne ja solutyylit) sekä
+      // Lisätiedot price-label/price-value -luokilla. Ei aikaleimaa.
+      let more = `<div style="padding:0 20px 16px 20px;">`;
+      const rng = (a,b) => (_has(a) && _has(b)) ? `${a}–${b}` : '';
       const vMaPe = rng(r.valid_mape_from, r.valid_mape_to);
       const vLa   = rng(r.valid_la_from,   r.valid_la_to);
       const vSu   = rng(r.valid_su_from,   r.valid_su_to);
@@ -8066,7 +8084,8 @@
         const capStyle = 'font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.4px;padding:0 0 6px 0;text-align:left;';
         const dayStyle = 'color:#555;padding:3px 0;font-size:14px;';
         const valStyle = 'color:#222;padding:3px 0;font-weight:500;font-size:14px;';
-        more += '<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;margin-top:14px;">';
+        more += '<p class="price-label" style="margin-bottom:0;">&nbsp;</p>';
+        more += '<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;margin-top:-25px;">';
         more += `<thead><tr>`
              + `<th style="${capStyle}width:33%;">Päivät</th>`
              + `<th style="${capStyle}width:34%;">Tunnit</th>`
@@ -8081,10 +8100,7 @@
         more += `<p class="price-label">Hinta</p><p class="price-value">Ilmainen</p>`;
       }
       more += `<p class="price-label">Lisätiedot</p><p class="price-value">${r.info_additional ? escapeHtml(String(r.info_additional)) : '—'}</p>`;
-      const dt = new Date(r.created_at);
-      if (!isNaN(dt)) {
-        more += `<div style="margin-top:14px;font-size:12px;color:#aaa;">Ilmoitettu ${dt.getDate()}.${dt.getMonth()+1}.${dt.getFullYear()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}</div>`;
-      }
+      more += `</div>`;
       document.getElementById('admin-sheet-more').innerHTML = more;
       setAdminAction('selected');
     }
@@ -8241,17 +8257,25 @@
     // korkeudesta (yläreuna ~20% kohdalle). Lasketaan JS:llä window.innerHeight
     // -pohjalta, jotta korkeus vastaa pääsheettiä myös mobiilissa (jossa CSS-vh
     // ja innerHeight voivat erota).
+    function _translateYOf(el) {
+      const t = getComputedStyle(el).transform;
+      if (!t || t === 'none') return 0;
+      const m = t.match(/matrix\(([^)]+)\)/);
+      return m ? (parseFloat(m[1].split(',')[5]) || 0) : 0;
+    }
     function adminSheetExpandedY() {
       const s=document.getElementById('admin-detail-sheet'); if(!s) return 0;
-      // Yläreunan tavoite: 20 % ikkunan korkeudesta — täsmälleen sama kohta
-      // kuin perusnäkymän sheetin auki-asennossa. Lasketaan sheetin
-      // TODELLISESTA sijainnista (rect.top − nykyinen translateY), jotta
-      // säiliön/100vh:n erot eivät jätä sheettiä vajaaksi liian alas.
-      let cur = 0;
-      const t = getComputedStyle(s).transform;
-      if (t && t !== 'none') { const m = t.match(/matrix\(([^)]+)\)/); if (m) { const p = m[1].split(','); cur = parseFloat(p[5]) || 0; } }
-      const naturalTop = s.getBoundingClientRect().top - cur;
-      return Math.max(0, Math.round(window.innerHeight * 0.2 - naturalTop));
+      // Yläreunan kohde: TÄSMÄLLEEN sama sijainti kuin perusnäkymän sheetin
+      // yläreunalla täysin auki. Lasketaan suoraan perusnäkymän sheetin
+      // (#bottom-sheet) omista mitoista samalla kaavalla kuin sen
+      // drag-logiikassa (clientHeight − 80 % ikkunan korkeudesta), jolloin
+      // admin-sheet nousee pikselleen samalle korkeudelle laitteesta ja
+      // viewport-eroista riippumatta.
+      let targetTop = window.innerHeight * 0.2;
+      const bs = document.getElementById('bottom-sheet');
+      if (bs) targetTop = (bs.getBoundingClientRect().top - _translateYOf(bs)) + (bs.clientHeight - window.innerHeight * 0.8);
+      const naturalTop = s.getBoundingClientRect().top - _translateYOf(s);
+      return Math.max(0, Math.round(targetTop - naturalTop));
     }
     function adminSheetSetY(y, animate) {
       const s=document.getElementById('admin-detail-sheet'); if(!s) return;
@@ -17530,9 +17554,9 @@
       <!-- "© OpenStreetMap" sheetin yläpuolella vasemmassa yläkulmassa (kuten
            perusnäkymässä ja lisäysnäkymässä). Kulkee sheetin mukana. -->
       <div id="admin-osm-attribution" style="position:absolute;top:-16px;left:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;pointer-events:none;text-shadow:0 0 2px rgba(255,255,255,0.85);">&copy; OpenStreetMap</div>
-      <div id="admin-sheet-handle" style="width:100%;padding:10px 0 8px 0;display:flex;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;"><div style="width:40px;height:4px;border-radius:2px;background:#d8d8dd;"></div></div>
-      <div id="admin-sheet-peek" style="padding:4px 18px 8px;font-family:Arial,sans-serif;"></div>
-      <div id="admin-sheet-more" style="padding:0 18px 18px;font-family:Arial,sans-serif;"></div>
+      <div id="admin-sheet-handle" style="width:100%;padding:8px 0 6px 0;display:flex;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;"><div style="width:40px;height:4px;border-radius:2px;background:#ddd;"></div></div>
+      <div id="admin-sheet-peek" style="padding:0;font-family:Arial,sans-serif;"></div>
+      <div id="admin-sheet-more" style="padding:0;font-family:Arial,sans-serif;"></div>
     </div>
     <!-- Iso toimintopalkki: AINA näkyvissä; sheet lähtee tämän yläpuolelta. -->
     <div id="admin-action-bar" style="position:absolute;left:0;right:0;bottom:0;z-index:13;background:white;padding:10px 16px;padding-bottom:max(14px,env(safe-area-inset-bottom));box-shadow:0 -1px 12px rgba(0,0,0,0.08);">
