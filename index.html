@@ -6563,7 +6563,12 @@
 
     function createCornerEl() {
       const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
+      // Kääre on kulmapisteen TARTUNTA-/TURVA-ALUE: näkymätön, mutta nappaa
+      // kosketuksen ennen kuin se osuu kartan canvasiin. Se ulottuu 36px joka
+      // suuntaan pisteestä — siis reilusti myös polygonin täytön päälle —
+      // jolloin kulmasta tarttuminen ei vahingossa siirrä koko polygonia
+      // (täyttö-veto ei laukea kääreen alueelta).
+      wrapper.style.cssText = 'width:72px;height:72px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
       const dot = document.createElement('div');
       dot.className = 'corner-dot';
       dot.style.cssText = 'width:16px;height:16px;background:#0C0243;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.55);flex-shrink:0;pointer-events:none;transition:background 0.2s;';
@@ -7059,14 +7064,11 @@
       if (typeof buildAreaHandles === 'function') buildAreaHandles();
     }
 
-    // Koko polygonin siirto sen TÄYTÖSTÄ vetämällä (sormi/hiiri) — mutta vasta
-    // PAINALLUKSEN JA PIDON jälkeen, ei pelkästä pyyhkäisystä. Jos sormi
-    // liikkuu ennen pitoajan täyttymistä, tulkitaan tavalliseksi pyyhkäisyksi/
-    // panoroinniksi eikä polygonia siirretä (emme preventDefault:ia etukäteen,
-    // joten kartan oma dragPan saa hoitaa sen normaalisti). Rekisteröidään
-    // kerran; toimii aina kun 'area-poly-fill' -taso on olemassa.
-    const FILL_DRAG_HOLD_MS = 160;     // painallus+pito tämän verran ennen kuin veto aktivoituu
-    const FILL_DRAG_CANCEL_PX = 9;     // jos sormi liikkuu tämän verran ennen pitoa → tulkitaan pyyhkäisyksi
+    // Koko polygonin siirto sen TÄYTÖSTÄ vetämällä (sormi/hiiri): tartunta
+    // täyttöön ja raahaus siirtää polygonia heti. Kulmapisteiden ympärillä on
+    // laajennettu tartunta-alue (ks. createCornerEl), joka ulottuu täytön
+    // päälle — kulmasta tarttuminen ei siis vahingossa siirrä koko polygonia.
+    // Rekisteröidään kerran; toimii aina kun 'area-poly-fill' -taso on olemassa.
     let _polyFillDragHooked = false;
     function setupPolygonFillDrag() {
       if (!areaMap || _polyFillDragHooked) return;
@@ -7074,56 +7076,27 @@
       const onFillDown = (e) => {
         if (areaAddMode || areaRemoveMode) return;            // ei siirretä lisäys-/poistomoodissa
         if (e.points && e.points.length > 1) return;          // kosketus: vain yhdellä sormella
-        const downPoint = e.point;
-        let holdTimer = null;
-        let armed = false, moved = false;
-        let startLngLat = null, startCoords = null;
-
-        const detachPreArm = () => {
-          areaMap.off('mousemove', onPreArmMove); areaMap.off('touchmove', onPreArmMove);
-          areaMap.off('mouseup', onPreArmEnd);     areaMap.off('touchend', onPreArmEnd);
-          areaMap.off('touchcancel', onPreArmEnd);
-        };
-        const cancelHold = () => { clearTimeout(holdTimer); detachPreArm(); };
-
-        const onPreArmMove = (mev) => {
-          const dx = mev.point.x - downPoint.x, dy = mev.point.y - downPoint.y;
-          if (Math.hypot(dx, dy) > FILL_DRAG_CANCEL_PX) cancelHold();   // liikahti liikaa ennen pitoa → tavallinen pyyhkäisy/panorointi
-        };
-        const onPreArmEnd = () => { cancelHold(); };   // nostettiin ennen pitoaikaa → ei siirretä
-
-        const onDragMove = (ev) => {
-          if (!armed) return;
-          if (!moved) { moved = true; pushAreaUndo(); }
-          const dx = ev.lngLat.lng - startLngLat.lng, dy = ev.lngLat.lat - startLngLat.lat;
+        e.preventDefault();                                   // estä kartan panorointi
+        const start = e.lngLat;
+        const startCoords = areaCoords.map(c => [c[0], c[1]]);
+        let moved = false;
+        const onMove = (ev) => {
+          if (!moved) { moved = true; pushAreaUndo(); }       // undo vasta kun polygonia oikeasti liikutetaan
+          const dx = ev.lngLat.lng - start.lng, dy = ev.lngLat.lat - start.lat;
           areaCoords = startCoords.map(c => [c[0]+dx, c[1]+dy]);
           areaMarkers.forEach((m,i)=>{ if(areaCoords[i]){ m.setLngLat(areaCoords[i]); if(!areaLocked)lockedPixelPos[i]=areaMap.project(areaCoords[i]); } });
           updateAreaLayer();
           if (!polygonMoved) { polygonMoved = true; updateConfirmBtn(); }
         };
-        const onDragEnd = () => {
-          areaMap.off('mousemove', onDragMove); areaMap.off('touchmove', onDragMove);
-          areaMap.off('mouseup', onDragEnd);     areaMap.off('touchend', onDragEnd);
-          areaMap.off('touchcancel', onDragEnd);
-          if (armed) areaMap.dragPan.enable();
+        const onUp = () => {
+          areaMap.off('mousemove', onMove); areaMap.off('touchmove', onMove);
+          areaMap.off('mouseup', onUp);     areaMap.off('touchend', onUp);
+          areaMap.off('touchcancel', onUp);
           if (moved) capturePolyPixels();
         };
-
-        holdTimer = setTimeout(() => {
-          detachPreArm();
-          armed = true;
-          e.preventDefault();                 // estä kartan panorointi nyt kun veto on vahvistettu
-          areaMap.dragPan.disable();           // pysäytä mahdollisesti jo alkanut panorointi
-          startLngLat = e.lngLat;
-          startCoords = areaCoords.map(c => [c[0], c[1]]);
-          areaMap.on('mousemove', onDragMove); areaMap.on('touchmove', onDragMove);
-          areaMap.on('mouseup', onDragEnd);     areaMap.on('touchend', onDragEnd);
-          areaMap.on('touchcancel', onDragEnd);
-        }, FILL_DRAG_HOLD_MS);
-
-        areaMap.on('mousemove', onPreArmMove); areaMap.on('touchmove', onPreArmMove);
-        areaMap.on('mouseup', onPreArmEnd);     areaMap.on('touchend', onPreArmEnd);
-        areaMap.on('touchcancel', onPreArmEnd);
+        areaMap.on('mousemove', onMove); areaMap.on('touchmove', onMove);
+        areaMap.on('mouseup', onUp);     areaMap.on('touchend', onUp);
+        areaMap.on('touchcancel', onUp);
       };
       areaMap.on('mousedown', 'area-poly-fill', onFillDown);
       areaMap.on('touchstart', 'area-poly-fill', onFillDown);
@@ -8044,14 +8017,6 @@
       if (x.indexOf('kiekko') !== -1)                                return { label:'Kiekko',      bg:'#0C0243' };
       return { label:(t || 'Alue'), bg:'#0C0243' };
     }
-    function adminValidityRows(r) {
-      const rows = [];
-      const add = (lbl,f,t) => { if (f || t) rows.push(`${lbl}  ${f||''}${(f&&t)?'\u2013':''}${t||''}`); };
-      add('Ma\u2013Pe', r.valid_mape_from, r.valid_mape_to);
-      add('La',          r.valid_la_from,   r.valid_la_to);
-      add('Su',          r.valid_su_from,   r.valid_su_to);
-      return rows;
-    }
     // Näyttää valitun alueen tiedot perusnäkymän tyyliin: badge + otsikkorivi +
     // sijainti (peek, aina näkyvissä); voimassaoloajat + lisätiedot (more,
     // näkyvät kun sheettiä kasvattaa). Kaupunki/omistaja/hinta eivät ole
@@ -8063,21 +8028,47 @@
       const maxTxt = (r.max_hours || r.max_minutes)
         ? `Max. ${r.max_hours||0}h${r.max_minutes ? ' ' + r.max_minutes + 'min' : ''}` : '';
       const loc = r.location_type ? (LOC_LABEL[r.location_type] || r.location_type) : '';
-      let peek = `<div style="margin-bottom:7px;"><span style="display:inline-block;background:${kind.bg};color:#fff;font-size:11px;font-weight:bold;padding:3px 9px;border-radius:6px;letter-spacing:0.3px;">${kind.label}</span></div>`;
+      // Badge vasempaan yläkulmaan kuten perusnäkymässä: ilmais-/kiekkoalueilla
+      // pieni parkkikiekko-ikoni (sama DISC_BADGE_SVG kuin perusnäkymän
+      // sheetissä), ei tekstipilleriä. Maksullisille (ei pitäisi esiintyä tässä
+      // näkymässä) jätetään vanha värillinen pilleri varalle.
+      const isFree = /kiekko|ilmais/i.test(typeFull);
+      let peek = isFree
+        ? `<div style="margin-bottom:7px;height:23px;display:flex;align-items:center;">${DISC_BADGE_SVG}</div>`
+        : `<div style="margin-bottom:7px;"><span style="display:inline-block;background:${kind.bg};color:#fff;font-size:11px;font-weight:bold;padding:3px 9px;border-radius:6px;letter-spacing:0.3px;">${kind.label}</span></div>`;
       peek += `<div style="font-size:16px;font-weight:bold;color:#0C0243;line-height:1.25;">${typeFull}${maxTxt ? '  |  ' + maxTxt : ''}</div>`;
       if (loc) peek += `<div style="font-size:13.5px;color:#555;margin-top:3px;">${loc}</div>`;
       peek += `<div style="font-size:13.5px;color:#555;margin-top:3px;">Käyttäjän ilmoittama</div>`;
       document.getElementById('admin-sheet-peek').innerHTML = peek;
+      // Lisäosa perusnäkymän sheetin tyyliin: Päivät | Tunnit | Hinta -taulukko
+      // (kaikki kolme riviä; puuttuva aika viivalla) + Lisätiedot samoilla
+      // price-label/price-value -luokilla kuin perusnäkymässä.
       let more = '';
-      const vr = adminValidityRows(r);
-      if (vr.length) {
-        more += `<div style="margin-top:14px;font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Voimassaoloaika</div>`;
-        more += vr.map(x=>`<div style="font-size:13.5px;color:#333;margin-top:4px;">${x}</div>`).join('');
+      const has = v => v !== null && v !== undefined && v !== '';
+      const rng = (a,b) => (has(a) && has(b)) ? `${a}–${b}` : '';
+      const vMaPe = rng(r.valid_mape_from, r.valid_mape_to);
+      const vLa   = rng(r.valid_la_from,   r.valid_la_to);
+      const vSu   = rng(r.valid_su_from,   r.valid_su_to);
+      const priceFor = (hours) => hours ? 'Ilmainen' : '—';
+      if (vMaPe || vLa || vSu) {
+        const capStyle = 'font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.4px;padding:0 0 6px 0;text-align:left;';
+        const dayStyle = 'color:#555;padding:3px 0;font-size:14px;';
+        const valStyle = 'color:#222;padding:3px 0;font-weight:500;font-size:14px;';
+        more += '<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;margin-top:14px;">';
+        more += `<thead><tr>`
+             + `<th style="${capStyle}width:33%;">Päivät</th>`
+             + `<th style="${capStyle}width:34%;">Tunnit</th>`
+             + `<th style="${capStyle}width:33%;">Hinta</th>`
+             + `</tr></thead><tbody>`;
+        more += `<tr><td style="${dayStyle}">Ma–Pe</td><td style="${valStyle}">${escapeHtml(vMaPe || '—')}</td><td style="${valStyle}">${escapeHtml(priceFor(vMaPe))}</td></tr>`;
+        more += `<tr><td style="${dayStyle}">La</td><td style="${valStyle}">${escapeHtml(vLa || '—')}</td><td style="${valStyle}">${escapeHtml(priceFor(vLa))}</td></tr>`;
+        more += `<tr><td style="${dayStyle}">Su</td><td style="${valStyle}">${escapeHtml(vSu || '—')}</td><td style="${valStyle}">${escapeHtml(priceFor(vSu))}</td></tr>`;
+        more += '</tbody></table>';
+      } else {
+        // Ei aikatietoja → näytä hinta silti, kuten perusnäkymässä.
+        more += `<p class="price-label">Hinta</p><p class="price-value">Ilmainen</p>`;
       }
-      if (r.info_additional) {
-        more += `<div style="margin-top:14px;font-size:11px;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Lisätiedot</div>`;
-        more += `<div style="font-size:13.5px;color:#333;margin-top:4px;">${String(r.info_additional)}</div>`;
-      }
+      more += `<p class="price-label">Lisätiedot</p><p class="price-value">${r.info_additional ? escapeHtml(String(r.info_additional)) : '—'}</p>`;
       const dt = new Date(r.created_at);
       if (!isNaN(dt)) {
         more += `<div style="margin-top:14px;font-size:12px;color:#aaa;">Ilmoitettu ${dt.getDate()}.${dt.getMonth()+1}.${dt.getFullYear()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}</div>`;
@@ -8105,29 +8096,6 @@
       adminHideMainButton(false);
     }
 
-    // Tarkistusnäkymän kartan rotaatio: oletuksena lukittu pohjoiseen (sama
-    // periaate kuin lisäysnäkymässä). Napista päälle → karttaa voi pyörittää
-    // vapaasti; uudelleen → lukitaan takaisin ja palautetaan pohjoiseen.
-    let adminRotationOn = false;
-    function updateAdminRotateBtn() {
-      const btn = document.getElementById('admin-rotate-btn'); if (!btn) return;
-      btn.style.background = adminRotationOn ? '#0C0243' : '#fff';
-      btn.style.color = adminRotationOn ? 'white' : '#0C0243';
-    }
-    function toggleAdminRotation() {
-      if (!adminPreviewMap) return;
-      adminRotationOn = !adminRotationOn;
-      if (adminRotationOn) {
-        adminPreviewMap.dragRotate.enable();
-        adminPreviewMap.touchZoomRotate.enableRotation();
-      } else {
-        adminPreviewMap.dragRotate.disable();
-        adminPreviewMap.touchZoomRotate.disableRotation();
-        adminPreviewMap.easeTo({ bearing: 0, pitch: 0, duration: 400 });   // takaisin pohjoiseen
-      }
-      updateAdminRotateBtn();
-    }
-
     function ensureAdminMap(cb) {
       if (!adminPreviewMap) {
         const _ac = (typeof userLocation !== 'undefined' && userLocation) ? [userLocation.lon, userLocation.lat] : [24.9354, 60.1699];
@@ -8140,9 +8108,9 @@
           keyboard: false, attributionControl: false, transformRequest, doubleClickZoom: false
         });
         adminPreviewMap.on('load', () => {
+          // Kartta pysyvästi lukittu pohjoiseen tässä näkymässä.
           adminPreviewMap.touchZoomRotate.disableRotation();
           adminPreviewMap.dragRotate.disable();
-          adminRotationOn = false; updateAdminRotateBtn();
           // Yleinen klikkikäsittelijä + queryRenderedFeatures. Toimii vaikka
           // 'admin-sub-fill' -kerros lisätään vasta myöhemmin tai poistetaan ja
           // lisätään uudelleen (kerroskohtainen kuuntelija ei aina laukennut).
@@ -8161,12 +8129,10 @@
         });
       } else {
         adminPreviewMap.resize();
-        // Jokainen avauskerta alkaa lukittuna pohjoiseen (sama kuin lisäysnäkymä).
-        adminRotationOn = false;
+        // Varmistus: pysyy lukittuna pohjoiseen joka avauskerralla.
         adminPreviewMap.dragRotate.disable();
         adminPreviewMap.touchZoomRotate.disableRotation();
         adminPreviewMap.easeTo({ bearing: 0, pitch: 0, duration: 0 });
-        updateAdminRotateBtn();
         cb();
         ensureAdminUserDot();
       }
@@ -8265,7 +8231,15 @@
     // ja innerHeight voivat erota).
     function adminSheetExpandedY() {
       const s=document.getElementById('admin-detail-sheet'); if(!s) return 0;
-      return Math.max(0, s.offsetHeight - window.innerHeight * 0.8);
+      // Yläreunan tavoite: 20 % ikkunan korkeudesta — täsmälleen sama kohta
+      // kuin perusnäkymän sheetin auki-asennossa. Lasketaan sheetin
+      // TODELLISESTA sijainnista (rect.top − nykyinen translateY), jotta
+      // säiliön/100vh:n erot eivät jätä sheettiä vajaaksi liian alas.
+      let cur = 0;
+      const t = getComputedStyle(s).transform;
+      if (t && t !== 'none') { const m = t.match(/matrix\(([^)]+)\)/); if (m) { const p = m[1].split(','); cur = parseFloat(p[5]) || 0; } }
+      const naturalTop = s.getBoundingClientRect().top - cur;
+      return Math.max(0, Math.round(window.innerHeight * 0.2 - naturalTop));
     }
     function adminSheetSetY(y, animate) {
       const s=document.getElementById('admin-detail-sheet'); if(!s) return;
@@ -17538,10 +17512,6 @@
     <!-- Location-pallura (oikea yläkulma) -->
     <button onclick="adminDetailLocate()" aria-label="Sijaintini" style="position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:10;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/></svg>
-    </button>
-    <!-- Kartan rotaatio -pallura (locate-napin alla) -->
-    <button id="admin-rotate-btn" onclick="toggleAdminRotation()" aria-label="Salli näytön rotaatio" style="position:absolute;top:calc(max(16px,env(safe-area-inset-top)) + 60px);right:max(16px,env(safe-area-inset-right));z-index:10;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
     </button>
     <!-- Alasheet: alueen tiedot + Hyväksy / Hylkää -->
     <div id="admin-detail-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 24px rgba(0,0,0,0.22);height:100vh;transform:translateY(240px);will-change:transform;touch-action:none;">
