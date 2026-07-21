@@ -6714,21 +6714,7 @@
     // "move"-kahva istuu visuaalisesti tasapainoisesti myös epäsäännöllisillä
     // muodoilla. Laskenta napakolmiokaavalla; nolla-alalla (degeneroitunut)
     // palataan kärkien keskiarvoon.
-    function _areaCentroid() {
-      const n = areaCoords.length;
-      if (n === 0) return [0, 0];
-      if (n < 3) { let x=0,y=0; areaCoords.forEach(c=>{x+=c[0];y+=c[1];}); return [x/n, y/n]; }
-      let a = 0, cx = 0, cy = 0;
-      for (let i = 0; i < n; i++) {
-        const [x0, y0] = areaCoords[i];
-        const [x1, y1] = areaCoords[(i + 1) % n];
-        const cross = x0 * y1 - x1 * y0;
-        a += cross; cx += (x0 + x1) * cross; cy += (y0 + y1) * cross;
-      }
-      if (Math.abs(a) < 1e-12) { let x=0,y=0; areaCoords.forEach(c=>{x+=c[0];y+=c[1];}); return [x/n, y/n]; }
-      a *= 0.5;
-      return [cx / (6 * a), cy / (6 * a)];
-    }
+    function _areaCentroid() { let x=0,y=0; areaCoords.forEach(c=>{x+=c[0];y+=c[1];}); const n=areaCoords.length||1; return [x/n, y/n]; }
     function createCenterHandleEl() {
       const w=document.createElement('div');
       w.style.cssText='width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
@@ -7016,12 +7002,16 @@
     function enterAddMode() {
       exitRemoveMode();                 // vain toinen kerrallaan aktiivisena
       areaAddMode = true;
+      // Lisäysmoodissa polygonin muotoa ei voi muokata: kulmapisteiden veto
+      // pois käytöstä, kunnes lisäys on tehty (tai moodi suljetaan).
+      areaMarkers.forEach(m => { m.setDraggable(false); m.getElement().style.cursor = 'default'; });
       showMidpointHandles();
       updateCornerModeBtns();
       if(typeof refreshAreaHandlesVis==='function') refreshAreaHandlesVis();
     }
     function exitAddMode() {
       areaAddMode = false;
+      areaMarkers.forEach(m => { m.setDraggable(true); m.getElement().style.cursor = 'grab'; });
       clearMidpointHandles();
       updateCornerModeBtns();
       if(typeof refreshAreaHandlesVis==='function') refreshAreaHandlesVis();
@@ -8121,6 +8111,46 @@
     // sijainti (peek, aina näkyvissä); voimassaoloajat + lisätiedot (more,
     // näkyvät kun sheettiä kasvattaa). Kaupunki/omistaja/hinta eivät ole
     // ilmoituksen tiedoissa, joten niitä ei näytetä.
+    // Omistajan (kaupungin) välimuisti ilmoituksen id:llä, ettei samaa
+    // aluetta geokoodata toistuvasti.
+    const _adminOwnerCache = new Map();
+    // Suomen sija­muoto: kaupungin nimi + "n kaupunki" toimii valtaosalle
+    // (Kotka→Kotkan, Helsinki→Helsingin, Espoo→Espoon, Tampere→Tampereen).
+    // Genetiivi on epäsäännöllinen, joten käytetään Digitransitin valmista
+    // taivutusta jos saatavilla; muuten yksinkertainen "n"-pääte.
+    function _cityToOwner(city) {
+      if (!city) return '';
+      // Yleisimmät poikkeukset, joissa pelkkä "n" ei riitä.
+      const genitive = { 'Helsinki':'Helsingin', 'Tampere':'Tampereen', 'Turku':'Turun', 'Oulu':'Oulun', 'Pori':'Porin', 'Lahti':'Lahden', 'Kuopio':'Kuopion', 'Jyväskylä':'Jyväskylän', 'Rovaniemi':'Rovaniemen', 'Joensuu':'Joensuun', 'Lappeenranta':'Lappeenrannan', 'Hämeenlinna':'Hämeenlinnan', 'Seinäjoki':'Seinäjoen', 'Mikkeli':'Mikkelin', 'Kotka':'Kotkan', 'Salo':'Salon', 'Porvoo':'Porvoon', 'Kouvola':'Kouvolan', 'Hyvinkää':'Hyvinkään', 'Järvenpää':'Järvenpään', 'Rauma':'Rauman', 'Kokkola':'Kokkolan', 'Kajaani':'Kajaanin', 'Savonlinna':'Savonlinnan', 'Vaasa':'Vaasan', 'Kemi':'Kemin', 'Iisalmi':'Iisalmen' };
+      const g = genitive[city] || (city + 'n');
+      return g + ' kaupunki';
+    }
+    function _subCentroid(r) {
+      const ring = r && r.polygon_coordinates && r.polygon_coordinates.coordinates && r.polygon_coordinates.coordinates[0];
+      if (!ring || !ring.length) return null;
+      let x=0,y=0,n=0;
+      ring.forEach(c=>{ if(Array.isArray(c)&&c.length>=2){ x+=c[0]; y+=c[1]; n++; } });
+      return n ? [x/n, y/n] : null;
+    }
+    async function adminFillOwner(r) {
+      const set = (txt) => {
+        _adminOwnerCache.set(r.id, txt);
+        const el = document.getElementById('admin-sheet-owner');
+        if (el && currentSubmission && String(currentSubmission.id)===String(r.id)) el.textContent = txt;
+      };
+      if (_adminOwnerCache.has(r.id)) { set(_adminOwnerCache.get(r.id)); return; }
+      const c = _subCentroid(r);
+      if (!c) { set(''); return; }
+      try {
+        const url = `https://api.digitransit.fi/geocoding/v1/reverse?point.lat=${c[1]}&point.lon=${c[0]}&size=1&boundary.country=FIN`;
+        const resp = await fetch(url, { headers: { 'digitransit-subscription-key': API_KEY } });
+        const data = await resp.json();
+        const p = data && data.features && data.features[0] && data.features[0].properties;
+        const city = p ? (p.localadmin || p.locality || p.region || '') : '';
+        set(_cityToOwner(city));
+      } catch(e) { set(''); }
+    }
+
     function renderAdminSheet(r) {
       if (!r) return;
       const kind = adminAreaKind(r.area_type);
@@ -8130,7 +8160,6 @@
       let maxSuffix = '';
       if (_has(r.max_hours)) maxSuffix = `  |  Max. ${r.max_hours}h`;
       else if (_has(r.max_minutes)) maxSuffix = `  |  Max. ${r.max_minutes} min`;
-      const loc = r.location_type ? (LOC_LABEL[r.location_type] || r.location_type) : '';
       // Sheetin sisältö TÄSMÄLLEEN perusnäkymän sheetin rakenteella ja
       // tyyleillä (#area-code-badge / #sheet-summary / #summary-header /
       // #summary-type / #summary-operator / #sheet-divider / #sheet-details):
@@ -8139,19 +8168,26 @@
       // perusnäkymässä; otsikko 15px lihavoitu #222, tyyppi- ja
       // ilmoittajarivit 14px #555.
       const isFree = /kiekko|ilmais/i.test(typeFull);
+      // Tyyppi- ja omistajarivit kuten perusnäkymässä (summary-type +
+      // summary-operator): tyyppi = location_type ("Kadunvarsipysäköinti" /
+      // "Pysäköintialue"; oletus "Pysäköintialue" jos puuttuu); omistaja
+      // johdetaan polygonin SIJAINNISTA käänteisgeokoodauksella → "{Kaupunki}n
+      // kaupunki" (esim. Kotka → "Kotkan kaupunki"). Omistaja täytetään
+      // asynkronisesti (id admin-sheet-owner) kun geokoodaus palaa.
+      const typeLine = (r.location_type && (LOC_LABEL[r.location_type] || r.location_type)) || 'Pysäköintialue';
       // Badge absoluuttisesti sheetin vasemmassa yläkulmassa (top:16,left:16)
-      // kuten perusnäkymässä. Perusnäkymässä otsikko alkaa badgen ALAPUOLELTA,
-      // joten annetaan yhteenvetolohkolle riittävä yläpehmuste (badge 23px +
-      // 16px ylä = ~39px), ettei "Kiekkopysäköinti" jää badgen alle/päälle.
+      // kuten perusnäkymässä. Otsikko alkaa badgen ALAPUOLELTA (yläpehmuste).
       let peek = isFree
         ? `<div style="position:absolute;top:16px;left:16px;z-index:5;pointer-events:none;">${DISC_BADGE_SVG}</div>`
         : `<div style="position:absolute;top:16px;left:16px;z-index:5;background:${kind.bg};color:white;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;">${kind.label}</div>`;
       peek += `<div style="padding:30px 20px 8px 20px;">`;
       peek += `<div style="font-size:15px;font-weight:bold;color:#222;margin-bottom:3px;">${typeFull}${maxSuffix}</div>`;
-      if (loc) peek += `<div style="font-size:14px;color:#555;">${loc}</div>`;
-      peek += `<div style="font-size:14px;color:#555;margin-top:2px;">Käyttäjän ilmoittama</div>`;
+      peek += `<div style="font-size:14px;color:#555;">${typeLine}</div>`;
+      peek += `<div id="admin-sheet-owner" style="font-size:14px;color:#555;margin-top:2px;">${escapeHtml(_adminOwnerCache.get(r.id) || '')}</div>`;
       peek += `</div>`;
       peek += `<hr style="border:none;border-top:1px solid #eee;margin:0 20px 0 20px;">`;
+      // Täytä omistaja sijainnin mukaan (välimuistista heti, muuten geokoodaa).
+      adminFillOwner(r);
       document.getElementById('admin-sheet-peek').innerHTML = peek;
       // Lisäosa: sama Päivät | Tunnit | Hinta -taulukko kuin perusnäkymässä
       // (identtinen spacer + margin-top:-25px -rakenne ja solutyylit) sekä
@@ -17638,11 +17674,11 @@
          (#sheet-backdrop). Ei ota kosketuksia (pointer-events:none). -->
     <div id="admin-sheet-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:11;opacity:0;pointer-events:none;transition:opacity 0.15s ease;"></div>
     <!-- Takaisin-pallura (vasen yläkulma) -->
-    <button onclick="closeAdminDetail()" aria-label="Takaisin" style="position:absolute;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));z-index:10;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+    <button onclick="closeAdminDetail()" aria-label="Takaisin" style="position:absolute;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));z-index:14;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
     </button>
     <!-- Location-pallura (oikea yläkulma) -->
-    <button onclick="adminDetailLocate()" aria-label="Sijaintini" style="position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:10;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+    <button onclick="adminDetailLocate()" aria-label="Sijaintini" style="position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:14;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><path d="M12 2 L22 22 L12 18 L2 22 Z" fill="currentColor" transform="rotate(45 12 12)"/></svg>
     </button>
     <!-- Alasheet: alueen tiedot + Hyväksy / Hylkää -->
@@ -17656,7 +17692,7 @@
     </div>
     <!-- Iso toimintopalkki: AINA näkyvissä; sheet lähtee tämän yläpuolelta. -->
     <div id="admin-action-bar" style="position:absolute;left:0;right:0;bottom:0;z-index:13;background:white;padding:10px 16px;padding-bottom:max(14px,env(safe-area-inset-bottom));box-shadow:0 -1px 12px rgba(0,0,0,0.08);">
-      <button id="admin-btn-select" style="width:100%;height:54px;background:#0C0243;border:none;border-radius:999px;color:#fff;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:default;">Valitse alue</button>
+      <button id="admin-btn-select" style="width:100%;height:54px;background:#0C0243;border:none;border-radius:999px;color:#fff;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;cursor:default;">Valitse moderoitava alue</button>
       <div id="admin-btn-triple" style="display:none;width:100%;height:54px;border:2px solid #0C0243;box-sizing:border-box;border-radius:999px;overflow:hidden;">
         <button onclick="adminApprove()" style="flex:1;height:100%;background:#e3f4e9;border:none;color:#0C0243;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hyväksy</button>
         <button onclick="adminReject()" style="flex:1;height:100%;background:#fce8e6;border:none;border-left:1.5px solid #0C0243;color:#0C0243;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;">Hylkää</button>
