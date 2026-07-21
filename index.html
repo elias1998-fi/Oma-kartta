@@ -6710,7 +6710,25 @@
     // ── Koko polygonin siirto (keskikahva) + sivujen siirto (sivukahvat) ──
     let areaCenterHandle = null;    // siirtokahva (move) polygonin keskellä
     let areaEdgeHandles = [];
-    function _areaCentroid() { let x=0,y=0; areaCoords.forEach(c=>{x+=c[0];y+=c[1];}); const n=areaCoords.length||1; return [x/n, y/n]; }
+    // Polygonin PAINOPISTE (pinta-alan keskipiste) — ei kärkien keskiarvo, jotta
+    // "move"-kahva istuu visuaalisesti tasapainoisesti myös epäsäännöllisillä
+    // muodoilla. Laskenta napakolmiokaavalla; nolla-alalla (degeneroitunut)
+    // palataan kärkien keskiarvoon.
+    function _areaCentroid() {
+      const n = areaCoords.length;
+      if (n === 0) return [0, 0];
+      if (n < 3) { let x=0,y=0; areaCoords.forEach(c=>{x+=c[0];y+=c[1];}); return [x/n, y/n]; }
+      let a = 0, cx = 0, cy = 0;
+      for (let i = 0; i < n; i++) {
+        const [x0, y0] = areaCoords[i];
+        const [x1, y1] = areaCoords[(i + 1) % n];
+        const cross = x0 * y1 - x1 * y0;
+        a += cross; cx += (x0 + x1) * cross; cy += (y0 + y1) * cross;
+      }
+      if (Math.abs(a) < 1e-12) { let x=0,y=0; areaCoords.forEach(c=>{x+=c[0];y+=c[1];}); return [x/n, y/n]; }
+      a *= 0.5;
+      return [cx / (6 * a), cy / (6 * a)];
+    }
     function createCenterHandleEl() {
       const w=document.createElement('div');
       w.style.cssText='width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;';
@@ -6718,7 +6736,7 @@
       return w;
     }
     function positionAreaHandles(skipCenter, skipEdgeIdx) {
-      if (areaCenterHandle && !skipCenter) areaCenterHandle.setLngLat(_areaCentroid());   // siirtokahva pysyy keskipisteessä
+      if (areaCenterHandle && !skipCenter) areaCenterHandle.setLngLat(_areaCentroid());   // siirtokahva pysyy polygonin painopisteessä
       const n = areaCoords.length;
       areaEdgeHandles.forEach((h, i) => {
         if (i === skipEdgeIdx) return;
@@ -6806,6 +6824,7 @@
       btn.style.color = cornerAdjustMode ? 'white' : '#0C0243';
     }
     function toggleCornerAdjust() { cornerAdjustMode = !cornerAdjustMode; updateCornerAdjustBtn(); }
+    function enableCornerAdjust() { if (!cornerAdjustMode) { cornerAdjustMode = true; updateCornerAdjustBtn(); } }
     // Suorien (p1 + t·d1) ja (p2 + s·d2) leikkauspiste; null jos ~yhdensuuntaiset.
     function lineIntersect(p1, d1, p2, d2) {
       const det = d1.x * d2.y - d1.y * d2.x;
@@ -7014,6 +7033,7 @@
       areaMarkers.splice(idx, 1);
       areaCoords.splice(idx, 1);
       if (!areaLocked) lockedPixelPos.splice(idx, 1);
+      if (typeof enableCornerAdjust === 'function') enableCornerAdjust();   // kulman muutos → "Säädä kulmia" päälle
       updateAreaLayer(); updateMinusBtn(); updateAddBtn();
       capturePolyPixels();
       if (typeof buildAreaHandles === 'function') buildAreaHandles();
@@ -7046,6 +7066,7 @@
         setupMarkerEvents(marker); areaMarkers.push(marker);
         if(!areaLocked)lockedPixelPos.push(clampPixelPos(areaMap.project([c[0],c[1]])));
       });
+      if (typeof enableCornerAdjust === 'function') enableCornerAdjust();   // kulman muutos → "Säädä kulmia" päälle
       updateAreaLayer(); updateMinusBtn(); updateAddBtn();
       capturePolyPixels();
       if (typeof buildAreaHandles === 'function') buildAreaHandles();
