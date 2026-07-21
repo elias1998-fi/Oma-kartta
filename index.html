@@ -4701,7 +4701,7 @@
         </button>
         <button onclick="openAllPendingMap()" style="width:100%;min-height:120px;background:#fff;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 2px 10px rgba(12,2,67,0.10);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;" onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'" ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
-          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Tarkasta muiden käyttäjien lisäämiä ilmaisia alueita</span>
+          <span style="font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#0C0243;text-align:center;line-height:1.3;">Moderoi muiden käyttäjien lisäämiä ilmaisia alueita</span>
         </button>
         <button onclick="openAreaEditor()" style="width:100%;min-height:120px;background:#fff;border:2px solid #0C0243;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 20px;box-shadow:0 2px 10px rgba(12,2,67,0.10);transition:opacity 0.15s ease,transform 0.15s ease;-webkit-tap-highlight-color:transparent;" onmousedown="this.style.opacity='0.85';this.style.transform='scale(0.98)'" onmouseup="this.style.opacity='1';this.style.transform='scale(1)'" ontouchstart="this.style.opacity='0.85';this.style.transform='scale(0.98)'" ontouchend="this.style.opacity='1';this.style.transform='scale(1)'">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/><line x1="9" y1="4" x2="9" y2="20"/><line x1="15" y1="6" x2="15" y2="22"/></svg>
@@ -6927,6 +6927,7 @@
     // palauteta pohjoiseen) ja polygoni lukittuu KARTALLE eli liikkuu kartan
     // mukana normaalisti. (Entisen "Kartan rotaatio" -napin toiminta päittäin.)
     let areaMapLockOn = false;
+    let _suppressAreaPin = false;   // tosi kun ohjelmallinen fitBounds (muokkaus) ei saa laukaista näyttö-pinnausta
     // Polygoni pysyy paikoillaan näytöllä aina kun karttaa ei ole lukittu.
     function polyScreenPinned() { return !areaMapLockOn; }
     function updateMapLockBtn() {
@@ -7151,7 +7152,22 @@
         polygonMoved = true; updateConfirmBtn();
         let mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
         areaCoords.forEach(c=>{ if(c[0]<mnX)mnX=c[0]; if(c[0]>mxX)mxX=c[0]; if(c[1]<mnY)mnY=c[1]; if(c[1]>mxY)mxY=c[1]; });
-        try { areaMap.fitBounds([[mnX,mnY],[mxX,mxY]], { padding:70, duration:0, maxZoom:17 }); } catch(e){}
+        // Kehystä polygoni sen OIKEISIIN geo-koordinaatteihin — vaimennettuna,
+        // ettei näyttö-pinnaus vedä sitä takaisin, ja vasta resizen jälkeen
+        // (muuten viewport voi olla väärän kokoinen ja polygoni jää ruudun
+        // ulkopuolelle → myös move-kahva karkasi oikeaan yläkulmaan).
+        _suppressAreaPin = true;
+        const _fit = () => {
+          if (!areaMap) return;
+          areaMap.resize();
+          try { areaMap.fitBounds([[mnX,mnY],[mxX,mxY]], { padding:70, duration:0, maxZoom:17 }); } catch(e){}
+          areaMarkers.forEach((m,i)=>{ if(areaCoords[i]) m.setLngLat(areaCoords[i]); });   // varmista geo-paikat
+          updateAreaLayer();
+          if (typeof buildAreaHandles === 'function') buildAreaHandles();   // move-kahva polygonin painopisteeseen
+          _suppressAreaPin = false;
+        };
+        requestAnimationFrame(() => { _fit(); requestAnimationFrame(_fit); });
+        return;   // buildAreaHandles hoidetaan _fit:ssä
       }
       if (typeof buildAreaHandles === 'function') buildAreaHandles();
     }
@@ -7189,12 +7205,13 @@
         // Kun polygoni on kiinnitetty näyttöön (lukko auki TAI rotaatio päällä),
         // otetaan sen nykyiset pikselipaikat talteen kartan liikkeen ALKAESSA.
         areaMap.on('movestart',()=>{
+          if(_suppressAreaPin) return;   // ohjelmallinen fitBounds (muokkaus): ei näyttö-pinnausta
           if((!areaLocked||polyScreenPinned()) && areaMarkers.length>=3){
             lockedPixelPos=areaMarkers.map(m=>clampPixelPos(areaMap.project([m.getLngLat().lng,m.getLngLat().lat])));
           }
         });
         areaMap.on('move',()=>{
-          if((!areaLocked||polyScreenPinned())&&lockedPixelPos.length===areaMarkers.length){
+          if(!_suppressAreaPin && (!areaLocked||polyScreenPinned())&&lockedPixelPos.length===areaMarkers.length){
             areaMarkers.forEach((m,i)=>{ const ll=areaMap.unproject(lockedPixelPos[i]); m.setLngLat(ll); areaCoords[i]=[ll.lng,ll.lat]; });
             updateAreaLayer();
             if(typeof positionAreaHandles==='function') positionAreaHandles(false,-1);
@@ -8122,15 +8139,19 @@
       // perusnäkymässä; otsikko 15px lihavoitu #222, tyyppi- ja
       // ilmoittajarivit 14px #555.
       const isFree = /kiekko|ilmais/i.test(typeFull);
+      // Badge absoluuttisesti sheetin vasemmassa yläkulmassa (top:16,left:16)
+      // kuten perusnäkymässä. Perusnäkymässä otsikko alkaa badgen ALAPUOLELTA,
+      // joten annetaan yhteenvetolohkolle riittävä yläpehmuste (badge 23px +
+      // 16px ylä = ~39px), ettei "Kiekkopysäköinti" jää badgen alle/päälle.
       let peek = isFree
         ? `<div style="position:absolute;top:16px;left:16px;z-index:5;pointer-events:none;">${DISC_BADGE_SVG}</div>`
         : `<div style="position:absolute;top:16px;left:16px;z-index:5;background:${kind.bg};color:white;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;">${kind.label}</div>`;
-      peek += `<div style="padding:13px 20px 8px 20px;">`;
+      peek += `<div style="padding:30px 20px 8px 20px;">`;
       peek += `<div style="font-size:15px;font-weight:bold;color:#222;margin-bottom:3px;">${typeFull}${maxSuffix}</div>`;
       if (loc) peek += `<div style="font-size:14px;color:#555;">${loc}</div>`;
       peek += `<div style="font-size:14px;color:#555;margin-top:2px;">Käyttäjän ilmoittama</div>`;
       peek += `</div>`;
-      peek += `<hr style="border:none;border-top:1px solid #eee;margin:5px 20px 0 20px;">`;
+      peek += `<hr style="border:none;border-top:1px solid #eee;margin:0 20px 0 20px;">`;
       document.getElementById('admin-sheet-peek').innerHTML = peek;
       // Lisäosa: sama Päivät | Tunnit | Hinta -taulukko kuin perusnäkymässä
       // (identtinen spacer + margin-top:-25px -rakenne ja solutyylit) sekä
@@ -8344,6 +8365,16 @@
       s.style.transition = animate ? 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
       s.style.transform = 'translateY(' + y + 'px)';
       adminUpdateOsmOpacity(y);
+      // Kartan pimennys sheetin liikkeen mukaan — sama kaava kuin perusnäkymän
+      // #sheet-backdropissa: kirkas alhaalla, tummenee kohti auki-asentoa.
+      const bd = document.getElementById('admin-sheet-backdrop');
+      if (bd) {
+        const collapsed = adminSheetCollapsedY(), fullOpen = adminSheetExpandedY();
+        const denom = (collapsed - fullOpen) || 1;
+        const openProgress = (collapsed - y) / denom;   // 0 alhaalla … 1 täysin auki
+        bd.style.transition = animate ? 'opacity 0.32s ease' : 'none';
+        bd.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
+      }
     }
     // Haalista "© OpenStreetMap" sitä mukaa kuin sheet vedetään auki — sama
     // malli kuin perusnäkymässä (updateOsmOpacity): täysin näkyvissä matalalla,
@@ -17602,6 +17633,10 @@
   <div id="admin-detail-overlay" class="settings-detail-overlay" style="z-index:103;">
     <!-- Koko näytön kartta -->
     <div id="admin-preview-map" style="position:absolute;inset:0;"></div>
+    <!-- Kartan pimennysmaski (kartan päällä, sheetin alla): tummenee sitä mukaa
+         kuin sheettiä vedetään ylös — sama malli kuin perusnäkymässä
+         (#sheet-backdrop). Ei ota kosketuksia (pointer-events:none). -->
+    <div id="admin-sheet-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:11;opacity:0;pointer-events:none;transition:opacity 0.15s ease;"></div>
     <!-- Takaisin-pallura (vasen yläkulma) -->
     <button onclick="closeAdminDetail()" aria-label="Takaisin" style="position:absolute;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));z-index:10;width:48px;height:48px;border:none;border-radius:50%;background:white;color:#0C0243;box-shadow:0 2px 8px rgba(0,0,0,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
