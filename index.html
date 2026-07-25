@@ -2138,8 +2138,8 @@
     .wc-body { padding: 18px 16px; flex: 1; }
     .wc-subtitle { font-family: Arial, sans-serif; font-size: 13px; color: #555; margin-bottom: 12px; line-height: 1.4; }
     #workcomment-input { width: 100%; box-sizing: border-box; min-height: 110px; border: 1px solid #ddd; border-radius: 10px; padding: 10px 12px; font-family: Arial, sans-serif; font-size: 14px; color: #222; background: white; resize: vertical; }
-    .wc-footer { padding: 12px 16px calc(env(safe-area-inset-bottom) + 14px) 16px; }
-    #workcomment-save { width: 100%; height: 48px; border: none; border-radius: 999px; background: #0C0243; color: white; font-family: Arial, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .wc-footer { padding: 12px 16px; padding-bottom: max(24px,env(safe-area-inset-bottom)); }
+    #workcomment-save { width: 100%; height: 58px; border: none; border-radius: 999px; background: #0C0243; color: white; font-family: Arial, sans-serif; font-size: 17px; font-weight: bold; cursor: pointer; }
     .p-cards-container { flex: 1; display: flex; flex-direction: column; padding: 10px 14px 0 14px; gap: 8px; overflow-y: auto; }
     .p-card { background: white; border-radius: 14px; padding: 12px 14px; font-family: Arial, sans-serif; flex-shrink: 0; }
     .p-card-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
@@ -9426,6 +9426,7 @@
       if (hp.id !== hoveredHalliId) {
         hoveredHalliId = hp.id;
         hoveredChargingId = null;
+        if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pois latauspisteeltä → pilleri takaisin
         if (hoveredPolyId) { clearHoverHighlight(); hoveredPolyId = null; }
         window._badgeAreaId = null;
         showHalliInSheet(hp);
@@ -9454,6 +9455,7 @@
           const cp = best.properties;
           if (cp.id !== hoveredChargingId) {
             hoveredChargingId = cp.id;
+            if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // piilota ajanhetki-pilleri latauspisteen päällä
             scheduleHitRefetch();   // freshen this station's status on focus
             if (hoveredPolyId) { clearHoverHighlight(); hoveredPolyId = null; }
             hoveredHalliId = null;   // over a charging station now, not a garage
@@ -9492,6 +9494,7 @@
         if (f.properties.id !== hoveredPolyId) {
           hoveredPolyId = f.properties.id;
           hoveredChargingId = null;   // over a parking area now, not a station
+          if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pysäköintialueella pilleri näkyy normaalisti
           applyHoverHighlight(f.properties);
           // Refresh the center pin icon — Helsinki's free purple zones
           // flow through this code path (not checkParking), so we must
@@ -9630,6 +9633,7 @@
           window._badgeAreaId = null;
           collapseCenterSheet();
           if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
+          if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pois latauspisteeltä tyhjään → pilleri takaisin
         }
         updateButtonText();
       }
@@ -14366,6 +14370,7 @@
           return;
         } else if(hoveredChargingId){
           hoveredChargingId = null;   // moved off the station — fall through
+          if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pois latauspisteeltä → pilleri takaisin
         }
       }
 
@@ -15104,7 +15109,9 @@
       // Below zoom 13 the pill hides, the same way the P-marker and the
       // parking layers do (their threshold is 13 as well).
       const zoomOk = map.getZoom() >= 13;
-      const active = zoomOk && !ajanhetkiDismissed && showFreeParking && !filterMode;
+      // Latauspisteen päällä pilleri piilotetaan: latauspisteille näytetään aina
+      // vain nykyhetki, joten ajanhetken säätö ei ole tarpeen.
+      const active = zoomOk && !ajanhetkiDismissed && showFreeParking && !filterMode && !hoveredChargingId;
       card.classList.toggle('visible', active);
       // The © OpenStreetMap credit shares the pill's spot: it stays visible on
       // every zoom level EXCEPT while the pill occupies the space.
