@@ -12822,7 +12822,13 @@
       const line = freeExpr ? ['case', freeExpr, TA_FREE_LINE, TA_PAID_LINE] : TA_STATIC_LINE;
       if (map.getLayer('master-poly-fill'))       map.setPaintProperty('master-poly-fill', 'fill-color', fill);
       if (map.getLayer('master-poly-line'))       map.setPaintProperty('master-poly-line', 'line-color', line);
-      if (map.getLayer('master-poly-group-fill')) map.setPaintProperty('master-poly-group-fill', 'fill-color', fill);
+      // Ryhmätäyttö: ÄLÄ ylikirjoita väriä kun p-merkki on alueen päällä
+      // (hoveredPolyId). Silloin samoilla tiedoilla olevat alueet on värjätty
+      // mustiksi (applyHoverHighlight), eikä ajan säätö saa muuttaa niitä
+      // maksullisuusväreiksi. Kun p-merkki ei ole alueen päällä, ryhmätäyttö on
+      // suodatettu pois (näkymätön), joten värin päivitys tässä on merkityksetön
+      // mutta pidetään ennallaan jatkoa varten.
+      if (map.getLayer('master-poly-group-fill') && !hoveredPolyId) map.setPaintProperty('master-poly-group-fill', 'fill-color', fill);
     }
     // Parking garages (halli-icons) are paid parking, so they are shown only when
     // paid areas are shown — i.e. NOT in the free-only view, and NOT in the
