@@ -9447,7 +9447,7 @@
         return false;
       };
       if (map.getZoom() < 13 || !map.getLayer('halli-icons')) return leaveHalli();
-      const hpt = map.project(map.getCenter()); hpt.y += 1;
+      const hpt = map.project(map.getCenter()); hpt.y += 0;
       const hr = 1;
       const hhits = map.queryRenderedFeatures([[hpt.x-hr, hpt.y-hr],[hpt.x+hr, hpt.y+hr]], { layers: map.getLayer('halli-hi-icon') ? ['halli-icons','halli-hi-icon'] : ['halli-icons'] });
       if (!hhits.length) return leaveHalli();
@@ -9478,7 +9478,7 @@
       // A charging station under the P-marker takes priority and reacts in real
       // time during the drag (no finger-lift needed), like parking areas.
       if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= 13) {
-        const ccpt = map.project(map.getCenter()); ccpt.y += 1;
+        const ccpt = map.project(map.getCenter()); ccpt.y += 0;
         const cr = 1;
         const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers: map.getLayer('charging-hi-icon') ? ['charging-icons','charging-hi-icon'] : ['charging-icons'] });
         if (chits.length) {
@@ -9506,7 +9506,7 @@
       // parking-area polygons (and works even where no polygon is rendered).
       if (detectHalliUnderMarker()) return;
       if (!map.getLayer('master-poly-fill')) { updateButtonText(); return; }
-      const cpt = map.project(map.getCenter()); cpt.y += 1;
+      const cpt = map.project(map.getCenter()); cpt.y += 0;
       // Detection at P-marker tip: 1px radius (2px diameter point)
       const radius = 1;
       const bbox = [
@@ -14487,7 +14487,7 @@
       // A charging station directly under the P-marker takes priority and
       // shows its details in the sheet (same behaviour as a parking area).
       if(zoom>=13 && showEvCharging && map.getLayer('charging-icons')){
-        const ccpt = map.project(map.getCenter()); ccpt.y += 1;
+        const ccpt = map.project(map.getCenter()); ccpt.y += 0;
         const cr = 1;
         const cb = [[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]];
         const chits = map.queryRenderedFeatures(cb, { layers: map.getLayer('charging-hi-icon') ? ['charging-icons','charging-hi-icon'] : ['charging-icons'] });
@@ -14522,7 +14522,7 @@
 
       // Highlight parking area under map center (works on mobile & desktop)
       if(zoom>=13 && map.getLayer('master-poly-fill')){
-        const cpt = map.project(map.getCenter()); cpt.y += 1;
+        const cpt = map.project(map.getCenter()); cpt.y += 0;
         // Detection at P-marker tip: 1px radius (2px diameter point)
         const radius = 1;
         const bbox = [
@@ -14590,7 +14590,7 @@
       
       // Check master-poly-fill for any parking area under center crosshair
       const layers = map.getLayer('master-poly-fill') ? ['master-poly-fill'] : [];
-      const _tipPt = map.project(map.getCenter()); _tipPt.y += 1;
+      const _tipPt = map.project(map.getCenter()); _tipPt.y += 0;
       const f = layers.length ? map.queryRenderedFeatures(_tipPt, {layers}) : [];
 
       if(f.length>0 && !masterFeatureLocked){
@@ -15756,7 +15756,7 @@
       if (!btn.classList.contains('active')) return;
       // Charging station under the P-marker → open the "Lataus" view.
       if (hoveredChargingId) {
-        const ccpt = map.project(map.getCenter()); ccpt.y += 1;
+        const ccpt = map.project(map.getCenter()); ccpt.y += 0;
         const cr = 1;
         const ch = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers: map.getLayer('charging-hi-icon') ? ['charging-icons','charging-hi-icon'] : ['charging-icons'] });
         openConnectorPicker(ch.length ? ch[0].properties : null);
@@ -15768,7 +15768,7 @@
       // beneath the garage). No-op until a garage-parking integration exists.
       if (hoveredHalliId) return;
       if (!map.getLayer('master-poly-fill')) return;
-      const cpt = map.project(map.getCenter()); cpt.y += 1;
+      const cpt = map.project(map.getCenter()); cpt.y += 0;
       const r = 1;
       const bbox = [[cpt.x - r, cpt.y - r], [cpt.x + r, cpt.y + r]];
       const f = map.queryRenderedFeatures(bbox, { layers: ['master-poly-fill'] });
@@ -16793,7 +16793,7 @@
       if (typeof map !== 'undefined' && map && map.getLayer
           && map.getLayer('master-poly-fill')) {
         try {
-          const cpt = map.project(map.getCenter()); cpt.y += 1;
+          const cpt = map.project(map.getCenter()); cpt.y += 0;
           const rad = 1;
           const feats = map.queryRenderedFeatures(
             [[cpt.x - rad, cpt.y - rad], [cpt.x + rad, cpt.y + rad]],
