@@ -120,18 +120,6 @@
       display: block;
       width: 48px; height: 48px;
       flex-shrink: 0;
-      transition: width 0.15s ease, height 0.15s ease;
-    }
-    /* "Valittuna"-tila: kun p-merkki on latauspisteen tai pysäköintihallin
-       päällä, ikoni KASVAA hieman ja saa PUNAISEN KEHYKSEN ympärilleen
-       (ääriviiva seuraa ikonin muotoa). paint-order:stroke piirtää punaisen
-       viivan täytön taakse, jolloin näkyvä osa jää ikonin ulkopuolelle =
-       siisti kehys. Katoaa kun merkki viedään pois alueelta. */
-    #center-marker.poi-selected #cm-pin { width: 60px; height: 60px; }
-    #center-marker.poi-selected #cm-pin path {
-      stroke: #ff1744;
-      stroke-width: 2.8;
-      paint-order: stroke;
     }
 
     #cm-code {
@@ -9119,6 +9107,26 @@
     let hoveredPolyId = null;
     let hoveredChargingId = null;   // charging station currently under the P-marker
     let hoveredHalliId = null;      // parking garage currently under the P-marker
+    // Korostus kartan ikoneille: p-merkin ALLA oleva latauspiste-/halli-ikoni
+    // kasvaa ja saa punaisen kehyksen (feature-state 'sel'). P-merkki itse pysyy
+    // muuttumattomana. Synkataan aina hoveredHalliId/hoveredChargingId mukaan;
+    // idempotentti, joten voi kutsua vapaasti jokaisen hover-muutoksen jälkeen.
+    let _hiHalliId = null, _hiChargingId = null;
+    function applyPoiHighlights() {
+      if (typeof map === 'undefined' || !map) return;
+      const hId = (typeof hoveredHalliId !== 'undefined') ? hoveredHalliId : null;
+      const cId = (typeof hoveredChargingId !== 'undefined') ? hoveredChargingId : null;
+      if (_hiHalliId !== hId) {
+        if (_hiHalliId != null) { try { map.setFeatureState({ source:'halli-points', id:_hiHalliId }, { sel:false }); } catch(e){} }
+        if (hId != null)        { try { map.setFeatureState({ source:'halli-points', id:hId }, { sel:true  }); } catch(e){} }
+        _hiHalliId = hId;
+      }
+      if (_hiChargingId !== cId) {
+        if (_hiChargingId != null) { try { map.setFeatureState({ source:'charging-points', id:_hiChargingId }, { sel:false }); } catch(e){} }
+        if (cId != null)          { try { map.setFeatureState({ source:'charging-points', id:cId }, { sel:true  }); } catch(e){} }
+        _hiChargingId = cId;
+      }
+    }
 
     // Returns all feature IDs that share the same "group" as the given props
     function getSameGroupIds(props) {
@@ -9330,7 +9338,6 @@
       centerPointerEl.classList.remove('expanded');
       centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('halli-mode');
-      centerPointerEl.classList.remove('poi-selected');   // alue ≠ latauspiste/halli → ei valittuna-kehystä
       window._chargingContext = false;   // parking-konteksti
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
@@ -9339,7 +9346,6 @@
       centerPointerEl.classList.remove('expanded');
       centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('halli-mode');
-      centerPointerEl.classList.remove('poi-selected');   // pois latauspisteeltä/hallilta → kehys pois
       if (typeof drawCenterBubble === 'function') drawCenterBubble();
     }
     // Expand the on-map P-marker and show the charging-station icon in place of
@@ -9353,7 +9359,6 @@
       centerPointerEl.classList.remove('expanded');
       centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('halli-mode');
-      centerPointerEl.classList.add('poi-selected');   // valittuna: ikoni kasvaa + punainen kehys
       window._chargingContext = true;
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
@@ -9381,7 +9386,6 @@
       centerPointerEl.classList.remove('halli-mode');
       centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('disc-mode');
-      centerPointerEl.classList.add('poi-selected');   // valittuna: ikoni kasvaa + punainen kehys
       window._chargingContext = false;
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
@@ -9424,7 +9428,7 @@
       // parking area IS under the marker, its block re-opens the sheet in the
       // same synchronous frame (no visible flicker).
       const leaveHalli = () => {
-        if (hoveredHalliId !== null) { hoveredHalliId = null; collapseCenterSheet(); if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility(); }
+        if (hoveredHalliId !== null) { hoveredHalliId = null; collapseCenterSheet(); if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility(); if (typeof applyPoiHighlights === 'function') applyPoiHighlights(); }
         return false;
       };
       if (map.getZoom() < 13 || !map.getLayer('halli-icons')) return leaveHalli();
@@ -9439,6 +9443,7 @@
         hoveredHalliId = hp.id;
         hoveredChargingId = null;
         if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pysäköintihallin päällä → piilota ajanhetki-pilleri
+        if (typeof applyPoiHighlights === 'function') applyPoiHighlights();   // korosta halli-ikoni
         if (hoveredPolyId) { clearHoverHighlight(); hoveredPolyId = null; }
         window._badgeAreaId = null;
         showHalliInSheet(hp);
@@ -9471,6 +9476,7 @@
             scheduleHitRefetch();   // freshen this station's status on focus
             if (hoveredPolyId) { clearHoverHighlight(); hoveredPolyId = null; }
             hoveredHalliId = null;   // over a charging station now, not a garage
+            if (typeof applyPoiHighlights === 'function') applyPoiHighlights();   // korosta latauspiste-ikoni (ja poista mahd. halli-korostus)
             window._badgeAreaId = null;
             showChargingInSheet(cp);
             releaseMasterLock();          // real-time hover → don't hold the 4s lock
@@ -9507,6 +9513,7 @@
           hoveredPolyId = f.properties.id;
           hoveredChargingId = null;   // over a parking area now, not a station
           if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pysäköintialueella pilleri näkyy normaalisti
+          if (typeof applyPoiHighlights === 'function') applyPoiHighlights();   // alue → poista ikonikorostukset
           applyHoverHighlight(f.properties);
           // Refresh the center pin icon — Helsinki's free purple zones
           // flow through this code path (not checkParking), so we must
@@ -9646,6 +9653,7 @@
           collapseCenterSheet();
           if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
           if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pois latauspisteeltä tyhjään → pilleri takaisin
+          if (typeof applyPoiHighlights === 'function') applyPoiHighlights();   // tyhjä → poista ikonikorostukset
         }
         updateButtonText();
       }
@@ -9837,14 +9845,30 @@
         if (map.getLayer('halli-icons')) map.moveLayer('halli-icons');
         return;
       }
-      map.addSource('halli-points', { type:'geojson', data: geojson });
+      map.addSource('halli-points', { type:'geojson', data: geojson, promoteId: 'id' });
       map.addLayer({
         id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
         layout: {
-          'icon-image': 'halli-icon', 'icon-size': 0.50,
+          'icon-image': 'halli-icon',
+          // P-merkin alla oleva halli KASVAA (feature-state 'sel').
+          'icon-size': ['case', ['boolean', ['feature-state', 'sel'], false], 0.64, 0.50],
           'icon-allow-overlap': true, 'icon-anchor': 'center'
         }
       });
+      // Punainen kehys valitun hallin ympärille (feature-state 'sel'): läpinäkyvä
+      // täyttö, punainen reuna. Lisätään halli-ikonien ALLE, jotta ikoni jää
+      // renkaan sisään.
+      if (!map.getLayer('halli-hi-ring')) {
+        map.addLayer({
+          id: 'halli-hi-ring', type: 'circle', source: 'halli-points', minzoom: 13,
+          paint: {
+            'circle-radius': ['case', ['boolean', ['feature-state','sel'], false], 23, 0],
+            'circle-color': 'rgba(0,0,0,0)',
+            'circle-stroke-color': '#ff1744',
+            'circle-stroke-width': ['case', ['boolean', ['feature-state','sel'], false], 3, 0]
+          }
+        }, 'halli-icons');
+      }
       // Promote the halli icons to the very top so they always sit on
       // top of the parking-area polygons (otherwise the polygon fills
       // partially cover the icons at higher zoom levels).
@@ -9861,7 +9885,6 @@
         _halliHandlersBound = true;
         map.on('mouseenter', 'halli-icons', (e) => {
           map.getCanvas().style.cursor = 'pointer';
-          map.setLayoutProperty('halli-icons', 'icon-size', 0.72);
           showHalliInfo(e);
         });
         map.on('click', 'halli-icons', (e) => {
@@ -9871,7 +9894,6 @@
         });
         map.on('mouseleave', 'halli-icons', () => {
           map.getCanvas().style.cursor = '';
-          map.setLayoutProperty('halli-icons', 'icon-size', 0.50);
           releaseMasterLock();
         });
       }
@@ -13152,14 +13174,28 @@
           if (map.getSource('charging-points')) {
             map.getSource('charging-points').setData(geojson);
           } else {
-            map.addSource('charging-points', { type: 'geojson', data: geojson });
+            map.addSource('charging-points', { type: 'geojson', data: geojson, promoteId: 'id' });
             map.addLayer({
               id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
               layout: {
                 'icon-image': ['case', ['get', 'available'], 'charging-green', 'charging-gray'],
-                'icon-size': 0.25, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                // P-merkin alla oleva latauspiste KASVAA (feature-state 'sel').
+                'icon-size': ['case', ['boolean', ['feature-state', 'sel'], false], 0.33, 0.25],
+                'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
               }
             });
+            // Punainen kehys valitun latauspisteen ympärille (feature-state 'sel').
+            if (!map.getLayer('charging-hi-ring')) {
+              map.addLayer({
+                id: 'charging-hi-ring', type: 'circle', source: 'charging-points', minzoom: 13,
+                paint: {
+                  'circle-radius': ['case', ['boolean', ['feature-state','sel'], false], 19, 0],
+                  'circle-color': 'rgba(0,0,0,0)',
+                  'circle-stroke-color': '#ff1744',
+                  'circle-stroke-width': ['case', ['boolean', ['feature-state','sel'], false], 3, 0]
+                }
+              }, 'charging-icons');
+            }
             // Tap a charging marker → leave filter view, zoom to 16 centred on
             // the station, and show its details in the sheet (like halli markers).
             // Guarded so a dark-mode style switch re-adding the layer doesn't
@@ -14384,6 +14420,7 @@
             scheduleHitRefetch();   // freshen this station's status on focus
             if(hoveredPolyId){ clearHoverHighlight(); hoveredPolyId = null; window._badgeAreaId = null; hideCenterBadge(); }
             hoveredHalliId = null;   // over a charging station now, not a garage
+            if (typeof applyPoiHighlights === 'function') applyPoiHighlights();   // korosta latauspiste-ikoni
             showChargingInSheet(cp);
             showChargingCenterBadge(cp.available);
           }
@@ -14391,6 +14428,7 @@
         } else if(hoveredChargingId){
           hoveredChargingId = null;   // moved off the station — fall through
           if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pois latauspisteeltä → pilleri takaisin
+            if (typeof applyPoiHighlights === 'function') applyPoiHighlights();
         }
       }
 
