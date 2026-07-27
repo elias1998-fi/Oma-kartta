@@ -2017,12 +2017,12 @@
     #ref-time-reset.visible { visibility: visible; }
 
     /* Colour legend under the Ajanhetki drum */
-    #ref-legend { margin-top: 16px; }
-    .ref-legend-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #555; font-family: Arial, sans-serif; }
-    /* Teksti täyttää tilan, jolloin värilaatikot asettuvat molemmilla riveillä
-       samaan kohtaan (oikeaan reunaan) tekstin pituudesta riippumatta. */
-    .ref-legend-text { flex: 1; }
-    .ref-legend-row + .ref-legend-row { margin-top: 9px; }
+    /* Grid: sarake 1 = luettelomerkki, sarake 2 = teksti (mitoittuu LEVEIMMÄN
+       tekstin mukaan → max-content), sarake 3 = värilaatikko. Näin molempien
+       rivien laatikot asettuvat samaan linjaan heti tekstin perään (sopivan
+       välin päähän), ei enää oikeaan reunaan. */
+    #ref-legend { margin-top: 16px; display: grid; grid-template-columns: auto max-content auto; column-gap: 8px; row-gap: 9px; align-items: center; justify-content: start; font-size: 12px; color: #555; font-family: Arial, sans-serif; }
+    .ref-legend-row { display: contents; }
     .ref-legend-row .ah-bullet { margin-top: 0; }
     /* Legend swatches mirror the map's actual base-layer rendering:
        fill = master-poly-fill colours at fill-opacity 0.20, outline =
