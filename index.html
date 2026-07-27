@@ -120,6 +120,18 @@
       display: block;
       width: 48px; height: 48px;
       flex-shrink: 0;
+      transition: width 0.15s ease, height 0.15s ease;
+    }
+    /* "Valittuna"-tila: kun p-merkki on latauspisteen tai pysäköintihallin
+       päällä, ikoni KASVAA hieman ja saa PUNAISEN KEHYKSEN ympärilleen
+       (ääriviiva seuraa ikonin muotoa). paint-order:stroke piirtää punaisen
+       viivan täytön taakse, jolloin näkyvä osa jää ikonin ulkopuolelle =
+       siisti kehys. Katoaa kun merkki viedään pois alueelta. */
+    #center-marker.poi-selected #cm-pin { width: 60px; height: 60px; }
+    #center-marker.poi-selected #cm-pin path {
+      stroke: #ff1744;
+      stroke-width: 2.8;
+      paint-order: stroke;
     }
 
     #cm-code {
@@ -1667,10 +1679,7 @@
       opacity: 0;
       max-height: 0;
       overflow: hidden;
-      /* Piilotus: teksti häivytetään ENSIN paikallaan (opacity), ja korkeus
-         suljetaan vasta sen jälkeen (viive). Näin overflow-leikkaus ei enää
-         "rullaa" tekstiä kasaan — vaikutelma on puhdas häivytys. */
-      transition: opacity 0.25s ease, max-height 0.2s ease 0.25s;
+      transition: opacity 0.3s ease, max-height 0.3s ease;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -1678,8 +1687,6 @@
     #gps-warning.visible {
       opacity: 1;
       max-height: 50px;
-      /* Näyttö: korkeus avataan ENSIN, sitten teksti häivytetään esiin. */
-      transition: max-height 0.2s ease, opacity 0.25s ease 0.2s;
     }
     .gps-info-icon {
       width: 16px;
@@ -9323,6 +9330,7 @@
       centerPointerEl.classList.remove('expanded');
       centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('halli-mode');
+      centerPointerEl.classList.remove('poi-selected');   // alue ≠ latauspiste/halli → ei valittuna-kehystä
       window._chargingContext = false;   // parking-konteksti
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
@@ -9331,6 +9339,7 @@
       centerPointerEl.classList.remove('expanded');
       centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('halli-mode');
+      centerPointerEl.classList.remove('poi-selected');   // pois latauspisteeltä/hallilta → kehys pois
       if (typeof drawCenterBubble === 'function') drawCenterBubble();
     }
     // Expand the on-map P-marker and show the charging-station icon in place of
@@ -9344,6 +9353,7 @@
       centerPointerEl.classList.remove('expanded');
       centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('halli-mode');
+      centerPointerEl.classList.add('poi-selected');   // valittuna: ikoni kasvaa + punainen kehys
       window._chargingContext = true;
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
@@ -9371,6 +9381,7 @@
       centerPointerEl.classList.remove('halli-mode');
       centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('disc-mode');
+      centerPointerEl.classList.add('poi-selected');   // valittuna: ikoni kasvaa + punainen kehys
       window._chargingContext = false;
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
