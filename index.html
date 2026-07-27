@@ -9072,6 +9072,7 @@
         // top of the halli-icons layer. Promote halli icons to the very top
         // so the parking-hall pins always sit above the area polygons.
         if (map.getLayer('halli-icons')) map.moveLayer('halli-icons');
+        if (map.getLayer('halli-hi-icon')) map.moveLayer('halli-hi-icon');
 
         // Helper: centroid for polygon/multipolygon
         function getCentroid(geom) {
@@ -9121,6 +9122,12 @@
         const notSel = (hId != null) ? ['!=', ['get','id'], hId] : ['!=', ['get','id'], '__tp_none__'];
         if (map.getLayer('halli-hi-icon')) { try { map.setFilter('halli-hi-icon', sel);   } catch(e){} }
         if (map.getLayer('halli-icons'))   { try { map.setFilter('halli-icons',   notSel); } catch(e){} }  // piilota perusikoni valitulta → ei pientä ikonia ison päällä
+        // Nosta ikonikerrokset päällimmäiseksi, ettei mikään myöhemmin lisätty
+        // kerros (polygonit/tekstitarrat) piirry ison ikonin päälle/läpi.
+        if (hId != null) {
+          if (map.getLayer('halli-icons'))   { try { map.moveLayer('halli-icons');   } catch(e){} }
+          if (map.getLayer('halli-hi-icon')) { try { map.moveLayer('halli-hi-icon'); } catch(e){} }
+        }
         _hiHalliId = hId;
       }
       if (_hiChargingId !== cId) {
@@ -9128,6 +9135,10 @@
         const notSel = (cId != null) ? ['!=', ['get','id'], cId] : ['!=', ['get','id'], '__tp_none__'];
         if (map.getLayer('charging-hi-icon')) { try { map.setFilter('charging-hi-icon', sel);   } catch(e){} }
         if (map.getLayer('charging-icons'))   { try { map.setFilter('charging-icons',   notSel); } catch(e){} }
+        if (cId != null) {
+          if (map.getLayer('charging-icons'))   { try { map.moveLayer('charging-icons');   } catch(e){} }
+          if (map.getLayer('charging-hi-icon')) { try { map.moveLayer('charging-hi-icon'); } catch(e){} }
+        }
         _hiChargingId = cId;
       }
     }
@@ -9438,7 +9449,7 @@
       if (map.getZoom() < 13 || !map.getLayer('halli-icons')) return leaveHalli();
       const hpt = map.project(map.getCenter()); hpt.y += 6.5;
       const hr = 1;
-      const hhits = map.queryRenderedFeatures([[hpt.x-hr, hpt.y-hr],[hpt.x+hr, hpt.y+hr]], { layers:['halli-icons'] });
+      const hhits = map.queryRenderedFeatures([[hpt.x-hr, hpt.y-hr],[hpt.x+hr, hpt.y+hr]], { layers: map.getLayer('halli-hi-icon') ? ['halli-icons','halli-hi-icon'] : ['halli-icons'] });
       if (!hhits.length) return leaveHalli();
       let best = hhits[0], bestD = Infinity;
       hhits.forEach(ff => { const pt = map.project(ff.geometry.coordinates); const dx = pt.x-hpt.x, dy = pt.y-hpt.y, d = dx*dx + dy*dy; if (d < bestD) { bestD = d; best = ff; } });
@@ -9469,7 +9480,7 @@
       if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= 13) {
         const ccpt = map.project(map.getCenter()); ccpt.y += 6.5;
         const cr = 1;
-        const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
+        const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers: map.getLayer('charging-hi-icon') ? ['charging-icons','charging-hi-icon'] : ['charging-icons'] });
         if (chits.length) {
           let best = chits[0], bestD = Infinity;
           chits.forEach(ff => { const pt = map.project(ff.geometry.coordinates); const d = (pt.x-ccpt.x)*(pt.x-ccpt.x) + (pt.y-ccpt.y)*(pt.y-ccpt.y); if(d < bestD){ bestD = d; best = ff; } });
@@ -9884,6 +9895,7 @@
         // Make sure the icon layer stays on top of the polygon layers even
         // if polygons were re-added after the halli layer was first created.
         if (map.getLayer('halli-icons')) map.moveLayer('halli-icons');
+        if (map.getLayer('halli-hi-icon')) map.moveLayer('halli-hi-icon');
         return;
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
@@ -13287,6 +13299,7 @@
           }
           setChargingVisibility(showEvCharging);
           if (map.getLayer('charging-icons')) map.moveLayer('charging-icons');
+          if (map.getLayer('charging-hi-icon')) map.moveLayer('charging-hi-icon');
         });
       });
           });
@@ -14477,7 +14490,7 @@
         const ccpt = map.project(map.getCenter()); ccpt.y += 6.5;
         const cr = 1;
         const cb = [[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]];
-        const chits = map.queryRenderedFeatures(cb, { layers:['charging-icons'] });
+        const chits = map.queryRenderedFeatures(cb, { layers: map.getLayer('charging-hi-icon') ? ['charging-icons','charging-hi-icon'] : ['charging-icons'] });
         if(chits.length){
           let best = chits[0], bestD = Infinity;
           chits.forEach(f => {
@@ -15745,7 +15758,7 @@
       if (hoveredChargingId) {
         const ccpt = map.project(map.getCenter()); ccpt.y += 6.5;
         const cr = 1;
-        const ch = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
+        const ch = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers: map.getLayer('charging-hi-icon') ? ['charging-icons','charging-hi-icon'] : ['charging-icons'] });
         openConnectorPicker(ch.length ? ch[0].properties : null);
         return;
       }
