@@ -9925,7 +9925,7 @@
       map.addLayer({
         id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
         layout: {
-          'icon-image': 'halli-icon', 'icon-size': ['interpolate', ['linear'], ['zoom'], 15, 0.50, 16, 0.82],
+          'icon-image': 'halli-icon', 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.5, 0.50, 16, 0.82],
           'icon-allow-overlap': true, 'icon-anchor': 'center'
         }
       });
@@ -9943,7 +9943,7 @@
           id: 'halli-hi-icon', type: 'symbol', source: 'halli-points', minzoom: 13,
           filter: _hiNone,
           layout: {
-            'icon-image': 'halli-icon-hi', 'icon-size': ['interpolate', ['linear'], ['zoom'], 15, 0.50, 16, 0.82],
+            'icon-image': 'halli-icon-hi', 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.5, 0.50, 16, 0.82],
             'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
           }
         });
@@ -13283,7 +13283,7 @@
               id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
               layout: {
                 'icon-image': ['case', ['get', 'available'], 'charging-green', 'charging-gray'],
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 15, 0.25, 16, 0.42], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 14.5, 0.25, 16, 0.42], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
               }
             });
             // Korostuskerros p-merkin ALLA olevalle latauspisteelle: suurennettu,
@@ -13295,7 +13295,7 @@
                 filter: _chNone,
                 layout: {
                   'icon-image': ['case', ['get', 'available'], 'charging-green-hi', 'charging-gray-hi'],
-                  'icon-size': ['interpolate', ['linear'], ['zoom'], 15, 0.25, 16, 0.42], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                  'icon-size': ['interpolate', ['linear'], ['zoom'], 14.5, 0.25, 16, 0.42], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
                 }
               });
             }
