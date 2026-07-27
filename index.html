@@ -9939,7 +9939,7 @@
         id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
         layout: {
           'icon-image': ['step', ['zoom'], 'halli-plain', 14, 'halli-icon'],
-          'icon-size': ['step', ['zoom'], 0.25, 14, ['interpolate', ['linear'], ['zoom'], 14, 0.50, 16, 0.90]],
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.25, 14, 0.50, 16, 0.90],
           'icon-allow-overlap': true, 'icon-anchor': 'center'
         }
       });
@@ -9958,7 +9958,7 @@
           filter: _hiNone,
           layout: {
             'icon-image': ['step', ['zoom'], 'halli-plain-hi', 14, 'halli-icon-hi'],
-            'icon-size': ['step', ['zoom'], 0.25, 14, ['interpolate', ['linear'], ['zoom'], 14, 0.50, 16, 0.90]],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.25, 14, 0.50, 16, 0.90],
             'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
           }
         });
@@ -13345,7 +13345,7 @@
               id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
               layout: {
                 'icon-image': ['step', ['zoom'], ['case', ['get','available'], 'charging-plain-green', 'charging-plain-gray'], 14, ['case', ['get','available'], 'charging-green', 'charging-gray']],
-                'icon-size': ['step', ['zoom'], 0.125, 14, ['interpolate', ['linear'], ['zoom'], 14, 0.25, 16, 0.46]], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.125, 14, 0.25, 16, 0.46], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
               }
             });
             // Korostuskerros p-merkin ALLA olevalle latauspisteelle: suurennettu,
@@ -13357,7 +13357,7 @@
                 filter: _chNone,
                 layout: {
                   'icon-image': ['step', ['zoom'], ['case', ['get','available'], 'charging-plain-green-hi', 'charging-plain-gray-hi'], 14, ['case', ['get','available'], 'charging-green-hi', 'charging-gray-hi']],
-                  'icon-size': ['step', ['zoom'], 0.125, 14, ['interpolate', ['linear'], ['zoom'], 14, 0.25, 16, 0.46]], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                  'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.125, 14, 0.25, 16, 0.46], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
                 }
               });
             }
