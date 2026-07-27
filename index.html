@@ -14274,6 +14274,11 @@
       // Clear any active area highlight + reset state, so the red overlay doesn't linger
       clearHoverHighlight();
       hoveredPolyId = null;
+      // Poista myös halli-/latauspiste-ikonin korostus (suurennus + punakehys),
+      // ettei se jää päälle vaikka p-merkki piilotetaan suodatinnäkymässä.
+      hoveredHalliId = null;
+      hoveredChargingId = null;
+      if (typeof applyPoiHighlights === 'function') applyPoiHighlights();
       releaseMasterLock();
       // Hide the directions/share row — it belongs to the info sheet (P-marker
       // over a charging station or parking area), not the filter view.
