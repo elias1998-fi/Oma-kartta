@@ -9117,13 +9117,17 @@
       const hId = (typeof hoveredHalliId !== 'undefined') ? hoveredHalliId : null;
       const cId = (typeof hoveredChargingId !== 'undefined') ? hoveredChargingId : null;
       if (_hiHalliId !== hId) {
-        const f = (hId != null) ? ['==', ['get','id'], hId] : ['==', ['get','id'], '__tp_none__'];
-        if (map.getLayer('halli-hi-icon')) { try { map.setFilter('halli-hi-icon', f); } catch(e){} }
+        const sel    = (hId != null) ? ['==', ['get','id'], hId] : ['==', ['get','id'], '__tp_none__'];
+        const notSel = (hId != null) ? ['!=', ['get','id'], hId] : ['!=', ['get','id'], '__tp_none__'];
+        if (map.getLayer('halli-hi-icon')) { try { map.setFilter('halli-hi-icon', sel);   } catch(e){} }
+        if (map.getLayer('halli-icons'))   { try { map.setFilter('halli-icons',   notSel); } catch(e){} }  // piilota perusikoni valitulta → ei pientä ikonia ison päällä
         _hiHalliId = hId;
       }
       if (_hiChargingId !== cId) {
-        const f = (cId != null) ? ['==', ['get','id'], cId] : ['==', ['get','id'], '__tp_none__'];
-        if (map.getLayer('charging-hi-icon')) { try { map.setFilter('charging-hi-icon', f); } catch(e){} }
+        const sel    = (cId != null) ? ['==', ['get','id'], cId] : ['==', ['get','id'], '__tp_none__'];
+        const notSel = (cId != null) ? ['!=', ['get','id'], cId] : ['!=', ['get','id'], '__tp_none__'];
+        if (map.getLayer('charging-hi-icon')) { try { map.setFilter('charging-hi-icon', sel);   } catch(e){} }
+        if (map.getLayer('charging-icons'))   { try { map.setFilter('charging-icons',   notSel); } catch(e){} }
         _hiChargingId = cId;
       }
     }
