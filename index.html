@@ -4185,7 +4185,7 @@
           <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;">(virtuaalinen asiakaspalvelija)</div>
           <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;">90% tilanteista ratkeavat tätä kautta</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#008151;display:inline-block;"></span>
             <span style="font-size:13px;color:#7ee787;font-weight:600;">Vastausaika 0–1 min</span>
           </div>
         </div>
@@ -4322,7 +4322,7 @@
       <rect x="17.5" y="12.5" width="3.5" height="6.5" rx="1.6"/>
       <path d="M19.2 19v.6a2.6 2.6 0 0 1-2.6 2.6H13.5"/>
     </svg>
-    <span style="position:absolute;top:1px;right:1px;width:14px;height:14px;border-radius:50%;background:#4caf50;border:2px solid white;pointer-events:none;"></span>
+    <span style="position:absolute;top:1px;right:1px;width:14px;height:14px;border-radius:50%;background:#008151;border:2px solid white;pointer-events:none;"></span>
     <button id="sb-open" type="button" class="sb-sat">Avaa</button>
     <button id="sb-close" type="button" class="sb-sat" aria-label="Sulje">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#444" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -9808,7 +9808,9 @@
     // jonka polut ovat samat kuin profiilin "Ajoneuvot"-osion ikonissa
     // (Path2D). Piirretään 64px koordinaatistoon; sininen pyöristetty neliö
     // valkoisella reunuksella pohjana (näkyvyys kartalla).
-    function _drawHalliGlyph(ctx) {
+    // Pelkkä autotallin "kuutio": tummansininen pyöristetty neliö + valkoinen
+    // reunus (ilman sisältöä). Käytetään mm. kaukana zoomattaessa.
+    function _drawHalliSquare(ctx) {
       const size = 64, r = 10;
       const rr = (x, y, w, h, rad) => {
         ctx.beginPath();
@@ -9818,10 +9820,14 @@
         ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
         ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
       };
-      // Sininen tausta + valkoinen reunus
       rr(2, 2, size - 4, size - 4, r);
-      ctx.fillStyle = '#1565C0'; ctx.fill();
+      ctx.fillStyle = '#0C0243'; ctx.fill();                 // sovelluksen tummansininen
       ctx.strokeStyle = 'white'; ctx.lineWidth = 2.5; ctx.stroke();
+    }
+    // Autotalli + SIVUKUVA-AUTO (auton polut samat kuin profiilin "Ajoneuvot"-
+    // ikonissa, Path2D). Neliö pohjana + valkoinen sisältö.
+    function _drawHalliGlyph(ctx) {
+      _drawHalliSquare(ctx);
       // Autotallin runko: harjakatto + kaksi seinää (avoin alaosa, kuten referenssi)
       ctx.strokeStyle = 'white'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(8, 23); ctx.lineTo(32, 9); ctx.lineTo(56, 23); ctx.stroke();   // katto
@@ -9841,21 +9847,8 @@
         ctx.restore();
       } catch (e) { try { ctx.restore(); } catch (e2) {} }
     }
-    function createHalliIconCanvas() {
-      const size = 64;
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      _drawHalliGlyph(ctx);
-      return ctx.getImageData(0, 0, size, size);
-    }
-    // Valittu (p-merkin alla oleva) halli: sama ikoni + punainen kehys sen
-    // MUOTOISENA (pyöristetty neliö), hieman marginaalilla ettei kehys leikkaudu.
-    function createHalliIconCanvasHi() {
-      const pad = 7, base = 64, size = base + pad * 2;
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = size;
-      const ctx = canvas.getContext('2d');
+    // Punainen korostuskehys padded-canvasille (jaettu perus- ja pelkkä-kuutio-hi:lle)
+    function _halliHiFrame(ctx, pad, base) {
       const r = 10;
       const rr = (x, y, w, h, rad) => {
         ctx.beginPath();
@@ -9865,17 +9858,31 @@
         ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
         ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
       };
-      // Perusikoni (autotalli + sivuauto) siirrettynä marginaalin verran
-      ctx.save();
-      ctx.translate(pad, pad);
-      _drawHalliGlyph(ctx);
-      ctx.restore();
-      // Punainen kehys ikonin ympärillä (ikonin muotoinen)
       rr(pad - 1.5, pad - 1.5, base + 3, base + 3, r + 2);
       ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.stroke();
+    }
+    function _halliImageData(drawFn) {
+      const size = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      drawFn(ctx);
       return ctx.getImageData(0, 0, size, size);
     }
-    // ── Halli point markers ───────────────────────────────────────────
+    function _halliImageDataHi(drawFn) {
+      const pad = 7, base = 64, size = base + pad * 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.save(); ctx.translate(pad, pad); drawFn(ctx); ctx.restore();
+      _halliHiFrame(ctx, pad, base);
+      return ctx.getImageData(0, 0, size, size);
+    }
+    function createHalliIconCanvas()      { return _halliImageData(_drawHalliGlyph); }
+    function createHalliPlainCanvas()     { return _halliImageData(_drawHalliSquare); }    // Valittu (p-merkin alla oleva) halli: sama ikoni + punainen kehys sen
+    // MUOTOISENA (pyöristetty neliö), hieman marginaalilla ettei kehys leikkaudu.
+    function createHalliIconCanvasHi()    { return _halliImageDataHi(_drawHalliGlyph); }
+    function createHalliPlainCanvasHi()   { return _halliImageDataHi(_drawHalliSquare); }    // ── Halli point markers ───────────────────────────────────────────
     async function loadHalliMarkers() {
       try {
         const res = await fetch(
@@ -9907,6 +9914,12 @@
         if (!map.hasImage('halli-icon-hi')) {
           map.addImage('halli-icon-hi', createHalliIconCanvasHi(), { pixelRatio: 2 });
         }
+        if (!map.hasImage('halli-plain')) {
+          map.addImage('halli-plain', createHalliPlainCanvas(), { pixelRatio: 2 });
+        }
+        if (!map.hasImage('halli-plain-hi')) {
+          map.addImage('halli-plain-hi', createHalliPlainCanvasHi(), { pixelRatio: 2 });
+        }
         addHalliLayers(halliGeoJSON);
       } catch(e) { console.error('Halli load error:', e); }
     }
@@ -9925,7 +9938,8 @@
       map.addLayer({
         id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
         layout: {
-          'icon-image': 'halli-icon', 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.5, 0.50, 16, 0.82],
+          'icon-image': ['step', ['zoom'], 'halli-plain', 14, 'halli-icon'],
+          'icon-size': ['step', ['zoom'], 0.25, 14, ['interpolate', ['linear'], ['zoom'], 14, 0.50, 16, 0.90]],
           'icon-allow-overlap': true, 'icon-anchor': 'center'
         }
       });
@@ -9943,7 +9957,8 @@
           id: 'halli-hi-icon', type: 'symbol', source: 'halli-points', minzoom: 13,
           filter: _hiNone,
           layout: {
-            'icon-image': 'halli-icon-hi', 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.5, 0.50, 16, 0.82],
+            'icon-image': ['step', ['zoom'], 'halli-plain-hi', 14, 'halli-icon-hi'],
+            'icon-size': ['step', ['zoom'], 0.25, 14, ['interpolate', ['linear'], ['zoom'], 14, 0.50, 16, 0.90]],
             'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
           }
         });
@@ -11520,6 +11535,15 @@
         if (typeof createHalliIconCanvas === 'function' && !map.hasImage('halli-icon')) {
           map.addImage('halli-icon', createHalliIconCanvas(), { pixelRatio: 2 });
         }
+        if (typeof createHalliIconCanvasHi === 'function' && !map.hasImage('halli-icon-hi')) {
+          map.addImage('halli-icon-hi', createHalliIconCanvasHi(), { pixelRatio: 2 });
+        }
+        if (typeof createHalliPlainCanvas === 'function' && !map.hasImage('halli-plain')) {
+          map.addImage('halli-plain', createHalliPlainCanvas(), { pixelRatio: 2 });
+        }
+        if (typeof createHalliPlainCanvasHi === 'function' && !map.hasImage('halli-plain-hi')) {
+          map.addImage('halli-plain-hi', createHalliPlainCanvasHi(), { pixelRatio: 2 });
+        }
         if (_lastHalliGeoJSON) addHalliLayers(_lastHalliGeoJSON);
         else if (typeof loadHalliMarkers === 'function') { halliLoaded = false; loadHalliMarkers(); }
       } catch(e){ console.error('reapply halli', e); }
@@ -12122,7 +12146,7 @@
       const buildOrig = () => {
         if (_locEditOrigMarker) { _locEditOrigMarker.remove(); _locEditOrigMarker = null; }
         const el = document.createElement('img');
-        el.src = (typeof chargingIconSvg === 'function') ? chargingIconSvg('#4caf50') : '';
+        el.src = (typeof chargingIconSvg === 'function') ? chargingIconSvg('#008151') : '';
         el.style.cssText = 'width:30px;height:30px;display:block;';
         _locEditOrigMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
           .setLngLat([center.lng, center.lat]).addTo(locEditMap);
@@ -13214,6 +13238,25 @@
         '</svg>'
       );
     }
+    // Pelkkä latauspiste-"kuutio": tumma pyöristetty neliö + värillinen sisus,
+    // ilman pistoke-/salamagrafiikkaa. Käytetään kaukana zoomattaessa.
+    function chargingPlainSvg(bg){
+      return 'data:image/svg+xml;base64,' + btoa(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">' +
+        '<rect x="0" y="0" width="128" height="128" rx="26" fill="#1a1a1a"/>' +
+        '<rect x="10" y="10" width="108" height="108" rx="17" fill="' + bg + '"/>' +
+        '</svg>'
+      );
+    }
+    function chargingPlainSvgHi(bg){
+      return 'data:image/svg+xml;base64,' + btoa(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11 -11 150 150" width="150" height="150">' +
+        '<rect x="0" y="0" width="128" height="128" rx="26" fill="#1a1a1a"/>' +
+        '<rect x="10" y="10" width="108" height="108" rx="17" fill="' + bg + '"/>' +
+        '<rect x="-5" y="-5" width="138" height="138" rx="31" fill="none" stroke="#ff1744" stroke-width="12"/>' +
+        '</svg>'
+      );
+    }
     function ensureChargingImage(name, bg, cb){
       if (map.hasImage(name)) { cb(); return; }
       const img = new Image(128, 128);
@@ -13228,6 +13271,21 @@
       img.onload = () => { if (!map.hasImage(name)) map.addImage(name, img, { pixelRatio: 2 }); cb(); };
       img.onerror = cb;
       img.src = chargingIconSvgHi(bg);
+    }
+    // Pelkkä-kuutio -kuvien lataajat (perus + punakehyksinen).
+    function ensureChargingPlain(name, bg, cb){
+      if (map.hasImage(name)) { cb(); return; }
+      const img = new Image(128, 128);
+      img.onload = () => { if (!map.hasImage(name)) map.addImage(name, img, { pixelRatio: 2 }); cb(); };
+      img.onerror = cb;
+      img.src = chargingPlainSvg(bg);
+    }
+    function ensureChargingPlainHi(name, bg, cb){
+      if (map.hasImage(name)) { cb(); return; }
+      const img = new Image(150, 150);
+      img.onload = () => { if (!map.hasImage(name)) map.addImage(name, img, { pixelRatio: 2 }); cb(); };
+      img.onerror = cb;
+      img.src = chargingPlainSvgHi(bg);
     }
     function setChargingVisibility(on){
       if (map.getLayer('charging-icons')) map.setLayoutProperty('charging-icons', 'visibility', on ? 'visible' : 'none');
@@ -13270,10 +13328,14 @@
     }
     let _chargingHandlersBound = false;
     function addChargingLayer(){
-      ensureChargingImage('charging-green', '#4caf50', () => {
+      ensureChargingImage('charging-green', '#008151', () => {
         ensureChargingImage('charging-gray', '#b4b7bd', () => {
-          ensureChargingImageHi('charging-green-hi', '#4caf50', () => {
+          ensureChargingImageHi('charging-green-hi', '#008151', () => {
           ensureChargingImageHi('charging-gray-hi', '#b4b7bd', () => {
+          ensureChargingPlain('charging-plain-green', '#008151', () => {
+          ensureChargingPlain('charging-plain-gray', '#b4b7bd', () => {
+          ensureChargingPlainHi('charging-plain-green-hi', '#008151', () => {
+          ensureChargingPlainHi('charging-plain-gray-hi', '#b4b7bd', () => {
           const geojson = { type: 'FeatureCollection', features: _chargingFeatures };
           if (map.getSource('charging-points')) {
             map.getSource('charging-points').setData(geojson);
@@ -13282,8 +13344,8 @@
             map.addLayer({
               id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
               layout: {
-                'icon-image': ['case', ['get', 'available'], 'charging-green', 'charging-gray'],
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 14.5, 0.25, 16, 0.42], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                'icon-image': ['step', ['zoom'], ['case', ['get','available'], 'charging-plain-green', 'charging-plain-gray'], 14, ['case', ['get','available'], 'charging-green', 'charging-gray']],
+                'icon-size': ['step', ['zoom'], 0.125, 14, ['interpolate', ['linear'], ['zoom'], 14, 0.25, 16, 0.46]], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
               }
             });
             // Korostuskerros p-merkin ALLA olevalle latauspisteelle: suurennettu,
@@ -13294,8 +13356,8 @@
                 id: 'charging-hi-icon', type: 'symbol', source: 'charging-points', minzoom: 13,
                 filter: _chNone,
                 layout: {
-                  'icon-image': ['case', ['get', 'available'], 'charging-green-hi', 'charging-gray-hi'],
-                  'icon-size': ['interpolate', ['linear'], ['zoom'], 14.5, 0.25, 16, 0.42], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                  'icon-image': ['step', ['zoom'], ['case', ['get','available'], 'charging-plain-green-hi', 'charging-plain-gray-hi'], 14, ['case', ['get','available'], 'charging-green-hi', 'charging-gray-hi']],
+                  'icon-size': ['step', ['zoom'], 0.125, 14, ['interpolate', ['linear'], ['zoom'], 14, 0.25, 16, 0.46]], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
                 }
               });
             }
@@ -13325,6 +13387,10 @@
           if (map.getLayer('charging-hi-icon')) map.moveLayer('charging-hi-icon');
         });
       });
+          });
+          });
+          });
+          });
           });
           });
     }
@@ -13714,7 +13780,7 @@
       if (cbadge) {
         const stTxt = isAvail ? 'Tilaa' : 'Täynnä';
         const stCol = '#111';   // status text in black (icon still shows green/gray)
-        const icCol = isAvail ? '#4caf50' : '#b4b7bd';   // gray icon when not available
+        const icCol = isAvail ? '#008151' : '#b4b7bd';   // gray icon when not available
         cbadge.innerHTML = '<img src="' + chargingIconSvg(icCol) + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
           '<span style="vertical-align:middle;margin-left:5px;color:' + stCol + ';font-size:14px;font-weight:800;letter-spacing:0.3px;">' + stTxt + '</span>';
         cbadge.style.display = 'inline-block';
@@ -13765,7 +13831,7 @@
       const statusTxt = isAvail
         ? '<span style="color:#1faa4a;font-weight:700;">Tilaa</span>'
         : '<span style="color:#c0392b;font-weight:700;">Täynnä</span>';
-      const iconUrl = chargingIconSvg(isAvail ? '#4caf50' : '#b4b7bd');
+      const iconUrl = chargingIconSvg(isAvail ? '#008151' : '#b4b7bd');
       const veh = (typeof vehicles !== 'undefined' && vehicles[selectedVehicleIdx]) ? vehicles[selectedVehicleIdx] : { plate:'', name:'' };
       const pay = (typeof paymentMethods !== 'undefined' && paymentMethods[selectedPaymentIdx]) ? paymentMethods[selectedPaymentIdx] : { name:'', icon:'' };
       const payIcon = (typeof getPaymentIcon === 'function') ? getPaymentIcon(pay.icon) : '';
