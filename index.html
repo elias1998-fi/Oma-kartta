@@ -9804,43 +9804,51 @@
     });
 
     // ── Draw P icon on canvas (avoids SVG/Image loading issues) ────────
+    // Jaettu piirto: autotalli (harjakatto + kaksi seinää) ja SIVUKUVA-AUTO,
+    // jonka polut ovat samat kuin profiilin "Ajoneuvot"-osion ikonissa
+    // (Path2D). Piirretään 64px koordinaatistoon; sininen pyöristetty neliö
+    // valkoisella reunuksella pohjana (näkyvyys kartalla).
+    function _drawHalliGlyph(ctx) {
+      const size = 64, r = 10;
+      const rr = (x, y, w, h, rad) => {
+        ctx.beginPath();
+        ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+        ctx.lineTo(x + w, y + h - rad); ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+        ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+        ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
+      };
+      // Sininen tausta + valkoinen reunus
+      rr(2, 2, size - 4, size - 4, r);
+      ctx.fillStyle = '#1565C0'; ctx.fill();
+      ctx.strokeStyle = 'white'; ctx.lineWidth = 2.5; ctx.stroke();
+      // Autotallin runko: harjakatto + kaksi seinää (avoin alaosa, kuten referenssi)
+      ctx.strokeStyle = 'white'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(8, 23); ctx.lineTo(32, 9); ctx.lineTo(56, 23); ctx.stroke();   // katto
+      ctx.beginPath(); ctx.moveTo(8, 23); ctx.lineTo(8, 53); ctx.stroke();                        // vasen seinä
+      ctx.beginPath(); ctx.moveTo(56, 23); ctx.lineTo(56, 53); ctx.stroke();                      // oikea seinä
+      // Sivukuva-auto (samat polut kuin Ajoneuvot-ikonissa), skaalattuna talon sisään
+      const sc = 1.9, tx = 32 - 12.25 * sc, ty = 52 - 18.5 * sc;
+      try {
+        ctx.save();
+        ctx.translate(tx, ty); ctx.scale(sc, sc);
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 2 / sc; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.stroke(new Path2D('M3 13.5l1.5-4A2 2 0 0 1 6.4 8h8.2a2 2 0 0 1 1.6.8l2.4 3.2 1.9.6A1.5 1.5 0 0 1 22 14v1.5a1 1 0 0 1-1 1h-1.5'));
+        ctx.stroke(new Path2D('M4.5 16.5H3.5a1 1 0 0 1-1-1V13.5'));
+        ctx.beginPath(); ctx.moveTo(9.5, 16.5); ctx.lineTo(14.5, 16.5); ctx.stroke();
+        ctx.beginPath(); ctx.arc(7, 16.5, 2, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(17, 16.5, 2, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      } catch (e) { try { ctx.restore(); } catch (e2) {} }
+    }
     function createHalliIconCanvas() {
       const size = 64;
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = size;
       const ctx = canvas.getContext('2d');
-      const r = 10;
-      // Blue rounded rect
-      ctx.beginPath();
-      ctx.moveTo(r, 2); ctx.lineTo(size-r, 2);
-      ctx.quadraticCurveTo(size-2, 2, size-2, r);
-      ctx.lineTo(size-2, size-r);
-      ctx.quadraticCurveTo(size-2, size-2, size-r, size-2);
-      ctx.lineTo(r, size-2);
-      ctx.quadraticCurveTo(2, size-2, 2, size-r);
-      ctx.lineTo(2, r);
-      ctx.quadraticCurveTo(2, 2, r, 2);
-      ctx.closePath();
-      ctx.fillStyle = '#1565C0';
-      ctx.fill();
-      // White border
-      ctx.strokeStyle = 'white'; ctx.lineWidth = 2.5;
-      ctx.stroke();
-      // Roof outline
-      ctx.beginPath();
-      ctx.moveTo(12, 24); ctx.lineTo(size/2, 10); ctx.lineTo(size-12, 24);
-      ctx.strokeStyle = 'white'; ctx.lineWidth = 3.5;
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.stroke();
-      // P letter
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 32px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText('P', size/2, size - 12);
+      _drawHalliGlyph(ctx);
       return ctx.getImageData(0, 0, size, size);
     }
-
     // Valittu (p-merkin alla oleva) halli: sama ikoni + punainen kehys sen
     // MUOTOISENA (pyöristetty neliö), hieman marginaalilla ettei kehys leikkaudu.
     function createHalliIconCanvasHi() {
@@ -9857,24 +9865,16 @@
         ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
         ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
       };
-      // Perusikoni (siirretty marginaalin verran)
+      // Perusikoni (autotalli + sivuauto) siirrettynä marginaalin verran
       ctx.save();
       ctx.translate(pad, pad);
-      rr(2, 2, base - 4, base - 4, r);
-      ctx.fillStyle = '#1565C0'; ctx.fill();
-      ctx.strokeStyle = 'white'; ctx.lineWidth = 2.5; ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(12, 24); ctx.lineTo(base / 2, 10); ctx.lineTo(base - 12, 24);
-      ctx.strokeStyle = 'white'; ctx.lineWidth = 3.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
-      ctx.fillStyle = 'white'; ctx.font = 'bold 32px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-      ctx.fillText('P', base / 2, base - 12);
+      _drawHalliGlyph(ctx);
       ctx.restore();
       // Punainen kehys ikonin ympärillä (ikonin muotoinen)
       rr(pad - 1.5, pad - 1.5, base + 3, base + 3, r + 2);
       ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.stroke();
       return ctx.getImageData(0, 0, size, size);
     }
-
     // ── Halli point markers ───────────────────────────────────────────
     async function loadHalliMarkers() {
       try {
