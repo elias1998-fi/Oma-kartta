@@ -5946,6 +5946,28 @@
     });
     map.touchZoomRotate.disableRotation();
 
+    // Kartan sisäinen koko on pidettävä säiliön TODELLISEN koon mukaisena.
+    // Pelkkä window-'resize' ei riitä: säiliö voi saada lopullisen kokonsa vasta
+    // kartan alustuksen jälkeen (sovellusta avattaessa) tai muuttua ilman
+    // window-resizea (mobiilin osoitepalkki, näppäimistö, PWA:n dynaaminen
+    // viewport). Jos kokoa ei päivitetä, map.project(map.getCenter()) antaa
+    // pisteen väärän kokoisen viewportin mukaan, jolloin CSS:llä säiliön keskelle
+    // ankkuroitu p-merkin kärki ja osumantunnistuspiste eivät osu kohdakkain →
+    // ajoittainen iso ero (katoaa uudelleenkäynnistyksellä). ResizeObserver +
+    // load/pageshow/visibility -päivitykset korjaavat tämän luotettavasti.
+    (function keepMapSized(){
+      let _raf = 0;
+      const doResize = () => { _raf = 0; try { map.resize(); } catch(e){} };
+      const schedule = () => { if (!_raf) _raf = requestAnimationFrame(doResize); };
+      const el = document.getElementById('map');
+      if (el && typeof ResizeObserver !== 'undefined') {
+        try { new ResizeObserver(schedule).observe(el); } catch(e){}
+      }
+      map.on('load', schedule);
+      window.addEventListener('pageshow', schedule);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) schedule(); });
+    })();
+
     // "Tuplanapautus + veto" -zoomaus (yhden sormen tuplanapautus, sitten pito
     // ja veto ylös/alas zoomaa jatkuvasti) ei sammu doubleClickZoom:false
     // -asetuksella, koska se on osa MapLibren touchZoomRotate-käsittelijän
