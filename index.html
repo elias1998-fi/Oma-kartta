@@ -1667,7 +1667,10 @@
       opacity: 0;
       max-height: 0;
       overflow: hidden;
-      transition: opacity 0.3s ease, max-height 0.3s ease;
+      /* Piilotus: teksti häivytetään ENSIN paikallaan (opacity), ja korkeus
+         suljetaan vasta sen jälkeen (viive). Näin overflow-leikkaus ei enää
+         "rullaa" tekstiä kasaan — vaikutelma on puhdas häivytys. */
+      transition: opacity 0.25s ease, max-height 0.2s ease 0.25s;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -1675,6 +1678,8 @@
     #gps-warning.visible {
       opacity: 1;
       max-height: 50px;
+      /* Näyttö: korkeus avataan ENSIN, sitten teksti häivytetään esiin. */
+      transition: max-height 0.2s ease, opacity 0.25s ease 0.2s;
     }
     .gps-info-icon {
       width: 16px;
