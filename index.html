@@ -9871,7 +9871,7 @@
       ctx.restore();
       // Punainen kehys ikonin ympärillä (ikonin muotoinen)
       rr(pad - 1.5, pad - 1.5, base + 3, base + 3, r + 2);
-      ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 6; ctx.lineJoin = 'round'; ctx.stroke();
+      ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.stroke();
       return ctx.getImageData(0, 0, size, size);
     }
 
@@ -9943,7 +9943,7 @@
           id: 'halli-hi-icon', type: 'symbol', source: 'halli-points', minzoom: 13,
           filter: _hiNone,
           layout: {
-            'icon-image': 'halli-icon-hi', 'icon-size': 0.82,
+            'icon-image': 'halli-icon-hi', 'icon-size': 0.50,
             'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
           }
         });
@@ -13210,7 +13210,7 @@
         '<rect x="92.4" y="33" width="3.6" height="8" rx="1.8" fill="#1a1a1a"/>' +
         '<rect x="37" y="36" width="23" height="15" rx="2.5" fill="' + bg + '"/>' +
         '<path d="M53 55 L40 80 L49 80 L45 99 L62 71 L52 71 Z" fill="' + bg + '"/>' +
-        '<rect x="-5" y="-5" width="138" height="138" rx="31" fill="none" stroke="#ff1744" stroke-width="9"/>' +
+        '<rect x="-5" y="-5" width="138" height="138" rx="31" fill="none" stroke="#ff1744" stroke-width="12"/>' +
         '</svg>'
       );
     }
@@ -13295,7 +13295,7 @@
                 filter: _chNone,
                 layout: {
                   'icon-image': ['case', ['get', 'available'], 'charging-green-hi', 'charging-gray-hi'],
-                  'icon-size': 0.42, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                  'icon-size': 0.25, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
                 }
               });
             }
