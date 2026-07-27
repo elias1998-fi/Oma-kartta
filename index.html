@@ -2019,6 +2019,9 @@
     /* Colour legend under the Ajanhetki drum */
     #ref-legend { margin-top: 16px; }
     .ref-legend-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #555; font-family: Arial, sans-serif; }
+    /* Teksti täyttää tilan, jolloin värilaatikot asettuvat molemmilla riveillä
+       samaan kohtaan (oikeaan reunaan) tekstin pituudesta riippumatta. */
+    .ref-legend-text { flex: 1; }
     .ref-legend-row + .ref-legend-row { margin-top: 9px; }
     .ref-legend-row .ah-bullet { margin-top: 0; }
     /* Legend swatches mirror the map's actual base-layer rendering:
@@ -9328,18 +9331,16 @@
     // Expand the on-map P-marker and show the charging-station icon in place of
     // the area-code badge (used when the marker is over a charging station).
     function showChargingCenterBadge(avail) {
+      // P-merkki pysyy NORMAALINA myös latauspisteen päällä: ei laajenneta eikä
+      // vaihdeta latauskuvakkeeseen. Sheetti näyttää latauspisteen tilan
+      // (Tilaa/Täynnä) silti normaalisti. window._chargingContext pidetään
+      // päällä, jotta tyhjän tilan kehote osaa viitata latauspisteisiin.
       if (window._navigationInProgress) return;
-      const isAvail = (avail === true || avail === 'true');
-      const iconColor  = isAvail ? '#4caf50' : '#b4b7bd';   // gray icon when not available
-      const label      = isAvail ? 'Tilaa' : 'Täynnä';
-      const labelColor = '#111';   // status text in black (icon still shows green/gray)
-      centerBadgeCode.innerHTML =
-        '<img src="' + chargingIconSvg(iconColor) + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:' + labelColor + ';">' + label + '</span>';
-      centerPointerEl.classList.add('expanded');
-      centerPointerEl.classList.add('charging-mode');   // CSS hides the small "P" pin
+      centerPointerEl.classList.remove('expanded');
+      centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('halli-mode');
-      window._chargingContext = true;                   // empty-state prompt → "latauspisteet"
+      window._chargingContext = true;
+      if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
     }
 
@@ -9358,18 +9359,15 @@
       );
     }
     function showHalliCenterBadge(code) {
+      // P-merkki pysyy NORMAALINA myös pysäköintihallin päällä: ei laajenneta
+      // eikä vaihdeta halli-kuvakkeeseen. Sheetti näyttää hallin tiedot silti.
       if (window._navigationInProgress) return;
-      // Garage icon sized identically to the charging icon (20px). Garages carry
-      // no real-time availability in the open data (unlike charging stations),
-      // so the expanded marker shows the icon with a static "Tilaa" label.
-      centerBadgeCode.innerHTML =
-        '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        '<span style="vertical-align:middle;margin-left:4px;font-size:14px;color:#111;">Tilaa</span>';
-      centerPointerEl.classList.add('expanded');
-      centerPointerEl.classList.add('halli-mode');
+      centerPointerEl.classList.remove('expanded');
+      centerPointerEl.classList.remove('halli-mode');
       centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('disc-mode');
       window._chargingContext = false;
+      if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
     }
     // Show a parking garage's details in the bottom sheet, laid out like a
