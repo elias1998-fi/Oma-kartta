@@ -9118,12 +9118,12 @@
       const cId = (typeof hoveredChargingId !== 'undefined') ? hoveredChargingId : null;
       if (_hiHalliId !== hId) {
         const f = (hId != null) ? ['==', ['get','id'], hId] : ['==', ['get','id'], '__tp_none__'];
-        ['halli-hi-ring','halli-hi-icon'].forEach(l => { if (map.getLayer(l)) { try { map.setFilter(l, f); } catch(e){} } });
+        if (map.getLayer('halli-hi-icon')) { try { map.setFilter('halli-hi-icon', f); } catch(e){} }
         _hiHalliId = hId;
       }
       if (_hiChargingId !== cId) {
         const f = (cId != null) ? ['==', ['get','id'], cId] : ['==', ['get','id'], '__tp_none__'];
-        ['charging-hi-ring','charging-hi-icon'].forEach(l => { if (map.getLayer(l)) { try { map.setFilter(l, f); } catch(e){} } });
+        if (map.getLayer('charging-hi-icon')) { try { map.setFilter('charging-hi-icon', f); } catch(e){} }
         _hiChargingId = cId;
       }
     }
@@ -9803,6 +9803,40 @@
       return ctx.getImageData(0, 0, size, size);
     }
 
+    // Valittu (p-merkin alla oleva) halli: sama ikoni + punainen kehys sen
+    // MUOTOISENA (pyöristetty neliö), hieman marginaalilla ettei kehys leikkaudu.
+    function createHalliIconCanvasHi() {
+      const pad = 7, base = 64, size = base + pad * 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const r = 10;
+      const rr = (x, y, w, h, rad) => {
+        ctx.beginPath();
+        ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+        ctx.lineTo(x + w, y + h - rad); ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+        ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+        ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
+      };
+      // Perusikoni (siirretty marginaalin verran)
+      ctx.save();
+      ctx.translate(pad, pad);
+      rr(2, 2, base - 4, base - 4, r);
+      ctx.fillStyle = '#1565C0'; ctx.fill();
+      ctx.strokeStyle = 'white'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(12, 24); ctx.lineTo(base / 2, 10); ctx.lineTo(base - 12, 24);
+      ctx.strokeStyle = 'white'; ctx.lineWidth = 3.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+      ctx.fillStyle = 'white'; ctx.font = 'bold 32px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText('P', base / 2, base - 12);
+      ctx.restore();
+      // Punainen kehys ikonin ympärillä (ikonin muotoinen)
+      rr(pad - 1.5, pad - 1.5, base + 3, base + 3, r + 2);
+      ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 6; ctx.lineJoin = 'round'; ctx.stroke();
+      return ctx.getImageData(0, 0, size, size);
+    }
+
     // ── Halli point markers ───────────────────────────────────────────
     async function loadHalliMarkers() {
       try {
@@ -9832,6 +9866,9 @@
           const imgData = createHalliIconCanvas();
           map.addImage('halli-icon', imgData, { pixelRatio: 2 });
         }
+        if (!map.hasImage('halli-icon-hi')) {
+          map.addImage('halli-icon-hi', createHalliIconCanvasHi(), { pixelRatio: 2 });
+        }
         addHalliLayers(halliGeoJSON);
       } catch(e) { console.error('Halli load error:', e); }
     }
@@ -9853,39 +9890,25 @@
           'icon-allow-overlap': true, 'icon-anchor': 'center'
         }
       });
-      // Korostuskerrokset p-merkin ALLA olevalle hallille: suodatin rajaa ne
-      // vain valittuun featureen (feature-state ei toimi icon-size:ssa, koska
-      // se on layout-ominaisuus → käytetään suodatinta). Rengas piirretään
-      // ikonin alle, suurennettu ikoni sen päälle.
+      // Korostuskerros p-merkin ALLA olevalle hallille: suurennettu,
+      // punareunainen ikoni (suodatin rajaa vain valittuun featureen; feature-
+      // state ei toimi icon-size:ssa, joten käytetään suodatinta).
       const _hiNone = ['==', ['get','id'], '__tp_none__'];
-      if (!map.getLayer('halli-hi-ring')) {
-        map.addLayer({
-          id: 'halli-hi-ring', type: 'circle', source: 'halli-points', minzoom: 13,
-          filter: _hiNone,
-          paint: {
-            'circle-radius': 23, 'circle-color': 'rgba(0,0,0,0)',
-            'circle-stroke-color': '#ff1744', 'circle-stroke-width': 3
-          }
-        }, 'halli-icons');
-      }
       // Promote the halli icons to the very top so they always sit on
       // top of the parking-area polygons (otherwise the polygon fills
       // partially cover the icons at higher zoom levels).
       map.moveLayer('halli-icons');
-      // Suurennettu ikoni valitulle hallille (lisätään ikonien PÄÄLLE).
+      // Suurennettu, punareunainen ikoni valitulle hallille (ikonien PÄÄLLE).
       if (!map.getLayer('halli-hi-icon')) {
         map.addLayer({
           id: 'halli-hi-icon', type: 'symbol', source: 'halli-points', minzoom: 13,
           filter: _hiNone,
           layout: {
-            'icon-image': 'halli-icon', 'icon-size': 0.64,
+            'icon-image': 'halli-icon-hi', 'icon-size': 0.82,
             'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
           }
         });
       }
-      // Järjestys ylhäältä alas: suurennettu ikoni, perusikoni, rengas (kaikki
-      // polygonien päällä).
-      if (map.getLayer('halli-hi-ring')) map.moveLayer('halli-hi-ring', 'halli-icons');
       if (map.getLayer('halli-hi-icon')) map.moveLayer('halli-hi-icon');
       // Garages are paid parking → follow the paid/free + charging-only filters.
       updateHalliVisibility();
@@ -13134,12 +13157,38 @@
         '</svg>'
       );
     }
+    // Valittu (p-merkin alla oleva) latauspiste: sama ikoni + punainen kehys sen
+    // MUOTOISENA. viewBox laajennettu marginaalilla ettei kehys leikkaudu.
+    function chargingIconSvgHi(bg){
+      return 'data:image/svg+xml;base64,' + btoa(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11 -11 150 150" width="150" height="150">' +
+        '<rect x="0" y="0" width="128" height="128" rx="26" fill="#1a1a1a"/>' +
+        '<rect x="10" y="10" width="108" height="108" rx="17" fill="' + bg + '"/>' +
+        '<rect x="31" y="30" width="35" height="68" rx="5" fill="#1a1a1a"/>' +
+        '<path d="M90 52 C 90 74 84 92 66 92" fill="none" stroke="#1a1a1a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<rect x="82" y="40" width="16" height="13" rx="3" fill="#1a1a1a"/>' +
+        '<rect x="86" y="33" width="3.6" height="8" rx="1.8" fill="#1a1a1a"/>' +
+        '<rect x="92.4" y="33" width="3.6" height="8" rx="1.8" fill="#1a1a1a"/>' +
+        '<rect x="37" y="36" width="23" height="15" rx="2.5" fill="' + bg + '"/>' +
+        '<path d="M53 55 L40 80 L49 80 L45 99 L62 71 L52 71 Z" fill="' + bg + '"/>' +
+        '<rect x="-5" y="-5" width="138" height="138" rx="31" fill="none" stroke="#ff1744" stroke-width="9"/>' +
+        '</svg>'
+      );
+    }
     function ensureChargingImage(name, bg, cb){
       if (map.hasImage(name)) { cb(); return; }
       const img = new Image(128, 128);
       img.onload = () => { if (!map.hasImage(name)) map.addImage(name, img, { pixelRatio: 2 }); cb(); };
       img.onerror = cb;
       img.src = chargingIconSvg(bg);
+    }
+    // Kuten ensureChargingImage, mutta punareunainen hi-versio (isompi kuva).
+    function ensureChargingImageHi(name, bg, cb){
+      if (map.hasImage(name)) { cb(); return; }
+      const img = new Image(150, 150);
+      img.onload = () => { if (!map.hasImage(name)) map.addImage(name, img, { pixelRatio: 2 }); cb(); };
+      img.onerror = cb;
+      img.src = chargingIconSvgHi(bg);
     }
     function setChargingVisibility(on){
       if (map.getLayer('charging-icons')) map.setLayoutProperty('charging-icons', 'visibility', on ? 'visible' : 'none');
@@ -13184,6 +13233,8 @@
     function addChargingLayer(){
       ensureChargingImage('charging-green', '#4caf50', () => {
         ensureChargingImage('charging-gray', '#b4b7bd', () => {
+          ensureChargingImageHi('charging-green-hi', '#4caf50', () => {
+          ensureChargingImageHi('charging-gray-hi', '#b4b7bd', () => {
           const geojson = { type: 'FeatureCollection', features: _chargingFeatures };
           if (map.getSource('charging-points')) {
             map.getSource('charging-points').setData(geojson);
@@ -13196,32 +13247,19 @@
                 'icon-size': 0.25, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
               }
             });
-            // Korostuskerrokset p-merkin ALLA olevalle latauspisteelle
-            // (suodatinpohjainen, kuten hallissa). Rengas ikonin alle, suurennettu
-            // ikoni sen päälle.
+            // Korostuskerros p-merkin ALLA olevalle latauspisteelle: suurennettu,
+            // punareunainen ikoni (suodatinpohjainen, kuten hallissa).
             const _chNone = ['==', ['get','id'], '__tp_none__'];
-            if (!map.getLayer('charging-hi-ring')) {
-              map.addLayer({
-                id: 'charging-hi-ring', type: 'circle', source: 'charging-points', minzoom: 13,
-                filter: _chNone,
-                paint: {
-                  'circle-radius': 19, 'circle-color': 'rgba(0,0,0,0)',
-                  'circle-stroke-color': '#ff1744', 'circle-stroke-width': 3
-                }
-              }, 'charging-icons');
-            }
             if (!map.getLayer('charging-hi-icon')) {
               map.addLayer({
                 id: 'charging-hi-icon', type: 'symbol', source: 'charging-points', minzoom: 13,
                 filter: _chNone,
                 layout: {
-                  'icon-image': ['case', ['get', 'available'], 'charging-green', 'charging-gray'],
-                  'icon-size': 0.33, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                  'icon-image': ['case', ['get', 'available'], 'charging-green-hi', 'charging-gray-hi'],
+                  'icon-size': 0.42, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
                 }
               });
             }
-            // Järjestys: suurennettu ikoni päälle, rengas perusikonin alle.
-            if (map.getLayer('charging-hi-ring')) map.moveLayer('charging-hi-ring', 'charging-icons');
             if (map.getLayer('charging-hi-icon')) map.moveLayer('charging-hi-icon');
             // Tap a charging marker → leave filter view, zoom to 16 centred on
             // the station, and show its details in the sheet (like halli markers).
@@ -13247,6 +13285,8 @@
           if (map.getLayer('charging-icons')) map.moveLayer('charging-icons');
         });
       });
+          });
+          });
     }
     async function loadChargingStations(){
       if (chargingLoaded || chargingLoading) return;
