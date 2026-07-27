@@ -9306,18 +9306,16 @@
     const centerBadgeCode = document.getElementById('cm-code');
 
     function showCenterBadge(code) {
-      // Don't re-expand the P-marker mid-navigation; the directions flow
-      // hides the marker entirely and expects it to stay hidden until the
-      // flow concludes.
+      // P-merkki pysyy NORMAALIN kokoisena ja näköisenä myös alueen päällä:
+      // ei enää morffata aluekoodi-/kiekkomuotoon eikä suurenneta. Sheetti
+      // näyttää alueen tiedot silti normaalisti. (Latauspisteiden ja hallien
+      // omat laajennukset — showChargingCenterBadge / showHalliCenterBadge —
+      // eivät kulje tätä kautta ja toimivat ennallaan.)
       if (window._navigationInProgress) return;
-      if (code) centerBadgeCode.textContent = code;
-      // Add .expanded — CSS transitions animate the morph
-      centerPointerEl.classList.add('expanded');
-      centerPointerEl.classList.remove('charging-mode');   // parking → show the "P" pin again
+      centerPointerEl.classList.remove('expanded');
+      centerPointerEl.classList.remove('charging-mode');
       centerPointerEl.classList.remove('halli-mode');
-      window._chargingContext = false;                     // back to parking context
-      // After writing the area code, give the disc-mode pin a chance to
-      // overwrite the text with the parking duration ("2h", "30 min", …).
+      window._chargingContext = false;   // parking-konteksti
       if (typeof updateCenterPinIcon === 'function') updateCenterPinIcon();
       if (typeof drawCenterBubble === 'function') requestAnimationFrame(drawCenterBubble);
     }
@@ -9412,7 +9410,7 @@
       // parking area IS under the marker, its block re-opens the sheet in the
       // same synchronous frame (no visible flicker).
       const leaveHalli = () => {
-        if (hoveredHalliId !== null) { hoveredHalliId = null; collapseCenterSheet(); }
+        if (hoveredHalliId !== null) { hoveredHalliId = null; collapseCenterSheet(); if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility(); }
         return false;
       };
       if (map.getZoom() < 13 || !map.getLayer('halli-icons')) return leaveHalli();
@@ -9426,7 +9424,7 @@
       if (hp.id !== hoveredHalliId) {
         hoveredHalliId = hp.id;
         hoveredChargingId = null;
-        if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pois latauspisteeltä → pilleri takaisin
+        if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();   // pysäköintihallin päällä → piilota ajanhetki-pilleri
         if (hoveredPolyId) { clearHoverHighlight(); hoveredPolyId = null; }
         window._badgeAreaId = null;
         showHalliInSheet(hp);
@@ -11730,6 +11728,8 @@
     const zoomIndicator = document.getElementById('zoom-indicator');
 
     function updateZoomIndicator() {
+      // Näytetään vain jos asetuksista on kytketty päälle (oletus: pois).
+      if (typeof zoomLevelEnabled !== 'undefined' && !zoomLevelEnabled) { zoomIndicator.style.display = 'none'; return; }
       // Never show the zoom readout while the filter sheet is open — it would
       // otherwise pop back on the next map move (openFilter hides it once).
       if (filterMode) { zoomIndicator.style.display = 'none'; return; }
@@ -15115,9 +15115,9 @@
       // Below zoom 13 the pill hides, the same way the P-marker and the
       // parking layers do (their threshold is 13 as well).
       const zoomOk = map.getZoom() >= 13;
-      // Latauspisteen päällä pilleri piilotetaan: latauspisteille näytetään aina
-      // vain nykyhetki, joten ajanhetken säätö ei ole tarpeen.
-      const active = zoomOk && !ajanhetkiDismissed && showFreeParking && !filterMode && !hoveredChargingId;
+      // Latauspisteen TAI pysäköintihallin päällä pilleri piilotetaan: molemmille
+      // näytetään aina vain nykyhetki, joten ajanhetken säätö ei ole tarpeen.
+      const active = zoomOk && !ajanhetkiDismissed && showFreeParking && !filterMode && !hoveredChargingId && !(typeof hoveredHalliId !== 'undefined' && hoveredHalliId);
       card.classList.toggle('visible', active);
       // The © OpenStreetMap credit shares the pill's spot: it stays visible on
       // every zoom level EXCEPT while the pill occupies the space.
@@ -16667,7 +16667,10 @@
         } catch(e) { /* map not ready yet */ }
       }
       if (!props) props = currentParkingProps;   // fallback to last stored
-      const wantDisc = !!isDiscOrFreeArea(props);
+      // P-merkki pysyy aina tavallisena "P"-pinninä alueen päällä: ei vaihdeta
+      // kiekkoikoniin eikä näytetä kestoa merkissä (käyttäjän toive). Sheetti
+      // näyttää alue-/kiekkotiedot silti normaalisti.
+      const wantDisc = false;
       const isDisc   = pin.classList.contains('parking-disc');
       // Swap the pin SVG between regular "P" and disc icons.
       if (wantDisc !== isDisc) {
