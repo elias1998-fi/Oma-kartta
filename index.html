@@ -30,7 +30,7 @@
       /* Accent = oranssi. Ohjaa Ajanhetki-pillerin aikaa/ikonia, "Palauta
          nykyhetkeen" -tekstiä ja Palauta-pilleriä. Erillinen kartan maksullisen
          alueen sinisestä (#1266f1) — kartan värit eivät muutu. */
-      --tp-accent: #F57C00;
+      --tp-accent: #ca4000;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
@@ -9811,7 +9811,7 @@
     // Pelkkä autotallin "kuutio": tummansininen pyöristetty neliö + valkoinen
     // reunus (ilman sisältöä). Käytetään mm. kaukana zoomattaessa.
     function _drawHalliSquare(ctx) {
-      const size = 64, r = 10;
+      const size = 64, r = 13;
       const rr = (x, y, w, h, rad) => {
         ctx.beginPath();
         ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y);
@@ -9820,9 +9820,8 @@
         ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
         ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
       };
-      rr(2, 2, size - 4, size - 4, r);
+      rr(0, 0, size, size, r);
       ctx.fillStyle = '#0C0243'; ctx.fill();                 // sovelluksen tummansininen
-      ctx.strokeStyle = 'white'; ctx.lineWidth = 2.5; ctx.stroke();
     }
     // Autotalli + SIVUKUVA-AUTO (auton polut samat kuin profiilin "Ajoneuvot"-
     // ikonissa, Path2D). Neliö pohjana + valkoinen sisältö.
@@ -9849,7 +9848,7 @@
     }
     // Punainen korostuskehys padded-canvasille (jaettu perus- ja pelkkä-kuutio-hi:lle)
     function _halliHiFrame(ctx, pad, base) {
-      const r = 10;
+      const r = 13;
       const rr = (x, y, w, h, rad) => {
         ctx.beginPath();
         ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y);
@@ -13208,15 +13207,8 @@
     function chargingIconSvg(bg){
       return 'data:image/svg+xml;base64,' + btoa(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">' +
-        '<rect x="0" y="0" width="128" height="128" rx="26" fill="#1a1a1a"/>' +
-        '<rect x="10" y="10" width="108" height="108" rx="17" fill="' + bg + '"/>' +
-        '<rect x="31" y="30" width="35" height="68" rx="5" fill="#1a1a1a"/>' +
-        '<path d="M90 52 C 90 74 84 92 66 92" fill="none" stroke="#1a1a1a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>' +
-        '<rect x="82" y="40" width="16" height="13" rx="3" fill="#1a1a1a"/>' +
-        '<rect x="86" y="33" width="3.6" height="8" rx="1.8" fill="#1a1a1a"/>' +
-        '<rect x="92.4" y="33" width="3.6" height="8" rx="1.8" fill="#1a1a1a"/>' +
-        '<rect x="37" y="36" width="23" height="15" rx="2.5" fill="' + bg + '"/>' +
-        '<path d="M53 55 L40 80 L49 80 L45 99 L62 71 L52 71 Z" fill="' + bg + '"/>' +
+        '<rect x="0" y="0" width="128" height="128" rx="26" fill="' + bg + '"/>' +
+        '<path fill="#1a1a1a" fill-rule="evenodd" d="M25.51 107.9C24.25 106.86 24.47 104.66 25.9 104.08C26.43 103.87 35.57 103.77 60.45 103.71C94.1 103.62 94.3 103.62 97.19 103.06C114.76 99.7 120.35 89.61 110.52 79.03C108.46 76.81 106.28 75.01 102.2 72.15L99.22 70.06L98.25 71.09C97.51 71.86 97.08 72.11 96.47 72.11C95.67 72.11 91.11 70 91.11 69.63C91.11 69.19 98.4 58.81 98.71 58.81C98.83 58.81 99.78 59.62 100.82 60.61C103.24 62.92 103.47 63.83 102.13 65.68C101.74 66.21 101.81 66.28 104.59 68.2C106.17 69.28 108.48 70.99 109.74 72C128.16 86.77 120.73 104.95 95.04 107.96C89.68 108.59 26.28 108.53 25.51 107.9ZM43.57 93.77C44.06 92.08 47.53 79.65 47.67 79.11L47.83 78.46L44.13 78.39L40.43 78.32L49.91 68.85L59.38 59.37L57.18 67.2L54.98 75.02L58.6 75.09C60.59 75.13 62.23 75.25 62.23 75.35C62.23 75.45 58 79.75 52.83 84.91C47.66 90.06 43.49 94.05 43.57 93.77ZM83.36 69.1C81.36 67.79 80.34 66.66 78.33 63.53C77.41 62.09 76.11 60.38 75.46 59.73C73.98 58.25 56.79 46.18 54.88 45.28C52.57 44.18 49.85 44.32 46.9 45.68C43.59 47.21 43.18 47.26 34.48 47.27C23.35 47.28 24.42 48.84 24.52 32.68L24.6 21.13L25.42 20.4L26.25 19.66L35.18 19.66C50.31 19.66 49.36 19.31 66.79 31.54C71.46 34.82 77.5 39.05 80.22 40.94C98.11 53.42 97.45 52.88 97.45 54.86C97.45 55.72 96.87 56.67 92.72 62.59C86.91 70.89 86.51 71.17 83.36 69.1ZM9.35 44.25C8 43.43 8 43.43 8 33.47C8 21.13 7.25 22.19 15.99 22.19L21.94 22.19L21.94 33.47L21.94 44.74L16.05 44.74C10.66 44.74 10.08 44.7 9.35 44.25Z"/>' +
         '</svg>'
       );
     }
@@ -13224,17 +13216,10 @@
     // MUOTOISENA. viewBox laajennettu marginaalilla ettei kehys leikkaudu.
     function chargingIconSvgHi(bg){
       return 'data:image/svg+xml;base64,' + btoa(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11 -11 150 150" width="150" height="150">' +
-        '<rect x="0" y="0" width="128" height="128" rx="26" fill="#1a1a1a"/>' +
-        '<rect x="10" y="10" width="108" height="108" rx="17" fill="' + bg + '"/>' +
-        '<rect x="31" y="30" width="35" height="68" rx="5" fill="#1a1a1a"/>' +
-        '<path d="M90 52 C 90 74 84 92 66 92" fill="none" stroke="#1a1a1a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>' +
-        '<rect x="82" y="40" width="16" height="13" rx="3" fill="#1a1a1a"/>' +
-        '<rect x="86" y="33" width="3.6" height="8" rx="1.8" fill="#1a1a1a"/>' +
-        '<rect x="92.4" y="33" width="3.6" height="8" rx="1.8" fill="#1a1a1a"/>' +
-        '<rect x="37" y="36" width="23" height="15" rx="2.5" fill="' + bg + '"/>' +
-        '<path d="M53 55 L40 80 L49 80 L45 99 L62 71 L52 71 Z" fill="' + bg + '"/>' +
-        '<rect x="-5" y="-5" width="138" height="138" rx="31" fill="none" stroke="#ff1744" stroke-width="12"/>' +
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-13 -13 154 154" width="154" height="154">' +
+        '<rect x="0" y="0" width="128" height="128" rx="26" fill="' + bg + '"/>' +
+        '<path fill="#1a1a1a" fill-rule="evenodd" d="M25.51 107.9C24.25 106.86 24.47 104.66 25.9 104.08C26.43 103.87 35.57 103.77 60.45 103.71C94.1 103.62 94.3 103.62 97.19 103.06C114.76 99.7 120.35 89.61 110.52 79.03C108.46 76.81 106.28 75.01 102.2 72.15L99.22 70.06L98.25 71.09C97.51 71.86 97.08 72.11 96.47 72.11C95.67 72.11 91.11 70 91.11 69.63C91.11 69.19 98.4 58.81 98.71 58.81C98.83 58.81 99.78 59.62 100.82 60.61C103.24 62.92 103.47 63.83 102.13 65.68C101.74 66.21 101.81 66.28 104.59 68.2C106.17 69.28 108.48 70.99 109.74 72C128.16 86.77 120.73 104.95 95.04 107.96C89.68 108.59 26.28 108.53 25.51 107.9ZM43.57 93.77C44.06 92.08 47.53 79.65 47.67 79.11L47.83 78.46L44.13 78.39L40.43 78.32L49.91 68.85L59.38 59.37L57.18 67.2L54.98 75.02L58.6 75.09C60.59 75.13 62.23 75.25 62.23 75.35C62.23 75.45 58 79.75 52.83 84.91C47.66 90.06 43.49 94.05 43.57 93.77ZM83.36 69.1C81.36 67.79 80.34 66.66 78.33 63.53C77.41 62.09 76.11 60.38 75.46 59.73C73.98 58.25 56.79 46.18 54.88 45.28C52.57 44.18 49.85 44.32 46.9 45.68C43.59 47.21 43.18 47.26 34.48 47.27C23.35 47.28 24.42 48.84 24.52 32.68L24.6 21.13L25.42 20.4L26.25 19.66L35.18 19.66C50.31 19.66 49.36 19.31 66.79 31.54C71.46 34.82 77.5 39.05 80.22 40.94C98.11 53.42 97.45 52.88 97.45 54.86C97.45 55.72 96.87 56.67 92.72 62.59C86.91 70.89 86.51 71.17 83.36 69.1ZM9.35 44.25C8 43.43 8 43.43 8 33.47C8 21.13 7.25 22.19 15.99 22.19L21.94 22.19L21.94 33.47L21.94 44.74L16.05 44.74C10.66 44.74 10.08 44.7 9.35 44.25Z"/>' +
+        '<rect x="-3" y="-3" width="134" height="134" rx="30" fill="none" stroke="#ff1744" stroke-width="18"/>' +
         '</svg>'
       );
     }
@@ -13243,17 +13228,15 @@
     function chargingPlainSvg(bg){
       return 'data:image/svg+xml;base64,' + btoa(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">' +
-        '<rect x="0" y="0" width="128" height="128" rx="26" fill="#1a1a1a"/>' +
-        '<rect x="10" y="10" width="108" height="108" rx="17" fill="' + bg + '"/>' +
+        '<rect x="0" y="0" width="128" height="128" rx="26" fill="' + bg + '"/>' +
         '</svg>'
       );
     }
     function chargingPlainSvgHi(bg){
       return 'data:image/svg+xml;base64,' + btoa(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11 -11 150 150" width="150" height="150">' +
-        '<rect x="0" y="0" width="128" height="128" rx="26" fill="#1a1a1a"/>' +
-        '<rect x="10" y="10" width="108" height="108" rx="17" fill="' + bg + '"/>' +
-        '<rect x="-5" y="-5" width="138" height="138" rx="31" fill="none" stroke="#ff1744" stroke-width="12"/>' +
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-13 -13 154 154" width="154" height="154">' +
+        '<rect x="0" y="0" width="128" height="128" rx="26" fill="' + bg + '"/>' +
+        '<rect x="-3" y="-3" width="134" height="134" rx="30" fill="none" stroke="#ff1744" stroke-width="18"/>' +
         '</svg>'
       );
     }
@@ -13267,7 +13250,7 @@
     // Kuten ensureChargingImage, mutta punareunainen hi-versio (isompi kuva).
     function ensureChargingImageHi(name, bg, cb){
       if (map.hasImage(name)) { cb(); return; }
-      const img = new Image(150, 150);
+      const img = new Image(154, 154);
       img.onload = () => { if (!map.hasImage(name)) map.addImage(name, img, { pixelRatio: 2 }); cb(); };
       img.onerror = cb;
       img.src = chargingIconSvgHi(bg);
@@ -13282,7 +13265,7 @@
     }
     function ensureChargingPlainHi(name, bg, cb){
       if (map.hasImage(name)) { cb(); return; }
-      const img = new Image(150, 150);
+      const img = new Image(154, 154);
       img.onload = () => { if (!map.hasImage(name)) map.addImage(name, img, { pixelRatio: 2 }); cb(); };
       img.onerror = cb;
       img.src = chargingPlainSvgHi(bg);
@@ -13345,7 +13328,7 @@
               id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
               layout: {
                 'icon-image': ['step', ['zoom'], ['case', ['get','available'], 'charging-plain-green', 'charging-plain-gray'], 14, ['case', ['get','available'], 'charging-green', 'charging-gray']],
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.125, 14, 0.25, 16, 0.46], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.125, 14, 0.25, 16, 0.45], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
               }
             });
             // Korostuskerros p-merkin ALLA olevalle latauspisteelle: suurennettu,
@@ -13357,7 +13340,7 @@
                 filter: _chNone,
                 layout: {
                   'icon-image': ['step', ['zoom'], ['case', ['get','available'], 'charging-plain-green-hi', 'charging-plain-gray-hi'], 14, ['case', ['get','available'], 'charging-green-hi', 'charging-gray-hi']],
-                  'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.125, 14, 0.25, 16, 0.46], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                  'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.125, 14, 0.25, 16, 0.45], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
                 }
               });
             }
