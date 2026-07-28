@@ -9855,30 +9855,20 @@
         ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
       };
       rr(0, 0, size, size, r);
-      ctx.fillStyle = '#ca4000'; ctx.fill();                 // sovelluksen aksenttiväri
+      ctx.fillStyle = '#1565C0'; ctx.fill();                 // alkuperäinen hallin sininen
     }
-    // Autotalli + SIVUKUVA-AUTO (auton polut samat kuin profiilin "Ajoneuvot"-
-    // ikonissa, Path2D). Neliö pohjana + valkoinen sisältö.
+    // Nuoli (harjakatto) + iso valkoinen P. Sama geometria kuin sheetin
+    // merkissä halliIconSvg():ssä, jotta kartan ikoni ja merkki ovat identtiset.
     function _drawHalliGlyph(ctx) {
       _drawHalliSquare(ctx);
-      // Autotallin runko: harjakatto + kaksi seinää (avoin alaosa, kuten referenssi)
-      ctx.strokeStyle = 'white'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath(); ctx.moveTo(8, 23); ctx.lineTo(32, 9); ctx.lineTo(56, 23); ctx.stroke();   // katto
-      ctx.beginPath(); ctx.moveTo(8, 23); ctx.lineTo(8, 53); ctx.stroke();                        // vasen seinä
-      ctx.beginPath(); ctx.moveTo(56, 23); ctx.lineTo(56, 53); ctx.stroke();                      // oikea seinä
-      // Sivukuva-auto (samat polut kuin Ajoneuvot-ikonissa), skaalattuna talon sisään
-      const sc = 1.9, tx = 32 - 12.25 * sc, ty = 52 - 18.5 * sc;
-      try {
-        ctx.save();
-        ctx.translate(tx, ty); ctx.scale(sc, sc);
-        ctx.strokeStyle = 'white'; ctx.lineWidth = 2 / sc; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        ctx.stroke(new Path2D('M3 13.5l1.5-4A2 2 0 0 1 6.4 8h8.2a2 2 0 0 1 1.6.8l2.4 3.2 1.9.6A1.5 1.5 0 0 1 22 14v1.5a1 1 0 0 1-1 1h-1.5'));
-        ctx.stroke(new Path2D('M4.5 16.5H3.5a1 1 0 0 1-1-1V13.5'));
-        ctx.beginPath(); ctx.moveTo(9.5, 16.5); ctx.lineTo(14.5, 16.5); ctx.stroke();
-        ctx.beginPath(); ctx.arc(7, 16.5, 2, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(17, 16.5, 2, 0, Math.PI * 2); ctx.stroke();
-        ctx.restore();
-      } catch (e) { try { ctx.restore(); } catch (e2) {} }
+      // Nuoli P-merkin päällä
+      ctx.strokeStyle = 'white'; ctx.lineWidth = 3.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(12, 24); ctx.lineTo(32, 10); ctx.lineTo(52, 24); ctx.stroke();
+      // Iso valkoinen P (y = perusviiva, kuten SVG:n <text y="52">)
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 32px Arial, Helvetica, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText('P', 32, 52);
     }
     // Punainen korostuskehys padded-canvasille (jaettu perus- ja pelkkä-kuutio-hi:lle)
     function _halliHiFrame(ctx, pad, base) {
