@@ -9027,7 +9027,7 @@
 
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
-          paint:{ 'fill-opacity': 0.20, 'fill-opacity-transition': { duration: 0 },
+          paint:{ 'fill-opacity': hlOpacity('baseFill'), 'fill-opacity-transition': { duration: 0 },
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
               'hel_ilmainen_pitka', '#7F1F89',
@@ -9044,7 +9044,7 @@
         });
         // Base line layer
         map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
-          paint:{ 'line-width': 1.0, 'line-opacity': 0.55,
+          paint:{ 'line-width': 1.0, 'line-opacity': hlOpacity('baseLine'),
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
               'hel_ilmainen_pitka', '#611868',
@@ -9056,22 +9056,22 @@
         });
         // Hover fill — red, toggled via setFilter
         map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13,
-          paint:{ 'fill-color':'#1266f1', 'fill-opacity': 0.45 },
+          paint:{ 'fill-color':'#1266f1', 'fill-opacity': hlOpacity('hoverFill') },
           filter:['==', ['get','id'], '__none__']
         });
         // Hover outline — on the red hovered area, toggled via setFilter
         map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13,
-          paint:{ 'line-color':'#0B49D0', 'line-width': 2.5, 'line-opacity': 1.0 },
+          paint:{ 'line-color':'#0B49D0', 'line-width': 2.5, 'line-opacity': hlOpacity('hoverLine') },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
         map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13,
-          paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': 1.0 },
+          paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': hlOpacity('groupLine') },
           filter:['==', ['get','id'], '__none__']
         });
         // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
         map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13,
-          paint:{ 'fill-opacity': 0.50,
+          paint:{ 'fill-opacity': hlOpacity('groupFill'),
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
               'hel_ilmainen_pitka', '#7F1F89',
@@ -9195,6 +9195,38 @@
       );
     }
 
+    // ── Korostusten ja aluevärien zoom-sidottu läpinäkyvyys ─────────────────
+    // Kauempaa katsottaessa alue peittää ruudulta vain pienen tilkun, joten väri
+    // saa olla vahva jotta alue ylipäätään erottuu. Lähelle zoomattaessa yksi
+    // alue täyttää suuren osan näkymästä, jolloin vahva väri hukuttaa kadut ja
+    // rakennukset alleen → väri kevenee mitä lähemmäs mennään.
+    // Muoto: [zoom, arvo, zoom, arvo, ...]. Rampin suunnan kääntää vaihtamalla
+    // arvot päinvastaiseen järjestykseen — muuta ei tarvita.
+    // HUOM: ['zoom'] saa esiintyä VAIN top-level interpolaten syötteenä (sama
+    // rajoitus joka aiemmin kaatoi icon-size-lausekkeen), siksi mahdollinen
+    // ominaisuuskohtainen ['case'] menee interpolaten ULOSTULOIHIN, ei toisin päin.
+    function hlStops(key){
+      const S = {
+        hoverFill: [13, 0.95, 15, 0.78, 17, 0.55, 19, 0.42],  // p-merkin alla, kirkkaan punainen
+        groupFill: [13, 0.90, 15, 0.72, 17, 0.48, 19, 0.35],  // samoilla tiedoilla olevat, tummansininen
+        hoverLine: [13, 1.00, 15, 1.00, 17, 0.92, 19, 0.85],
+        groupLine: [13, 1.00, 15, 0.95, 17, 0.85, 19, 0.78],
+        baseFill:  [13, 0.26, 15, 0.21, 17, 0.16, 19, 0.13],  // maksulliset + ilmaiset, perustila
+        baseLine:  [13, 0.60, 15, 0.55, 17, 0.47, 19, 0.42]
+      };
+      return S[key];
+    }
+    function hlOpacity(key){
+      return ['interpolate', ['linear'], ['zoom']].concat(hlStops(key));
+    }
+    // Sama ramppi, mutta ehdon täyttäville featureille kiinteä arvo (esim. 0 =
+    // piilota hoverattu alue). Ehto on ULOSTULOSSA, jotta zoom pysyy top-levelinä.
+    function hlOpacityCase(key, cond, whenTrue){
+      const st = hlStops(key), out = ['interpolate', ['linear'], ['zoom']];
+      for (let i = 0; i < st.length; i += 2) out.push(st[i], ['case', cond, whenTrue, st[i+1]]);
+      return out;
+    }
+
     function applyHoverHighlight(props) {
       if (!map.getLayer('master-poly-hover-fill')) return;
       const hovId = props.id;   // keep native type: number for paid areas, string for free
@@ -9215,14 +9247,16 @@
       const _isLarge = props.large_area === true || props.large_area === 'true';
 
       map.setPaintProperty('master-poly-hover-fill', 'fill-color', _hoverFillClr);
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 1.0);
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', hlOpacity('hoverFill'));
       map.setFilter('master-poly-hover-fill',
         (hovId && !_isLarge) ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
       // Perustäyttö: piilota vain hoverattu iso alue (0), muut ennallaan (0.20).
       if (map.getLayer('master-poly-fill')) {
         map.setPaintProperty('master-poly-fill', 'fill-opacity',
-          (hovId && _isLarge) ? ['case', ['==', ['get','id'], hovId], 0, 0.20] : 0.20
+          (hovId && _isLarge)
+            ? hlOpacityCase('baseFill', ['==', ['get','id'], hovId], 0)
+            : hlOpacity('baseFill')
         );
       }
 
@@ -9231,14 +9265,14 @@
       if (map.getLayer('master-poly-line')) {
         map.setPaintProperty('master-poly-line', 'line-opacity',
           hovId
-            ? ['case', ['==', ['get','id'], hovId], 0, 0.55]
-            : 0.55
+            ? hlOpacityCase('baseLine', ['==', ['get','id'], hovId], 0)
+            : hlOpacity('baseLine')
         );
       }
       // Show hover-line (thick RED border, fully opaque) on the hovered area.
       if (map.getLayer('master-poly-hover-line')) {
         map.setPaintProperty('master-poly-hover-line', 'line-color', _hoverFillClr);
-        map.setPaintProperty('master-poly-hover-line', 'line-opacity', 1.0);
+        map.setPaintProperty('master-poly-hover-line', 'line-opacity', hlOpacity('hoverLine'));
         map.setFilter('master-poly-hover-line',
           hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
         );
@@ -9250,14 +9284,14 @@
       // Subtle blue fill on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
         map.setPaintProperty('master-poly-group-fill', 'fill-color', _groupFillClr);
-        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', 1.0);
+        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', hlOpacity('groupFill'));
         map.setFilter('master-poly-group-fill',
           _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
         );
       }
       // Border on OTHER same-category areas → black, fully opaque
       map.setPaintProperty('master-poly-group-line', 'line-color', _groupFillClr);
-      map.setPaintProperty('master-poly-group-line', 'line-opacity', 1.0);
+      map.setPaintProperty('master-poly-group-line', 'line-opacity', hlOpacity('groupLine'));
       map.setFilter('master-poly-group-line',
         _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
       );
@@ -9290,7 +9324,7 @@
         sizeAnimationId = null;
       }
       if (map.getLayer('master-poly-hover-fill')) {
-        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.85);
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', hlOpacity('hoverFill'));
       }
     }
 
@@ -9337,7 +9371,7 @@
       }
       // Reset to base hover opacity
       if (map.getLayer('master-poly-hover-fill')) {
-        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', 0.45);
+        map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', hlOpacity('hoverFill'));
       }
     }
 
@@ -9352,11 +9386,11 @@
         map.setFilter('master-poly-hover-line', ['==','id','__none__']);
       // Restore the base border opacity for every area.
       if (map.getLayer('master-poly-line')) {
-        map.setPaintProperty('master-poly-line', 'line-opacity', 0.55);
+        map.setPaintProperty('master-poly-line', 'line-opacity', hlOpacity('baseLine'));
       }
       // Restore the base fill for every area (iso alue palautuu normaaliksi).
       if (map.getLayer('master-poly-fill')) {
-        map.setPaintProperty('master-poly-fill', 'fill-opacity', 0.20);
+        map.setPaintProperty('master-poly-fill', 'fill-opacity', hlOpacity('baseFill'));
       }
     }
 
