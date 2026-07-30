@@ -211,7 +211,7 @@
       ],
       "layout": {"line-cap": "round", "line-join": "round"},
       "paint": {
-        "line-color": "#a6d8f4",
+        "line-color": "#5b5d6e",
         "line-width": [
           "interpolate",
           ["exponential", 1.4],
@@ -242,7 +242,7 @@
         ["!=", "brunnel", "tunnel"]
       ],
       "paint": {
-        "line-color": "#bee4f8",
+        "line-color": "#5b5d6e",
         "line-width": [
           "interpolate",
           ["exponential", 1.4],
@@ -1164,7 +1164,7 @@
         ["!in", "brunnel", "bridge", "tunnel"]
       ],
       "paint": {
-        "line-color": "#bbb",
+        "line-color": "#13151e",
         "line-width": {"stops": [[13, 1], [22, 8]]}
       }
     },
@@ -1467,7 +1467,7 @@
       ],
       "layout": {"line-join": "round"},
       "paint": {
-        "line-color": "#ccc",
+        "line-color": "#60677b",
         "line-width": [
           "interpolate",
           ["exponential", 1.55],
@@ -1601,7 +1601,7 @@
       ],
       "layout": {"line-cap": "round", "line-join": "round"},
       "paint": {
-        "line-color": "#fff",
+        "line-color": "#60677b",
         "line-width": [
           "interpolate",
           ["exponential", 1.55],
