@@ -108,6 +108,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#f5e0e0",
           13,
@@ -136,6 +138,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#f0e6d1",
           13,
@@ -162,6 +166,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#cdd5ef",
           13,
@@ -175,6 +181,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#cfc9be",
           13,
@@ -209,6 +217,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#b8ebad",
           13,
@@ -245,7 +255,7 @@
             "zoom"
           ],
           7,
-          "#d8f0d2",
+          "#dcedd5",
           9,
           "#e2f1dc",
           13,
@@ -273,7 +283,7 @@
             "zoom"
           ],
           7,
-          "#abe4a4",
+          "#dcedd5",
           9,
           "#b0e4aa",
           13,
@@ -309,7 +319,7 @@
             "zoom"
           ],
           7,
-          "#ccebc4",
+          "#dcedd5",
           9,
           "#d6eccf",
           13,
@@ -336,6 +346,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#d0f4be",
           13,
@@ -364,11 +376,24 @@
             "zoom"
           ],
           7,
-          "#d8f0d2",
+          "#dcedd5",
           9,
           "#e2f1dc",
           13,
           "#e3ecc5"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0,
+          12.0,
+          1
         ]
       }
     },
@@ -391,6 +416,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#f3ecc4",
           13,
@@ -417,6 +444,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#cdebc6",
           13,
@@ -430,6 +459,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#b6cd99",
           13,
@@ -456,6 +487,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#e0e2eb",
           13,
@@ -476,7 +509,20 @@
       ],
       "paint": {
         "fill-color": "#cde0b6",
-        "fill-outline-color": "#acc78b"
+        "fill-outline-color": "#acc78b",
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          1
+        ]
       }
     },
     {
@@ -492,7 +538,20 @@
       ],
       "paint": {
         "fill-color": "#f0c2c2",
-        "fill-outline-color": "#cca5a5"
+        "fill-outline-color": "#cca5a5",
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          1
+        ]
       }
     },
     {
@@ -684,6 +743,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#dedad2",
           13,
@@ -697,6 +758,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#cfcac0",
           13,
@@ -794,6 +857,19 @@
         "line-dasharray": [
           1,
           2
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          13.0,
+          1
         ]
       }
     },
@@ -1257,6 +1333,19 @@
         "line-dasharray": [
           10,
           3
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0,
+          12.0,
+          1
         ]
       }
     },
@@ -1546,7 +1635,20 @@
               ]
             ]
           ]
-        }
+        },
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          13.0,
+          1
+        ]
       }
     },
     {
@@ -1616,6 +1718,19 @@
         "line-dasharray": [
           0,
           1.5
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          17.0,
+          1
         ]
       }
     },
@@ -1679,6 +1794,19 @@
           1,
           22,
           26
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          1
         ]
       }
     },
@@ -1731,6 +1859,19 @@
           1,
           22,
           26
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          1
         ]
       }
     },
@@ -1796,6 +1937,19 @@
           1,
           20,
           44
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          13.0,
+          1
         ]
       }
     },
@@ -1860,6 +2014,19 @@
           2,
           20,
           44
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          13.0,
+          1
         ]
       }
     },
@@ -1918,6 +2085,19 @@
           1,
           20,
           54
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0,
+          12.0,
+          1
         ]
       }
     },
@@ -2205,7 +2385,20 @@
               ]
             ]
           ]
-        }
+        },
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          17.0,
+          1
+        ]
       }
     },
     {
@@ -2334,6 +2527,19 @@
           0.5,
           20,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          13.0,
+          1
         ]
       }
     },
@@ -2399,6 +2605,19 @@
           0.5,
           20,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          13.0,
+          1
         ]
       }
     },
@@ -2458,6 +2677,19 @@
           0.5,
           20,
           50
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0,
+          12.0,
+          1
         ]
       }
     },
@@ -3381,6 +3613,19 @@
           1,
           20,
           65
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          1
         ]
       }
     },
@@ -3433,6 +3678,19 @@
           1,
           20,
           100
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          1
         ]
       }
     },
@@ -3484,6 +3742,19 @@
           1,
           20,
           100
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          1
         ]
       }
     },
@@ -3549,6 +3820,19 @@
           0.5,
           20,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          13.0,
+          1
         ]
       }
     },
@@ -3613,6 +3897,19 @@
           0.5,
           20,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          13.0,
+          1
         ]
       }
     },
@@ -3671,6 +3968,19 @@
           0.5,
           20,
           50
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0,
+          12.0,
+          1
         ]
       }
     },
@@ -4263,6 +4573,19 @@
         "line-dasharray": [
           2,
           2
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          9.0,
+          1
         ]
       }
     },
