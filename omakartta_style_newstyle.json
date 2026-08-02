@@ -62,7 +62,7 @@
       "url": "https://api.digitransit.fi/map/v3/hsl-vector-map/index.json"
     }
   },
-  "sprite": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/sprite",
+  "sprite": "https://elias1998-fi.github.io/Oma-kartta/sprite/sprite",
   "glyphs": "https://hslstoragestatic.azureedge.net/mapfonts/{fontstack}/{range}.pbf",
   "layers": [
     {
@@ -75,7 +75,8 @@
         "background-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -84,7 +85,7 @@
           "#dcedd5",
           9,
           "#f5f1f0",
-          13,
+          14,
           "#f0f1f2"
         ]
       }
@@ -103,7 +104,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -112,13 +114,14 @@
           "#dcedd5",
           9,
           "#f5e0e0",
-          13,
+          14,
           "#fbe6e0"
         ],
         "fill-outline-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -127,7 +130,7 @@
           "#dcedd5",
           9,
           "#dccaca",
-          13,
+          14,
           "#e2cfca"
         ]
       }
@@ -148,7 +151,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -157,7 +161,7 @@
           "#dcedd5",
           9,
           "#f0e6d1",
-          13,
+          14,
           "#f9f4d2"
         ]
       }
@@ -176,7 +180,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -185,13 +190,14 @@
           "#dcedd5",
           9,
           "#cdd5ef",
-          13,
+          14,
           "#e3e3e3"
         ],
         "fill-outline-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -200,7 +206,7 @@
           "#dcedd5",
           9,
           "#cfc9be",
-          13,
+          14,
           "#ccc"
         ]
       }
@@ -227,7 +233,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -236,7 +243,7 @@
           "#dcedd5",
           9,
           "#b8ebad",
-          13,
+          14,
           "#dceacc"
         ]
       }
@@ -264,7 +271,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -273,7 +281,7 @@
           "#dcedd5",
           9,
           "#e2f1dc",
-          13,
+          14,
           "#ddeacd"
         ]
       }
@@ -292,7 +300,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -301,7 +310,7 @@
           "#dcedd5",
           9,
           "#b0e4aa",
-          13,
+          14,
           "#d0e3b8"
         ]
       }
@@ -328,7 +337,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -337,7 +347,7 @@
           "#dcedd5",
           9,
           "#d6eccf",
-          13,
+          14,
           "#cbdeb4"
         ]
       }
@@ -356,7 +366,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -365,7 +376,7 @@
           "#dcedd5",
           9,
           "#d0f4be",
-          13,
+          14,
           "#f9f4d2"
         ]
       }
@@ -385,7 +396,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -394,7 +406,7 @@
           "#dcedd5",
           9,
           "#e2f1dc",
-          13,
+          14,
           "#e3ecc5"
         ],
         "fill-opacity": [
@@ -426,7 +438,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -435,7 +448,7 @@
           "#dcedd5",
           9,
           "#f3ecc4",
-          13,
+          14,
           "#e0dfcc"
         ]
       }
@@ -454,7 +467,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -463,13 +477,14 @@
           "#dcedd5",
           9,
           "#cdebc6",
-          13,
+          14,
           "#cbdeb4"
         ],
         "fill-outline-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -478,7 +493,7 @@
           "#dcedd5",
           9,
           "#b6cd99",
-          13,
+          14,
           "#b8d19b"
         ]
       }
@@ -497,7 +512,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -506,7 +522,7 @@
           "#dcedd5",
           9,
           "#e0e2eb",
-          13,
+          14,
           "#ede6e3"
         ]
       }
@@ -523,7 +539,22 @@
         "pitch"
       ],
       "paint": {
-        "fill-color": "#cde0b6",
+        "fill-color": [
+          "interpolate",
+          [
+            "exponential",
+            1.4
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#dcedd5",
+          9,
+          "#d0f4be",
+          14,
+          "#cde0b6"
+        ],
         "fill-outline-color": "#acc78b",
         "fill-opacity": [
           "interpolate",
@@ -552,7 +583,22 @@
         "track"
       ],
       "paint": {
-        "fill-color": "#f0c2c2",
+        "fill-color": [
+          "interpolate",
+          [
+            "exponential",
+            1.4
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#dcedd5",
+          9,
+          "#d0f4be",
+          14,
+          "#f0c2c2"
+        ],
         "fill-outline-color": "#cca5a5",
         "fill-opacity": [
           "interpolate",
@@ -602,14 +648,15 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#94b9ff",
-          13,
+          14,
           "#a6d8f4"
         ],
         "line-width": [
@@ -637,14 +684,15 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#94b9ff",
-          13,
+          14,
           "#a6d8f4"
         ]
       }
@@ -678,14 +726,15 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#99ddff",
-          13,
+          14,
           "#bee4f8"
         ],
         "line-width": [
@@ -713,14 +762,15 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#99ddff",
-          13,
+          14,
           "#bee4f8"
         ]
       }
@@ -753,7 +803,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -762,13 +813,14 @@
           "#dcedd5",
           9,
           "#dedad2",
-          13,
+          14,
           "#e3e3e3"
         ],
         "fill-outline-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -777,7 +829,7 @@
           "#dcedd5",
           9,
           "#cfcac0",
-          13,
+          14,
           "#d6d6d6"
         ]
       }
@@ -800,7 +852,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -809,7 +862,7 @@
           "#dcedd5",
           9,
           "#cdd5ef",
-          13,
+          14,
           "#fff"
         ],
         "line-width": [
@@ -847,7 +900,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -856,7 +910,7 @@
           "#dcedd5",
           9,
           "#cdd5ef",
-          13,
+          14,
           "#fff"
         ],
         "line-width": [
@@ -924,7 +978,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -933,7 +988,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#f7f7f7"
         ]
       }
@@ -960,7 +1015,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -969,7 +1025,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#f7f7f7"
         ]
       }
@@ -986,7 +1042,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -995,13 +1052,14 @@
           "#dcedd5",
           9,
           "#cfc8c4",
-          13,
+          14,
           "#c2c3cc"
         ],
         "fill-outline-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -1010,8 +1068,8 @@
           "#dcedd5",
           9,
           "#cfc8c4",
-          13,
-          "#dde1e9",
+          14,
+          "#d6dae2",
           17,
           "#c2c3cc"
         ],
@@ -1060,7 +1118,8 @@
         "fill-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -1069,13 +1128,14 @@
           "#dcedd5",
           9,
           "#ded7d3",
-          13,
+          14,
           "#e2e4e9"
         ],
         "fill-outline-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -1084,8 +1144,8 @@
           "#dcedd5",
           9,
           "#cfc8c4",
-          13,
-          "#dde1e9",
+          14,
+          "#d6dae2",
           17,
           "#c2c3cc"
         ],
@@ -1349,7 +1409,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -1358,7 +1419,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#ccc"
         ],
         "line-width": [
@@ -1437,7 +1498,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -1446,7 +1508,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#ccc"
         ],
         "line-width": [
@@ -1511,7 +1573,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -1520,7 +1583,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#ccc"
         ],
         "line-width": [
@@ -1588,7 +1651,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -1597,7 +1661,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#ccc"
         ],
         "line-width": [
@@ -1659,7 +1723,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -1668,7 +1733,7 @@
           "#dcedd5",
           9,
           "#7abcfa",
-          13,
+          14,
           "#72d3f0"
         ],
         "line-width": [
@@ -1847,7 +1912,22 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#fff",
+        "line-color": [
+          "interpolate",
+          [
+            "exponential",
+            1.4
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#dcedd5",
+          9,
+          "#ffffff",
+          14,
+          "#fff"
+        ],
         "line-width": [
           "interpolate",
           [
@@ -1912,7 +1992,22 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#fff",
+        "line-color": [
+          "interpolate",
+          [
+            "exponential",
+            1.4
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#dcedd5",
+          9,
+          "#ffffff",
+          14,
+          "#fff"
+        ],
         "line-width": [
           "interpolate",
           [
@@ -1981,7 +2076,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -1990,7 +2086,7 @@
           "#dcedd5",
           9,
           "#d1d6e0",
-          13,
+          14,
           "#ccc"
         ],
         "line-width": [
@@ -2060,7 +2156,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2069,7 +2166,7 @@
           "#dcedd5",
           9,
           "#f6f7f9",
-          13,
+          14,
           "#f4d880"
         ],
         "line-width": [
@@ -2133,7 +2230,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2142,7 +2240,7 @@
           "#dcedd5",
           9,
           "#d1d6e0",
-          13,
+          14,
           "#ccc"
         ],
         "line-width": [
@@ -2212,7 +2310,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2221,7 +2320,7 @@
           "#dcedd5",
           9,
           "#d1d6e0",
-          13,
+          14,
           "#ccc"
         ],
         "line-width": [
@@ -2277,7 +2376,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2286,7 +2386,7 @@
           "#dcedd5",
           9,
           "#f6f7f9",
-          13,
+          14,
           "#f4d880"
         ],
         "line-width": [
@@ -2581,7 +2681,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2590,7 +2691,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#fff"
         ],
         "line-width": [
@@ -2661,7 +2762,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2670,7 +2772,7 @@
           "#dcedd5",
           9,
           "#f7e06e",
-          13,
+          14,
           "#fef2c6"
         ],
         "line-width": [
@@ -2735,7 +2837,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2744,7 +2847,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#fff"
         ],
         "line-width": [
@@ -2815,7 +2918,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2824,7 +2928,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#fff"
         ],
         "line-width": [
@@ -2881,7 +2985,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2890,7 +2995,7 @@
           "#dcedd5",
           9,
           "#ffb266",
-          13,
+          14,
           "#fef2c6"
         ],
         "line-width": [
@@ -2949,7 +3054,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -2958,7 +3064,7 @@
           "#dcedd5",
           9,
           "#ddd3c6",
-          13,
+          14,
           "#bbb"
         ],
         "line-width": {
@@ -3045,7 +3151,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -3054,7 +3161,7 @@
           "#dcedd5",
           9,
           "#ddd3c6",
-          13,
+          14,
           "#bbb"
         ],
         "line-width": [
@@ -3101,7 +3208,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -3110,7 +3218,7 @@
           "#dcedd5",
           9,
           "#ddd3c6",
-          13,
+          14,
           "#bbb"
         ],
         "line-width": {
@@ -3690,7 +3798,22 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#ccc",
+        "line-color": [
+          "interpolate",
+          [
+            "exponential",
+            1.4
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#dcedd5",
+          9,
+          "#d1d6e0",
+          14,
+          "#ccc"
+        ],
         "line-width": [
           "interpolate",
           [
@@ -3755,7 +3878,22 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#ccc",
+        "line-color": [
+          "interpolate",
+          [
+            "exponential",
+            1.4
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#dcedd5",
+          9,
+          "#d1d6e0",
+          14,
+          "#ccc"
+        ],
         "line-width": [
           "interpolate",
           [
@@ -3819,7 +3957,22 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#ccc",
+        "line-color": [
+          "interpolate",
+          [
+            "exponential",
+            1.4
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#dcedd5",
+          9,
+          "#f6f7f9",
+          14,
+          "#ccc"
+        ],
         "line-width": [
           "interpolate",
           [
@@ -3888,7 +4041,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -3897,7 +4051,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#fff"
         ],
         "line-width": [
@@ -3967,7 +4121,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -3976,7 +4131,7 @@
           "#dcedd5",
           9,
           "#f7e06e",
-          13,
+          14,
           "#fef2c6"
         ],
         "line-width": [
@@ -4040,7 +4195,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -4049,7 +4205,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#fff"
         ],
         "line-width": [
@@ -4119,7 +4275,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -4128,7 +4285,7 @@
           "#dcedd5",
           9,
           "#ffffff",
-          13,
+          14,
           "#fff"
         ],
         "line-width": [
@@ -4184,7 +4341,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -4193,7 +4351,7 @@
           "#dcedd5",
           9,
           "#ffb266",
-          13,
+          14,
           "#fef2c6"
         ],
         "line-width": [
@@ -4337,7 +4495,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -4346,7 +4505,7 @@
           "#dcedd5",
           9,
           "#ddd3c6",
-          13,
+          14,
           "#bbb"
         ],
         "line-width": {
@@ -4416,7 +4575,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -4425,7 +4585,7 @@
           "#dcedd5",
           9,
           "#ddd3c6",
-          13,
+          14,
           "#bbb"
         ],
         "line-width": [
@@ -4471,7 +4631,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -4480,7 +4641,7 @@
           "#dcedd5",
           9,
           "#ddd3c6",
-          13,
+          14,
           "#bbb"
         ],
         "line-width": {
@@ -4560,7 +4721,8 @@
         "fill-extrusion-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -4569,7 +4731,7 @@
           "#dcedd5",
           9,
           "#ded7d3",
-          13,
+          14,
           "#dcd9d6"
         ],
         "fill-extrusion-height": {
@@ -4627,7 +4789,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -4636,7 +4799,7 @@
           "#dcedd5",
           9,
           "#9a9186",
-          13,
+          14,
           "#8b8a8a"
         ],
         "line-width": [
@@ -4669,7 +4832,8 @@
         "line-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
@@ -4678,7 +4842,7 @@
           "#dcedd5",
           9,
           "#c3b9ab",
-          13,
+          14,
           "#ccc"
         ],
         "line-width": {
@@ -5826,14 +5990,15 @@
         "text-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#47aadc",
-          13,
+          14,
           "#39c6ea"
         ],
         "text-halo-color": "rgba(255,255,255,0.5)",
@@ -5890,14 +6055,15 @@
         "text-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#47aadc",
-          13,
+          14,
           "#39c6ea"
         ],
         "text-halo-color": "rgba(255,255,255,0.5)",
@@ -5952,14 +6118,15 @@
         "text-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#000000",
-          13,
+          14,
           "#777"
         ],
         "text-halo-color": "#fff",
@@ -6081,15 +6248,16 @@
         "text-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#000000",
-          13,
-          "#999",
+          14,
+          "#666666",
           15,
           "#333"
         ],
@@ -6146,15 +6314,16 @@
         "text-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#000000",
-          13,
-          "#999",
+          14,
+          "#666666",
           15,
           "#333"
         ],
@@ -6209,14 +6378,15 @@
         "text-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#000000",
-          13,
+          14,
           "#666"
         ],
         "text-halo-color": "#fff",
@@ -6268,14 +6438,15 @@
         "text-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#000000",
-          13,
+          14,
           "#666"
         ],
         "text-halo-color": "#fff",
@@ -6329,14 +6500,15 @@
         "text-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#000000",
-          13,
+          14,
           "#777"
         ],
         "text-halo-color": "#fff",
@@ -6389,14 +6561,15 @@
         "text-color": [
           "interpolate",
           [
-            "linear"
+            "exponential",
+            1.4
           ],
           [
             "zoom"
           ],
           9,
           "#000000",
-          13,
+          14,
           "#666"
         ],
         "text-halo-color": "#fff",
@@ -6715,7 +6888,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 12.0,
+      "minzoom": 13,
       "filter": [
         "all",
         [
@@ -6733,7 +6906,18 @@
         "icon-image": "icon-hospital",
         "icon-size": 0.9,
         "text-optional": true,
-        "text-field": "{name}",
+        "text-field": [
+          "step",
+          [
+            "zoom"
+          ],
+          "",
+          14,
+          [
+            "get",
+            "name"
+          ]
+        ],
         "text-font": [
           "Gotham Rounded Medium"
         ],
@@ -6752,6 +6936,19 @@
         "icon-translate": [
           0,
           -5.25
+        ],
+        "icon-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          13.5,
+          1
         ]
       }
     },
