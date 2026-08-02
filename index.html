@@ -4448,13 +4448,13 @@
             <span class="settings-mapstyle-check">✓</span>
           </div>
         </div>
-        <!-- Off by default: the zoom read-out on the sheet only appears when on. -->
+        <!-- On by default: the zoom read-out sits above the sheet's top-right corner. -->
         <div class="settings-row-toggle">
           <div class="settings-row-text">
             <div class="settings-row-title">Näytä zoom taso</div>
           </div>
           <label class="ios-switch">
-            <input type="checkbox" id="setting-zoom-level" onchange="onZoomLevelToggle(this)">
+            <input type="checkbox" id="setting-zoom-level" checked onchange="onZoomLevelToggle(this)">
             <span class="ios-switch-track"></span>
           </label>
         </div>
@@ -5156,7 +5156,10 @@
         </div>
       </div>
     </div>
-    <div id="zoom-indicator" style="position:absolute;top:8px;right:16px;z-index:5;color:#999;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;"></div>
+    <!-- Zoom read-out. Mirrors #osm-attribution on the opposite side: same
+         font, size and colour, same 16px above the sheet's top edge, and it
+         fades with the sheet through updateOsmOpacity(). On by default. -->
+    <div id="zoom-indicator" style="position:absolute;top:-16px;right:8px;z-index:5;color:#000;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;transition:opacity 0.2s ease;"></div>
     <div id="drag-handle-area"><div id="drag-handle"></div><div id="filter-title">Suodata karttanäkymää</div><button id="filter-reset-btn" onclick="resetFilters()">Palauta</button><button id="filter-close-btn">✕</button></div>
     <div id="filter-topmask"></div>
     <div id="gps-warning">
@@ -5949,7 +5952,7 @@
       center: _sharedInitialCenter || FINLAND_CENTER,
       zoom:   _sharedInitialZoom   || FINLAND_ZOOM,
       minZoom: MIN_ZOOM, maxZoom: 20,
-      transformRequest, maxTileCacheSize: 50, fadeDuration: 100,
+      transformRequest, maxTileCacheSize: 50, fadeDuration: 400,
       dragRotate: false, touchPitch: false, pitchWithRotate: false,
       keyboard: false, attributionControl: false, doubleClickZoom: false
     });
@@ -11630,8 +11633,12 @@
     })();
 
     // ── Zoom read-out toggle ─────────────────────────────────────────────
-    // Off by default: the sheet's zoom indicator only shows when switched on.
-    let zoomLevelEnabled = (function(){ try { return localStorage.getItem('tp_zoom_level') === '1'; } catch(e){ return false; } })();
+    // On by default: a missing key counts as on, so the indicator shows the
+    // first time the app is opened. Switching it off writes '0' and sticks.
+    let zoomLevelEnabled = (function(){
+      try { const v = localStorage.getItem('tp_zoom_level'); return v === null ? true : v === '1'; }
+      catch(e){ return true; }
+    })();
     function applyZoomIndicatorVisibility() {
       const zi = document.getElementById('zoom-indicator');
       if (zi) zi.style.display = zoomLevelEnabled ? '' : 'none';
@@ -11896,18 +11903,14 @@
     const zoomIndicator = document.getElementById('zoom-indicator');
 
     function updateZoomIndicator() {
-      // Näytetään vain jos asetuksista on kytketty päälle (oletus: pois).
+      // Näytetään vain jos asetuksista on kytketty päälle (oletus: päällä).
       if (typeof zoomLevelEnabled !== 'undefined' && !zoomLevelEnabled) { zoomIndicator.style.display = 'none'; return; }
       // Never show the zoom readout while the filter sheet is open — it would
       // otherwise pop back on the next map move (openFilter hides it once).
       if (filterMode) { zoomIndicator.style.display = 'none'; return; }
-      const z = map.getZoom();
-      if (z < 12) {
-        zoomIndicator.style.display = 'none';
-      } else {
-        zoomIndicator.style.display = '';
-        zoomIndicator.textContent = `Z ${z.toFixed(1)}`;
-      }
+      // Näkyy kaikilla zoom-tasoilla, ei vain lähizoomeilla.
+      zoomIndicator.style.display = '';
+      zoomIndicator.textContent = `Z ${map.getZoom().toFixed(1)}`;
     }
     // Set the action button's text.
     function setActionBtnText(t) {
@@ -17585,11 +17588,13 @@
     // Ajanhetki anchor, which reads the sheet's real on-screen position.
     function updateOsmOpacity(ty){
       const el = document.getElementById('osm-attribution');
-      if (el && typeof ty === 'number') {
+      const zi = document.getElementById('zoom-indicator');
+      if (typeof ty === 'number') {
         const fadeStart = sheet.clientHeight - 153;                     // fade begins once the sheet grows past 153px
         const fullOpen  = sheet.clientHeight - window.innerHeight * 0.8; // fully open
-        const o = (ty - fullOpen) / (fadeStart - fullOpen);
-        el.style.opacity = Math.max(0, Math.min(1, o));
+        const o = Math.max(0, Math.min(1, (ty - fullOpen) / (fadeStart - fullOpen)));
+        if (el) el.style.opacity = o;
+        if (zi) zi.style.opacity = o;   // zoom-lukema häipyy samaa tahtia
       }
       _ahLastTop = null; applyAjanhetkiFade();
     }
