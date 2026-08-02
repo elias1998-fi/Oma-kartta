@@ -5907,7 +5907,7 @@
         }
       }
       const z = parseFloat(params.get('z'));
-      if (isFinite(z) && z >= 5 && z <= 20) _sharedInitialZoom = z;
+      if (isFinite(z) && z >= 4 && z <= 20) _sharedInitialZoom = z;
       _sharedAreaCode = params.get('c') || null;
     } catch(e) {
       console.warn('[share] could not parse URL params:', e);
@@ -5934,12 +5934,21 @@
       } catch(e){ return 'original'; }
     })();
     const _mapStyleUrl = MAP_STYLE_URLS[mapStyleChoice];
+    // Avausnäkymä ja uloin sallittu zoom.
+    // FINLAND_CENTER on Suomen bounding boxin keskikohta (lon 19.1–31.6,
+    // lat 59.8–70.1). Zoomilla 4 koko maa mahtuu näytölle pystysuunnassa
+    // n. 280 px korkuisena, joten se on samalla uloin taso johon kartasta
+    // pääsee — kauemmas ei ole tarvetta zoomata.
+    const MIN_ZOOM       = 4;
+    const FINLAND_CENTER = [25.30, 64.90];
+    const FINLAND_ZOOM   = 4;
+
     const map = new maplibregl.Map({
       container: 'map',
       style: _mapStyleUrl,
-      center: _sharedInitialCenter || [24.932096, 60.167370],
-      zoom:   _sharedInitialZoom   || 16,
-      minZoom: 5, maxZoom: 20,
+      center: _sharedInitialCenter || FINLAND_CENTER,
+      zoom:   _sharedInitialZoom   || FINLAND_ZOOM,
+      minZoom: MIN_ZOOM, maxZoom: 20,
       transformRequest, maxTileCacheSize: 50, fadeDuration: 100,
       dragRotate: false, touchPitch: false, pitchWithRotate: false,
       keyboard: false, attributionControl: false, doubleClickZoom: false
@@ -7200,7 +7209,7 @@
         areaMap=new maplibregl.Map({
           container:'area-map', style:'omakartta_style.json',
           center:[center.lng,center.lat], zoom,
-          minZoom:5, maxZoom:20, transformRequest,
+          minZoom:4, maxZoom:20, transformRequest,
           dragRotate:false, touchPitch:false, pitchWithRotate:false,
           keyboard:false, attributionControl:false, doubleClickZoom:false
         });
@@ -10204,7 +10213,7 @@
         editorMap = new maplibregl.Map({
           container:'editor-map', style:'omakartta_style.json',
           center:map.getCenter(), zoom:map.getZoom(),
-          minZoom:5, maxZoom:20, transformRequest,
+          minZoom:4, maxZoom:20, transformRequest,
           dragRotate:false, attributionControl:false, doubleClickZoom:false
         });
         editorMap.on('load', async () => {
@@ -12178,7 +12187,7 @@
         locEditMap = new maplibregl.Map({
           container: 'loc-edit-map', style: 'omakartta_style.json',
           center: [center.lng, center.lat], zoom: zoom,
-          minZoom: 5, maxZoom: 20, transformRequest,
+          minZoom: 4, maxZoom: 20, transformRequest,
           dragRotate: false, attributionControl: false, doubleClickZoom: false
         });
         locEditMap.on('load', () => {
