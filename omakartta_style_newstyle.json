@@ -85,6 +85,8 @@
           "#dcedd5",
           9,
           "#f5f1f0",
+          13,
+          "#f4f1f0",
           14,
           "#f0f1f2"
         ]
@@ -114,6 +116,8 @@
           "#dcedd5",
           9,
           "#f5e0e0",
+          13,
+          "#f6e2e0",
           14,
           "#fbe6e0"
         ],
@@ -130,6 +134,8 @@
           "#dcedd5",
           9,
           "#dccaca",
+          13,
+          "#decbca",
           14,
           "#e2cfca"
         ],
@@ -174,6 +180,8 @@
           "#dcedd5",
           9,
           "#f0e6d1",
+          13,
+          "#f2ead1",
           14,
           "#f9f4d2"
         ],
@@ -216,6 +224,8 @@
           "#dcedd5",
           9,
           "#cdd5ef",
+          13,
+          "#d2d8ec",
           14,
           "#e3e3e3"
         ],
@@ -232,6 +242,8 @@
           "#dcedd5",
           9,
           "#cfc9be",
+          13,
+          "#cecac2",
           14,
           "#ccc"
         ],
@@ -282,6 +294,8 @@
           "#dcedd5",
           9,
           "#b8ebad",
+          13,
+          "#c1ebb5",
           14,
           "#dceacc"
         ],
@@ -333,6 +347,8 @@
           "#dcedd5",
           9,
           "#e2f1dc",
+          13,
+          "#e1efd8",
           14,
           "#ddeacd"
         ],
@@ -375,6 +391,8 @@
           "#dcedd5",
           9,
           "#b0e4aa",
+          13,
+          "#b8e4ae",
           14,
           "#d0e3b8"
         ],
@@ -425,6 +443,8 @@
           "#dcedd5",
           9,
           "#d6eccf",
+          13,
+          "#d3e8c8",
           14,
           "#cbdeb4"
         ],
@@ -467,6 +487,8 @@
           "#dcedd5",
           9,
           "#d0f4be",
+          13,
+          "#daf4c3",
           14,
           "#f9f4d2"
         ],
@@ -510,6 +532,8 @@
           "#dcedd5",
           9,
           "#e2f1dc",
+          13,
+          "#e2f0d6",
           14,
           "#e3ecc5"
         ],
@@ -552,6 +576,8 @@
           "#dcedd5",
           9,
           "#f3ecc4",
+          13,
+          "#eee9c6",
           14,
           "#e0dfcc"
         ],
@@ -594,6 +620,8 @@
           "#dcedd5",
           9,
           "#cdebc6",
+          13,
+          "#cce8c2",
           14,
           "#cbdeb4"
         ],
@@ -610,6 +638,8 @@
           "#dcedd5",
           9,
           "#b6cd99",
+          13,
+          "#b6ce9a",
           14,
           "#b8d19b"
         ],
@@ -652,6 +682,8 @@
           "#dcedd5",
           9,
           "#e0e2eb",
+          13,
+          "#e3e3e9",
           14,
           "#ede6e3"
         ],
@@ -695,6 +727,8 @@
           "#dcedd5",
           9,
           "#d0f4be",
+          13,
+          "#cfefbc",
           14,
           "#cde0b6"
         ],
@@ -739,6 +773,8 @@
           "#dcedd5",
           9,
           "#d0f4be",
+          13,
+          "#d8e8bf",
           14,
           "#f0c2c2"
         ],
@@ -799,6 +835,8 @@
           ],
           9,
           "#94b9ff",
+          13,
+          "#98c1fc",
           14,
           "#a6d8f4"
         ],
@@ -848,6 +886,8 @@
           ],
           9,
           "#94b9ff",
+          13,
+          "#98c1fc",
           14,
           "#a6d8f4"
         ]
@@ -878,6 +918,8 @@
           ],
           9,
           "#94b9ff",
+          13,
+          "#98c1fc",
           14,
           "#a6d8f4"
         ],
@@ -941,6 +983,8 @@
           ],
           9,
           "#99ddff",
+          13,
+          "#a2dffd",
           14,
           "#bee4f8"
         ],
@@ -990,6 +1034,8 @@
           ],
           9,
           "#99ddff",
+          13,
+          "#a2dffd",
           14,
           "#bee4f8"
         ]
@@ -1020,6 +1066,8 @@
           ],
           9,
           "#99ddff",
+          13,
+          "#a2dffd",
           14,
           "#bee4f8"
         ],
@@ -1097,6 +1145,8 @@
           "#dcedd5",
           9,
           "#dedad2",
+          13,
+          "#dfdcd6",
           14,
           "#e3e3e3"
         ],
@@ -1113,6 +1163,8 @@
           "#dcedd5",
           9,
           "#cfcac0",
+          13,
+          "#d1cdc6",
           14,
           "#d6d6d6"
         ],
@@ -1159,6 +1211,8 @@
           "#dcedd5",
           9,
           "#cdd5ef",
+          13,
+          "#dae0f3",
           14,
           "#fff"
         ],
@@ -1220,6 +1274,8 @@
           "#dcedd5",
           9,
           "#cdd5ef",
+          13,
+          "#dae0f3",
           14,
           "#fff"
         ],
@@ -1298,8 +1354,23 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#fdfdfd",
           14,
           "#f7f7f7"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -1335,8 +1406,23 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#fdfdfd",
           14,
           "#f7f7f7"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -1362,6 +1448,8 @@
           "#dcedd5",
           9,
           "#cfc8c4",
+          13,
+          "#ccc7c6",
           14,
           "#c2c3cc"
         ],
@@ -1378,6 +1466,8 @@
           "#dcedd5",
           9,
           "#cfc8c4",
+          13,
+          "#d1cccc",
           14,
           "#d6dae2",
           17,
@@ -1438,6 +1528,8 @@
           "#dcedd5",
           9,
           "#ded7d3",
+          13,
+          "#dfdad8",
           14,
           "#e2e4e9"
         ],
@@ -1454,6 +1546,8 @@
           "#dcedd5",
           9,
           "#cfc8c4",
+          13,
+          "#d1cccc",
           14,
           "#d6dae2",
           17,
@@ -1540,6 +1634,19 @@
         "line-dasharray": [
           0,
           1.5
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          16,
+          0,
+          17.5,
+          1
         ]
       }
     },
@@ -1610,6 +1717,19 @@
         "line-dasharray": [
           6,
           5
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14.5,
+          1
         ]
       }
     },
@@ -1688,6 +1808,19 @@
         "line-dasharray": [
           6,
           5
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          17,
+          0,
+          18.5,
+          1
         ]
       }
     },
@@ -1729,6 +1862,8 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#f2f2f2",
           14,
           "#ccc"
         ],
@@ -1818,6 +1953,8 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#f2f2f2",
           14,
           "#ccc"
         ],
@@ -1852,6 +1989,19 @@
         "line-dasharray": [
           10,
           3
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -1893,6 +2043,8 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#f2f2f2",
           14,
           "#ccc"
         ],
@@ -1927,6 +2079,19 @@
         "line-dasharray": [
           10,
           3
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -1971,6 +2136,8 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#f2f2f2",
           14,
           "#ccc"
         ],
@@ -2003,6 +2170,19 @@
         "line-dasharray": [
           10,
           3
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -2043,6 +2223,8 @@
           "#dcedd5",
           9,
           "#7abcfa",
+          13,
+          "#78c2f8",
           14,
           "#72d3f0"
         ],
@@ -2235,6 +2417,8 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#ffffff",
           14,
           "#fff"
         ],
@@ -2314,6 +2498,8 @@
           7,
           "#dcedd5",
           9,
+          "#ffffff",
+          13,
           "#ffffff",
           14,
           "#fff"
@@ -2396,6 +2582,8 @@
           "#dcedd5",
           9,
           "#d1d6e0",
+          13,
+          "#d0d4db",
           14,
           "#ccc"
         ],
@@ -2476,6 +2664,8 @@
           "#dcedd5",
           9,
           "#f6f7f9",
+          13,
+          "#f6efdb",
           14,
           "#f4d880"
         ],
@@ -2550,6 +2740,8 @@
           "#dcedd5",
           9,
           "#d1d6e0",
+          13,
+          "#d0d4db",
           14,
           "#ccc"
         ],
@@ -2630,6 +2822,8 @@
           "#dcedd5",
           9,
           "#d1d6e0",
+          13,
+          "#d0d4db",
           14,
           "#ccc"
         ],
@@ -2646,6 +2840,19 @@
           1,
           20,
           84
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -2696,6 +2903,8 @@
           "#dcedd5",
           9,
           "#f6f7f9",
+          13,
+          "#f6efdb",
           14,
           "#f4d880"
         ],
@@ -2712,6 +2921,19 @@
           2,
           20,
           84
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -2790,6 +3012,19 @@
           2,
           20,
           32
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          16.5,
+          1
         ]
       }
     },
@@ -2948,6 +3183,19 @@
         "line-dasharray": [
           1,
           1
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14.5,
+          1
         ]
       }
     },
@@ -3000,6 +3248,8 @@
           7,
           "#dcedd5",
           9,
+          "#ffffff",
+          13,
           "#ffffff",
           14,
           "#fff"
@@ -3082,6 +3332,8 @@
           "#dcedd5",
           9,
           "#f7e06e",
+          13,
+          "#f9e484",
           14,
           "#fef2c6"
         ],
@@ -3156,6 +3408,8 @@
           7,
           "#dcedd5",
           9,
+          "#ffffff",
+          13,
           "#ffffff",
           14,
           "#fff"
@@ -3238,6 +3492,8 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#ffffff",
           14,
           "#fff"
         ],
@@ -3254,6 +3510,19 @@
           0.5,
           20,
           80
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -3305,6 +3574,8 @@
           "#dcedd5",
           9,
           "#ffb266",
+          13,
+          "#ffc27e",
           14,
           "#fef2c6"
         ],
@@ -3321,6 +3592,19 @@
           0.5,
           20,
           80
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -3374,6 +3658,8 @@
           "#dcedd5",
           9,
           "#ddd3c6",
+          13,
+          "#d4cdc3",
           14,
           "#bbb"
         ],
@@ -3402,6 +3688,19 @@
           0.25,
           20,
           12
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -3471,6 +3770,8 @@
           "#dcedd5",
           9,
           "#ddd3c6",
+          13,
+          "#d4cdc3",
           14,
           "#bbb"
         ],
@@ -3487,6 +3788,19 @@
           0.5,
           22,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -3528,6 +3842,8 @@
           "#dcedd5",
           9,
           "#ddd3c6",
+          13,
+          "#d4cdc3",
           14,
           "#bbb"
         ],
@@ -3542,7 +3858,20 @@
               8
             ]
           ]
-        }
+        },
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
+        ]
       }
     },
     {
@@ -3589,6 +3918,19 @@
           2.5,
           22,
           60
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          16.5,
+          1
         ]
       }
     },
@@ -3639,6 +3981,19 @@
           2,
           22,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          16.5,
+          1
         ]
       }
     },
@@ -3694,6 +4049,19 @@
         "line-dasharray": [
           0,
           1.5
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          16.5,
+          1
         ]
       }
     },
@@ -3752,6 +4120,19 @@
           2.5,
           22,
           60
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          16.5,
+          1
         ]
       }
     },
@@ -3813,6 +4194,19 @@
           2,
           22,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          16.5,
+          1
         ]
       }
     },
@@ -3875,6 +4269,19 @@
           1.5,
           22,
           26
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14.5,
+          1
         ]
       }
     },
@@ -3922,6 +4329,19 @@
           2.5,
           22,
           60
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14.5,
+          1
         ]
       }
     },
@@ -3972,6 +4392,19 @@
           2,
           22,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14.5,
+          1
         ]
       }
     },
@@ -4023,6 +4456,19 @@
           1.5,
           22,
           26
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14.5,
+          1
         ]
       }
     },
@@ -4077,6 +4523,19 @@
           1,
           20,
           55
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14.5,
+          1
         ]
       }
     },
@@ -4121,6 +4580,8 @@
           "#dcedd5",
           9,
           "#d1d6e0",
+          13,
+          "#d0d4db",
           14,
           "#ccc"
         ],
@@ -4201,6 +4662,8 @@
           "#dcedd5",
           9,
           "#d1d6e0",
+          13,
+          "#d0d4db",
           14,
           "#ccc"
         ],
@@ -4280,6 +4743,8 @@
           "#dcedd5",
           9,
           "#f6f7f9",
+          13,
+          "#ececee",
           14,
           "#ccc"
         ],
@@ -4361,6 +4826,8 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#ffffff",
           14,
           "#fff"
         ],
@@ -4441,6 +4908,8 @@
           "#dcedd5",
           9,
           "#f7e06e",
+          13,
+          "#f9e484",
           14,
           "#fef2c6"
         ],
@@ -4514,6 +4983,8 @@
           7,
           "#dcedd5",
           9,
+          "#ffffff",
+          13,
           "#ffffff",
           14,
           "#fff"
@@ -4595,6 +5066,8 @@
           "#dcedd5",
           9,
           "#ffffff",
+          13,
+          "#ffffff",
           14,
           "#fff"
         ],
@@ -4611,6 +5084,19 @@
           0.5,
           20,
           80
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -4661,6 +5147,8 @@
           "#dcedd5",
           9,
           "#ffb266",
+          13,
+          "#ffc27e",
           14,
           "#fef2c6"
         ],
@@ -4677,6 +5165,19 @@
           0.5,
           20,
           80
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -4720,6 +5221,19 @@
           2.5,
           22,
           65
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14.5,
+          1
         ]
       }
     },
@@ -4763,6 +5277,19 @@
           2,
           22,
           50
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14.5,
+          1
         ]
       }
     },
@@ -4815,6 +5342,8 @@
           "#dcedd5",
           9,
           "#ddd3c6",
+          13,
+          "#d4cdc3",
           14,
           "#bbb"
         ],
@@ -4843,6 +5372,19 @@
           0.25,
           20,
           12
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -4895,6 +5437,8 @@
           "#dcedd5",
           9,
           "#ddd3c6",
+          13,
+          "#d4cdc3",
           14,
           "#bbb"
         ],
@@ -4911,6 +5455,19 @@
           0.5,
           22,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
         ]
       }
     },
@@ -4951,6 +5508,8 @@
           "#dcedd5",
           9,
           "#ddd3c6",
+          13,
+          "#d4cdc3",
           14,
           "#bbb"
         ],
@@ -4965,7 +5524,20 @@
               8
             ]
           ]
-        }
+        },
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          8.5,
+          1
+        ]
       }
     },
     {
@@ -5041,6 +5613,8 @@
           "#dcedd5",
           9,
           "#ded7d3",
+          13,
+          "#ded8d4",
           14,
           "#dcd9d6"
         ],
@@ -5107,6 +5681,8 @@
           ],
           9,
           "#9a9186",
+          13,
+          "#968f87",
           14,
           "#8b8a8a"
         ],
@@ -5150,6 +5726,8 @@
           "#dcedd5",
           9,
           "#c3b9ab",
+          13,
+          "#c5beb3",
           14,
           "#ccc"
         ],
@@ -6070,8 +6648,11 @@
         "visibility": "none"
       },
       "paint": {
-        "text-color": "#999",
-        "text-opacity": 0.7
+        "text-color": "#000000",
+        "text-opacity": 0.7,
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+        "text-halo-blur": 1
       }
     },
     {
@@ -6113,8 +6694,11 @@
         "visibility": "none"
       },
       "paint": {
-        "text-color": "#999",
-        "text-opacity": 0.7
+        "text-color": "#000000",
+        "text-opacity": 0.7,
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+        "text-halo-blur": 1
       }
     },
     {
@@ -6177,8 +6761,8 @@
         "text-max-width": 8
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
@@ -6192,7 +6776,8 @@
           0,
           14,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6225,7 +6810,7 @@
       },
       "paint": {
         "text-color": "#8ea66d",
-        "text-halo-color": "#fff",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
@@ -6239,7 +6824,8 @@
           0,
           14,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6271,8 +6857,8 @@
         "text-field": "{name}"
       },
       "paint": {
-        "text-color": "#888",
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
@@ -6286,7 +6872,8 @@
           0,
           14,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6334,21 +6921,8 @@
         "text-field": "{name}"
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          9,
-          "#47aadc",
-          14,
-          "#39c6ea"
-        ],
-        "text-halo-color": "rgba(255,255,255,0.5)",
+        "text-color": "#39c6ea",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
@@ -6362,7 +6936,8 @@
           0,
           6,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6412,21 +6987,8 @@
         "text-rotation-alignment": "viewport"
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          9,
-          "#47aadc",
-          14,
-          "#39c6ea"
-        ],
-        "text-halo-color": "rgba(255,255,255,0.5)",
+        "text-color": "#39c6ea",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
@@ -6440,7 +7002,8 @@
           0,
           6,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6488,21 +7051,8 @@
         "text-field": "{name}"
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          9,
-          "#000000",
-          14,
-          "#777"
-        ],
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
@@ -6516,7 +7066,8 @@
           0,
           12,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6570,22 +7121,9 @@
         "text-rotation-alignment": "map"
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          "#999",
-          15,
-          "#333"
-        ],
-        "text-halo-color": "rgba(255,255,255,0.85)",
-        "text-halo-width": 2,
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
           [
@@ -6598,7 +7136,8 @@
           0,
           16,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6644,24 +7183,9 @@
         "text-rotation-alignment": "map"
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          9,
-          "#000000",
-          14,
-          "#666666",
-          15,
-          "#333"
-        ],
-        "text-halo-color": "rgba(255,255,255,0.85)",
-        "text-halo-width": 2,
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
           [
@@ -6674,7 +7198,8 @@
           0,
           11,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6723,24 +7248,10 @@
         "text-rotation-alignment": "map"
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          9,
-          "#000000",
-          14,
-          "#666666",
-          15,
-          "#333"
-        ],
-        "text-halo-color": "rgba(255,255,255,0.85)",
-        "text-halo-width": 2
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+        "text-halo-blur": 1
       }
     },
     {
@@ -6787,21 +7298,8 @@
         ]
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          9,
-          "#000000",
-          14,
-          "#666"
-        ],
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
@@ -6815,7 +7313,8 @@
           0,
           11,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6860,21 +7359,8 @@
         "visibility": "visible"
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          9,
-          "#000000",
-          14,
-          "#666"
-        ],
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
@@ -6888,7 +7374,8 @@
           0,
           9,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -6935,22 +7422,9 @@
         "visibility": "visible"
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          9,
-          "#000000",
-          14,
-          "#777"
-        ],
-        "text-halo-color": "#fff",
-        "text-halo-width": 1.5,
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
           [
@@ -6963,214 +7437,8 @@
           1,
           13,
           0
-        ]
-      }
-    },
-    {
-      "id": "finland_parking_dot",
-      "type": "circle",
-      "source": "vector",
-      "source-layer": "place",
-      "maxzoom": 9,
-      "filter": [
-        "all",
-        [
-          "==",
-          "$type",
-          "Point"
         ],
-        [
-          "==",
-          "class",
-          "country"
-        ],
-        [
-          "any",
-          [
-            "==",
-            "iso_a2",
-            "FI"
-          ],
-          [
-            "==",
-            "name",
-            "Suomi"
-          ],
-          [
-            "==",
-            "name",
-            "Finland"
-          ]
-        ]
-      ],
-      "paint": {
-        "circle-color": "#007ac9",
-        "circle-radius": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          3,
-          11,
-          8,
-          20
-        ],
-        "circle-translate": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          3,
-          [
-            "literal",
-            [
-              0,
-              20
-            ]
-          ],
-          8,
-          [
-            "literal",
-            [
-              0,
-              40
-            ]
-          ]
-        ],
-        "circle-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          8,
-          1,
-          9,
-          0
-        ],
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": 1.5,
-        "circle-stroke-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          8,
-          1,
-          9,
-          0
-        ]
-      }
-    },
-    {
-      "id": "finland_parking_p",
-      "type": "symbol",
-      "source": "vector",
-      "source-layer": "place",
-      "maxzoom": 9,
-      "filter": [
-        "all",
-        [
-          "==",
-          "$type",
-          "Point"
-        ],
-        [
-          "==",
-          "class",
-          "country"
-        ],
-        [
-          "any",
-          [
-            "==",
-            "iso_a2",
-            "FI"
-          ],
-          [
-            "==",
-            "name",
-            "Suomi"
-          ],
-          [
-            "==",
-            "name",
-            "Finland"
-          ]
-        ]
-      ],
-      "layout": {
-        "text-field": "P",
-        "text-font": [
-          "Gotham Rounded Medium"
-        ],
-        "text-size": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          3,
-          13,
-          8,
-          24
-        ],
-        "text-allow-overlap": true,
-        "text-ignore-placement": true
-      },
-      "paint": {
-        "text-color": "#ffffff",
-        "text-translate": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          3,
-          [
-            "literal",
-            [
-              0,
-              20
-            ]
-          ],
-          8,
-          [
-            "literal",
-            [
-              0,
-              40
-            ]
-          ]
-        ],
-        "text-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          8,
-          1,
-          9,
-          0
-        ]
+        "text-halo-blur": 1
       }
     },
     {
@@ -7216,22 +7484,9 @@
         "text-transform": "uppercase"
       },
       "paint": {
-        "text-color": [
-          "interpolate",
-          [
-            "exponential",
-            1.4
-          ],
-          [
-            "zoom"
-          ],
-          9,
-          "#000000",
-          14,
-          "#666"
-        ],
-        "text-halo-color": "#fff",
-        "text-halo-width": 1.5,
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
         "text-opacity": [
           "interpolate",
           [
@@ -7244,7 +7499,8 @@
           1,
           9,
           0
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -7453,8 +7709,8 @@
         "visibility": "none"
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "icon-translate": [
           0,
@@ -7485,7 +7741,8 @@
           0,
           12,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -7525,8 +7782,8 @@
         "visibility": "none"
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "icon-translate": [
           0,
@@ -7557,7 +7814,8 @@
           0,
           12,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -7597,8 +7855,8 @@
         "visibility": "none"
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "icon-translate": [
           0,
@@ -7629,7 +7887,8 @@
           0,
           12,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -7679,8 +7938,8 @@
         ]
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "icon-translate": [
           0,
@@ -7711,7 +7970,8 @@
           0,
           14,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -7752,8 +8012,8 @@
         "icon-size": 0.9
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1,
         "icon-translate": [
           0,
@@ -7784,7 +8044,8 @@
           0,
           6,
           1
-        ]
+        ],
+        "text-halo-blur": 1
       }
     },
     {
@@ -8452,9 +8713,10 @@
         ]
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+        "text-halo-blur": 1
       }
     },
     {
@@ -8480,9 +8742,10 @@
         "visibility": "visible"
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+        "text-halo-blur": 1
       }
     },
     {
@@ -8507,9 +8770,10 @@
         "text-size": 10
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+        "text-halo-blur": 1
       }
     },
     {
@@ -8540,9 +8804,10 @@
         "visibility": "visible"
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+        "text-halo-blur": 1
       }
     },
     {
@@ -8568,9 +8833,10 @@
         "visibility": "visible"
       },
       "paint": {
-        "text-color": "#666",
-        "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-color": "#000000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+        "text-halo-blur": 1
       }
     }
   ],
