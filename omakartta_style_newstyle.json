@@ -114,6 +114,21 @@
           "#f5e0e0",
           13,
           "#fbe6e0"
+        ],
+        "fill-outline-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#dcedd5",
+          9,
+          "#dccaca",
+          13,
+          "#e2cfca"
         ]
       }
     },
@@ -592,6 +607,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#94b9ff",
           13,
@@ -627,6 +644,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#94b9ff",
           13,
@@ -668,6 +687,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#99ddff",
           13,
@@ -703,6 +724,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#99ddff",
           13,
@@ -790,6 +813,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#cdd5ef",
           13,
@@ -835,6 +860,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#cdd5ef",
           13,
@@ -910,6 +937,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -944,6 +973,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -968,6 +999,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#cfc8c4",
           13,
@@ -981,6 +1014,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#cfc8c4",
           13,
@@ -1005,7 +1040,20 @@
               ]
             ]
           ]
-        }
+        },
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          1
+        ]
       }
     },
     {
@@ -1025,6 +1073,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ded7d3",
           13,
@@ -1038,12 +1088,27 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#cfc8c4",
           13,
           "#dde1e9",
           17,
           "#c2c3cc"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          1
         ]
       }
     },
@@ -1297,6 +1362,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -1383,6 +1450,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -1455,6 +1524,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -1530,6 +1601,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -1599,6 +1672,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#7abcfa",
           13,
@@ -1919,6 +1994,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#d1d6e0",
           13,
@@ -1996,6 +2073,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#f6f7f9",
           13,
@@ -2067,6 +2146,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#d1d6e0",
           13,
@@ -2144,6 +2225,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#d1d6e0",
           13,
@@ -2207,6 +2290,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#f6f7f9",
           13,
@@ -2509,6 +2594,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -2587,6 +2674,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#f7e06e",
           13,
@@ -2659,6 +2748,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -2737,6 +2828,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -2802,7 +2895,7 @@
             "zoom"
           ],
           7,
-          "#f4a352",
+          "#dcedd5",
           9,
           "#ffb266",
           13,
@@ -2869,6 +2962,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ddd3c6",
           13,
@@ -2963,6 +3058,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ddd3c6",
           13,
@@ -3017,6 +3114,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ddd3c6",
           13,
@@ -3802,6 +3901,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -3879,6 +3980,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#f7e06e",
           13,
@@ -3950,6 +4053,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -4027,6 +4132,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ffffff",
           13,
@@ -4091,7 +4198,7 @@
             "zoom"
           ],
           7,
-          "#f4a352",
+          "#dcedd5",
           9,
           "#ffb266",
           13,
@@ -4243,6 +4350,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ddd3c6",
           13,
@@ -4320,6 +4429,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ddd3c6",
           13,
@@ -4373,6 +4484,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ddd3c6",
           13,
@@ -4460,6 +4573,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#ded7d3",
           13,
@@ -4473,7 +4588,19 @@
           "property": "render_min_height",
           "type": "identity"
         },
-        "fill-extrusion-opacity": 0.8
+        "fill-extrusion-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          15.0,
+          0.8
+        ]
       }
     },
     {
@@ -4513,6 +4640,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#9a9186",
           13,
@@ -4553,6 +4682,8 @@
           [
             "zoom"
           ],
+          7,
+          "#dcedd5",
           9,
           "#c3b9ab",
           13,
@@ -6576,6 +6707,51 @@
         "icon-image": "icon-terminal-train",
         "icon-size": 0.9,
         "visibility": "none"
+      },
+      "paint": {
+        "text-color": "#666",
+        "text-halo-color": "#fff",
+        "text-halo-width": 1,
+        "icon-translate": [
+          0,
+          -5.25
+        ]
+      }
+    },
+    {
+      "id": "icon_hospital",
+      "type": "symbol",
+      "source": "vector",
+      "source-layer": "poi",
+      "minzoom": 12.0,
+      "filter": [
+        "all",
+        [
+          "==",
+          "$type",
+          "Point"
+        ],
+        [
+          "==",
+          "subclass",
+          "hospital"
+        ]
+      ],
+      "layout": {
+        "icon-image": "icon-hospital",
+        "icon-size": 0.9,
+        "text-optional": true,
+        "text-field": "{name}",
+        "text-font": [
+          "Gotham Rounded Medium"
+        ],
+        "text-size": 10,
+        "text-anchor": "top",
+        "text-max-width": 8,
+        "text-offset": [
+          0,
+          0.5
+        ]
       },
       "paint": {
         "text-color": "#666",
