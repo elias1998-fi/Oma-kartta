@@ -5105,8 +5105,6 @@
           [
             "zoom"
           ],
-          7,
-          "#dcedd5",
           9,
           "#9a9186",
           14,
@@ -5122,7 +5120,7 @@
             "zoom"
           ],
           3,
-          0.5,
+          0.8,
           22,
           15
         ]
@@ -6181,7 +6179,20 @@
       "paint": {
         "text-color": "#666",
         "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-halo-width": 1,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14,
+          1
+        ]
       }
     },
     {
@@ -6215,7 +6226,20 @@
       "paint": {
         "text-color": "#8ea66d",
         "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-halo-width": 1,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14,
+          1
+        ]
       }
     },
     {
@@ -6249,7 +6273,20 @@
       "paint": {
         "text-color": "#888",
         "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-halo-width": 1,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14,
+          1
+        ]
       }
     },
     {
@@ -6312,7 +6349,20 @@
           "#39c6ea"
         ],
         "text-halo-color": "rgba(255,255,255,0.5)",
-        "text-halo-width": 1
+        "text-halo-width": 1,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0,
+          6,
+          1
+        ]
       }
     },
     {
@@ -6377,7 +6427,20 @@
           "#39c6ea"
         ],
         "text-halo-color": "rgba(255,255,255,0.5)",
-        "text-halo-width": 1
+        "text-halo-width": 1,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0,
+          6,
+          1
+        ]
       }
     },
     {
@@ -6440,7 +6503,20 @@
           "#777"
         ],
         "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-halo-width": 1,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          12,
+          1
+        ]
       }
     },
     {
@@ -6509,7 +6585,20 @@
           "#333"
         ],
         "text-halo-color": "rgba(255,255,255,0.85)",
-        "text-halo-width": 2
+        "text-halo-width": 2,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          16,
+          1
+        ]
       }
     },
     {
@@ -6572,7 +6661,20 @@
           "#333"
         ],
         "text-halo-color": "rgba(255,255,255,0.85)",
-        "text-halo-width": 2
+        "text-halo-width": 2,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0,
+          11,
+          1
+        ]
       }
     },
     {
@@ -6700,7 +6802,20 @@
           "#666"
         ],
         "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-halo-width": 1,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0,
+          11,
+          1
+        ]
       }
     },
     {
@@ -6760,7 +6875,20 @@
           "#666"
         ],
         "text-halo-color": "#fff",
-        "text-halo-width": 1
+        "text-halo-width": 1,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          0,
+          9,
+          1
+        ]
       }
     },
     {
@@ -6822,7 +6950,227 @@
           "#777"
         ],
         "text-halo-color": "#fff",
-        "text-halo-width": 1.5
+        "text-halo-width": 1.5,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          12,
+          1,
+          13,
+          0
+        ]
+      }
+    },
+    {
+      "id": "finland_parking_dot",
+      "type": "circle",
+      "source": "vector",
+      "source-layer": "place",
+      "maxzoom": 9,
+      "filter": [
+        "all",
+        [
+          "==",
+          "$type",
+          "Point"
+        ],
+        [
+          "==",
+          "class",
+          "country"
+        ],
+        [
+          "any",
+          [
+            "==",
+            "iso_a2",
+            "FI"
+          ],
+          [
+            "==",
+            "name",
+            "Suomi"
+          ],
+          [
+            "==",
+            "name",
+            "Finland"
+          ]
+        ]
+      ],
+      "paint": {
+        "circle-color": "#007ac9",
+        "circle-radius": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          3,
+          11,
+          8,
+          20
+        ],
+        "circle-translate": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          3,
+          [
+            "literal",
+            [
+              0,
+              20
+            ]
+          ],
+          8,
+          [
+            "literal",
+            [
+              0,
+              40
+            ]
+          ]
+        ],
+        "circle-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          1,
+          9,
+          0
+        ],
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 1.5,
+        "circle-stroke-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          1,
+          9,
+          0
+        ]
+      }
+    },
+    {
+      "id": "finland_parking_p",
+      "type": "symbol",
+      "source": "vector",
+      "source-layer": "place",
+      "maxzoom": 9,
+      "filter": [
+        "all",
+        [
+          "==",
+          "$type",
+          "Point"
+        ],
+        [
+          "==",
+          "class",
+          "country"
+        ],
+        [
+          "any",
+          [
+            "==",
+            "iso_a2",
+            "FI"
+          ],
+          [
+            "==",
+            "name",
+            "Suomi"
+          ],
+          [
+            "==",
+            "name",
+            "Finland"
+          ]
+        ]
+      ],
+      "layout": {
+        "text-field": "P",
+        "text-font": [
+          "Gotham Rounded Medium"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          3,
+          13,
+          8,
+          24
+        ],
+        "text-allow-overlap": true,
+        "text-ignore-placement": true
+      },
+      "paint": {
+        "text-color": "#ffffff",
+        "text-translate": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          3,
+          [
+            "literal",
+            [
+              0,
+              20
+            ]
+          ],
+          8,
+          [
+            "literal",
+            [
+              0,
+              40
+            ]
+          ]
+        ],
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          1,
+          9,
+          0
+        ]
       }
     },
     {
@@ -6830,7 +7178,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "place",
-      "maxzoom": 8,
+      "maxzoom": 9,
       "filter": [
         "all",
         [
@@ -6883,7 +7231,20 @@
           "#666"
         ],
         "text-halo-color": "#fff",
-        "text-halo-width": 1.5
+        "text-halo-width": 1.5,
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          1,
+          9,
+          0
+        ]
       }
     },
     {
@@ -7098,6 +7459,32 @@
         "icon-translate": [
           0,
           -5.25
+        ],
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          12,
+          1
+        ],
+        "icon-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          12,
+          1
         ]
       }
     },
@@ -7144,6 +7531,32 @@
         "icon-translate": [
           0,
           -5.25
+        ],
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          12,
+          1
+        ],
+        "icon-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          12,
+          1
         ]
       }
     },
@@ -7190,6 +7603,32 @@
         "icon-translate": [
           0,
           -5.25
+        ],
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          12,
+          1
+        ],
+        "icon-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0,
+          12,
+          1
         ]
       }
     },
@@ -7259,6 +7698,19 @@
           0,
           13.5,
           1
+        ],
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14,
+          1
         ]
       }
     },
@@ -7306,6 +7758,32 @@
         "icon-translate": [
           0,
           -5.25
+        ],
+        "text-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0,
+          6,
+          1
+        ],
+        "icon-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0,
+          6,
+          1
         ]
       }
     },
