@@ -1660,6 +1660,10 @@
     .navigate-cancel:active { opacity: 0.7; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
     #gps-warning {
+      /* Poistettu käytöstä: teksti ei näy enää missään tilanteessa. Elementti
+         jätetään DOMiin, koska useat koodipolut kutsuvat sen classListiä
+         suoraan ilman null-tarkistusta. */
+      display: none !important;
       font-family: Arial, sans-serif;
       font-size: 12px;
       color: #888;
@@ -5937,22 +5941,34 @@
       } catch(e){ return 'original'; }
     })();
     const _mapStyleUrl = MAP_STYLE_URLS[mapStyleChoice];
-    // Avausnäkymä ja uloin sallittu zoom.
-    // FINLAND_CENTER on Suomen bounding boxin keskikohta (lon 19.1–31.6,
-    // lat 59.8–70.1). Zoomilla 4 koko maa mahtuu näytölle pystysuunnassa
-    // n. 280 px korkuisena, joten se on samalla uloin taso johon kartasta
-    // pääsee — kauemmas ei ole tarvetta zoomata.
+    // Avausnäkymä, uloin sallittu zoom ja panorointirajaus.
     const MIN_ZOOM       = 4;
-    const FINLAND_CENTER = [25.30, 64.90];
-    const FINLAND_ZOOM   = 4;
+    const INITIAL_CENTER = [24.93839, 60.16223];   // Helsingin niemi
+    const INITIAL_ZOOM   = 13.1;
+    // Digitransitin tiilistö kattaa vain Suomen. Ilman rajausta karttaa voi
+    // vetää esim. Ruotsin puolelle, missä ei ole dataa lainkaan ja näkyy vain
+    // taustaväri. maxBounds estää sen: reunan yli ei pääse.
+    const MAP_BOUNDS     = [[19.0, 59.5], [31.6, 70.1]];
+    // Hallien ja latauspisteiden ikonit: kiinteä koko, häivytys 11 → 11.25.
+    const ICON_MINZOOM     = 11;
+    const POINTER_MINZOOM  = 11;   // P-merkki + sheetin "Lähennä karttaa"
+    const ICON_FADE        = ['interpolate', ['linear'], ['zoom'], 11, 0, 11.25, 1];
+    const HALL_ICON_SIZE   = 0.675;
+    const CHARGE_ICON_SIZE = 0.25;
+    // Hallit piirtyvät latauspisteiden PÄÄLLE: latauspisteitä on enemmän,
+    // joten ne saavat jäädä alle. Kutsutaan aina kun kerroksia siirrellään.
+    function promoteIconLayers(){
+      ['charging-icons','charging-hi-icon','halli-icons','halli-hi-icon']
+        .forEach(id => { if (map.getLayer(id)) { try { map.moveLayer(id); } catch(e){} } });
+    }
 
     const map = new maplibregl.Map({
       container: 'map',
       style: _mapStyleUrl,
-      center: _sharedInitialCenter || FINLAND_CENTER,
-      zoom:   _sharedInitialZoom   || FINLAND_ZOOM,
-      minZoom: MIN_ZOOM, maxZoom: 20,
-      transformRequest, maxTileCacheSize: 50, fadeDuration: 400,
+      center: _sharedInitialCenter || INITIAL_CENTER,
+      zoom:   _sharedInitialZoom   || INITIAL_ZOOM,
+      minZoom: MIN_ZOOM, maxZoom: 20, maxBounds: MAP_BOUNDS,
+      transformRequest, maxTileCacheSize: 50, fadeDuration: 250,
       dragRotate: false, touchPitch: false, pitchWithRotate: false,
       keyboard: false, attributionControl: false, doubleClickZoom: false
     });
@@ -9176,6 +9192,7 @@
         }
         _hiChargingId = cId;
       }
+      promoteIconLayers();
     }
 
     // Returns all feature IDs that share the same "group" as the given props
@@ -9515,7 +9532,7 @@
         if (hoveredHalliId !== null) { hoveredHalliId = null; collapseCenterSheet(); if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility(); if (typeof applyPoiHighlights === 'function') applyPoiHighlights(); }
         return false;
       };
-      if (map.getZoom() < 13 || !map.getLayer('halli-icons')) return leaveHalli();
+      if (map.getZoom() < ICON_MINZOOM || !map.getLayer('halli-icons')) return leaveHalli();
       const hpt = map.project(map.getCenter()); hpt.y += 0;
       const hr = 1;
       const hhits = map.queryRenderedFeatures([[hpt.x-hr, hpt.y-hr],[hpt.x+hr, hpt.y+hr]], { layers:['halli-icons'] });
@@ -9546,7 +9563,7 @@
       if (window._navigationInProgress) return;
       // A charging station under the P-marker takes priority and reacts in real
       // time during the drag (no finger-lift needed), like parking areas.
-      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= 13) {
+      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= ICON_MINZOOM) {
         const ccpt = map.project(map.getCenter()); ccpt.y += 0;
         const cr = 1;
         const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
@@ -9765,18 +9782,18 @@
       const _bs = document.getElementById('bottom-sheet');
       if (_bs && _noArea && !inNav && !inFilter) {
         const _t = _bs.style.transform || '';
-        if (zoom < 13 && !_t.includes('- 60px')) {
+        if (zoom < POINTER_MINZOOM && !_t.includes('- 60px')) {
           _bs.style.transition = 'transform 0.3s ease';
           _bs.style.transform = 'translateY(calc(100% - 60px))';
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
-        } else if (zoom >= 13 && (_t === '' || _t.includes('- 60px'))) {
+        } else if (zoom >= POINTER_MINZOOM && (_t === '' || _t.includes('- 60px'))) {
           _bs.style.transition = 'transform 0.3s ease';
           _bs.style.transform = 'translateY(calc(100% - 90px))';
           currentY = _bs.offsetHeight - 90;
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
         }
       }
-      if (zoom < 13) {
+      if (zoom < POINTER_MINZOOM) {
         setActionBtnText('Lähennä karttaa');
         btn.classList.remove('active');
         // Also hide the P-marker — polygons and halli icons are hidden by
@@ -9971,12 +9988,13 @@
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
       map.addLayer({
-        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: 13,
+        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: ICON_MINZOOM,
         layout: {
-          'icon-image': ['step', ['zoom'], 'halli-plain', 14, 'halli-icon'],
-          'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.25, 14, 0.675],
+          'icon-image': 'halli-icon',
+          'icon-size': HALL_ICON_SIZE,
           'icon-allow-overlap': true, 'icon-anchor': 'center'
-        }
+        },
+        paint: { 'icon-opacity': ICON_FADE }
       });
       // Korostuskerros p-merkin ALLA olevalle hallille: suurennettu,
       // punareunainen ikoni (suodatin rajaa vain valittuun featureen; feature-
@@ -9985,17 +10003,18 @@
       // Promote the halli icons to the very top so they always sit on
       // top of the parking-area polygons (otherwise the polygon fills
       // partially cover the icons at higher zoom levels).
-      map.moveLayer('halli-icons');
+      promoteIconLayers();
       // Suurennettu, punareunainen ikoni valitulle hallille (ikonien PÄÄLLE).
       if (!map.getLayer('halli-hi-icon')) {
         map.addLayer({
-          id: 'halli-hi-icon', type: 'symbol', source: 'halli-points', minzoom: 13,
+          id: 'halli-hi-icon', type: 'symbol', source: 'halli-points', minzoom: ICON_MINZOOM,
           filter: _hiNone,
           layout: {
-            'icon-image': ['step', ['zoom'], 'halli-plain-hi', 14, 'halli-icon-hi'],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.25, 14, 0.675],
+            'icon-image': 'halli-icon-hi',
+            'icon-size': HALL_ICON_SIZE,
             'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
-          }
+          },
+          paint: { 'icon-opacity': ICON_FADE }
         });
       }
       if (map.getLayer('halli-hi-icon')) map.moveLayer('halli-hi-icon');
@@ -13361,26 +13380,28 @@
           } else {
             map.addSource('charging-points', { type: 'geojson', data: geojson });
             map.addLayer({
-              id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: 13,
+              id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: ICON_MINZOOM,
               layout: {
-                'icon-image': ['step', ['zoom'], ['case', ['get','available'], 'charging-plain-green', 'charging-plain-gray'], 14, ['case', ['get','available'], 'charging-green', 'charging-gray']],
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.125, 14, 0.1875, 16, 0.3375], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
-              }
+                'icon-image': ['case', ['get','available'], 'charging-green', 'charging-gray'],
+                'icon-size': CHARGE_ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+              },
+              paint: { 'icon-opacity': ICON_FADE }
             });
             // Korostuskerros p-merkin ALLA olevalle latauspisteelle: suurennettu,
             // punareunainen ikoni (suodatinpohjainen, kuten hallissa).
             const _chNone = ['==', ['get','id'], '__tp_none__'];
             if (!map.getLayer('charging-hi-icon')) {
               map.addLayer({
-                id: 'charging-hi-icon', type: 'symbol', source: 'charging-points', minzoom: 13,
+                id: 'charging-hi-icon', type: 'symbol', source: 'charging-points', minzoom: ICON_MINZOOM,
                 filter: _chNone,
                 layout: {
-                  'icon-image': ['step', ['zoom'], ['case', ['get','available'], 'charging-plain-green-hi', 'charging-plain-gray-hi'], 14, ['case', ['get','available'], 'charging-green-hi', 'charging-gray-hi']],
-                  'icon-size': ['interpolate', ['linear'], ['zoom'], 13.99, 0.125, 14, 0.1875, 16, 0.3375], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
-                }
+                  'icon-image': ['case', ['get','available'], 'charging-green-hi', 'charging-gray-hi'],
+                  'icon-size': CHARGE_ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                },
+                paint: { 'icon-opacity': ICON_FADE }
               });
             }
-            if (map.getLayer('charging-hi-icon')) map.moveLayer('charging-hi-icon');
+            promoteIconLayers();
             // Tap a charging marker → leave filter view, zoom to 16 centred on
             // the station, and show its details in the sheet (like halli markers).
             // Guarded so a dark-mode style switch re-adding the layer doesn't
