@@ -132,6 +132,19 @@
           "#dccaca",
           14,
           "#e2cfca"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -163,6 +176,19 @@
           "#f0e6d1",
           14,
           "#f9f4d2"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -208,6 +234,19 @@
           "#cfc9be",
           14,
           "#ccc"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -245,6 +284,19 @@
           "#b8ebad",
           14,
           "#dceacc"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -283,6 +335,19 @@
           "#e2f1dc",
           14,
           "#ddeacd"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -312,6 +377,19 @@
           "#b0e4aa",
           14,
           "#d0e3b8"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -349,6 +427,19 @@
           "#d6eccf",
           14,
           "#cbdeb4"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -378,6 +469,19 @@
           "#d0f4be",
           14,
           "#f9f4d2"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -450,6 +554,19 @@
           "#f3ecc4",
           14,
           "#e0dfcc"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -495,6 +612,19 @@
           "#b6cd99",
           14,
           "#b8d19b"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -524,6 +654,19 @@
           "#e0e2eb",
           14,
           "#ede6e3"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -914,7 +1057,20 @@
         "wetland"
       ],
       "paint": {
-        "fill-pattern": "icon-wetland"
+        "fill-pattern": "icon-wetland",
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
+        ]
       }
     },
     {
@@ -959,6 +1115,19 @@
           "#cfcac0",
           14,
           "#d6d6d6"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
@@ -1006,6 +1175,19 @@
           2.5,
           20,
           240
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          10,
+          1
         ]
       }
     },
