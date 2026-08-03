@@ -5946,10 +5946,17 @@
     // tiukemmilla Suomi-rajoilla puhelimen näyttö ei mahtuisi rajojen
     // sisään zoomilla 4 (MapLibre pysäyttäisi zoomauksen n. 4.2:een).
     const MAP_BOUNDS = [[10.0, 55.0], [40.0, 72.5]];
-    // Hallien ja latauspisteiden ikonit: kiinteä koko, häivytys 11 → 11.25.
-    const ICON_MINZOOM     = 11;
+    // Porrastettu ilmestyminen: latauspisteet ensin, sitten hallit, sitten
+    // pysäköintialueet. Jokainen häivyttyy esiin 0,2 zoomtason aikana ja
+    // niiden väliin jää tauko, joten ne eivät ilmesty päällekkäin.
+    const CHARGE_MINZOOM   = 11.5;   // täysin näkyvissä 11.7
+    const HALL_MINZOOM     = 12.1;   // täysin näkyvissä 12.3
+    const AREA_MINZOOM     = 12.8;   // täysin näkyvissä 13.0
+    const ICON_MINZOOM     = CHARGE_MINZOOM;   // varhaisin, yleisiä portteja varten
     const POINTER_MINZOOM  = 11;   // P-merkki + sheetin "Lähennä karttaa"
-    const ICON_FADE        = ['interpolate', ['linear'], ['zoom'], 11, 0, 11.25, 1];
+    const _fadeIn = z => ['interpolate', ['linear'], ['zoom'], z, 0, +(z + 0.2).toFixed(2), 1];
+    const CHARGE_FADE      = _fadeIn(CHARGE_MINZOOM);
+    const HALL_FADE        = _fadeIn(HALL_MINZOOM);
     // Maksimikoot. Lukuarvot eroavat koska lähdekuvat ovat eri kokoisia:
     // halli-ikoni on 64x64 px ja latauspiste 128x128 px, molemmat
     // pixelRatio 2. Renderöity koko on siis 32*size vs 64*size CSS-pikseliä,
@@ -5960,11 +5967,11 @@
     const ICON_START_SCALE = 0.7;     // 30 % pienempi ilmestyessä
     // Kasvu ilmestymiskoosta maksimiin eksponentiaalisesti (sama kanta 1.4
     // kuin karttatyylin väriliu'uissa), joten kasvu painottuu loppupäähän.
-    const _iconSizeExpr = max => ['interpolate', ['exponential', 1.4], ['zoom'],
-                                  ICON_MINZOOM, Math.round(max * ICON_START_SCALE * 100000) / 100000,
+    const _iconSizeExpr = (max, from) => ['interpolate', ['exponential', 1.4], ['zoom'],
+                                  from, Math.round(max * ICON_START_SCALE * 100000) / 100000,
                                   ICON_MAX_ZOOM, max];
-    const HALL_ICON_SIZE   = _iconSizeExpr(HALL_ICON_MAX);
-    const CHARGE_ICON_SIZE = _iconSizeExpr(CHARGE_ICON_MAX);
+    const HALL_ICON_SIZE   = _iconSizeExpr(HALL_ICON_MAX,   HALL_MINZOOM);
+    const CHARGE_ICON_SIZE = _iconSizeExpr(CHARGE_ICON_MAX, CHARGE_MINZOOM);
     // Hallit piirtyvät latauspisteiden PÄÄLLE: latauspisteitä on enemmän,
     // joten ne saavat jäädä alle. Kutsutaan aina kun kerroksia siirrellään.
     function promoteIconLayers(){
@@ -6163,7 +6170,7 @@
         // Load hallis always — they're just 113 points, lightweight
         if (!halliLoaded) { halliLoaded = true; loadHalliMarkers(); }
         // Load master polygons if zoomed in, else wait for onMapIdle
-        if (map.getZoom() >= 13) {
+        if (map.getZoom() >= AREA_MINZOOM) {
           loadViewportTiles(null);
         }
       }, 800);
@@ -9064,7 +9071,7 @@
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
 
         // Base fill layer
-        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{ 'fill-opacity': hlOpacity('baseFill'), 'fill-opacity-transition': { duration: 0 },
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -9081,7 +9088,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{ 'line-width': 1.0, 'line-opacity': hlOpacity('baseLine'),
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
@@ -9093,22 +9100,22 @@
           }
         });
         // Hover fill — red, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{ 'fill-color':'#1266f1', 'fill-opacity': hlOpacity('hoverFill') },
           filter:['==', ['get','id'], '__none__']
         });
         // Hover outline — on the red hovered area, toggled via setFilter
-        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{ 'line-color':'#0B49D0', 'line-width': 2.5, 'line-opacity': hlOpacity('hoverLine') },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': hlOpacity('groupLine') },
           filter:['==', ['get','id'], '__none__']
         });
         // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
-        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:13,
+        map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{ 'fill-opacity': hlOpacity('groupFill'),
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -9244,6 +9251,8 @@
     // HUOM: ['zoom'] saa esiintyä VAIN top-level interpolaten syötteenä (sama
     // rajoitus joka aiemmin kaatoi icon-size-lausekkeen), siksi mahdollinen
     // ominaisuuskohtainen ['case'] menee interpolaten ULOSTULOIHIN, ei toisin päin.
+    // Kaikkien alue-tasojen läpinäkyvyys alkaa nollasta AREA_MINZOOMissa ja
+    // saavuttaa varsinaisen arvonsa zoomilla 13, eli 0,2 zoomtason häivytys.
     function hlStops(key){
       const S = {
         hoverFill: [13, 0.95, 15, 0.78, 17, 0.55, 19, 0.42],  // p-merkin alla, kirkkaan punainen
@@ -9253,7 +9262,7 @@
         baseFill:  [13, 0.26, 15, 0.21, 17, 0.16, 19, 0.13],  // maksulliset + ilmaiset, perustila
         baseLine:  [13, 0.60, 15, 0.55, 17, 0.47, 19, 0.42]
       };
-      return S[key];
+      return [AREA_MINZOOM, 0].concat(S[key]);
     }
     function hlOpacity(key){
       return ['interpolate', ['linear'], ['zoom']].concat(hlStops(key));
@@ -9542,7 +9551,7 @@
         if (hoveredHalliId !== null) { hoveredHalliId = null; collapseCenterSheet(); if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility(); if (typeof applyPoiHighlights === 'function') applyPoiHighlights(); }
         return false;
       };
-      if (map.getZoom() < ICON_MINZOOM || !map.getLayer('halli-icons')) return leaveHalli();
+      if (map.getZoom() < HALL_MINZOOM || !map.getLayer('halli-icons')) return leaveHalli();
       const hpt = map.project(map.getCenter()); hpt.y += 0;
       const hr = 1;
       const hhits = map.queryRenderedFeatures([[hpt.x-hr, hpt.y-hr],[hpt.x+hr, hpt.y+hr]], { layers:['halli-icons'] });
@@ -9573,7 +9582,7 @@
       if (window._navigationInProgress) return;
       // A charging station under the P-marker takes priority and reacts in real
       // time during the drag (no finger-lift needed), like parking areas.
-      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= ICON_MINZOOM) {
+      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= CHARGE_MINZOOM) {
         const ccpt = map.project(map.getCenter()); ccpt.y += 0;
         const cr = 1;
         const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
@@ -9859,23 +9868,52 @@
       releaseMasterLock();
     });
 
-    // Click → flyTo (highlight already applied by mouseenter above)
+    // Keskitys valittuun alueeseen. Omana funktionaan, koska sitä kutsutaan
+    // sekä taso-kohtaisesta että kartan yleisestä click-käsittelijästä.
+    // Zoom-tasoa ei muuteta: käyttäjä pysyy valitsemassaan mittakaavassa.
+    function centerOnAreaFeature(f) {
+      if (!f || !f.geometry) return false;
+      const geom = f.geometry;
+      const ring = geom.type === 'MultiPolygon' ? geom.coordinates[0][0] : geom.coordinates[0];
+      if (!ring || !ring.length) return false;
+      const lng = ring.reduce((s,c)=>s+c[0],0)/ring.length;
+      const lat = ring.reduce((s,c)=>s+c[1],0)/ring.length;
+      if (filterMode) closeFilter();
+      const from = map.getCenter();
+      const go = () => map.flyTo({ center:[lng,lat], duration: 800 });
+      go();
+      // Varmistus: ensimmäisellä napautuksella sheet avautuu samaan aikaan, ja
+      // jokin siitä seuraava tapahtuma ehti pysäyttää juuri aloitetun lennon
+      // ennen sen ensimmäistä framea (näkymä ei siirtynyt ennen kuin vasta
+      // toisella napautuksella). Jos kamera ei ole liikkunut lainkaan eikä ole
+      // liikkeessä seuraavassa framessa, aloitetaan lento uudelleen.
+      requestAnimationFrame(() => {
+        const c = map.getCenter();
+        const stuck = Math.abs(c.lng - from.lng) < 1e-7 && Math.abs(c.lat - from.lat) < 1e-7;
+        if (stuck && !map.isMoving()) go();
+      });
+      return true;
+    }
+
+    let _areaClickAt = 0;
     map.on('click', 'master-poly-fill', (e) => {
       if (!e.features.length) return;
-      const geom = e.features[0].geometry;
-      const ring = geom.type === 'MultiPolygon' ? geom.coordinates[0][0] : geom.coordinates[0];
-      if (ring && ring.length) {
-        const lng = ring.reduce((s,c)=>s+c[0],0)/ring.length;
-        const lat = ring.reduce((s,c)=>s+c[1],0)/ring.length;
-        // In filter view, close it first so the user returns to the normal map
-        // with the P-marker landing on the selected area.
-        if (filterMode) closeFilter();
-        // Keskitetään alueen keskipisteeseen NYKYISELLÄ zoomilla, jotta
-        // P-merkki (joka on kartan keskellä) osuu valittuun alueeseen.
-        // Zoom-tasoa ei muuteta: käyttäjä pysyy siinä mittakaavassa jonka
-        // on itse valinnut, myös kohteesta toiseen hypättäessä.
-        map.flyTo({ center:[lng,lat], duration: 800 });
-      }
+      _areaClickAt = Date.now();
+      centerOnAreaFeature(e.features[0]);
+    });
+    // Varakäsittelijä: jos taso-kohtainen click ei jostain syystä laukea,
+    // haetaan alue itse pienellä osumasäteellä (myös sormenpäätä varten).
+    map.on('click', (e) => {
+      if (Date.now() - _areaClickAt < 100) return;   // taso-käsittelijä hoiti jo
+      if (!map.getLayer('master-poly-fill')) return;
+      const r = 5, p = e.point;
+      const fs = map.queryRenderedFeatures(
+        [[p.x - r, p.y - r], [p.x + r, p.y + r]], { layers: ['master-poly-fill'] });
+      if (!fs.length) return;
+      showMasterPolyInfo({ features: fs });
+      applyHoverHighlight(fs[0].properties);
+      hoveredPolyId = fs[0].properties.id;
+      centerOnAreaFeature(fs[0]);
     });
 
     // ── Draw P icon on canvas (avoids SVG/Image loading issues) ────────
@@ -9886,16 +9924,11 @@
     // Pelkkä autotallin "kuutio": tummansininen pyöristetty neliö + valkoinen
     // reunus (ilman sisältöä). Käytetään mm. kaukana zoomattaessa.
     function _drawHalliSquare(ctx) {
-      const size = 64, r = 13;
-      const rr = (x, y, w, h, rad) => {
-        ctx.beginPath();
-        ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
-        ctx.lineTo(x + w, y + h - rad); ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
-        ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
-        ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
-      };
-      rr(0, 0, size, size, r);
+      // Ympyrä (aiemmin pyöristetty neliö). Säde 32 = puolet 64 px:n canvasista.
+      const c = 32;
+      ctx.beginPath();
+      ctx.arc(c, c, c, 0, Math.PI * 2);
+      ctx.closePath();
       ctx.fillStyle = '#1565C0'; ctx.fill();                 // alkuperäinen hallin sininen
     }
     // Nuoli (harjakatto) + iso valkoinen P. Sama geometria kuin sheetin
@@ -9922,8 +9955,10 @@
         ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
         ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
       };
-      rr(pad - 1.5, pad - 1.5, base + 3, base + 3, r + 2);
-      ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.stroke();
+      // Punainen korostuskehä ympyränä, sama 1,5 px:n uloke kuin ennen.
+      ctx.beginPath();
+      ctx.arc(pad + base / 2, pad + base / 2, base / 2 + 1.5, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 9; ctx.stroke();
     }
     function _halliImageData(drawFn) {
       const size = 64;
@@ -10000,13 +10035,13 @@
       }
       map.addSource('halli-points', { type:'geojson', data: geojson });
       map.addLayer({
-        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: ICON_MINZOOM,
+        id: 'halli-icons', type: 'symbol', source: 'halli-points', minzoom: HALL_MINZOOM,
         layout: {
           'icon-image': 'halli-icon',
           'icon-size': HALL_ICON_SIZE,
           'icon-allow-overlap': true, 'icon-anchor': 'center'
         },
-        paint: { 'icon-opacity': ICON_FADE }
+        paint: { 'icon-opacity': HALL_FADE }
       });
       // Korostuskerros p-merkin ALLA olevalle hallille: suurennettu,
       // punareunainen ikoni (suodatin rajaa vain valittuun featureen; feature-
@@ -10019,14 +10054,14 @@
       // Suurennettu, punareunainen ikoni valitulle hallille (ikonien PÄÄLLE).
       if (!map.getLayer('halli-hi-icon')) {
         map.addLayer({
-          id: 'halli-hi-icon', type: 'symbol', source: 'halli-points', minzoom: ICON_MINZOOM,
+          id: 'halli-hi-icon', type: 'symbol', source: 'halli-points', minzoom: HALL_MINZOOM,
           filter: _hiNone,
           layout: {
             'icon-image': 'halli-icon-hi',
             'icon-size': HALL_ICON_SIZE,
             'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
           },
-          paint: { 'icon-opacity': ICON_FADE }
+          paint: { 'icon-opacity': HALL_FADE }
         });
       }
       if (map.getLayer('halli-hi-icon')) map.moveLayer('halli-hi-icon');
@@ -10302,7 +10337,7 @@
         editorMap.getSource('editor-all').setData(geojson);
       } else {
         editorMap.addSource('editor-all', { type:'geojson', data: geojson });
-        editorMap.addLayer({ id:'editor-fill', type:'fill', source:'editor-all', minzoom:13,
+        editorMap.addLayer({ id:'editor-fill', type:'fill', source:'editor-all', minzoom:AREA_MINZOOM,
           paint:{ 'fill-opacity':0.35,
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
@@ -10313,7 +10348,7 @@
             ]
           }
         });
-        editorMap.addLayer({ id:'editor-line', type:'line', source:'editor-all', minzoom:13,
+        editorMap.addLayer({ id:'editor-line', type:'line', source:'editor-all', minzoom:AREA_MINZOOM,
           paint:{ 'line-width':1,
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
@@ -10324,10 +10359,10 @@
             ]
           }
         });
-        editorMap.addLayer({ id:'editor-sel-fill', type:'fill', source:'editor-all', minzoom:13,
+        editorMap.addLayer({ id:'editor-sel-fill', type:'fill', source:'editor-all', minzoom:AREA_MINZOOM,
           paint:{ 'fill-color':'#0C0243','fill-opacity':0.6 },
           filter:['in',['get','id'],['literal',[]]] });
-        editorMap.addLayer({ id:'editor-sel-line', type:'line', source:'editor-all', minzoom:13,
+        editorMap.addLayer({ id:'editor-sel-line', type:'line', source:'editor-all', minzoom:AREA_MINZOOM,
           paint:{ 'line-color':'#0C0243','line-width':2.5 },
           filter:['in',['get','id'],['literal',[]]] });
         // Preview layer
@@ -10337,14 +10372,14 @@
         editorMap.addLayer({ id:'editor-preview-line', type:'line', source:'editor-preview',
           paint:{ 'line-color':'#F9A825','line-width':3 } });
         // Delete highlight
-        editorMap.addLayer({ id:'editor-del-fill', type:'fill', source:'editor-all', minzoom:13,
+        editorMap.addLayer({ id:'editor-del-fill', type:'fill', source:'editor-all', minzoom:AREA_MINZOOM,
           paint:{ 'fill-color':'#e53935','fill-opacity':0.6 },
           filter:['==','id','__none__'] });
         // Reject flash (incompatible area blink)
-        editorMap.addLayer({ id:'editor-reject-fill', type:'fill', source:'editor-all', minzoom:13,
+        editorMap.addLayer({ id:'editor-reject-fill', type:'fill', source:'editor-all', minzoom:AREA_MINZOOM,
           paint:{ 'fill-color':'#e53935','fill-opacity':0.75 },
           filter:['==','id','__none__'] });
-        editorMap.addLayer({ id:'editor-reject-line', type:'line', source:'editor-all', minzoom:13,
+        editorMap.addLayer({ id:'editor-reject-line', type:'line', source:'editor-all', minzoom:AREA_MINZOOM,
           paint:{ 'line-color':'#e53935','line-width':3 },
           filter:['==','id','__none__'] });
       }
@@ -13274,7 +13309,7 @@
     function chargingIconSvg(bg){
       return 'data:image/svg+xml;base64,' + btoa(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">' +
-        '<rect x="0" y="0" width="128" height="128" rx="26" fill="' + bg + '"/>' +
+        '<rect x="0" y="0" width="128" height="128" rx="64" fill="' + bg + '"/>' +
         '<path fill="#ffffff" fill-rule="evenodd" d="M25.51 107.9C24.25 106.86 24.47 104.66 25.9 104.08C26.43 103.87 35.57 103.77 60.45 103.71C94.1 103.62 94.3 103.62 97.19 103.06C114.76 99.7 120.35 89.61 110.52 79.03C108.46 76.81 106.28 75.01 102.2 72.15L99.22 70.06L98.25 71.09C97.51 71.86 97.08 72.11 96.47 72.11C95.67 72.11 91.11 70 91.11 69.63C91.11 69.19 98.4 58.81 98.71 58.81C98.83 58.81 99.78 59.62 100.82 60.61C103.24 62.92 103.47 63.83 102.13 65.68C101.74 66.21 101.81 66.28 104.59 68.2C106.17 69.28 108.48 70.99 109.74 72C128.16 86.77 120.73 104.95 95.04 107.96C89.68 108.59 26.28 108.53 25.51 107.9ZM43.57 93.77C44.06 92.08 47.53 79.65 47.67 79.11L47.83 78.46L44.13 78.39L40.43 78.32L49.91 68.85L59.38 59.37L57.18 67.2L54.98 75.02L58.6 75.09C60.59 75.13 62.23 75.25 62.23 75.35C62.23 75.45 58 79.75 52.83 84.91C47.66 90.06 43.49 94.05 43.57 93.77ZM83.36 69.1C81.36 67.79 80.34 66.66 78.33 63.53C77.41 62.09 76.11 60.38 75.46 59.73C73.98 58.25 56.79 46.18 54.88 45.28C52.57 44.18 49.85 44.32 46.9 45.68C43.59 47.21 43.18 47.26 34.48 47.27C23.35 47.28 24.42 48.84 24.52 32.68L24.6 21.13L25.42 20.4L26.25 19.66L35.18 19.66C50.31 19.66 49.36 19.31 66.79 31.54C71.46 34.82 77.5 39.05 80.22 40.94C98.11 53.42 97.45 52.88 97.45 54.86C97.45 55.72 96.87 56.67 92.72 62.59C86.91 70.89 86.51 71.17 83.36 69.1ZM9.35 44.25C8 43.43 8 43.43 8 33.47C8 21.13 7.25 22.19 15.99 22.19L21.94 22.19L21.94 33.47L21.94 44.74L16.05 44.74C10.66 44.74 10.08 44.7 9.35 44.25Z"/>' +
         '</svg>'
       );
@@ -13284,9 +13319,9 @@
     function chargingIconSvgHi(bg){
       return 'data:image/svg+xml;base64,' + btoa(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-13 -13 154 154" width="154" height="154">' +
-        '<rect x="0" y="0" width="128" height="128" rx="26" fill="' + bg + '"/>' +
+        '<rect x="0" y="0" width="128" height="128" rx="64" fill="' + bg + '"/>' +
         '<path fill="#ffffff" fill-rule="evenodd" d="M25.51 107.9C24.25 106.86 24.47 104.66 25.9 104.08C26.43 103.87 35.57 103.77 60.45 103.71C94.1 103.62 94.3 103.62 97.19 103.06C114.76 99.7 120.35 89.61 110.52 79.03C108.46 76.81 106.28 75.01 102.2 72.15L99.22 70.06L98.25 71.09C97.51 71.86 97.08 72.11 96.47 72.11C95.67 72.11 91.11 70 91.11 69.63C91.11 69.19 98.4 58.81 98.71 58.81C98.83 58.81 99.78 59.62 100.82 60.61C103.24 62.92 103.47 63.83 102.13 65.68C101.74 66.21 101.81 66.28 104.59 68.2C106.17 69.28 108.48 70.99 109.74 72C128.16 86.77 120.73 104.95 95.04 107.96C89.68 108.59 26.28 108.53 25.51 107.9ZM43.57 93.77C44.06 92.08 47.53 79.65 47.67 79.11L47.83 78.46L44.13 78.39L40.43 78.32L49.91 68.85L59.38 59.37L57.18 67.2L54.98 75.02L58.6 75.09C60.59 75.13 62.23 75.25 62.23 75.35C62.23 75.45 58 79.75 52.83 84.91C47.66 90.06 43.49 94.05 43.57 93.77ZM83.36 69.1C81.36 67.79 80.34 66.66 78.33 63.53C77.41 62.09 76.11 60.38 75.46 59.73C73.98 58.25 56.79 46.18 54.88 45.28C52.57 44.18 49.85 44.32 46.9 45.68C43.59 47.21 43.18 47.26 34.48 47.27C23.35 47.28 24.42 48.84 24.52 32.68L24.6 21.13L25.42 20.4L26.25 19.66L35.18 19.66C50.31 19.66 49.36 19.31 66.79 31.54C71.46 34.82 77.5 39.05 80.22 40.94C98.11 53.42 97.45 52.88 97.45 54.86C97.45 55.72 96.87 56.67 92.72 62.59C86.91 70.89 86.51 71.17 83.36 69.1ZM9.35 44.25C8 43.43 8 43.43 8 33.47C8 21.13 7.25 22.19 15.99 22.19L21.94 22.19L21.94 33.47L21.94 44.74L16.05 44.74C10.66 44.74 10.08 44.7 9.35 44.25Z"/>' +
-        '<rect x="-3" y="-3" width="134" height="134" rx="30" fill="none" stroke="#ff1744" stroke-width="18"/>' +
+        '<rect x="-3" y="-3" width="134" height="134" rx="67" fill="none" stroke="#ff1744" stroke-width="18"/>' +
         '</svg>'
       );
     }
@@ -13295,15 +13330,15 @@
     function chargingPlainSvg(bg){
       return 'data:image/svg+xml;base64,' + btoa(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">' +
-        '<rect x="0" y="0" width="128" height="128" rx="26" fill="' + bg + '"/>' +
+        '<rect x="0" y="0" width="128" height="128" rx="64" fill="' + bg + '"/>' +
         '</svg>'
       );
     }
     function chargingPlainSvgHi(bg){
       return 'data:image/svg+xml;base64,' + btoa(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-13 -13 154 154" width="154" height="154">' +
-        '<rect x="0" y="0" width="128" height="128" rx="26" fill="' + bg + '"/>' +
-        '<rect x="-3" y="-3" width="134" height="134" rx="30" fill="none" stroke="#ff1744" stroke-width="18"/>' +
+        '<rect x="0" y="0" width="128" height="128" rx="64" fill="' + bg + '"/>' +
+        '<rect x="-3" y="-3" width="134" height="134" rx="67" fill="none" stroke="#ff1744" stroke-width="18"/>' +
         '</svg>'
       );
     }
@@ -13392,25 +13427,25 @@
           } else {
             map.addSource('charging-points', { type: 'geojson', data: geojson });
             map.addLayer({
-              id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: ICON_MINZOOM,
+              id: 'charging-icons', type: 'symbol', source: 'charging-points', minzoom: CHARGE_MINZOOM,
               layout: {
                 'icon-image': ['case', ['get','available'], 'charging-green', 'charging-gray'],
                 'icon-size': CHARGE_ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
               },
-              paint: { 'icon-opacity': ICON_FADE }
+              paint: { 'icon-opacity': CHARGE_FADE }
             });
             // Korostuskerros p-merkin ALLA olevalle latauspisteelle: suurennettu,
             // punareunainen ikoni (suodatinpohjainen, kuten hallissa).
             const _chNone = ['==', ['get','id'], '__tp_none__'];
             if (!map.getLayer('charging-hi-icon')) {
               map.addLayer({
-                id: 'charging-hi-icon', type: 'symbol', source: 'charging-points', minzoom: ICON_MINZOOM,
+                id: 'charging-hi-icon', type: 'symbol', source: 'charging-points', minzoom: CHARGE_MINZOOM,
                 filter: _chNone,
                 layout: {
                   'icon-image': ['case', ['get','available'], 'charging-green-hi', 'charging-gray-hi'],
                   'icon-size': CHARGE_ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
                 },
-                paint: { 'icon-opacity': ICON_FADE }
+                paint: { 'icon-opacity': CHARGE_FADE }
               });
             }
             promoteIconLayers();
@@ -14569,7 +14604,7 @@
       if (!halliLoaded) { halliLoaded = true; setTimeout(loadHalliMarkers, 200); }
 
       // Load master polygons — only once, then cache in memory
-      // Layers have minzoom:13 so they auto-hide when zoomed out
+      // Layers have minzoom:AREA_MINZOOM so they auto-hide when zoomed out
       if (!masterDataLoaded) {
         clearTimeout(tileLoadTimer);
         tileLoadTimer = setTimeout(() => {
@@ -14622,9 +14657,8 @@
 
       const zoom=map.getZoom();
 
-      // Hide P-marker when zoomed out (matches the master-poly / halli
-      // layer minzoom of 13)
-      if(zoom < 13) {
+      // P-merkki piiloon kun ollaan liian kaukana (POINTER_MINZOOM).
+      if(zoom < POINTER_MINZOOM) {
         centerPointerEl.classList.add('hidden');
       } else {
         centerPointerEl.classList.remove('hidden');
@@ -14632,7 +14666,7 @@
 
       // A charging station directly under the P-marker takes priority and
       // shows its details in the sheet (same behaviour as a parking area).
-      if(zoom>=13 && showEvCharging && map.getLayer('charging-icons')){
+      if(zoom >= CHARGE_MINZOOM && showEvCharging && map.getLayer('charging-icons')){
         const ccpt = map.project(map.getCenter()); ccpt.y += 0;
         const cr = 1;
         const cb = [[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]];
@@ -14667,7 +14701,7 @@
       if(detectHalliUnderMarker()) return;
 
       // Highlight parking area under map center (works on mobile & desktop)
-      if(zoom>=13 && map.getLayer('master-poly-fill')){
+      if(zoom >= AREA_MINZOOM && map.getLayer('master-poly-fill')){
         const cpt = map.project(map.getCenter()); cpt.y += 0;
         // Detection at P-marker tip: 1px radius (2px diameter point)
         const radius = 1;
@@ -14721,7 +14755,7 @@
         }
       }
       
-      if(zoom<13){
+      if(zoom < POINTER_MINZOOM){
         summaryHeader.textContent=''; summaryType.textContent='';
         summaryOperator.textContent=''; details.innerHTML='';
         divider.style.display='none';
