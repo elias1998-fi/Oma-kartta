@@ -134,6 +134,19 @@
           "#decbca",
           14,
           "#e2cfca"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -165,6 +178,19 @@
           "#f2ead1",
           14,
           "#f9f4d2"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -210,6 +236,19 @@
           "#cecac2",
           14,
           "#ccc"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -247,6 +286,19 @@
           "#c1ebb5",
           14,
           "#dceacc"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -285,6 +337,19 @@
           "#e1efd8",
           14,
           "#ddeacd"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -314,6 +379,19 @@
           "#b8e4ae",
           14,
           "#d0e3b8"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -351,6 +429,19 @@
           "#d3e8c8",
           14,
           "#cbdeb4"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -380,6 +471,19 @@
           "#daf4c3",
           14,
           "#f9f4d2"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -452,6 +556,19 @@
           "#eee9c6",
           14,
           "#e0dfcc"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -497,6 +614,19 @@
           "#b6ce9a",
           14,
           "#b8d19b"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -526,6 +656,19 @@
           "#e3e3e9",
           14,
           "#ede6e3"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -676,6 +819,19 @@
           1,
           20,
           17
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          0,
+          8.2,
+          1
         ]
       }
     },
@@ -798,6 +954,19 @@
           0.5,
           20,
           15
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          0,
+          8.2,
+          1
         ]
       }
     },
@@ -921,6 +1090,19 @@
           "#d1cdc6",
           14,
           "#d6d6d6"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -968,6 +1150,19 @@
           2.5,
           20,
           240
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -1080,6 +1275,19 @@
           "#fdfdfd",
           14,
           "#f7f7f7"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -1117,6 +1325,19 @@
           "#fdfdfd",
           14,
           "#f7f7f7"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -1671,6 +1892,19 @@
         "line-dasharray": [
           10,
           3
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -1746,6 +1980,19 @@
         "line-dasharray": [
           10,
           3
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -1822,6 +2069,19 @@
         "line-dasharray": [
           10,
           3
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -2465,6 +2725,19 @@
           1,
           20,
           84
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -2531,6 +2804,19 @@
           2,
           20,
           84
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -3099,6 +3385,19 @@
           0.5,
           20,
           80
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -3166,6 +3465,19 @@
           0.5,
           20,
           80
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -3247,6 +3559,19 @@
           0.25,
           20,
           12
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -3332,6 +3657,19 @@
           0.5,
           22,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -3387,7 +3725,20 @@
               8
             ]
           ]
-        }
+        },
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
+        ]
       }
     },
     {
@@ -4586,6 +4937,19 @@
           0.5,
           20,
           80
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -4652,6 +5016,19 @@
           0.5,
           20,
           80
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -4844,6 +5221,19 @@
           0.25,
           20,
           12
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -4912,6 +5302,19 @@
           0.5,
           22,
           40
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
         ]
       }
     },
@@ -4966,7 +5369,20 @@
               8
             ]
           ]
-        }
+        },
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0,
+          7.2,
+          1
+        ]
       }
     },
     {
