@@ -5980,9 +5980,30 @@
     const CHARGE_ICON_SIZE_HI = _iconSizeExpr(CHARGE_ICON_MAX * ICON_HI_SCALE, CHARGE_MINZOOM);
     // Hallit piirtyvät latauspisteiden PÄÄLLE: latauspisteitä on enemmän,
     // joten ne saavat jäädä alle. Kutsutaan aina kun kerroksia siirrellään.
+    // Kartan tekstit piirtyvät sovelluksen tasojen PÄÄLLE: kaikki omat tasot
+    // siirretään ensimmäisen label_*-tason alapuolelle. Keskinäinen järjestys
+    // säilyy listan mukaisena, eli hallit jäävät latauspisteiden päälle ja
+    // korostukset perustasojen päälle.
+    const APP_LAYER_ORDER = [
+      'master-poly-fill','master-poly-line',
+      'master-poly-group-fill','master-poly-group-line',
+      'master-poly-hover-fill','master-poly-hover-line',
+      'charging-icons','charging-hi-icon',
+      'halli-icons','halli-hi-icon'
+    ];
+    function firstLabelLayerId(){
+      try {
+        const ls = map.getStyle().layers || [];
+        const hit = ls.find(l => l.type === 'symbol' && l.id.indexOf('label_') === 0);
+        return hit ? hit.id : undefined;
+      } catch(e){ return undefined; }
+    }
     function promoteIconLayers(){
-      ['charging-icons','charging-hi-icon','halli-icons','halli-hi-icon']
-        .forEach(id => { if (map.getLayer(id)) { try { map.moveLayer(id); } catch(e){} } });
+      const before = firstLabelLayerId();
+      APP_LAYER_ORDER.forEach(id => {
+        if (!map.getLayer(id)) return;
+        try { map.moveLayer(id, before); } catch(e){ try { map.moveLayer(id); } catch(e2){} }
+      });
     }
 
     const map = new maplibregl.Map({
@@ -8884,7 +8905,7 @@
       // Open at 153px from bottom (mid step). Bounds match the three-level snap below
       // when the user drags: max = 80% of viewport, mid = 153px, min = 75px from bottom.
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.14s cubic-bezier(0.22,1,0.36,1)';
+      bs.style.transition = 'transform 0.20s cubic-bezier(0.32,0.72,0,1)';
       bs.style.transform  = 'translateY(calc(100% - 153px))';
       currentY = bs.offsetHeight - 153;
       masterFeatureLocked = true;
@@ -8939,7 +8960,7 @@
       var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'block';
       // Auto-open to 153px from bottom when P-marker is on area
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.24s cubic-bezier(0.22,1,0.36,1)';
+      bs.style.transition = 'transform 0.30s cubic-bezier(0.32,0.72,0,1)';
       bs.style.transform  = 'translateY(calc(100% - 153px))';
       currentY = bs.offsetHeight - 153;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
@@ -8954,7 +8975,7 @@
       // Collapse the on-map P-marker back to its plain pin form
       hideCenterBadge();
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.24s cubic-bezier(0.22,1,0.36,1)';
+      bs.style.transition = 'transform 0.30s cubic-bezier(0.32,0.72,0,1)';
       bs.style.transform  = 'translateY(calc(100% - 90px))';
       currentY = bs.offsetHeight - 90;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
@@ -9812,11 +9833,11 @@
       if (_bs && _noArea && !inNav && !inFilter) {
         const _t = _bs.style.transform || '';
         if (zoom < POINTER_MINZOOM && !_t.includes('- 60px')) {
-          _bs.style.transition = 'transform 0.16s cubic-bezier(0.22,1,0.36,1)';
+          _bs.style.transition = 'transform 0.22s cubic-bezier(0.32,0.72,0,1)';
           _bs.style.transform = 'translateY(calc(100% - 60px))';
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
         } else if (zoom >= POINTER_MINZOOM && (_t === '' || _t.includes('- 60px'))) {
-          _bs.style.transition = 'transform 0.16s cubic-bezier(0.22,1,0.36,1)';
+          _bs.style.transition = 'transform 0.22s cubic-bezier(0.32,0.72,0,1)';
           _bs.style.transform = 'translateY(calc(100% - 90px))';
           currentY = _bs.offsetHeight - 90;
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
@@ -9852,7 +9873,10 @@
     }
 
     // ── Hover + touch highlight (MapLibre fires synthetic mouse events on iOS too) ──
+    promoteIconLayers();   // alue-tasot tekstien alle heti lisäyksen jälkeen
+
     map.on('mouseenter', 'master-poly-fill', (e) => {
+      if (!selectionEnabled()) return;
       if (!e.features.length) return;
       map.getCanvas().style.cursor = 'pointer';
       const f = e.features[0];
@@ -9862,6 +9886,7 @@
     });
 
     map.on('mousemove', 'master-poly-fill', (e) => {
+      if (!selectionEnabled()) return;
       if (!e.features.length) return;
       const f = e.features[0];
       if (f.properties.id !== hoveredPolyId) {
@@ -9877,6 +9902,12 @@
       hoveredPolyId = null;
       releaseMasterLock();
     });
+
+    // Valinta — sormella tai P-merkillä — on käytössä vasta kun P-merkki on
+    // näkyvissä. Sitä ennen kartta on pelkkä kartta: kohteet näkyvät, mutta
+    // niitä ei voi korostaa eikä valita. Merkin ilmestyminen kertoo käyttäjälle
+    // milloin valinta alkaa toimia.
+    function selectionEnabled(){ return map.getZoom() >= POINTER_MINZOOM; }
 
     // Keskitys valittuun alueeseen. Omana funktionaan, koska sitä kutsutaan
     // sekä taso-kohtaisesta että kartan yleisestä click-käsittelijästä.
@@ -9897,33 +9928,74 @@
       // ennen sen ensimmäistä framea (näkymä ei siirtynyt ennen kuin vasta
       // toisella napautuksella). Jos kamera ei ole liikkunut lainkaan eikä ole
       // liikkeessä seuraavassa framessa, aloitetaan lento uudelleen.
-      requestAnimationFrame(() => {
+      const retryIfStuck = () => {
         const c = map.getCenter();
         const stuck = Math.abs(c.lng - from.lng) < 1e-7 && Math.abs(c.lat - from.lat) < 1e-7;
         if (stuck && !map.isMoving()) go();
-      });
+      };
+      requestAnimationFrame(retryIfStuck);
+      setTimeout(retryIfStuck, 250);
       return true;
     }
 
     let _areaClickAt = 0;
-    map.on('click', 'master-poly-fill', (e) => {
-      if (!e.features.length) return;
+    // Koko valinta yhtenä pakettina ja AINA samassa järjestyksessä: korostus →
+    // sheetin sisältö ja korkeus → kameran siirto. Kameran siirto on viimeisenä,
+    // koska sheetin avaaminen on se mikä ehti aiemmin pysäyttää juuri aloitetun
+    // lennon (ensimmäinen napautus vain korosti, toinen siirsi).
+    function selectAreaFeature(f){
+      if (!f) return false;
       _areaClickAt = Date.now();
-      centerOnAreaFeature(e.features[0]);
+      hoveredPolyId = f.properties.id;
+      applyHoverHighlight(f.properties);
+      showMasterPolyInfo({ features: [f] });
+      return centerOnAreaFeature(f);
+    }
+    function selectAreaAtPoint(pt){
+      if (!selectionEnabled() || !map.getLayer('master-poly-fill')) return false;
+      const r = 6;
+      const fs = map.queryRenderedFeatures(
+        [[pt.x - r, pt.y - r], [pt.x + r, pt.y + r]], { layers: ['master-poly-fill'] });
+      return fs.length ? selectAreaFeature(fs[0]) : false;
+    }
+
+    map.on('click', 'master-poly-fill', (e) => {
+      if (!selectionEnabled()) return;
+      if (!e.features.length) return;
+      if (Date.now() - _areaClickAt < 400) return;   // kosketusnapautus hoiti jo
+      selectAreaFeature(e.features[0]);
     });
+
+    // Kosketusnapautus omana polkunaan. Syy: kosketusnäytöllä selain lähettää
+    // napautuksesta ensin synteettisen mousemoven, joka laukaisee mouseenterin
+    // ja avaa sheetin — ja sen jälkeen tuleva click jäi jostain syystä
+    // toteutumatta ensimmäisellä napautuksella. touchend tulee ennen kumpaakaan,
+    // joten valinta tehdään siitä ja click-käsittelijä ohittaa sen.
+    (function tapToSelectArea(){
+      const el = map.getCanvasContainer();
+      let sx = 0, sy = 0, st = 0, moved = false;
+      el.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) { moved = true; return; }
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+        st = Date.now(); moved = false;
+      }, { passive: true });
+      el.addEventListener('touchmove', (e) => {
+        if (!e.touches.length) return;
+        if (Math.abs(e.touches[0].clientX - sx) > 10 ||
+            Math.abs(e.touches[0].clientY - sy) > 10) moved = true;
+      }, { passive: true });
+      el.addEventListener('touchend', () => {
+        if (moved || Date.now() - st > 500) return;
+        const r = el.getBoundingClientRect();
+        selectAreaAtPoint({ x: sx - r.left, y: sy - r.top });
+      }, { passive: true });
+    })();
     // Varakäsittelijä: jos taso-kohtainen click ei jostain syystä laukea,
     // haetaan alue itse pienellä osumasäteellä (myös sormenpäätä varten).
+    // Varakäsittelijä hiirelle / kynälle, kun taso-kohtainen click ei laukea.
     map.on('click', (e) => {
-      if (Date.now() - _areaClickAt < 100) return;   // taso-käsittelijä hoiti jo
-      if (!map.getLayer('master-poly-fill')) return;
-      const r = 5, p = e.point;
-      const fs = map.queryRenderedFeatures(
-        [[p.x - r, p.y - r], [p.x + r, p.y + r]], { layers: ['master-poly-fill'] });
-      if (!fs.length) return;
-      showMasterPolyInfo({ features: fs });
-      applyHoverHighlight(fs[0].properties);
-      hoveredPolyId = fs[0].properties.id;
-      centerOnAreaFeature(fs[0]);
+      if (Date.now() - _areaClickAt < 400) return;
+      selectAreaAtPoint(e.point);
     });
 
     // ── Draw P icon on canvas (avoids SVG/Image loading issues) ────────
@@ -9968,7 +10040,7 @@
       // Punainen korostuskehä ympyränä, sama 1,5 px:n uloke kuin ennen.
       ctx.beginPath();
       ctx.arc(pad + base / 2, pad + base / 2, base / 2 + 1.5, 0, Math.PI * 2);
-      ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 9; ctx.stroke();
+      ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 4.5; ctx.stroke();
     }
     function _halliImageData(drawFn) {
       const size = 64;
@@ -10086,10 +10158,12 @@
       if (!_halliHandlersBound) {
         _halliHandlersBound = true;
         map.on('mouseenter', 'halli-icons', (e) => {
+          if (!selectionEnabled()) return;
           map.getCanvas().style.cursor = 'pointer';
           showHalliInfo(e);
         });
         map.on('click', 'halli-icons', (e) => {
+          if (!selectionEnabled()) return;
           showHalliInfo(e);
           const coords = e.features[0].geometry.coordinates;
           map.flyTo({ center: coords, duration: 800 });   // zoom ennallaan
@@ -13343,7 +13417,7 @@
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-13 -13 154 154" width="154" height="154">' +
         '<rect x="0" y="0" width="128" height="128" rx="64" fill="' + bg + '"/>' +
         '<path fill="#ffffff" fill-rule="evenodd" d="M25.51 107.9C24.25 106.86 24.47 104.66 25.9 104.08C26.43 103.87 35.57 103.77 60.45 103.71C94.1 103.62 94.3 103.62 97.19 103.06C114.76 99.7 120.35 89.61 110.52 79.03C108.46 76.81 106.28 75.01 102.2 72.15L99.22 70.06L98.25 71.09C97.51 71.86 97.08 72.11 96.47 72.11C95.67 72.11 91.11 70 91.11 69.63C91.11 69.19 98.4 58.81 98.71 58.81C98.83 58.81 99.78 59.62 100.82 60.61C103.24 62.92 103.47 63.83 102.13 65.68C101.74 66.21 101.81 66.28 104.59 68.2C106.17 69.28 108.48 70.99 109.74 72C128.16 86.77 120.73 104.95 95.04 107.96C89.68 108.59 26.28 108.53 25.51 107.9ZM43.57 93.77C44.06 92.08 47.53 79.65 47.67 79.11L47.83 78.46L44.13 78.39L40.43 78.32L49.91 68.85L59.38 59.37L57.18 67.2L54.98 75.02L58.6 75.09C60.59 75.13 62.23 75.25 62.23 75.35C62.23 75.45 58 79.75 52.83 84.91C47.66 90.06 43.49 94.05 43.57 93.77ZM83.36 69.1C81.36 67.79 80.34 66.66 78.33 63.53C77.41 62.09 76.11 60.38 75.46 59.73C73.98 58.25 56.79 46.18 54.88 45.28C52.57 44.18 49.85 44.32 46.9 45.68C43.59 47.21 43.18 47.26 34.48 47.27C23.35 47.28 24.42 48.84 24.52 32.68L24.6 21.13L25.42 20.4L26.25 19.66L35.18 19.66C50.31 19.66 49.36 19.31 66.79 31.54C71.46 34.82 77.5 39.05 80.22 40.94C98.11 53.42 97.45 52.88 97.45 54.86C97.45 55.72 96.87 56.67 92.72 62.59C86.91 70.89 86.51 71.17 83.36 69.1ZM9.35 44.25C8 43.43 8 43.43 8 33.47C8 21.13 7.25 22.19 15.99 22.19L21.94 22.19L21.94 33.47L21.94 44.74L16.05 44.74C10.66 44.74 10.08 44.7 9.35 44.25Z"/>' +
-        '<rect x="-3" y="-3" width="134" height="134" rx="67" fill="none" stroke="#ff1744" stroke-width="18"/>' +
+        '<rect x="-3" y="-3" width="134" height="134" rx="67" fill="none" stroke="#ff1744" stroke-width="9"/>' +
         '</svg>'
       );
     }
@@ -13360,7 +13434,7 @@
       return 'data:image/svg+xml;base64,' + btoa(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-13 -13 154 154" width="154" height="154">' +
         '<rect x="0" y="0" width="128" height="128" rx="64" fill="' + bg + '"/>' +
-        '<rect x="-3" y="-3" width="134" height="134" rx="67" fill="none" stroke="#ff1744" stroke-width="18"/>' +
+        '<rect x="-3" y="-3" width="134" height="134" rx="67" fill="none" stroke="#ff1744" stroke-width="9"/>' +
         '</svg>'
       );
     }
@@ -13477,9 +13551,10 @@
             // bind these delegated handlers twice.
             if (!_chargingHandlersBound) {
               _chargingHandlersBound = true;
-              map.on('mouseenter', 'charging-icons', () => { map.getCanvas().style.cursor = 'pointer'; });
+              map.on('mouseenter', 'charging-icons', () => { if (!selectionEnabled()) return; map.getCanvas().style.cursor = 'pointer'; });
               map.on('mouseleave', 'charging-icons', () => { map.getCanvas().style.cursor = ''; });
               map.on('click', 'charging-icons', (e) => {
+                if (!selectionEnabled()) return;
                 const ft = e.features && e.features[0];
                 if(!ft) return;
                 const coords = (ft.geometry && ft.geometry.coordinates) ? ft.geometry.coordinates.slice() : null;
@@ -14462,7 +14537,7 @@
       sheetFilter.classList.add('visible');
       sizeFilterSheet();
       if(window._trackFilterScrollbar) window._trackFilterScrollbar();
-      sheet.style.transition='transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+      sheet.style.transition='transform 0.28s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform=`translateY(${window.innerHeight*0.6}px)`;
       currentY=window.innerHeight*0.6;
       btnContainer.classList.add('hidden');
@@ -14769,7 +14844,7 @@
               divider.style.display='none';
               setActionBtnText('Siirrä kursori pysäköintialueelle'); btn.classList.remove('active');
               gpsWarning.classList.add('visible');
-              sheet.style.transition='transform 0.14s cubic-bezier(0.22,1,0.36,1)';
+              sheet.style.transition='transform 0.20s cubic-bezier(0.32,0.72,0,1)';
               sheet.style.transform='translateY(calc(100% - 90px))';
               currentY = sheet.offsetHeight - 90;
             }
@@ -14820,7 +14895,7 @@
         // flight — onSheetNavBtnClick collapses the sheet to 153px and any
         // re-snap to 150px from here cancels its animation.
         if (!_navigationInProgress) {
-          sheet.style.transition = 'transform 0.14s cubic-bezier(0.22,1,0.36,1)';
+          sheet.style.transition = 'transform 0.20s cubic-bezier(0.32,0.72,0,1)';
           sheet.style.transform = 'translateY(calc(100% - 150px))';
           currentY = sheet.offsetHeight - 150;
         }
@@ -14836,7 +14911,7 @@
         setActionBtnText('Siirrä kursori pysäköintialueelle');
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
-        sheet.style.transition = 'transform 0.14s cubic-bezier(0.22,1,0.36,1)';
+        sheet.style.transition = 'transform 0.20s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform = 'translateY(calc(100% - 90px))';
         currentY = sheet.offsetHeight - 90;
         updateNavBtnVisibility();
@@ -15929,7 +16004,7 @@
         const targetY = (_sheetYBeforeParking != null)
           ? _sheetYBeforeParking
           : (sheet.offsetHeight - 153);
-        sheet.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+        sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = `translateY(${targetY}px)`;
         currentY = targetY;
         // Sync the map-dimming backdrop to the restored sheet position (same
@@ -16232,7 +16307,7 @@
         const overlay = document.getElementById('parking-overlay');
         overlay.classList.remove('open');
         btnContainer.classList.remove('hidden');
-        sheet.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+        sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = 'translateY(calc(100% - 60px))';
         currentY = sheet.offsetHeight - 60;
         showActiveParkingBanner();
@@ -16260,7 +16335,7 @@
       overlay.classList.remove('open');
       overlay.classList.remove('extending-mode');
       btnContainer.classList.remove('hidden');
-      sheet.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+      sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
 
@@ -16384,7 +16459,7 @@
       document.getElementById('parking-summary-overlay').classList.remove('open');
       btnContainer.classList.remove('hidden');
       // Sheet stays at its minimal position — no active session
-      sheet.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+      sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
     }
@@ -17646,7 +17721,7 @@
 
     let startY=0,startTranslate=0,lastY=0,lastTime=0,velocity=0,isDragging=false;
     function snapTo(t){
-      sheet.style.transition='transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+      sheet.style.transition='transform 0.28s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
 
