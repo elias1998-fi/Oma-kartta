@@ -1667,7 +1667,7 @@
       opacity: 0;
       max-height: 0;
       overflow: hidden;
-      transition: opacity 0.3s ease, max-height 0.3s ease;
+      transition: opacity 0.1s ease, max-height 0.1s ease;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -5953,7 +5953,7 @@
     const HALL_MINZOOM     = 12.1;   // täysin näkyvissä 12.3
     const AREA_MINZOOM     = 12.8;   // täysin näkyvissä 13.0
     const ICON_MINZOOM     = CHARGE_MINZOOM;   // varhaisin, yleisiä portteja varten
-    const POINTER_MINZOOM  = 13.1;   // P-merkki + sheetin "Lähennä karttaa"
+    const POINTER_MINZOOM  = 13.5;   // P-merkki + sheetin "Lähennä karttaa"
     const _fadeIn = z => ['interpolate', ['linear'], ['zoom'], z, 0, +(z + 0.2).toFixed(2), 1];
     const CHARGE_FADE      = _fadeIn(CHARGE_MINZOOM);
     const HALL_FADE        = _fadeIn(HALL_MINZOOM);
@@ -5972,6 +5972,12 @@
                                   ICON_MAX_ZOOM, max];
     const HALL_ICON_SIZE   = _iconSizeExpr(HALL_ICON_MAX,   HALL_MINZOOM);
     const CHARGE_ICON_SIZE = _iconSizeExpr(CHARGE_ICON_MAX, CHARGE_MINZOOM);
+    // P-merkin alla oleva kohde suurenee — kertoo käyttäjälle että juuri tämä
+    // on valittuna. Kerroin tulee perusikonin päälle; hi-kuvissa on lisäksi
+    // punainen kehys, joka on jo valmiiksi n. 1,2x isompi.
+    const ICON_HI_SCALE    = 1.25;
+    const HALL_ICON_SIZE_HI   = _iconSizeExpr(HALL_ICON_MAX   * ICON_HI_SCALE, HALL_MINZOOM);
+    const CHARGE_ICON_SIZE_HI = _iconSizeExpr(CHARGE_ICON_MAX * ICON_HI_SCALE, CHARGE_MINZOOM);
     // Hallit piirtyvät latauspisteiden PÄÄLLE: latauspisteitä on enemmän,
     // joten ne saavat jäädä alle. Kutsutaan aina kun kerroksia siirrellään.
     function promoteIconLayers(){
@@ -8878,7 +8884,7 @@
       // Open at 153px from bottom (mid step). Bounds match the three-level snap below
       // when the user drags: max = 80% of viewport, mid = 153px, min = 75px from bottom.
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.2s ease';
+      bs.style.transition = 'transform 0.14s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = 'translateY(calc(100% - 153px))';
       currentY = bs.offsetHeight - 153;
       masterFeatureLocked = true;
@@ -8933,7 +8939,7 @@
       var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'block';
       // Auto-open to 153px from bottom when P-marker is on area
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
+      bs.style.transition = 'transform 0.24s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = 'translateY(calc(100% - 153px))';
       currentY = bs.offsetHeight - 153;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
@@ -8948,7 +8954,7 @@
       // Collapse the on-map P-marker back to its plain pin form
       hideCenterBadge();
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.38s cubic-bezier(0.22,1,0.36,1)';
+      bs.style.transition = 'transform 0.24s cubic-bezier(0.22,1,0.36,1)';
       bs.style.transform  = 'translateY(calc(100% - 90px))';
       currentY = bs.offsetHeight - 90;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
@@ -9551,7 +9557,7 @@
         if (hoveredHalliId !== null) { hoveredHalliId = null; collapseCenterSheet(); if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility(); if (typeof applyPoiHighlights === 'function') applyPoiHighlights(); }
         return false;
       };
-      if (map.getZoom() < HALL_MINZOOM || !map.getLayer('halli-icons')) return leaveHalli();
+      if (map.getZoom() < POINTER_MINZOOM || !map.getLayer('halli-icons')) return leaveHalli();
       const hpt = map.project(map.getCenter()); hpt.y += 0;
       const hr = 1;
       const hhits = map.queryRenderedFeatures([[hpt.x-hr, hpt.y-hr],[hpt.x+hr, hpt.y+hr]], { layers:['halli-icons'] });
@@ -9582,7 +9588,7 @@
       if (window._navigationInProgress) return;
       // A charging station under the P-marker takes priority and reacts in real
       // time during the drag (no finger-lift needed), like parking areas.
-      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= CHARGE_MINZOOM) {
+      if (showEvCharging && map.getLayer('charging-icons') && map.getZoom() >= POINTER_MINZOOM) {
         const ccpt = map.project(map.getCenter()); ccpt.y += 0;
         const cr = 1;
         const chits = map.queryRenderedFeatures([[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]], { layers:['charging-icons'] });
@@ -9610,6 +9616,10 @@
       // A parking garage directly under the P-marker takes priority over
       // parking-area polygons (and works even where no polygon is rendered).
       if (detectHalliUnderMarker()) return;
+      // P-merkin alueen tunnistus alkaa vasta kun merkki itse on näkyvissä.
+      // Alueita voi klikata jo aiemmin (AREA_MINZOOM), mutta merkillä
+      // valitseminen käynnistyy vasta POINTER_MINZOOMissa.
+      if (map.getZoom() < POINTER_MINZOOM) { updateButtonText(); return; }
       if (!map.getLayer('master-poly-fill')) { updateButtonText(); return; }
       const cpt = map.project(map.getCenter()); cpt.y += 0;
       // Detection at P-marker tip: 1px radius (2px diameter point)
@@ -9802,11 +9812,11 @@
       if (_bs && _noArea && !inNav && !inFilter) {
         const _t = _bs.style.transform || '';
         if (zoom < POINTER_MINZOOM && !_t.includes('- 60px')) {
-          _bs.style.transition = 'transform 0.3s ease';
+          _bs.style.transition = 'transform 0.16s cubic-bezier(0.22,1,0.36,1)';
           _bs.style.transform = 'translateY(calc(100% - 60px))';
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
         } else if (zoom >= POINTER_MINZOOM && (_t === '' || _t.includes('- 60px'))) {
-          _bs.style.transition = 'transform 0.3s ease';
+          _bs.style.transition = 'transform 0.16s cubic-bezier(0.22,1,0.36,1)';
           _bs.style.transform = 'translateY(calc(100% - 90px))';
           currentY = _bs.offsetHeight - 90;
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
@@ -10058,7 +10068,7 @@
           filter: _hiNone,
           layout: {
             'icon-image': 'halli-icon-hi',
-            'icon-size': HALL_ICON_SIZE,
+            'icon-size': HALL_ICON_SIZE_HI,
             'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
           },
           paint: { 'icon-opacity': HALL_FADE }
@@ -13455,7 +13465,7 @@
                 filter: _chNone,
                 layout: {
                   'icon-image': ['case', ['get','available'], 'charging-green-hi', 'charging-gray-hi'],
-                  'icon-size': CHARGE_ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
+                  'icon-size': CHARGE_ICON_SIZE_HI, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
                 },
                 paint: { 'icon-opacity': CHARGE_FADE }
               });
@@ -14452,7 +14462,7 @@
       sheetFilter.classList.add('visible');
       sizeFilterSheet();
       if(window._trackFilterScrollbar) window._trackFilterScrollbar();
-      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+      sheet.style.transition='transform 0.22s cubic-bezier(0.22,1,0.36,1)';
       sheet.style.transform=`translateY(${window.innerHeight*0.6}px)`;
       currentY=window.innerHeight*0.6;
       btnContainer.classList.add('hidden');
@@ -14678,7 +14688,7 @@
 
       // A charging station directly under the P-marker takes priority and
       // shows its details in the sheet (same behaviour as a parking area).
-      if(zoom >= CHARGE_MINZOOM && showEvCharging && map.getLayer('charging-icons')){
+      if(zoom >= POINTER_MINZOOM && showEvCharging && map.getLayer('charging-icons')){
         const ccpt = map.project(map.getCenter()); ccpt.y += 0;
         const cr = 1;
         const cb = [[ccpt.x-cr, ccpt.y-cr],[ccpt.x+cr, ccpt.y+cr]];
@@ -14713,7 +14723,7 @@
       if(detectHalliUnderMarker()) return;
 
       // Highlight parking area under map center (works on mobile & desktop)
-      if(zoom >= AREA_MINZOOM && map.getLayer('master-poly-fill')){
+      if(zoom >= POINTER_MINZOOM && map.getLayer('master-poly-fill')){
         const cpt = map.project(map.getCenter()); cpt.y += 0;
         // Detection at P-marker tip: 1px radius (2px diameter point)
         const radius = 1;
@@ -14759,7 +14769,7 @@
               divider.style.display='none';
               setActionBtnText('Siirrä kursori pysäköintialueelle'); btn.classList.remove('active');
               gpsWarning.classList.add('visible');
-              sheet.style.transition='transform 0.2s ease';
+              sheet.style.transition='transform 0.14s cubic-bezier(0.22,1,0.36,1)';
               sheet.style.transform='translateY(calc(100% - 90px))';
               currentY = sheet.offsetHeight - 90;
             }
@@ -14810,7 +14820,7 @@
         // flight — onSheetNavBtnClick collapses the sheet to 153px and any
         // re-snap to 150px from here cancels its animation.
         if (!_navigationInProgress) {
-          sheet.style.transition = 'transform 0.2s ease';
+          sheet.style.transition = 'transform 0.14s cubic-bezier(0.22,1,0.36,1)';
           sheet.style.transform = 'translateY(calc(100% - 150px))';
           currentY = sheet.offsetHeight - 150;
         }
@@ -14826,7 +14836,7 @@
         setActionBtnText('Siirrä kursori pysäköintialueelle');
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
-        sheet.style.transition = 'transform 0.2s ease';
+        sheet.style.transition = 'transform 0.14s cubic-bezier(0.22,1,0.36,1)';
         sheet.style.transform = 'translateY(calc(100% - 90px))';
         currentY = sheet.offsetHeight - 90;
         updateNavBtnVisibility();
@@ -15919,7 +15929,7 @@
         const targetY = (_sheetYBeforeParking != null)
           ? _sheetYBeforeParking
           : (sheet.offsetHeight - 153);
-        sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+        sheet.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
         sheet.style.transform  = `translateY(${targetY}px)`;
         currentY = targetY;
         // Sync the map-dimming backdrop to the restored sheet position (same
@@ -16222,7 +16232,7 @@
         const overlay = document.getElementById('parking-overlay');
         overlay.classList.remove('open');
         btnContainer.classList.remove('hidden');
-        sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+        sheet.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
         sheet.style.transform  = 'translateY(calc(100% - 60px))';
         currentY = sheet.offsetHeight - 60;
         showActiveParkingBanner();
@@ -16250,7 +16260,7 @@
       overlay.classList.remove('open');
       overlay.classList.remove('extending-mode');
       btnContainer.classList.remove('hidden');
-      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+      sheet.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
 
@@ -16374,7 +16384,7 @@
       document.getElementById('parking-summary-overlay').classList.remove('open');
       btnContainer.classList.remove('hidden');
       // Sheet stays at its minimal position — no active session
-      sheet.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+      sheet.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
     }
@@ -17636,7 +17646,7 @@
 
     let startY=0,startTranslate=0,lastY=0,lastTime=0,velocity=0,isDragging=false;
     function snapTo(t){
-      sheet.style.transition='transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+      sheet.style.transition='transform 0.22s cubic-bezier(0.22,1,0.36,1)';
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
 
@@ -17665,12 +17675,26 @@
     // translateY. Fades the © OpenStreetMap credit with the sheet (its own CSS
     // transition smooths the step), and forces a fresh recompute of the
     // Ajanhetki anchor, which reads the sheet's real on-screen position.
+    // Sheetin ja ikkunan korkeus välimuistiin. Näitä luettiin aiemmin joka
+    // touchmove-tapahtumassa, ja koska samassa käsittelijässä myös KIRJOITETAAN
+    // sheetin transform, selain joutui laskemaan layoutin uudelleen jokaisella
+    // kosketusnäytteellä. 120 Hz:n näytöllä se tarkoitti pakotettua reflow'ta
+    // 120 kertaa sekunnissa — juuri se tekee vedosta takkuisen tuntuisen.
+    // Kumpikaan arvo ei muutu vedon aikana, joten ne luetaan kerran.
+    let _sheetH = 0, _winH = 0;
+    function cacheSheetMetrics(){
+      try { _sheetH = sheet.clientHeight; _winH = window.innerHeight; } catch(e){}
+    }
+    window.addEventListener('resize', cacheSheetMetrics);
+    window.addEventListener('orientationchange', cacheSheetMetrics);
+
     function updateOsmOpacity(ty){
       const el = document.getElementById('osm-attribution');
       const zi = document.getElementById('zoom-indicator');
       if (typeof ty === 'number') {
-        const fadeStart = sheet.clientHeight - 153;                     // fade begins once the sheet grows past 153px
-        const fullOpen  = sheet.clientHeight - window.innerHeight * 0.8; // fully open
+        const _sh = _sheetH || sheet.clientHeight, _wh = _winH || window.innerHeight;
+        const fadeStart = _sh - 153;                     // fade begins once the sheet grows past 153px
+        const fullOpen  = _sh - _wh * 0.8;               // fully open
         const o = Math.max(0, Math.min(1, (ty - fullOpen) / (fadeStart - fullOpen)));
         if (el) el.style.opacity = o;
         if (zi) zi.style.opacity = o;   // zoom-lukema häipyy samaa tahtia
@@ -17712,6 +17736,7 @@
       if(_filterMoved){ e.stopPropagation(); e.preventDefault(); _filterMoved = false; }
     }, true);
     sheet.addEventListener('touchstart',(e)=>{
+      cacheSheetMetrics();   // mitat kerran vedon alussa, ei joka liikkeellä
       // Stop any in-progress momentum scroll so a new touch catches it
       if(_momentumRAF){ cancelAnimationFrame(_momentumRAF); _momentumRAF = null; }
       // Estä drag jos ei ole pysäköintialuetta valittuna — paitsi filter-näkymässä, jossa drag aina sallittu
@@ -17775,6 +17800,7 @@
     },{passive:true});
     
     sheet.addEventListener('touchmove',(e)=>{
+      const SH = _sheetH || sheet.clientHeight, WH = _winH || window.innerHeight;
       if(filterMode && !_filterMoved && Math.abs((((e.touches[0]||{}).clientY)||0) - _gestureStartY) > 8){
         _filterMoved = true;   // moved enough to count as a drag, not a tap
       }
@@ -17812,13 +17838,13 @@
           fcDragging = true;
           isDragging = true;
           startY = touch;                         // rebase so the sheet doesn't jump
-          startTranslate = sheet.clientHeight - window.innerHeight*0.8;
+          startTranslate = SH - WH*0.8;
         }
-        const minY = sheet.clientHeight - window.innerHeight*0.8;
-        const maxY = sheet.clientHeight - 70;
+        const minY = SH - WH*0.8;
+        const maxY = SH - 70;
         currentY = Math.max(minY, Math.min(maxY, startTranslate + (touch - startY)));
         sheet.style.transform = `translateY(${currentY}px)`;
-        const op = 1 - (currentY / (sheet.clientHeight - 60));
+        const op = 1 - (currentY / (SH - 60));
         sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (op - 0.5) * 2));
         updateNavBtnVisibility();
         updateOsmOpacity(currentY);
@@ -17834,23 +17860,23 @@
       let maxY, minY;
       if(filterMode){
         // Filter view: translateY between 80% (max size, highest) and 70px-from-bottom (min size, lowest)
-        minY = sheet.clientHeight - window.innerHeight * 0.8;
-        maxY = sheet.clientHeight - 70;
+        minY = SH - WH * 0.8;
+        maxY = SH - 70;
       } else if(currentParkingProps || hoveredPolyId || hoveredChargingId || hoveredHalliId){
         // P-marker on a parking area: max 80% from bottom, min 75px from bottom
-        minY = sheet.clientHeight - window.innerHeight * 0.8;
-        maxY = sheet.clientHeight - 75;
+        minY = SH - WH * 0.8;
+        maxY = SH - 75;
       } else {
-        maxY = sheet.clientHeight - 60;
+        maxY = SH - 60;
         const btnH = btnContainer.offsetHeight || 90;
-        const maxSheetVisible = window.innerHeight * 0.8;
-        minY = Math.max(-btnH, -(sheet.clientHeight - maxSheetVisible));
+        const maxSheetVisible = WH * 0.8;
+        minY = Math.max(-btnH, -(SH - maxSheetVisible));
       }
       currentY=Math.max(minY,Math.min(maxY,startTranslate+(touch-startY)));
       sheet.style.transform=`translateY(${currentY}px)`;
       
       // Update backdrop opacity based on sheet position (fade starts at 50% open)
-      const openProgress = 1 - (currentY / (sheet.clientHeight - 60)); // 0 = closed, 1 = fully open
+      const openProgress = 1 - (currentY / (SH - 60)); // 0 = closed, 1 = fully open
       sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
       updateNavBtnVisibility();
       updateOsmOpacity(currentY);
