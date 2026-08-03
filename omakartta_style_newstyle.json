@@ -7737,7 +7737,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 13,
+      "minzoom": 14,
       "filter": [
         "all",
         [
@@ -7754,18 +7754,10 @@
       "layout": {
         "icon-image": "icon-hospital",
         "icon-size": 0.9,
-        "text-optional": true,
+        "text-optional": false,
         "text-field": [
-          "step",
-          [
-            "zoom"
-          ],
-          "",
-          14,
-          [
-            "get",
-            "name"
-          ]
+          "get",
+          "name"
         ],
         "text-font": [
           "Gotham Rounded Medium"
@@ -7794,9 +7786,9 @@
           [
             "zoom"
           ],
-          13,
+          14,
           0,
-          13.2,
+          14.2,
           1
         ],
         "text-opacity": [
@@ -7807,9 +7799,9 @@
           [
             "zoom"
           ],
-          13,
+          14,
           0,
-          13.2,
+          14.2,
           1
         ],
         "text-halo-blur": 1
