@@ -1506,7 +1506,11 @@
       display: flex; 
       flex-direction: column;
     }
-    #drag-handle-area { width: 100%; padding: 8px 0 6px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
+    /* Ylätila kavennettu yhteensä 27 px: sheetin lepokorkeus laski 153 → 130,
+       ja sisältö nostetaan saman verran + 4 px. Jakauma: kahva-alue −8,
+       GPS-rivi −8, summary-lohko −11. Directions/Jaa-painikkeet ovat
+       absoluuttisesti sijoitettuja eivätkä liiku näiden mukana. */
+    #drag-handle-area { width: 100%; padding: 4px 0 2px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
 
     /* ── "Directions" button (above the main action button) ────────────
        Visible only when a parking area is currently selected. Sits inside
@@ -1663,7 +1667,7 @@
       font-family: Arial, sans-serif;
       font-size: 12px;
       color: #888;
-      padding: 0 20px 12px 20px;
+      padding: 0 20px 4px 20px;
       opacity: 0;
       max-height: 0;
       overflow: hidden;
@@ -1705,17 +1709,17 @@
     #filter-reset-btn { position: absolute; right: 66px; top: 15px; height: 26px; padding: 0 14px; background: var(--tp-accent); border: 1px solid var(--tp-accent); border-radius: 13px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; font-family: Arial, sans-serif; display: none; align-items: center; justify-content: center; z-index: 5; }
     #filter-reset-btn.visible { display: inline-flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    #sheet-summary { padding: 13px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif;
+    #sheet-summary { padding: 2px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif;
                      display: flex; align-items: center; gap: 14px; }
     #sheet-summary-text { flex: 1; min-width: 0; }
     /* Pyöreä tunnusmerkki: aluekoodi (tummansininen reunus, valkoinen täyttö,
        tummansininen numero) tai kohteen oma ikoni. Korkeus vastaa kolmen
        tekstirivin korkeutta. .icon-tilassa reunus ja täyttö jätetään pois,
        koska halli- ja latauspisteikonit ovat itse jo ympyröitä. */
-    #area-code-badge { display: none; flex: 0 0 auto; width: 56px; height: 56px;
-                       border-radius: 50%; border: 2px solid #0C0243; background: #fff;
-                       color: #0C0243; font-family: Arial, sans-serif; font-size: 17px;
-                       font-weight: bold; letter-spacing: 0.3px;
+    #area-code-badge { display: none; flex: 0 0 auto; width: 50px; height: 50px;
+                       border-radius: 50%; border: 2px solid #0C0243; background: #f4f4ff;
+                       color: #0C0243; font-family: Arial, sans-serif; font-size: 19px;
+                       font-weight: 800; letter-spacing: 0.3px;
                        align-items: center; justify-content: center;
                        overflow: hidden; pointer-events: none; }
     #area-code-badge.show { display: flex; }
@@ -9535,7 +9539,7 @@
     function halliIconSvg() {
       return 'data:image/svg+xml;base64,' + btoa(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">' +
-        '<rect x="2" y="2" width="60" height="60" rx="10" fill="#1565C0" stroke="white" stroke-width="2.5"/>' +
+        '<circle cx="32" cy="32" r="30" fill="#1565C0" stroke="white" stroke-width="2.5"/>' +
         '<path d="M12 24 L32 10 L52 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' +
         '<text x="32" y="52" font-family="Arial" font-weight="bold" font-size="32" fill="white" text-anchor="middle">P</text>' +
         '</svg>'
