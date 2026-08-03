@@ -1660,10 +1660,6 @@
     .navigate-cancel:active { opacity: 0.7; }
     #drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
     #gps-warning {
-      /* Poistettu käytöstä: teksti ei näy enää missään tilanteessa. Elementti
-         jätetään DOMiin, koska useat koodipolut kutsuvat sen classListiä
-         suoraan ilman null-tarkistusta. */
-      display: none !important;
       font-family: Arial, sans-serif;
       font-size: 12px;
       color: #888;
@@ -5943,12 +5939,18 @@
     const _mapStyleUrl = MAP_STYLE_URLS[mapStyleChoice];
     // Avausnäkymä, uloin sallittu zoom ja panorointirajaus.
     const MIN_ZOOM       = 4;
-    const INITIAL_CENTER = [24.93839, 60.16223];   // Helsingin niemi
-    const INITIAL_ZOOM   = 13.1;
-    // Digitransitin tiilistö kattaa vain Suomen. Ilman rajausta karttaa voi
-    // vetää esim. Ruotsin puolelle, missä ei ole dataa lainkaan ja näkyy vain
-    // taustaväri. maxBounds estää sen: reunan yli ei pääse.
-    const MAP_BOUNDS     = [[19.0, 59.5], [31.6, 70.1]];
+    const INITIAL_CENTER = [25.28, 65.05];   // koko Suomi näkyvissä
+    const INITIAL_ZOOM   = 4.2;
+    // Panorointirajaus on kaksiportainen, koska maxBounds rajoittaa myös
+    // uloszoomausta: tiukoilla Suomi-rajoilla puhelimen näyttö ei mahdu
+    // rajojen sisään zoomilla 4, jolloin MapLibre pysäyttää zoomauksen
+    // n. 4.2:een. Siksi matalilla zoomeilla (< 6) käytetään väljiä rajoja
+    // (koko Pohjola, jossa tiilistön yleistetty rantaviiva riittää) ja
+    // zoomista 6 ylöspäin tiukkoja Suomi-rajoja, jottei karttaa saa
+    // vedettyä alueelle jossa näkyy pelkkää taustaväriä.
+    const MAP_BOUNDS_TIGHT = [[19.0, 59.2], [31.8, 70.2]];
+    const MAP_BOUNDS_WIDE  = [[10.0, 55.0], [40.0, 72.5]];
+    const BOUNDS_SWITCH_ZOOM = 6;
     // Hallien ja latauspisteiden ikonit: kiinteä koko, häivytys 11 → 11.25.
     const ICON_MINZOOM     = 11;
     const POINTER_MINZOOM  = 11;   // P-merkki + sheetin "Lähennä karttaa"
@@ -5967,7 +5969,7 @@
       style: _mapStyleUrl,
       center: _sharedInitialCenter || INITIAL_CENTER,
       zoom:   _sharedInitialZoom   || INITIAL_ZOOM,
-      minZoom: MIN_ZOOM, maxZoom: 20, maxBounds: MAP_BOUNDS,
+      minZoom: MIN_ZOOM, maxZoom: 20, maxBounds: MAP_BOUNDS_WIDE,
       transformRequest, maxTileCacheSize: 50, fadeDuration: 250,
       dragRotate: false, touchPitch: false, pitchWithRotate: false,
       keyboard: false, attributionControl: false, doubleClickZoom: false
@@ -6144,6 +6146,17 @@
       if (l.includes('min')) { const m = parseFloat(l); return isNaN(m) ? 9999 : m; }
       return 9999;
     }
+
+    // Vaihtaa väljien ja tiukkojen rajojen välillä zoomin mukaan.
+    let _boundsTight = null;
+    function updateMaxBounds(){
+      const tight = map.getZoom() >= BOUNDS_SWITCH_ZOOM;
+      if (tight === _boundsTight) return;
+      _boundsTight = tight;
+      map.setMaxBounds(tight ? MAP_BOUNDS_TIGHT : MAP_BOUNDS_WIDE);
+    }
+    map.on('zoom', updateMaxBounds);
+    updateMaxBounds();
 
     map.on('load', () => {
       map.touchZoomRotate.disableRotation(); map.dragRotate.disable();
