@@ -5941,16 +5941,11 @@
     const MIN_ZOOM       = 4;
     const INITIAL_CENTER = [25.28, 65.05];   // koko Suomi näkyvissä
     const INITIAL_ZOOM   = 4.2;
-    // Panorointirajaus on kaksiportainen, koska maxBounds rajoittaa myös
-    // uloszoomausta: tiukoilla Suomi-rajoilla puhelimen näyttö ei mahdu
-    // rajojen sisään zoomilla 4, jolloin MapLibre pysäyttää zoomauksen
-    // n. 4.2:een. Siksi matalilla zoomeilla (< 6) käytetään väljiä rajoja
-    // (koko Pohjola, jossa tiilistön yleistetty rantaviiva riittää) ja
-    // zoomista 6 ylöspäin tiukkoja Suomi-rajoja, jottei karttaa saa
-    // vedettyä alueelle jossa näkyy pelkkää taustaväriä.
-    const MAP_BOUNDS_TIGHT = [[19.0, 59.2], [31.8, 70.2]];
-    const MAP_BOUNDS_WIDE  = [[10.0, 55.0], [40.0, 72.5]];
-    const BOUNDS_SWITCH_ZOOM = 6;
+    // Yksi kiinteä panorointirajaus kaikilla zoomeilla. Väljyys on
+    // tarkoituksellista: maxBounds rajoittaa myös uloszoomausta, ja
+    // tiukemmilla Suomi-rajoilla puhelimen näyttö ei mahtuisi rajojen
+    // sisään zoomilla 4 (MapLibre pysäyttäisi zoomauksen n. 4.2:een).
+    const MAP_BOUNDS = [[10.0, 55.0], [40.0, 72.5]];
     // Hallien ja latauspisteiden ikonit: kiinteä koko, häivytys 11 → 11.25.
     const ICON_MINZOOM     = 11;
     const POINTER_MINZOOM  = 11;   // P-merkki + sheetin "Lähennä karttaa"
@@ -5969,7 +5964,7 @@
       style: _mapStyleUrl,
       center: _sharedInitialCenter || INITIAL_CENTER,
       zoom:   _sharedInitialZoom   || INITIAL_ZOOM,
-      minZoom: MIN_ZOOM, maxZoom: 20, maxBounds: MAP_BOUNDS_WIDE,
+      minZoom: MIN_ZOOM, maxZoom: 20, maxBounds: MAP_BOUNDS,
       transformRequest, maxTileCacheSize: 50, fadeDuration: 250,
       dragRotate: false, touchPitch: false, pitchWithRotate: false,
       keyboard: false, attributionControl: false, doubleClickZoom: false
@@ -6146,17 +6141,6 @@
       if (l.includes('min')) { const m = parseFloat(l); return isNaN(m) ? 9999 : m; }
       return 9999;
     }
-
-    // Vaihtaa väljien ja tiukkojen rajojen välillä zoomin mukaan.
-    let _boundsTight = null;
-    function updateMaxBounds(){
-      const tight = map.getZoom() >= BOUNDS_SWITCH_ZOOM;
-      if (tight === _boundsTight) return;
-      _boundsTight = tight;
-      map.setMaxBounds(tight ? MAP_BOUNDS_TIGHT : MAP_BOUNDS_WIDE);
-    }
-    map.on('zoom', updateMaxBounds);
-    updateMaxBounds();
 
     map.on('load', () => {
       map.touchZoomRotate.disableRotation(); map.dragRotate.disable();
