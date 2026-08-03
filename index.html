@@ -5953,7 +5953,7 @@
     const HALL_MINZOOM     = 12.1;   // täysin näkyvissä 12.3
     const AREA_MINZOOM     = 12.8;   // täysin näkyvissä 13.0
     const ICON_MINZOOM     = CHARGE_MINZOOM;   // varhaisin, yleisiä portteja varten
-    const POINTER_MINZOOM  = 11;   // P-merkki + sheetin "Lähennä karttaa"
+    const POINTER_MINZOOM  = 13.1;   // P-merkki + sheetin "Lähennä karttaa"
     const _fadeIn = z => ['interpolate', ['linear'], ['zoom'], z, 0, +(z + 0.2).toFixed(2), 1];
     const CHARGE_FADE      = _fadeIn(CHARGE_MINZOOM);
     const HALL_FADE        = _fadeIn(HALL_MINZOOM);
@@ -8873,7 +8873,7 @@
       document.getElementById('sheet-details').innerHTML      = detailsHTML;
       var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'block';
       document.getElementById('sheet-divider').style.display  = 'block';
-      document.getElementById('action-btn').textContent       = header;
+      setActionBtnText(header);
       document.getElementById('action-btn').classList.add('active');
       // Open at 153px from bottom (mid step). Bounds match the three-level snap below
       // when the user drags: max = 80% of viewport, mid = 153px, min = 75px from bottom.
@@ -8958,7 +8958,7 @@
       document.getElementById('sheet-details').innerHTML = '';
       var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'none';
       document.getElementById('sheet-divider').style.display = 'none';
-      document.getElementById('action-btn').textContent = 'Siirrä kursori pysäköintialueelle';
+      setActionBtnText('Siirrä kursori pysäköintialueelle');
       document.getElementById('action-btn').classList.remove('active');
       document.getElementById('gps-warning').classList.add('visible');
       // Hide the nav button immediately since no area is selected
@@ -9523,7 +9523,7 @@
       showMasterFeatureInSheet(title || full, 'Pysäköintihalli', owner, '');
       // Garages carry no price/hours in the open data → no detail rows.
       document.getElementById('sheet-divider').style.display = 'none';
-      document.getElementById('action-btn').textContent = 'Pysäköi täällä';
+      setActionBtnText('Pysäköi täällä');
       // Top-left sheet badge = the parking-garage icon (like the charging badge).
       const hbadge = document.getElementById('area-code-badge');
       if (hbadge) {
@@ -11979,9 +11979,21 @@
       zoomIndicator.textContent = `Z ${map.getZoom().toFixed(1)}`;
     }
     // Set the action button's text.
+    const ZOOM_IN_LABEL = 'Lähennä karttaa';
     function setActionBtnText(t) {
       const b = document.getElementById('action-btn');
       if (b) b.textContent = t;
+      updateDragHandleVisibility();
+    }
+    // Vetokahva näkyy vain kun sheetissä on jotain vedettävää sisältöä.
+    // "Lähennä karttaa" -tilassa sheet on tyhjä, joten kahva piilotetaan.
+    // visibility (ei display) pitää #drag-handle-arean korkeuden ennallaan,
+    // jottei sheetin sisältö hyppää.
+    function updateDragHandleVisibility() {
+      const b = document.getElementById('action-btn');
+      const h = document.getElementById('drag-handle');
+      if (!b || !h) return;
+      h.style.visibility = (b.textContent.trim() === ZOOM_IN_LABEL) ? 'hidden' : '';
     }
     map.on('zoom', () => {
       updateZoomIndicator();
@@ -13860,7 +13872,7 @@
         '<p id="charging-updated-line" style="font-family:Arial,sans-serif;font-size:12px;color:#8a8a8a;margin:10px 0 0;">' + formatUpdatedAgo(_chargingStatusFetchedAt) + '</p>'
       );
       // Big action button label for a charging station.
-      document.getElementById('action-btn').textContent = 'Lataa täällä';
+      setActionBtnText('Lataa täällä');
       // Top-left sheet badge = the charging-station icon (like the disc badge
       // for free parking areas).
       const cbadge = document.getElementById('area-code-badge');
