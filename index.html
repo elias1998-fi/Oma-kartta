@@ -5950,8 +5950,21 @@
     const ICON_MINZOOM     = 11;
     const POINTER_MINZOOM  = 11;   // P-merkki + sheetin "Lähennä karttaa"
     const ICON_FADE        = ['interpolate', ['linear'], ['zoom'], 11, 0, 11.25, 1];
-    const HALL_ICON_SIZE   = 0.675;
-    const CHARGE_ICON_SIZE = 0.25;
+    // Maksimikoot. Lukuarvot eroavat koska lähdekuvat ovat eri kokoisia:
+    // halli-ikoni on 64x64 px ja latauspiste 128x128 px, molemmat
+    // pixelRatio 2. Renderöity koko on siis 32*size vs 64*size CSS-pikseliä,
+    // ja 0.675 / 0.3375 antavat molemmille saman 21,6 px:n koon.
+    const ICON_MAX_ZOOM    = 15;      // tässä saavutetaan maksimikoko
+    const HALL_ICON_MAX    = 0.675;
+    const CHARGE_ICON_MAX  = 0.3375;
+    const ICON_START_SCALE = 0.7;     // 30 % pienempi ilmestyessä
+    // Kasvu ilmestymiskoosta maksimiin eksponentiaalisesti (sama kanta 1.4
+    // kuin karttatyylin väriliu'uissa), joten kasvu painottuu loppupäähän.
+    const _iconSizeExpr = max => ['interpolate', ['exponential', 1.4], ['zoom'],
+                                  ICON_MINZOOM, Math.round(max * ICON_START_SCALE * 100000) / 100000,
+                                  ICON_MAX_ZOOM, max];
+    const HALL_ICON_SIZE   = _iconSizeExpr(HALL_ICON_MAX);
+    const CHARGE_ICON_SIZE = _iconSizeExpr(CHARGE_ICON_MAX);
     // Hallit piirtyvät latauspisteiden PÄÄLLE: latauspisteitä on enemmän,
     // joten ne saavat jäädä alle. Kutsutaan aina kun kerroksia siirrellään.
     function promoteIconLayers(){
@@ -9857,9 +9870,11 @@
         // In filter view, close it first so the user returns to the normal map
         // with the P-marker landing on the selected area.
         if (filterMode) closeFilter();
-        // Always settle on the area's centre at a fixed zoom, so the P-marker
-        // (which sits at the map centre) lands squarely on the selected area.
-        map.flyTo({ center:[lng,lat], zoom: SELECT_ZOOM, duration: 800 });
+        // Keskitetään alueen keskipisteeseen NYKYISELLÄ zoomilla, jotta
+        // P-merkki (joka on kartan keskellä) osuu valittuun alueeseen.
+        // Zoom-tasoa ei muuteta: käyttäjä pysyy siinä mittakaavassa jonka
+        // on itse valinnut, myös kohteesta toiseen hypättäessä.
+        map.flyTo({ center:[lng,lat], duration: 800 });
       }
     });
 
@@ -10032,7 +10047,7 @@
         map.on('click', 'halli-icons', (e) => {
           showHalliInfo(e);
           const coords = e.features[0].geometry.coordinates;
-          map.flyTo({ center: coords, zoom: SELECT_ZOOM, duration: 800 });
+          map.flyTo({ center: coords, duration: 800 });   // zoom ennallaan
         });
         map.on('mouseleave', 'halli-icons', () => {
           map.getCanvas().style.cursor = '';
@@ -13415,7 +13430,7 @@
                 hoveredChargingId = ft.properties.id;
                 scheduleHitRefetch();   // freshen this station's status on tap
                 showChargingInSheet(ft.properties);
-                if(coords) map.flyTo({ center: coords, zoom: SELECT_ZOOM, duration: 800 });
+                if(coords) map.flyTo({ center: coords, duration: 800 });   // zoom ennallaan
               });
             }
           }
