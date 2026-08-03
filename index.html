@@ -1705,7 +1705,22 @@
     #filter-reset-btn { position: absolute; right: 66px; top: 15px; height: 26px; padding: 0 14px; background: var(--tp-accent); border: 1px solid var(--tp-accent); border-radius: 13px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; font-family: Arial, sans-serif; display: none; align-items: center; justify-content: center; z-index: 5; }
     #filter-reset-btn.visible { display: inline-flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    #sheet-summary { padding: 13px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
+    #sheet-summary { padding: 13px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif;
+                     display: flex; align-items: center; gap: 14px; }
+    #sheet-summary-text { flex: 1; min-width: 0; }
+    /* Pyöreä tunnusmerkki: aluekoodi (tummansininen reunus, valkoinen täyttö,
+       tummansininen numero) tai kohteen oma ikoni. Korkeus vastaa kolmen
+       tekstirivin korkeutta. .icon-tilassa reunus ja täyttö jätetään pois,
+       koska halli- ja latauspisteikonit ovat itse jo ympyröitä. */
+    #area-code-badge { display: none; flex: 0 0 auto; width: 56px; height: 56px;
+                       border-radius: 50%; border: 2px solid #0C0243; background: #fff;
+                       color: #0C0243; font-family: Arial, sans-serif; font-size: 17px;
+                       font-weight: bold; letter-spacing: 0.3px;
+                       align-items: center; justify-content: center;
+                       overflow: hidden; pointer-events: none; }
+    #area-code-badge.show { display: flex; }
+    #area-code-badge.icon { border: none; background: transparent; }
+    #area-code-badge img, #area-code-badge svg { width: 100%; height: 100%; display: block; }
     #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
     #summary-type { font-size: 14px; color: #555; }
     #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
@@ -5102,7 +5117,7 @@
   </div>
 
   <div id="bottom-sheet">
-    <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
+
     <!-- Credit line. Shares its spot with the Ajanhetki pill: whenever the pill
          is visible this is hidden, and it returns the moment the pill goes away
          (dismissed, filter open, or zoom < 13). The swap lives in
@@ -5168,9 +5183,14 @@
     </div>
     <div id="sheet-normal">
       <div id="sheet-summary">
-        <div id="summary-header"></div>
-        <div id="summary-type"></div>
-        <div id="summary-operator"></div>
+        <!-- Pyöreä tunnusmerkki summary-rivien vasemmalla puolella. Korvaa
+             aiemman sheetin ylälaidassa olleen badge-rivin. -->
+        <div id="area-code-badge"></div>
+        <div id="sheet-summary-text">
+          <div id="summary-header"></div>
+          <div id="summary-type"></div>
+          <div id="summary-operator"></div>
+        </div>
       </div>
       <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
@@ -8902,12 +8922,12 @@
       document.getElementById('sheet-divider').style.display  = 'block';
       setActionBtnText(header);
       document.getElementById('action-btn').classList.add('active');
-      // Open at 153px from bottom (mid step). Bounds match the three-level snap below
-      // when the user drags: max = 80% of viewport, mid = 153px, min = 75px from bottom.
+      // Open at 130px from bottom (mid step). Bounds match the three-level snap below
+      // when the user drags: max = 80% of viewport, mid = 130px, min = 75px from bottom.
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.20s cubic-bezier(0.32,0.72,0,1)';
-      bs.style.transform  = 'translateY(calc(100% - 153px))';
-      currentY = bs.offsetHeight - 153;
+      bs.style.transition = 'transform 0.24s cubic-bezier(0.32,0.72,0,1)';
+      bs.style.transform  = 'translateY(calc(100% - 130px))';
+      currentY = bs.offsetHeight - 130;
       masterFeatureLocked = true;
       clearTimeout(masterFeatureUnlockTimer);
       masterFeatureUnlockTimer = setTimeout(() => { masterFeatureLocked = false; }, 4000);
@@ -8922,29 +8942,15 @@
     // Shows only 3 lines: header, type, operator — no extra details
     function showCenterFeatureInSheet(header, type, operator, areaCode, detailsHTML, isDisc) {
       document.getElementById('summary-header').textContent   = header;
-      const badge = document.getElementById('area-code-badge');
+      // Pyöreä tunnusmerkki: kiekkoalueella kiekkoikoni, muuten aluekoodi.
       if (isDisc) {
-        // Free / disc area → show the parking-disc icon instead of an area code
-        badge.innerHTML = DISC_BADGE_SVG;
-        badge.style.display = 'inline-block';
-        badge.style.background = 'transparent';
-        badge.style.padding = '0';
-        badge.style.borderRadius = '0';
-        showCenterBadge(null);   // expand on-map marker; disc-mode handled by updateCenterPinIcon
+        setSheetMedallion(DISC_BADGE_SVG, true);
+        showCenterBadge(null);
       } else if (areaCode) {
-        badge.textContent = areaCode;
-        badge.style.display = 'inline-block';
-        badge.style.background = '#0C0243';
-        badge.style.color = 'white';
-        badge.style.fontSize = '12px';
-        badge.style.fontWeight = 'bold';
-        badge.style.padding = '2px 8px';
-        badge.style.borderRadius = '5px';
-        // Also expand the on-map P-marker into its full badge form with the code
+        setSheetMedallion(areaCode, false);
         showCenterBadge(areaCode);
       } else {
-        badge.style.display = 'none';
-        hideCenterBadge();
+        hideSheetMedallion();
       }
       document.getElementById('summary-type').textContent     = type;
       document.getElementById('summary-operator').textContent = operator;
@@ -8958,24 +8964,34 @@
         document.getElementById('sheet-divider').style.display = 'none';
       }
       var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'block';
-      // Auto-open to 153px from bottom when P-marker is on area
+      // Auto-open to 130px from bottom when P-marker is on area
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.30s cubic-bezier(0.32,0.72,0,1)';
-      bs.style.transform  = 'translateY(calc(100% - 153px))';
-      currentY = bs.offsetHeight - 153;
+      bs.style.transition = 'transform 0.34s cubic-bezier(0.32,0.72,0,1)';
+      bs.style.transform  = 'translateY(calc(100% - 130px))';
+      currentY = bs.offsetHeight - 130;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       // The nav button uses hoveredPolyId/currentParkingProps to know an
       // area is selected — refresh visibility now that the sheet has moved.
       if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
 
+    // Sheetin pyöreä tunnusmerkki. html = sisältö, icon = true kun sisältö on
+    // valmiiksi ympyrän muotoinen ikoni (ei reunusta eikä täyttöä).
+    function setSheetMedallion(html, icon) {
+      const el = document.getElementById('area-code-badge');
+      if (!el) return;
+      if (html == null || html === '') { el.className = ''; el.innerHTML = ''; return; }
+      el.innerHTML = html;
+      el.className = icon ? 'show icon' : 'show';
+    }
+    function hideSheetMedallion(){ setSheetMedallion(null); }
+
     function collapseCenterSheet() {
-      const badge = document.getElementById('area-code-badge');
-      if (badge) { badge.style.display = 'none'; }
+      hideSheetMedallion();
       // Collapse the on-map P-marker back to its plain pin form
       hideCenterBadge();
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.30s cubic-bezier(0.32,0.72,0,1)';
+      bs.style.transition = 'transform 0.34s cubic-bezier(0.32,0.72,0,1)';
       bs.style.transform  = 'translateY(calc(100% - 90px))';
       currentY = bs.offsetHeight - 90;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
@@ -9552,17 +9568,7 @@
       document.getElementById('sheet-divider').style.display = 'none';
       setActionBtnText('Pysäköi täällä');
       // Top-left sheet badge = the parking-garage icon (like the charging badge).
-      const hbadge = document.getElementById('area-code-badge');
-      if (hbadge) {
-        hbadge.innerHTML =
-          '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-          '<span style="vertical-align:middle;margin-left:5px;color:#111;font-size:14px;font-weight:800;letter-spacing:0.3px;">Tilaa</span>';
-        hbadge.style.display = 'inline-block';
-        hbadge.style.background = 'transparent';
-        hbadge.style.padding = '0';
-        hbadge.style.borderRadius = '0';
-        hbadge.style.color = '#111';
-      }
+      setSheetMedallion('<img src="' + halliIconSvg() + '" alt="">', true);
       document.getElementById('gps-warning').classList.remove('visible');
       if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
@@ -9833,11 +9839,11 @@
       if (_bs && _noArea && !inNav && !inFilter) {
         const _t = _bs.style.transform || '';
         if (zoom < POINTER_MINZOOM && !_t.includes('- 60px')) {
-          _bs.style.transition = 'transform 0.22s cubic-bezier(0.32,0.72,0,1)';
+          _bs.style.transition = 'transform 0.26s cubic-bezier(0.32,0.72,0,1)';
           _bs.style.transform = 'translateY(calc(100% - 60px))';
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
         } else if (zoom >= POINTER_MINZOOM && (_t === '' || _t.includes('- 60px'))) {
-          _bs.style.transition = 'transform 0.22s cubic-bezier(0.32,0.72,0,1)';
+          _bs.style.transition = 'transform 0.26s cubic-bezier(0.32,0.72,0,1)';
           _bs.style.transform = 'translateY(calc(100% - 90px))';
           currentY = _bs.offsetHeight - 90;
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
@@ -13960,19 +13966,8 @@
       setActionBtnText('Lataa täällä');
       // Top-left sheet badge = the charging-station icon (like the disc badge
       // for free parking areas).
-      const cbadge = document.getElementById('area-code-badge');
-      if (cbadge) {
-        const stTxt = isAvail ? 'Tilaa' : 'Täynnä';
-        const stCol = '#111';   // status text in black (icon still shows green/gray)
-        const icCol = isAvail ? '#008151' : '#b4b7bd';   // gray icon when not available
-        cbadge.innerHTML = '<img src="' + chargingIconSvg(icCol) + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-          '<span style="vertical-align:middle;margin-left:5px;color:' + stCol + ';font-size:14px;font-weight:800;letter-spacing:0.3px;">' + stTxt + '</span>';
-        cbadge.style.display = 'inline-block';
-        cbadge.style.background = 'transparent';
-        cbadge.style.padding = '0';
-        cbadge.style.borderRadius = '0';
-        cbadge.style.color = stCol;
-      }
+      setSheetMedallion(
+        '<img src="' + chargingIconSvg(isAvail ? '#008151' : '#b4b7bd') + '" alt="">', true);
       // Match the parking-area look: no "GPS may be inaccurate" notice taking
       // space, so the station details aren't pushed partly out of the sheet.
       document.getElementById('gps-warning').classList.remove('visible');
@@ -14516,7 +14511,7 @@
       // Hide GPS warning + zoom indicator in filter view
       const gw = document.getElementById('gps-warning'); if (gw) gw.style.display = 'none';
       const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = 'none';
-      const acb = document.getElementById('area-code-badge'); if (acb) acb.style.display = 'none';
+      hideSheetMedallion();
       // Hide P-marker (center pointer) in filter view, and make sure it's
       // collapsed so it doesn't reappear expanded when the filter is closed.
       centerPointerEl.classList.add('hidden');
@@ -14537,7 +14532,7 @@
       sheetFilter.classList.add('visible');
       sizeFilterSheet();
       if(window._trackFilterScrollbar) window._trackFilterScrollbar();
-      sheet.style.transition='transform 0.28s cubic-bezier(0.32,0.72,0,1)';
+      sheet.style.transition='transform 0.32s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform=`translateY(${window.innerHeight*0.6}px)`;
       currentY=window.innerHeight*0.6;
       btnContainer.classList.add('hidden');
@@ -14844,7 +14839,7 @@
               divider.style.display='none';
               setActionBtnText('Siirrä kursori pysäköintialueelle'); btn.classList.remove('active');
               gpsWarning.classList.add('visible');
-              sheet.style.transition='transform 0.20s cubic-bezier(0.32,0.72,0,1)';
+              sheet.style.transition='transform 0.24s cubic-bezier(0.32,0.72,0,1)';
               sheet.style.transform='translateY(calc(100% - 90px))';
               currentY = sheet.offsetHeight - 90;
             }
@@ -14892,17 +14887,17 @@
         btn.classList.add('active');
         gpsWarning.classList.remove('visible');
         // Don't override the sheet position while a directions request is in
-        // flight — onSheetNavBtnClick collapses the sheet to 153px and any
+        // flight — onSheetNavBtnClick collapses the sheet to 130px and any
         // re-snap to 150px from here cancels its animation.
         if (!_navigationInProgress) {
-          sheet.style.transition = 'transform 0.20s cubic-bezier(0.32,0.72,0,1)';
+          sheet.style.transition = 'transform 0.24s cubic-bezier(0.32,0.72,0,1)';
           sheet.style.transform = 'translateY(calc(100% - 150px))';
           currentY = sheet.offsetHeight - 150;
         }
         updateNavBtnVisibility();
       } else if (!masterFeatureLocked) {
         currentParkingProps = null;
-        const acbReset = document.getElementById('area-code-badge'); if(acbReset) acbReset.style.display = 'none';
+        hideSheetMedallion();
         summaryHeader.textContent = '';
         summaryType.textContent = '';
         summaryOperator.textContent = '';
@@ -14911,7 +14906,7 @@
         setActionBtnText('Siirrä kursori pysäköintialueelle');
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
-        sheet.style.transition = 'transform 0.20s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transition = 'transform 0.24s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform = 'translateY(calc(100% - 90px))';
         currentY = sheet.offsetHeight - 90;
         updateNavBtnVisibility();
@@ -15449,8 +15444,8 @@
       if (top === _ahLastTop) return;
       _ahLastTop = top;
       const visibleH  = Math.max(0, window.innerHeight - top);  // sheet height on screen
-      // The sheet's automatic resting heights are 60 / 90 / 150 / 153 px (peek,
-      // no area, area selected). The fade used to begin at exactly 153, i.e. right
+      // The sheet's automatic resting heights are 60 / 90 / 130 px (peek,
+      // no area, area selected). The fade used to begin at exactly the mid step, i.e. right
       // ON the "area selected" height — so the pill was left slightly translucent
       // whenever the P-marker sat on an area. Start well clear of all of them:
       // the pill is fully solid at every automatic height, and only begins to
@@ -16003,8 +15998,8 @@
       setTimeout(() => {
         const targetY = (_sheetYBeforeParking != null)
           ? _sheetYBeforeParking
-          : (sheet.offsetHeight - 153);
-        sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
+          : (sheet.offsetHeight - 130);
+        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = `translateY(${targetY}px)`;
         currentY = targetY;
         // Sync the map-dimming backdrop to the restored sheet position (same
@@ -16307,7 +16302,7 @@
         const overlay = document.getElementById('parking-overlay');
         overlay.classList.remove('open');
         btnContainer.classList.remove('hidden');
-        sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = 'translateY(calc(100% - 60px))';
         currentY = sheet.offsetHeight - 60;
         showActiveParkingBanner();
@@ -16335,7 +16330,7 @@
       overlay.classList.remove('open');
       overlay.classList.remove('extending-mode');
       btnContainer.classList.remove('hidden');
-      sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
+      sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
 
@@ -16459,7 +16454,7 @@
       document.getElementById('parking-summary-overlay').classList.remove('open');
       btnContainer.classList.remove('hidden');
       // Sheet stays at its minimal position — no active session
-      sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
+      sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
     }
@@ -17215,9 +17210,9 @@
 
     // Click handler for the sheet's top-right button. Sequence:
     //  1. Set _navigationInProgress so centerCheck won't re-snap the sheet
-    //     to 150px (which would cancel our 153px collapse animation).
+    //     to 150px (which would cancel our 130px collapse animation).
     //  2. Drop the destination pin on the map at the P-marker's location.
-    //  3. Collapse the sheet to 153px with a smooth animation.
+    //  3. Collapse the sheet to 130px with a smooth animation.
     //  4. Open the maps app picker AFTER the animation finishes (~500ms).
     let _navigationInProgress = false;
     let _navigationFlagTimer  = null;
@@ -17258,14 +17253,13 @@
         cm.classList.add('hidden');
         cm.classList.remove('expanded');
       }
-      const acb = document.getElementById('area-code-badge');
-      if (acb) acb.style.display = 'none';
+      hideSheetMedallion();
 
-      // 3) Collapse the sheet to its 153px resting position.
+      // 3) Collapse the sheet to its 130px resting position.
       requestAnimationFrame(() => {
-        const target = sheet.offsetHeight - 153;
+        const target = sheet.offsetHeight - 130;
         sheet.style.transition = 'transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94)';
-        sheet.style.transform  = 'translateY(calc(100% - 153px))';
+        sheet.style.transform  = 'translateY(calc(100% - 130px))';
         currentY = target;
         if (typeof sheetBackdrop !== 'undefined' && sheetBackdrop) {
           sheetBackdrop.style.opacity = '0';
@@ -17721,7 +17715,7 @@
 
     let startY=0,startTranslate=0,lastY=0,lastTime=0,velocity=0,isDragging=false;
     function snapTo(t){
-      sheet.style.transition='transform 0.28s cubic-bezier(0.32,0.72,0,1)';
+      sheet.style.transition='transform 0.32s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
 
@@ -17768,7 +17762,7 @@
       const zi = document.getElementById('zoom-indicator');
       if (typeof ty === 'number') {
         const _sh = _sheetH || sheet.clientHeight, _wh = _winH || window.innerHeight;
-        const fadeStart = _sh - 153;                     // fade begins once the sheet grows past 153px
+        const fadeStart = _sh - 130;                     // fade begins once the sheet grows past 153px
         const fullOpen  = _sh - _wh * 0.8;               // fully open
         const o = Math.max(0, Math.min(1, (ty - fullOpen) / (fadeStart - fullOpen)));
         if (el) el.style.opacity = o;
