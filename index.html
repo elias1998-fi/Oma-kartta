@@ -263,7 +263,7 @@
       width: 48px;
       height: 48px;
       overflow: hidden;
-      transition: height 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+      transition: height 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     
     #left-menu-pill.expanded {
@@ -336,7 +336,7 @@
       z-index: 100;
       display: flex; flex-direction: column;
       transform: translateX(-100%);
-      transition: transform 0.30s cubic-bezier(0.25,0.46,0.45,0.94);
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     /* The panel's shadow lives on a pseudo-element so it can FADE IN during
        the slide. On the panel box itself it was already on screen while the
@@ -350,7 +350,7 @@
       inset: 0;
       box-shadow: 4px 0 24px rgba(0,0,0,0.12);
       opacity: 0;
-      transition: opacity 0.30s cubic-bezier(0.25,0.46,0.45,0.94);
+      transition: opacity 0.32s cubic-bezier(0.32,0.72,0,1);
       pointer-events: none;
     }
     #profile-overlay.open { transform: translateX(0); }
@@ -433,7 +433,7 @@
       box-shadow: 0 3px 12px rgba(0,0,0,0.22);
       opacity: 0; transform: translate(0,0) scale(0.2);
       pointer-events: none;
-      transition: transform 0.36s cubic-bezier(0.34,1.45,0.55,1), opacity 0.22s ease;
+      transition: transform 0.32s cubic-bezier(0.34,1.45,0.55,1), opacity 0.22s ease;
     }
     #sb-close { transition-delay: 0.05s; }
     .brand-bracket-tl {
@@ -470,7 +470,7 @@
       z-index: 100;
       display: flex; flex-direction: column;
       transform: translateX(-100%);
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     #search-overlay.open, #plus-overlay.open { transform: translateX(0); }
     
@@ -716,7 +716,7 @@
     /* "Muut" expander: chevron rotates to point down when section is open;
        the inner items collapse to height 0 when closed. */
     .settings-expander .settings-item-chevron {
-      transition: transform 0.22s ease;
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-expander.open .settings-item-chevron {
       transform: rotate(90deg);
@@ -724,7 +724,7 @@
     .settings-collapsible {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.28s ease;
+      transition: max-height 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-collapsible.open {
       max-height: 400px; /* big enough to fit two items; clipped if more */
@@ -1349,7 +1349,7 @@
     .settings-lang-chevron {
       font-size: 18px;
       color: #bbb;
-      transition: transform 0.22s ease;
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-lang-header.open .settings-lang-chevron {
       transform: rotate(90deg);
@@ -1357,7 +1357,7 @@
     .settings-lang-options {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.25s ease;
+      transition: max-height 0.32s cubic-bezier(0.32,0.72,0,1);
       background: #fafafa;
     }
     .settings-lang-options.open { max-height: 220px; }
@@ -1396,7 +1396,7 @@
     .settings-mapstyle-chevron {
       font-size: 18px;
       color: #bbb;
-      transition: transform 0.22s ease;
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-mapstyle-header.open .settings-mapstyle-chevron {
       transform: rotate(90deg);
@@ -1404,7 +1404,7 @@
     .settings-mapstyle-options {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.25s ease;
+      transition: max-height 0.32s cubic-bezier(0.32,0.72,0,1);
       background: #fafafa;
     }
     .settings-mapstyle-options.open { max-height: 220px; }
@@ -1483,7 +1483,7 @@
       display: flex;
       flex-direction: column;
       transform: translateX(100%);
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-detail-overlay.open {
       transform: translateX(0);
@@ -1506,11 +1506,7 @@
       display: flex; 
       flex-direction: column;
     }
-    /* Ylätila kavennettu yhteensä 27 px: sheetin lepokorkeus laski 153 → 130,
-       ja sisältö nostetaan saman verran + 4 px. Jakauma: kahva-alue −8,
-       GPS-rivi −8, summary-lohko −11. Directions/Jaa-painikkeet ovat
-       absoluuttisesti sijoitettuja eivätkä liiku näiden mukana. */
-    #drag-handle-area { width: 100%; padding: 4px 0 2px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
+    #drag-handle-area { width: 100%; padding: 8px 0 6px 0; display: flex; justify-content: center; flex-shrink: 0; position: relative; }
 
     /* ── "Directions" button (above the main action button) ────────────
        Visible only when a parking area is currently selected. Sits inside
@@ -1667,7 +1663,7 @@
       font-family: Arial, sans-serif;
       font-size: 12px;
       color: #888;
-      padding: 0 20px 4px 20px;
+      padding: 0 20px 12px 20px;
       opacity: 0;
       max-height: 0;
       overflow: hidden;
@@ -1709,22 +1705,7 @@
     #filter-reset-btn { position: absolute; right: 66px; top: 15px; height: 26px; padding: 0 14px; background: var(--tp-accent); border: 1px solid var(--tp-accent); border-radius: 13px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; font-family: Arial, sans-serif; display: none; align-items: center; justify-content: center; z-index: 5; }
     #filter-reset-btn.visible { display: inline-flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    #sheet-summary { padding: 2px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif;
-                     display: flex; align-items: center; gap: 14px; }
-    #sheet-summary-text { flex: 1; min-width: 0; }
-    /* Pyöreä tunnusmerkki: aluekoodi (tummansininen reunus, valkoinen täyttö,
-       tummansininen numero) tai kohteen oma ikoni. Korkeus vastaa kolmen
-       tekstirivin korkeutta. .icon-tilassa reunus ja täyttö jätetään pois,
-       koska halli- ja latauspisteikonit ovat itse jo ympyröitä. */
-    #area-code-badge { display: none; flex: 0 0 auto; width: 50px; height: 50px;
-                       border-radius: 50%; border: 2px solid #0C0243; background: #f4f4ff;
-                       color: #0C0243; font-family: Arial, sans-serif; font-size: 19px;
-                       font-weight: 800; letter-spacing: 0.3px;
-                       align-items: center; justify-content: center;
-                       overflow: hidden; pointer-events: none; }
-    #area-code-badge.show { display: flex; }
-    #area-code-badge.icon { border: none; background: transparent; }
-    #area-code-badge img, #area-code-badge svg { width: 100%; height: 100%; display: block; }
+    #sheet-summary { padding: 13px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
     #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
     #summary-type { font-size: 14px; color: #555; }
     #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
@@ -1848,7 +1829,7 @@
       transition: border-color 0.15s ease;
     }
     .op-dropdown.open .op-trigger { border-color: #0C0243; }
-    .op-chevron { color: #888; transition: transform 0.2s ease; }
+    .op-chevron { color: #888; transition: transform 0.32s cubic-bezier(0.32,0.72,0,1); }
     .op-dropdown.open .op-chevron { transform: rotate(180deg); }
     .op-list { display: none; margin-top: 8px; }
     .op-dropdown.open .op-list { display: block; }
@@ -1941,7 +1922,7 @@
       gap: 12px;
       opacity: 0;
       transform: translateY(-12px);
-      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.22,1,0.36,1);
+      transition: opacity 0.3s ease, transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     #free-terms-box.visible { display: flex; }
     #free-terms-box.shown { opacity: 1; transform: translateY(0); }
@@ -1951,7 +1932,7 @@
       flex-shrink: 0; width: 28px; height: 28px; border: none; background: #f0f0f0;
       border-radius: 50%; cursor: pointer; font-size: 16px; color: #555; line-height: 1;
       display: flex; align-items: center; justify-content: center;
-      transition: transform 0.25s ease;
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     #free-terms-arrow.expanded { transform: rotate(180deg); }
     #free-terms-details {
@@ -1990,7 +1971,7 @@
       background: rgba(127, 31, 137, 0.85);
       border: 1.5px solid #0C0243;
       border-radius: 8px;
-      transition: transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94);
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
       z-index: 0;
     }
     .seg-option {
@@ -2105,7 +2086,7 @@
       display: flex;
       flex-direction: column;
       transform: translateX(-100%);
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     #gps-info-overlay.open {
       transform: translateX(0);
@@ -2138,14 +2119,14 @@
       margin-bottom: 0;
     }
     
-    #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
+    #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.32,0.72,0,1); }
     #parking-overlay.open { transform: translateX(0); }
     #parking-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
     #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
     /* Yrityslaskutus chain — same slide-in pattern as #parking-overlay, but
        stacked above it (110/111) since it opens from the payment picker. */
-    #costcenter-overlay, #workcomment-overlay { position: fixed; inset: 0; background: #f2f3f5; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); }
+    #costcenter-overlay, #workcomment-overlay { position: fixed; inset: 0; background: #f2f3f5; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.32,0.72,0,1); }
     #costcenter-overlay { z-index: 110; }
     #workcomment-overlay { z-index: 111; }
     #costcenter-overlay.open, #workcomment-overlay.open { transform: translateX(0); }
@@ -2307,7 +2288,7 @@
       display: none;
       flex-direction: column;
       transform: translateX(100%);
-      transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     }
     #parking-summary-overlay.open {
       display: flex;
@@ -3314,6 +3295,19 @@
       cursor: pointer;
     }
     #ajanhetki-dismiss:active { background: #dededf; }
+    /* − / + pillerin oikeassa reunassa. Sama ympyräkoko ja sävy kuin ×:llä,
+       jotta pillerin molemmat päät ovat visuaalisesti samaa perhettä. */
+    .ajanhetki-step {
+      flex-shrink: 0;
+      width: 25px; height: 25px; padding: 0; margin-left: 6px;
+      border: none; border-radius: 50%;
+      background: #eeeef1; color: #4a4a52;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .ajanhetki-step:active { background: #dededf; }
+    .ajanhetki-step svg { width: 12px; height: 12px; }
+    #ajanhetki-card.expanded .ajanhetki-step { pointer-events: none; }
     #ajanhetki-dismiss svg { width: 11px; height: 11px; }
     .ajanhetki-pill-sep {
       flex-shrink: 0;
@@ -3377,7 +3371,6 @@
     /* Hint rows: always laid out, so the card's measured heights are stable.
        At the medium size the card is simply short enough to clip them away. */
     .ajanhetki-float-hint { margin-top: 11px; font-size: 12px; color: #9a9a9a; line-height: 1.45; font-family: Arial, sans-serif; opacity: 1; transition: opacity .25s ease; }
-    #ajanhetki-card.size-medium .ajanhetki-float-hint { opacity: 0; }
     .ajanhetki-float-hint .ah-free { text-decoration: underline; text-decoration-color: #7F1F89; text-decoration-thickness: 2px; text-underline-offset: 2px; }
     .ajanhetki-float-hint .ah-paid { text-decoration: underline; text-decoration-color: #1266f1; text-decoration-thickness: 2px; text-underline-offset: 2px; }
     .ah-hint-row { display: flex; align-items: flex-start; gap: 7px; }
@@ -3660,7 +3653,7 @@
     width: 48px; height: 48px;
     background: #0C0243; border-radius: 50%;
     pointer-events: none; z-index: 0;
-    transition: transform 0.48s cubic-bezier(0.4,0,0.2,1);
+    transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
     opacity: 0;
   }
   #left-menu-pill.expanded #pill-ball { opacity: 1; }
@@ -3691,9 +3684,9 @@
     <div id="pill-ball"></div>
     <button class="pill-btn" id="menu-btn">
       <svg id="burger-svg" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="3.5" stroke-linecap="round">
-        <line id="bl-top" x1="2" y1="6" x2="22" y2="6" style="transform-origin:12px 6px;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;"/>
-        <line id="bl-mid" x1="2" y1="12" x2="22" y2="12" style="transform-origin:12px 12px;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;"/>
-        <line id="bl-bot" x1="2" y1="18" x2="22" y2="18" style="transform-origin:12px 18px;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;"/>
+        <line id="bl-top" x1="2" y1="6" x2="22" y2="6" style="transform-origin:12px 6px;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1),opacity 0.32s;"/>
+        <line id="bl-mid" x1="2" y1="12" x2="22" y2="12" style="transform-origin:12px 12px;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1),opacity 0.32s;"/>
+        <line id="bl-bot" x1="2" y1="18" x2="22" y2="18" style="transform-origin:12px 18px;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1),opacity 0.32s;"/>
       </svg>
     </button>
     
@@ -4319,7 +4312,7 @@
   <!-- Location-edit panel: slides up over the lower part of the support chat
        (the chat above stays visible) so the user can drag the map to set a
        corrected position for the reported area. -->
-  <div id="loc-edit-panel" style="display:none;position:fixed;left:0;right:0;bottom:0;top:40%;z-index:9997;background:#fff;flex-direction:column;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);box-shadow:0 -4px 22px rgba(0,0,0,0.18);">
+  <div id="loc-edit-panel" style="display:none;position:fixed;left:0;right:0;bottom:0;top:40%;z-index:9997;background:#fff;flex-direction:column;transform:translateY(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);box-shadow:0 -4px 22px rgba(0,0,0,0.18);">
     <div id="loc-edit-map" style="flex:1;position:relative;overflow:hidden;">
       <div id="loc-edit-center-pin" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);z-index:5;pointer-events:none;">
         <svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg" style="display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));">
@@ -4734,7 +4727,7 @@
   </div>
 
   <!-- Sub-overlay: Lisää uusi ilmainen pysäköintialue -->
-  <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
+  <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);">
     <div style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;">
       <div id="area-map" style="flex:1;"></div>
       <!-- Takaisin-pallura (VAIN tässä näkymässä): sama paikka ja ulkoasu kuin
@@ -4768,8 +4761,8 @@
           <!-- Chevron-kahva Ajanhetki-pillerin tyyliin: kaksi kallistettua palkkia.
                Suunta vaihtuu tilan mukaan (∧ kiinni = vedä ylös, ∨ auki = vedä alas). -->
           <div id="area-sheet-chevron" style="position:relative;width:44px;height:11px;">
-            <span style="position:absolute;top:3px;left:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:left center;transition:transform 0.22s ease;"></span>
-            <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.22s ease;"></span>
+            <span style="position:absolute;top:3px;left:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:left center;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);"></span>
+            <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);"></span>
           </div>
         </div>
         <!-- "Työkalut" samalla fontilla/fonttikoolla ja samassa kohdassa sheetiä
@@ -4832,7 +4825,7 @@
   </div>
 
   <!-- Area details overlay -->
-  <div id="area-details-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:120;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
+  <div id="area-details-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:120;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAreaDetails()">←</button>
       <div class="overlay-title">Lisää pysäköintialueen tiedot</div>
@@ -4940,7 +4933,7 @@
   </div>
 
   <!-- Toast notification -->
-  <div id="submit-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:32px 32px 28px 32px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1);">
+  <div id="submit-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:32px 32px 28px 32px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.32s cubic-bezier(0.34,1.56,0.64,1);">
     <div style="font-size:18px;line-height:1.6;font-weight:500;">Kiitos ilmoituksestasi. Tiimimme varmentaa paikan tiedot sekä lisää uuden alueen kartalle.</div>
     <!-- Banneri pysyy näytöllä; käyttäjä valitsee jatkon. -->
     <div style="display:flex;gap:12px;margin-top:24px;">
@@ -4950,7 +4943,7 @@
   </div>
 
   <!-- Generic toast — message is set at runtime via showCustomToast(text, ms) -->
-  <div id="custom-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:36px 36px 32px 36px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1);text-align:center;">
+  <div id="custom-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:36px 36px 32px 36px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.32s cubic-bezier(0.34,1.56,0.64,1);text-align:center;">
     <div id="custom-toast-msg" style="font-size:20px;line-height:1.5;font-weight:600;"></div>
   </div>
 
@@ -5086,7 +5079,7 @@
     </div>
   </div>
 
-  <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);">
+  <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeCommentAreas()">←</button>
       <div class="overlay-title">Kommentoi alueita</div>
@@ -5121,6 +5114,7 @@
   </div>
 
   <div id="bottom-sheet">
+    <div id="area-code-badge" style="display:none;position:absolute;top:16px;left:16px;z-index:5;background:#0C0243;color:white;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:5px;letter-spacing:0.3px;pointer-events:none;"></div>
 
     <!-- Credit line. Shares its spot with the Ajanhetki pill: whenever the pill
          is visible this is hidden, and it returns the moment the pill goes away
@@ -5134,7 +5128,7 @@
            shrink: it animates its width, height and corner radius between the
            pill shape and the window shape, clipping its contents as it goes.
            The two faces below just cross-fade inside it. -->
-      <div id="ajanhetki-card" class="collapsed size-medium">
+      <div id="ajanhetki-card" class="collapsed size-large">
         <!-- Pill face. The × is its own button at the left, set apart by a tinted
              circle and a hairline divider so it reads as a separate control
              rather than part of the pill's label. -->
@@ -5151,6 +5145,20 @@
             </svg>
             <span class="ajanhetki-pill-label">Ajanhetki</span>
             <span id="ajanhetki-pill-time">–</span>
+          </button>
+          <!-- Askelnapit pillerin oikeassa reunassa. Sama 30 min askel kuin
+               rullalla; + on uloimpana oikealla. Omat painikkeensa, joten
+               niiden painallus ei kasvata korttia. -->
+          <span class="ajanhetki-pill-sep"></span>
+          <button class="ajanhetki-step" id="ajanhetki-step-minus" aria-label="Aikaisemmaksi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+          <button class="ajanhetki-step" id="ajanhetki-step-plus" aria-label="Myöhemmäksi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
           </button>
         </div>
         <div id="ajanhetki-float" role="dialog" aria-label="Ajanhetki">
@@ -5187,14 +5195,9 @@
     </div>
     <div id="sheet-normal">
       <div id="sheet-summary">
-        <!-- Pyöreä tunnusmerkki summary-rivien vasemmalla puolella. Korvaa
-             aiemman sheetin ylälaidassa olleen badge-rivin. -->
-        <div id="area-code-badge"></div>
-        <div id="sheet-summary-text">
-          <div id="summary-header"></div>
-          <div id="summary-type"></div>
-          <div id="summary-operator"></div>
-        </div>
+        <div id="summary-header"></div>
+        <div id="summary-type"></div>
+        <div id="summary-operator"></div>
       </div>
       <hr id="sheet-divider"/>
       <div id="sheet-details"></div>
@@ -5303,7 +5306,19 @@
         </div>
       </div>
 
-      <!-- Group 3: public EV charging points -->
+      <!-- Group 3: hide parking garages. Plain on/off — nothing to configure,
+           so no sub-controls open when it's switched on. -->
+      <div class="filter-group">
+        <div class="filter-toggle-row">
+          <span class="filter-toggle-label">Piilota pysäköintihallit</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-hide-halls" onchange="toggleHideHalls()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Group 4: public EV charging points -->
       <div class="filter-group">
         <div class="filter-toggle-row">
           <span class="filter-toggle-label">Näytä julkiset sähkölatauspisteet</span>
@@ -6395,6 +6410,7 @@
     }
 
     function closeMenu() {
+      disarmMenuAutoClose();
       menuExpanded = false;
       menuPill.classList.remove('expanded');
       menuBtn.classList.remove('active');
@@ -6410,7 +6426,36 @@
       if (menuExpanded) closeMenu(); else openMenu();
     });
 
-    function menuItemClick(idx, action) {
+    // Kun valikosta avataan näkymä, valikko jää auki taustalle. Näin paluu
+    // perusnäkymään tuo valikon takaisin samaan tilaan — jos vahingossa painoi
+    // väärää painiketta, oikea on heti saatavilla ilman uutta avaamista.
+    // Valikko sulkeutuu silti: X-painikkeesta, karttaa liikuttamalla, tai kun
+    // avatussa näkymässä painaa jotain muuta kuin paluu-/sulkukontrollia.
+    let _menuAutoCloseOff = null;
+    function disarmMenuAutoClose(){ if (_menuAutoCloseOff) _menuAutoCloseOff(); }
+    function armMenuAutoClose() {
+      disarmMenuAutoClose();
+      const onClick = (e) => {
+        if (!menuExpanded) { disarmMenuAutoClose(); return; }
+        const t = (e.target && e.target.closest)
+          ? e.target.closest('button,a,[role="button"],label,li') : null;
+        if (!t) return;
+        if (t.closest('#left-menu-pill')) return;   // valikko hoitaa oman tilansa
+        const tag = [t.id, t.getAttribute('aria-label'), String(t.className || '')].join(' ');
+        if (/close|back|sulje|takaisin|peruuta|cancel|dismiss/i.test(tag)) return;
+        disarmMenuAutoClose();
+        closeMenu();
+      };
+      // Viive, jottei valikkopainikkeen oma klikkaus laukaise tätä heti.
+      const t0 = setTimeout(() => document.addEventListener('click', onClick, true), 250);
+      _menuAutoCloseOff = () => {
+        clearTimeout(t0);
+        document.removeEventListener('click', onClick, true);
+        _menuAutoCloseOff = null;
+      };
+    }
+
+    function menuItemClick(idx, action, keepMenuOpen) {
       // NOTE: overlays opened from the menu (profile, plus) slide in ON TOP of
       // whatever is on screen — deliberately no silent filter-close here. The
       // old close-and-reset swap made the sheet's content vanish mid-slide and
@@ -6421,7 +6466,7 @@
       if (btn) btn.classList.add('pill-flash');
       setTimeout(() => {
         if (btn) btn.classList.remove('pill-flash');
-        closeMenu();
+        if (keepMenuOpen) armMenuAutoClose(); else closeMenu();
         setTimeout(action, 60);
       }, 180);
     }
@@ -6481,7 +6526,7 @@
         // The action button stays visible as part of the view underneath —
         // body.profile-mode only drops its z-index below the dim + panel.
         document.body.classList.add('profile-mode');
-      });
+      }, true);
     });
 
     filterBtn.addEventListener('click', () => {
@@ -6500,7 +6545,7 @@
         // The plus / "Ilmoita alueesta" view covers the map — hide the
         // floating action button so it doesn't show through.
         btnContainer.classList.add('hidden');
-      });
+      }, true);
     });
 
     searchBtn.addEventListener('click', () => {
@@ -6511,7 +6556,7 @@
         // so it doesn't show through behind the keyboard.
         btnContainer.classList.add('hidden');
         setTimeout(() => { document.getElementById('search-input').focus(); showSearchHistory(); }, 100);
-      });
+      }, true);
     });
     
     function closeProfileOverlay() {
@@ -8926,12 +8971,12 @@
       document.getElementById('sheet-divider').style.display  = 'block';
       setActionBtnText(header);
       document.getElementById('action-btn').classList.add('active');
-      // Open at 130px from bottom (mid step). Bounds match the three-level snap below
-      // when the user drags: max = 80% of viewport, mid = 130px, min = 75px from bottom.
+      // Open at 153px from bottom (mid step). Bounds match the three-level snap below
+      // when the user drags: max = 80% of viewport, mid = 153px, min = 75px from bottom.
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.24s cubic-bezier(0.32,0.72,0,1)';
-      bs.style.transform  = 'translateY(calc(100% - 130px))';
-      currentY = bs.offsetHeight - 130;
+      bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      bs.style.transform  = 'translateY(calc(100% - 153px))';
+      currentY = bs.offsetHeight - 153;
       masterFeatureLocked = true;
       clearTimeout(masterFeatureUnlockTimer);
       masterFeatureUnlockTimer = setTimeout(() => { masterFeatureLocked = false; }, 4000);
@@ -8968,34 +9013,66 @@
         document.getElementById('sheet-divider').style.display = 'none';
       }
       var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'block';
-      // Auto-open to 130px from bottom when P-marker is on area
+      // Auto-open to 153px from bottom when P-marker is on area
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.34s cubic-bezier(0.32,0.72,0,1)';
-      bs.style.transform  = 'translateY(calc(100% - 130px))';
-      currentY = bs.offsetHeight - 130;
+      bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      bs.style.transform  = 'translateY(calc(100% - 153px))';
+      currentY = bs.offsetHeight - 153;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       // The nav button uses hoveredPolyId/currentParkingProps to know an
       // area is selected — refresh visibility now that the sheet has moved.
       if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
 
-    // Sheetin pyöreä tunnusmerkki. html = sisältö, icon = true kun sisältö on
-    // valmiiksi ympyrän muotoinen ikoni (ei reunusta eikä täyttöä).
+    // Sheetin badge sheetin vasemmassa ylälaidassa (alkuperäinen ulkoasu).
+    // html = sisältö, icon = true kun sisältö on kuva/ikoni, jolloin tausta ja
+    // pehmuste jätetään pois; muuten tummansininen aluekoodilaatta.
     function setSheetMedallion(html, icon) {
       const el = document.getElementById('area-code-badge');
       if (!el) return;
-      if (html == null || html === '') { el.className = ''; el.innerHTML = ''; return; }
+      if (html == null || html === '') { el.style.display = 'none'; el.innerHTML = ''; return; }
       el.innerHTML = html;
-      el.className = icon ? 'show icon' : 'show';
+      el.style.display = 'inline-block';
+      if (icon) {
+        el.style.background = 'transparent';
+        el.style.padding = '0';
+        el.style.borderRadius = '0';
+        el.style.color = '#111';
+      } else {
+        el.style.background = '#0C0243';
+        el.style.color = 'white';
+        el.style.fontSize = '12px';
+        el.style.fontWeight = 'bold';
+        el.style.padding = '2px 8px';
+        el.style.borderRadius = '5px';
+      }
     }
     function hideSheetMedallion(){ setSheetMedallion(null); }
+
+    // Purkaa kaiken mitä P-merkki on valinnut: alueen korostus, halli- ja
+    // latauspistekorostukset sekä merkin laajennetun badge-muodon.
+    function clearPointerSelection() {
+      let touched = false;
+      if (typeof hoveredPolyId !== 'undefined' && hoveredPolyId !== null) {
+        if (typeof clearHoverHighlight === 'function') clearHoverHighlight();
+        hoveredPolyId = null; touched = true;
+      }
+      if (typeof hoveredHalliId !== 'undefined' && hoveredHalliId !== null) { hoveredHalliId = null; touched = true; }
+      if (typeof hoveredChargingId !== 'undefined' && hoveredChargingId !== null) { hoveredChargingId = null; touched = true; }
+      if (!touched) return;
+      window._badgeAreaId = null;
+      if (typeof applyPoiHighlights === 'function') applyPoiHighlights();
+      if (typeof hideCenterBadge === 'function') hideCenterBadge();
+      if (typeof releaseMasterLock === 'function') releaseMasterLock();
+      if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();
+    }
 
     function collapseCenterSheet() {
       hideSheetMedallion();
       // Collapse the on-map P-marker back to its plain pin form
       hideCenterBadge();
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.34s cubic-bezier(0.32,0.72,0,1)';
+      bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
       bs.style.transform  = 'translateY(calc(100% - 90px))';
       currentY = bs.offsetHeight - 90;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
@@ -9572,7 +9649,9 @@
       document.getElementById('sheet-divider').style.display = 'none';
       setActionBtnText('Pysäköi täällä');
       // Top-left sheet badge = the parking-garage icon (like the charging badge).
-      setSheetMedallion('<img src="' + halliIconSvg() + '" alt="">', true);
+      setSheetMedallion(
+        '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
+        '<span style="vertical-align:middle;margin-left:5px;color:#111;font-size:14px;font-weight:800;letter-spacing:0.3px;">Tilaa</span>', true);
       document.getElementById('gps-warning').classList.remove('visible');
       if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
@@ -9843,11 +9922,11 @@
       if (_bs && _noArea && !inNav && !inFilter) {
         const _t = _bs.style.transform || '';
         if (zoom < POINTER_MINZOOM && !_t.includes('- 60px')) {
-          _bs.style.transition = 'transform 0.26s cubic-bezier(0.32,0.72,0,1)';
+          _bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
           _bs.style.transform = 'translateY(calc(100% - 60px))';
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
         } else if (zoom >= POINTER_MINZOOM && (_t === '' || _t.includes('- 60px'))) {
-          _bs.style.transition = 'transform 0.26s cubic-bezier(0.32,0.72,0,1)';
+          _bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
           _bs.style.transform = 'translateY(calc(100% - 90px))';
           currentY = _bs.offsetHeight - 90;
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
@@ -12749,7 +12828,7 @@
         if (!moved) { toggleSupportSatellites(); return; }   // a tap toggles the sector buttons
         const w = b.offsetWidth, r = b.getBoundingClientRect();
         const snapLeft = (r.left + w / 2) < window.innerWidth / 2;
-        b.style.transition = 'left 0.22s cubic-bezier(0.22,1,0.36,1)';
+        b.style.transition = 'left 0.32s cubic-bezier(0.32,0.72,0,1)';
         b.style.left = (snapLeft ? MARGIN : (window.innerWidth - w - MARGIN)) + 'px';
       }
       b.addEventListener('touchstart', onDown, { passive: true });
@@ -13176,10 +13255,32 @@
     // Parking garages (halli-icons) are paid parking, so they are shown only when
     // paid areas are shown — i.e. NOT in the free-only view, and NOT in the
     // charging-only view.
+    // Suodattimen "Piilota pysäköintihallit" -kytkin. Pelkkä päälle/pois:
+    // piilotettuna hallit eivät myöskään löydy queryRenderedFeaturesilla, joten
+    // P-merkin osumantunnistus ja klikkaus lakkaavat toimimasta automaattisesti.
+    let hideParkingHalls = false;
+    function toggleHideHalls(){
+      const cb = document.getElementById('toggle-hide-halls');
+      hideParkingHalls = !!(cb && cb.checked);
+      // Jos halli oli juuri valittuna, valinta puretaan piilotettaessa.
+      if (hideParkingHalls && typeof hoveredHalliId !== 'undefined' && hoveredHalliId !== null) {
+        hoveredHalliId = null;
+        if (typeof applyPoiHighlights === 'function') applyPoiHighlights();
+        if (typeof collapseCenterSheet === 'function') collapseCenterSheet();
+        if (typeof updateAjanhetkiPillVisibility === 'function') updateAjanhetkiPillVisibility();
+      }
+      updateHalliVisibility();
+      if (typeof updateResetBtnVisibility === 'function') updateResetBtnVisibility();
+    }
+
     function updateHalliVisibility(){
       if (!map.getLayer('halli-icons')) return;
       const freeOnly = (typeof showFreeParking !== 'undefined' && showFreeParking && freeFilterMode === 'free');
-      map.setLayoutProperty('halli-icons', 'visibility', !freeOnly ? 'visible' : 'none');
+      const show = !freeOnly && !hideParkingHalls;
+      map.setLayoutProperty('halli-icons', 'visibility', show ? 'visible' : 'none');
+      if (map.getLayer('halli-hi-icon')) {
+        map.setLayoutProperty('halli-hi-icon', 'visibility', show ? 'visible' : 'none');
+      }
     }
     let sliderTouching=false;
     sliderMin.addEventListener('touchstart',()=>{sliderTouching=true;},{passive:true});
@@ -13971,7 +14072,9 @@
       // Top-left sheet badge = the charging-station icon (like the disc badge
       // for free parking areas).
       setSheetMedallion(
-        '<img src="' + chargingIconSvg(isAvail ? '#008151' : '#b4b7bd') + '" alt="">', true);
+        '<img src="' + chargingIconSvg(isAvail ? '#008151' : '#b4b7bd') + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
+        '<span style="vertical-align:middle;margin-left:5px;color:#111;font-size:14px;font-weight:800;letter-spacing:0.3px;">' +
+        (isAvail ? 'Tilaa' : 'Täynnä') + '</span>', true);
       // Match the parking-area look: no "GPS may be inaccurate" notice taking
       // space, so the station details aren't pushed partly out of the sheet.
       document.getElementById('gps-warning').classList.remove('visible');
@@ -13991,7 +14094,7 @@
       if(!ov){
         ov = document.createElement('div');
         ov.id = 'charging-overlay';
-        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:130;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);';
+        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:130;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);';
         document.body.appendChild(ov);
       }
       const headerHtml =
@@ -14106,7 +14209,7 @@
       if(!ov){
         ov = document.createElement('div');
         ov.id = 'connector-picker-overlay';
-        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:129;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);';
+        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:129;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);';
         document.body.appendChild(ov);
       }
       _connectorPickerOpen = true;
@@ -14586,8 +14689,7 @@
       const _ahCard = document.getElementById('ajanhetki-card');
       if (refTimeManual && !ajanhetkiIntroShown && _ahCard && _ahCard.classList.contains('visible')) {
         ajanhetkiIntroShown = true;
-        openAjanhetkiFloat();          // expands (medium) + refreshes value/drum
-        setAjanhetkiSize('large');     // ...and straight on to the large size
+        openAjanhetkiFloat();          // avautuu suoraan isona + päivittää arvon/rullan
       }
       checkParking();
     }
@@ -14608,6 +14710,7 @@
       if (on('toggle-free-parking') && freeTermsAccepted) return true;
       if (on('toggle-maxtime-filter')) return true;
       if (on('toggle-ev-charging'))    return true;
+      if (on('toggle-hide-halls'))     return true;
       // Max-time range stays applied even if its toggle is later switched off.
       if (parseInt(sliderMin.value) !== 0 || parseInt(sliderMax.value) !== 26) return true;
       // Ajanhetki drum rolled away from live time / free segmented off default.
@@ -14653,7 +14756,13 @@
       sliderMin.value = 0; sliderMax.value = 26;
       updateSliderUI();
 
-      // Group 3 — EV charging
+      // Group 3 — hide parking garages
+      const hh = document.getElementById('toggle-hide-halls');
+      if (hh) hh.checked = false;
+      hideParkingHalls = false;
+      updateHalliVisibility();
+
+      // Group 4 — EV charging
       const ev = document.getElementById('toggle-ev-charging');
       if (ev) ev.checked = false;
       showEvCharging = false;
@@ -14754,8 +14863,12 @@
       const zoom=map.getZoom();
 
       // P-merkki piiloon kun ollaan liian kaukana (POINTER_MINZOOM).
+      // Kun merkki katoaa, myös sen tekemä valinta puretaan: muuten punainen
+      // korostus jäi päälle alueeseen tai ikoniin, vaikka valintaa ei enää voi
+      // tehdä eikä purkaa.
       if(zoom < POINTER_MINZOOM) {
         centerPointerEl.classList.add('hidden');
+        clearPointerSelection();
       } else {
         centerPointerEl.classList.remove('hidden');
       }
@@ -14843,7 +14956,7 @@
               divider.style.display='none';
               setActionBtnText('Siirrä kursori pysäköintialueelle'); btn.classList.remove('active');
               gpsWarning.classList.add('visible');
-              sheet.style.transition='transform 0.24s cubic-bezier(0.32,0.72,0,1)';
+              sheet.style.transition='transform 0.32s cubic-bezier(0.32,0.72,0,1)';
               sheet.style.transform='translateY(calc(100% - 90px))';
               currentY = sheet.offsetHeight - 90;
             }
@@ -14852,6 +14965,7 @@
       }
       
       if(zoom < POINTER_MINZOOM){
+        clearPointerSelection();
         summaryHeader.textContent=''; summaryType.textContent='';
         summaryOperator.textContent=''; details.innerHTML='';
         divider.style.display='none';
@@ -14891,10 +15005,10 @@
         btn.classList.add('active');
         gpsWarning.classList.remove('visible');
         // Don't override the sheet position while a directions request is in
-        // flight — onSheetNavBtnClick collapses the sheet to 130px and any
+        // flight — onSheetNavBtnClick collapses the sheet to 153px and any
         // re-snap to 150px from here cancels its animation.
         if (!_navigationInProgress) {
-          sheet.style.transition = 'transform 0.24s cubic-bezier(0.32,0.72,0,1)';
+          sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
           sheet.style.transform = 'translateY(calc(100% - 150px))';
           currentY = sheet.offsetHeight - 150;
         }
@@ -14910,7 +15024,7 @@
         setActionBtnText('Siirrä kursori pysäköintialueelle');
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
-        sheet.style.transition = 'transform 0.24s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform = 'translateY(calc(100% - 90px))';
         currentY = sheet.offsetHeight - 90;
         updateNavBtnVisibility();
@@ -15448,7 +15562,7 @@
       if (top === _ahLastTop) return;
       _ahLastTop = top;
       const visibleH  = Math.max(0, window.innerHeight - top);  // sheet height on screen
-      // The sheet's automatic resting heights are 60 / 90 / 130 px (peek,
+      // The sheet's automatic resting heights are 60 / 90 / 150 / 153 px (peek,
       // no area, area selected). The fade used to begin at exactly the mid step, i.e. right
       // ON the "area selected" height — so the pill was left slightly translucent
       // whenever the P-marker sat on an area. Start well clear of all of them:
@@ -15468,13 +15582,13 @@
 
     // ── One morphing card: pill ⇄ medium ⇄ large ─────────────────────────
     // The card is a single element that animates its own width/height/radius
-    // between the three shapes. CSS cannot transition to height:auto, so the
-    // target box is measured here and written as px.
+    // between the two shapes (pilleri ja iso kortti). CSS cannot transition to
+    // height:auto, so the target box is measured here and written as px.
     const AH_PILL_H = 38;    // pill height, matches #ajanhetki-pill
     const AH_PAD_B  = 12;    // #ajanhetki-float bottom padding
     const AH_MAX_W  = 480;   // widest the expanded card ever gets
     let ajanhetkiState = 'collapsed';   // 'collapsed' | 'expanded'
-    let ajanhetkiSize  = 'medium';      // 'medium' | 'large'  (while expanded)
+    let ajanhetkiSize  = 'large';       // vain 'large' — väliporras poistettu käytöstä
     // One-per-session intro: the first time the filter sheet closes with a
     // manually set reference time, the card opens LARGE so the user sees what
     // the map is now showing; every later close in the same session goes
@@ -15548,7 +15662,7 @@
       ajanhetkiState = 'expanded';
       card.classList.remove('collapsed');
       card.classList.add('expanded');
-      setAjanhetkiSize('medium');   // opens at the medium size
+      setAjanhetkiSize('large');   // vain kaksi muotoa: pilleri ja iso kortti
     }
     function collapseAjanhetkiCard(){
       const card = document.getElementById('ajanhetki-card');
@@ -15583,6 +15697,26 @@
       // × on the pill dismisses the card entirely and returns the map to live
       // ("nykyhetki") colouring, so the map is never left tinted for a hidden
       // manual time.
+      // − / + siirtävät ajanhetkeä yhden rulla-askeleen (30 min) kerrallaan.
+      // Arvo pidetään samoissa rajoissa kuin rullassa, ja rullan kiertokulma
+      // päivitetään mukana, jottei rulla hyppää seuraavalla vedolla.
+      function stepRefTime(dir){
+        stopRefInertia();
+        const before = refRoundedMinutes();
+        const next = Math.max(0, Math.min(before + dir * REF_STEP_MIN, REF_MAX_MIN));
+        if (next === before && (next === 0 || next === REF_MAX_MIN)) return;
+        refDrumPhase += (next - refMinutes) * REF_PX_PER_MIN * RADIANS_PER_PX;
+        refMinutes = next;
+        refTimeManual = true;
+        drawRefDrum();
+        refreshRefFilter();
+        updateRefTimeUI();
+      }
+      const stepMinus = document.getElementById('ajanhetki-step-minus');
+      const stepPlus  = document.getElementById('ajanhetki-step-plus');
+      if (stepMinus) stepMinus.addEventListener('click', (e) => { e.stopPropagation(); stepRefTime(-1); });
+      if (stepPlus)  stepPlus.addEventListener('click',  (e) => { e.stopPropagation(); stepRefTime(+1); });
+
       const cl = document.getElementById('ajanhetki-dismiss');
       if (cl) cl.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -15654,10 +15788,7 @@
         void card.offsetWidth;        // flush, so the snap below actually animates
         const TH = 26;
         if (dy > TH) {
-          if (ajanhetkiSize === 'large') setAjanhetkiSize('medium');
-          else collapseAjanhetkiCard();          // medium → shrinks back into the pill
-        } else if (dy < -TH && ajanhetkiSize === 'medium') {
-          setAjanhetkiSize('large');
+          collapseAjanhetkiCard();               // iso → kutistuu suoraan pilleriksi
         } else {
           applyAjanhetkiGeometry();              // below the threshold: settle back
         }
@@ -16002,7 +16133,7 @@
       setTimeout(() => {
         const targetY = (_sheetYBeforeParking != null)
           ? _sheetYBeforeParking
-          : (sheet.offsetHeight - 130);
+          : (sheet.offsetHeight - 153);
         sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = `translateY(${targetY}px)`;
         currentY = targetY;
@@ -17214,9 +17345,9 @@
 
     // Click handler for the sheet's top-right button. Sequence:
     //  1. Set _navigationInProgress so centerCheck won't re-snap the sheet
-    //     to 150px (which would cancel our 130px collapse animation).
+    //     to 150px (which would cancel our 153px collapse animation).
     //  2. Drop the destination pin on the map at the P-marker's location.
-    //  3. Collapse the sheet to 130px with a smooth animation.
+    //  3. Collapse the sheet to 153px with a smooth animation.
     //  4. Open the maps app picker AFTER the animation finishes (~500ms).
     let _navigationInProgress = false;
     let _navigationFlagTimer  = null;
@@ -17259,11 +17390,11 @@
       }
       hideSheetMedallion();
 
-      // 3) Collapse the sheet to its 130px resting position.
+      // 3) Collapse the sheet to its 153px resting position.
       requestAnimationFrame(() => {
-        const target = sheet.offsetHeight - 130;
-        sheet.style.transition = 'transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94)';
-        sheet.style.transform  = 'translateY(calc(100% - 130px))';
+        const target = sheet.offsetHeight - 153;
+        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transform  = 'translateY(calc(100% - 153px))';
         currentY = target;
         if (typeof sheetBackdrop !== 'undefined' && sheetBackdrop) {
           sheetBackdrop.style.opacity = '0';
@@ -17766,7 +17897,7 @@
       const zi = document.getElementById('zoom-indicator');
       if (typeof ty === 'number') {
         const _sh = _sheetH || sheet.clientHeight, _wh = _winH || window.innerHeight;
-        const fadeStart = _sh - 130;                     // fade begins once the sheet grows past 153px
+        const fadeStart = _sh - 153;                     // fade begins once the sheet grows past 153px
         const fullOpen  = _sh - _wh * 0.8;               // fully open
         const o = Math.max(0, Math.min(1, (ty - fullOpen) / (fadeStart - fullOpen)));
         if (el) el.style.opacity = o;
@@ -17963,7 +18094,7 @@
         if(!wasDrag){
           if(_fcOver !== 0 && filterInner){
             // The content was over-pulled past the bottom → spring it back to rest.
-            filterInner.style.transition = 'transform 0.42s cubic-bezier(0.22,1,0.36,1)';
+            filterInner.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
             filterInner.style.transform = 'translateY(0)';
             _fcOver = 0;
             return;
@@ -18081,7 +18212,7 @@
   </div>
 
   <!-- Pysäköintikiekko asetettu -vahvistusbanneri -->
-  <div id="disc-confirm-banner" style="position:fixed;left:50%;top:24px;transform:translateX(-50%) translateY(-160%);display:flex;align-items:center;gap:8px;background:#1faa4a;color:white;padding:14px 22px;border-radius:12px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;box-shadow:0 6px 20px rgba(0,0,0,0.28);z-index:130;transition:transform 0.45s cubic-bezier(0.22,1,0.36,1);pointer-events:none;white-space:nowrap;">✓ Pysäköintikiekko asetettu</div>
+  <div id="disc-confirm-banner" style="position:fixed;left:50%;top:24px;transform:translateX(-50%) translateY(-160%);display:flex;align-items:center;gap:8px;background:#1faa4a;color:white;padding:14px 22px;border-radius:12px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;box-shadow:0 6px 20px rgba(0,0,0,0.28);z-index:130;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);pointer-events:none;white-space:nowrap;">✓ Pysäköintikiekko asetettu</div>
 
   <div id="admin-overlay" class="settings-detail-overlay" style="z-index:102;">
     <div class="overlay-header" style="justify-content:space-between;">
@@ -18166,8 +18297,8 @@
     <div id="editor-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:13;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 22px rgba(0,0,0,0.18);padding-bottom:max(14px,env(safe-area-inset-bottom));transform:translateY(400px);will-change:transform;">
       <div id="editor-sheet-handle" style="width:100%;padding:10px 0 8px 0;display:flex;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;">
         <div id="editor-sheet-chevron" style="position:relative;width:44px;height:11px;">
-          <span style="position:absolute;top:3px;left:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:left center;transition:transform 0.22s ease;"></span>
-          <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.22s ease;"></span>
+          <span style="position:absolute;top:3px;left:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:left center;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);"></span>
+          <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);"></span>
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 18px 8px;font-family:Arial,sans-serif;font-size:13px;color:#555;">
