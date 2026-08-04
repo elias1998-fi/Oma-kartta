@@ -263,7 +263,7 @@
       width: 48px;
       height: 48px;
       overflow: hidden;
-      transition: height 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: height 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     
     #left-menu-pill.expanded {
@@ -336,7 +336,7 @@
       z-index: 100;
       display: flex; flex-direction: column;
       transform: translateX(-100%);
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     /* The panel's shadow lives on a pseudo-element so it can FADE IN during
        the slide. On the panel box itself it was already on screen while the
@@ -350,7 +350,7 @@
       inset: 0;
       box-shadow: 4px 0 24px rgba(0,0,0,0.12);
       opacity: 0;
-      transition: opacity 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: opacity 0.38s cubic-bezier(0.32,0.72,0,1);
       pointer-events: none;
     }
     #profile-overlay.open { transform: translateX(0); }
@@ -433,7 +433,7 @@
       box-shadow: 0 3px 12px rgba(0,0,0,0.22);
       opacity: 0; transform: translate(0,0) scale(0.2);
       pointer-events: none;
-      transition: transform 0.32s cubic-bezier(0.34,1.45,0.55,1), opacity 0.22s ease;
+      transition: transform 0.38s cubic-bezier(0.34,1.45,0.55,1), opacity 0.22s ease;
     }
     #sb-close { transition-delay: 0.05s; }
     .brand-bracket-tl {
@@ -470,7 +470,7 @@
       z-index: 100;
       display: flex; flex-direction: column;
       transform: translateX(-100%);
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     #search-overlay.open, #plus-overlay.open { transform: translateX(0); }
     
@@ -716,7 +716,7 @@
     /* "Muut" expander: chevron rotates to point down when section is open;
        the inner items collapse to height 0 when closed. */
     .settings-expander .settings-item-chevron {
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-expander.open .settings-item-chevron {
       transform: rotate(90deg);
@@ -724,7 +724,7 @@
     .settings-collapsible {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: max-height 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-collapsible.open {
       max-height: 400px; /* big enough to fit two items; clipped if more */
@@ -1349,7 +1349,7 @@
     .settings-lang-chevron {
       font-size: 18px;
       color: #bbb;
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-lang-header.open .settings-lang-chevron {
       transform: rotate(90deg);
@@ -1357,7 +1357,7 @@
     .settings-lang-options {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: max-height 0.38s cubic-bezier(0.32,0.72,0,1);
       background: #fafafa;
     }
     .settings-lang-options.open { max-height: 220px; }
@@ -1396,7 +1396,7 @@
     .settings-mapstyle-chevron {
       font-size: 18px;
       color: #bbb;
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-mapstyle-header.open .settings-mapstyle-chevron {
       transform: rotate(90deg);
@@ -1404,7 +1404,7 @@
     .settings-mapstyle-options {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: max-height 0.38s cubic-bezier(0.32,0.72,0,1);
       background: #fafafa;
     }
     .settings-mapstyle-options.open { max-height: 220px; }
@@ -1483,7 +1483,7 @@
       display: flex;
       flex-direction: column;
       transform: translateX(100%);
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-detail-overlay.open {
       transform: translateX(0);
@@ -1829,7 +1829,7 @@
       transition: border-color 0.15s ease;
     }
     .op-dropdown.open .op-trigger { border-color: #0C0243; }
-    .op-chevron { color: #888; transition: transform 0.32s cubic-bezier(0.32,0.72,0,1); }
+    .op-chevron { color: #888; transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); }
     .op-dropdown.open .op-chevron { transform: rotate(180deg); }
     .op-list { display: none; margin-top: 8px; }
     .op-dropdown.open .op-list { display: block; }
@@ -1922,7 +1922,7 @@
       gap: 12px;
       opacity: 0;
       transform: translateY(-12px);
-      transition: opacity 0.3s ease, transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: opacity 0.3s ease, transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     #free-terms-box.visible { display: flex; }
     #free-terms-box.shown { opacity: 1; transform: translateY(0); }
@@ -1932,7 +1932,7 @@
       flex-shrink: 0; width: 28px; height: 28px; border: none; background: #f0f0f0;
       border-radius: 50%; cursor: pointer; font-size: 16px; color: #555; line-height: 1;
       display: flex; align-items: center; justify-content: center;
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     #free-terms-arrow.expanded { transform: rotate(180deg); }
     #free-terms-details {
@@ -1971,7 +1971,7 @@
       background: rgba(127, 31, 137, 0.85);
       border: 1.5px solid #0C0243;
       border-radius: 8px;
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
       z-index: 0;
     }
     .seg-option {
@@ -2086,7 +2086,7 @@
       display: flex;
       flex-direction: column;
       transform: translateX(-100%);
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     #gps-info-overlay.open {
       transform: translateX(0);
@@ -2119,14 +2119,14 @@
       margin-bottom: 0;
     }
     
-    #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.32,0.72,0,1); }
+    #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); }
     #parking-overlay.open { transform: translateX(0); }
     #parking-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
     #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
     /* Yrityslaskutus chain — same slide-in pattern as #parking-overlay, but
        stacked above it (110/111) since it opens from the payment picker. */
-    #costcenter-overlay, #workcomment-overlay { position: fixed; inset: 0; background: #f2f3f5; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.32,0.72,0,1); }
+    #costcenter-overlay, #workcomment-overlay { position: fixed; inset: 0; background: #f2f3f5; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); }
     #costcenter-overlay { z-index: 110; }
     #workcomment-overlay { z-index: 111; }
     #costcenter-overlay.open, #workcomment-overlay.open { transform: translateX(0); }
@@ -2288,7 +2288,7 @@
       display: none;
       flex-direction: column;
       transform: translateX(100%);
-      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     #parking-summary-overlay.open {
       display: flex;
@@ -3653,7 +3653,7 @@
     width: 48px; height: 48px;
     background: #0C0243; border-radius: 50%;
     pointer-events: none; z-index: 0;
-    transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+    transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     opacity: 0;
   }
   #left-menu-pill.expanded #pill-ball { opacity: 1; }
@@ -3684,9 +3684,9 @@
     <div id="pill-ball"></div>
     <button class="pill-btn" id="menu-btn">
       <svg id="burger-svg" viewBox="0 0 24 24" fill="none" stroke="#0C0243" stroke-width="3.5" stroke-linecap="round">
-        <line id="bl-top" x1="2" y1="6" x2="22" y2="6" style="transform-origin:12px 6px;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1),opacity 0.32s;"/>
-        <line id="bl-mid" x1="2" y1="12" x2="22" y2="12" style="transform-origin:12px 12px;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1),opacity 0.32s;"/>
-        <line id="bl-bot" x1="2" y1="18" x2="22" y2="18" style="transform-origin:12px 18px;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1),opacity 0.32s;"/>
+        <line id="bl-top" x1="2" y1="6" x2="22" y2="6" style="transform-origin:12px 6px;transition:transform 0.38s cubic-bezier(0.32,0.72,0,1),opacity 0.38s;"/>
+        <line id="bl-mid" x1="2" y1="12" x2="22" y2="12" style="transform-origin:12px 12px;transition:transform 0.38s cubic-bezier(0.32,0.72,0,1),opacity 0.38s;"/>
+        <line id="bl-bot" x1="2" y1="18" x2="22" y2="18" style="transform-origin:12px 18px;transition:transform 0.38s cubic-bezier(0.32,0.72,0,1),opacity 0.38s;"/>
       </svg>
     </button>
     
@@ -4312,7 +4312,7 @@
   <!-- Location-edit panel: slides up over the lower part of the support chat
        (the chat above stays visible) so the user can drag the map to set a
        corrected position for the reported area. -->
-  <div id="loc-edit-panel" style="display:none;position:fixed;left:0;right:0;bottom:0;top:40%;z-index:9997;background:#fff;flex-direction:column;transform:translateY(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);box-shadow:0 -4px 22px rgba(0,0,0,0.18);">
+  <div id="loc-edit-panel" style="display:none;position:fixed;left:0;right:0;bottom:0;top:40%;z-index:9997;background:#fff;flex-direction:column;transform:translateY(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);box-shadow:0 -4px 22px rgba(0,0,0,0.18);">
     <div id="loc-edit-map" style="flex:1;position:relative;overflow:hidden;">
       <div id="loc-edit-center-pin" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);z-index:5;pointer-events:none;">
         <svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg" style="display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));">
@@ -4727,7 +4727,7 @@
   </div>
 
   <!-- Sub-overlay: Lisää uusi ilmainen pysäköintialue -->
-  <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);">
+  <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
     <div style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;">
       <div id="area-map" style="flex:1;"></div>
       <!-- Takaisin-pallura (VAIN tässä näkymässä): sama paikka ja ulkoasu kuin
@@ -4761,8 +4761,8 @@
           <!-- Chevron-kahva Ajanhetki-pillerin tyyliin: kaksi kallistettua palkkia.
                Suunta vaihtuu tilan mukaan (∧ kiinni = vedä ylös, ∨ auki = vedä alas). -->
           <div id="area-sheet-chevron" style="position:relative;width:44px;height:11px;">
-            <span style="position:absolute;top:3px;left:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:left center;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);"></span>
-            <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);"></span>
+            <span style="position:absolute;top:3px;left:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:left center;transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);"></span>
+            <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);"></span>
           </div>
         </div>
         <!-- "Työkalut" samalla fontilla/fonttikoolla ja samassa kohdassa sheetiä
@@ -4825,7 +4825,7 @@
   </div>
 
   <!-- Area details overlay -->
-  <div id="area-details-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:120;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);">
+  <div id="area-details-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:120;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAreaDetails()">←</button>
       <div class="overlay-title">Lisää pysäköintialueen tiedot</div>
@@ -4933,7 +4933,7 @@
   </div>
 
   <!-- Toast notification -->
-  <div id="submit-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:32px 32px 28px 32px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.32s cubic-bezier(0.34,1.56,0.64,1);">
+  <div id="submit-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:32px 32px 28px 32px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.38s cubic-bezier(0.34,1.56,0.64,1);">
     <div style="font-size:18px;line-height:1.6;font-weight:500;">Kiitos ilmoituksestasi. Tiimimme varmentaa paikan tiedot sekä lisää uuden alueen kartalle.</div>
     <!-- Banneri pysyy näytöllä; käyttäjä valitsee jatkon. -->
     <div style="display:flex;gap:12px;margin-top:24px;">
@@ -4943,7 +4943,7 @@
   </div>
 
   <!-- Generic toast — message is set at runtime via showCustomToast(text, ms) -->
-  <div id="custom-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:36px 36px 32px 36px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.32s cubic-bezier(0.34,1.56,0.64,1);text-align:center;">
+  <div id="custom-toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.92);z-index:9998;background:#0C0243;color:white;border-radius:22px;padding:36px 36px 32px 36px;box-shadow:0 12px 48px rgba(0,0,0,0.45);font-family:Arial,sans-serif;display:none;width:min(88vw,360px);opacity:0;transition:opacity 0.35s ease,transform 0.38s cubic-bezier(0.34,1.56,0.64,1);text-align:center;">
     <div id="custom-toast-msg" style="font-size:20px;line-height:1.5;font-weight:600;"></div>
   </div>
 
@@ -5079,7 +5079,7 @@
     </div>
   </div>
 
-  <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);">
+  <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeCommentAreas()">←</button>
       <div class="overlay-title">Kommentoi alueita</div>
@@ -6613,7 +6613,7 @@
     function areaSheetSetY(y, animate) {
       const sheet = document.getElementById('area-sheet'); if (!sheet) return;
       _areaSheetY = y;
-      sheet.style.transition = animate ? 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+      sheet.style.transition = animate ? 'transform 0.38s cubic-bezier(0.32,0.72,0,1)' : 'none';
       sheet.style.transform = 'translateY(' + y + 'px)';
     }
     function updateAreaSheetChevron() {
@@ -8564,7 +8564,7 @@
     function adminSheetSetY(y, animate) {
       const s=document.getElementById('admin-detail-sheet'); if(!s) return;
       _adminSheetY=y;
-      s.style.transition = animate ? 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+      s.style.transition = animate ? 'transform 0.38s cubic-bezier(0.32,0.72,0,1)' : 'none';
       s.style.transform = 'translateY(' + y + 'px)';
       adminUpdateOsmOpacity(y);
       // Kartan pimennys sheetin liikkeen mukaan — sama kaava kuin perusnäkymän
@@ -8574,7 +8574,7 @@
         const collapsed = adminSheetCollapsedY(), fullOpen = adminSheetExpandedY();
         const denom = (collapsed - fullOpen) || 1;
         const openProgress = (collapsed - y) / denom;   // 0 alhaalla … 1 täysin auki
-        bd.style.transition = animate ? 'opacity 0.32s ease' : 'none';
+        bd.style.transition = animate ? 'opacity 0.38s ease' : 'none';
         bd.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
       }
     }
@@ -8974,7 +8974,7 @@
       // Open at 153px from bottom (mid step). Bounds match the three-level snap below
       // when the user drags: max = 80% of viewport, mid = 153px, min = 75px from bottom.
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      bs.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
       bs.style.transform  = 'translateY(calc(100% - 153px))';
       currentY = bs.offsetHeight - 153;
       masterFeatureLocked = true;
@@ -8996,7 +8996,7 @@
         setSheetMedallion(DISC_BADGE_SVG, true);
         showCenterBadge(null);
       } else if (areaCode) {
-        setSheetMedallion(areaCode, false);
+        setSheetMedallion('Alue ' + areaCode, false);
         showCenterBadge(areaCode);
       } else {
         hideSheetMedallion();
@@ -9015,7 +9015,7 @@
       var _rb = document.getElementById('sheet-report-btn'); if (_rb) _rb.style.display = 'block';
       // Auto-open to 153px from bottom when P-marker is on area
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      bs.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
       bs.style.transform  = 'translateY(calc(100% - 153px))';
       currentY = bs.offsetHeight - 153;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
@@ -9035,12 +9035,16 @@
       el.style.display = 'inline-block';
       if (icon) {
         el.style.background = 'transparent';
+        el.style.border = 'none';
         el.style.padding = '0';
         el.style.borderRadius = '0';
         el.style.color = '#111';
       } else {
-        el.style.background = '#0C0243';
-        el.style.color = 'white';
+        // Sama sävymaailma kuin valitussa latauspistetiilessä (.charger-type-tile.selected):
+        // vaalean sininen täyttö, tummansininen 1px reunus ja tummansininen teksti.
+        el.style.background = '#f4f4ff';
+        el.style.color = '#0C0243';
+        el.style.border = '1px solid #0C0243';
         el.style.fontSize = '12px';
         el.style.fontWeight = 'bold';
         el.style.padding = '2px 8px';
@@ -9072,7 +9076,7 @@
       // Collapse the on-map P-marker back to its plain pin form
       hideCenterBadge();
       const bs = document.getElementById('bottom-sheet');
-      bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      bs.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
       bs.style.transform  = 'translateY(calc(100% - 90px))';
       currentY = bs.offsetHeight - 90;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
@@ -9651,7 +9655,7 @@
       // Top-left sheet badge = the parking-garage icon (like the charging badge).
       setSheetMedallion(
         '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        '<span style="vertical-align:middle;margin-left:5px;color:#111;font-size:14px;font-weight:800;letter-spacing:0.3px;">Tilaa</span>', true);
+        '<span style="vertical-align:middle;margin-left:5px;color:#111;font-size:14px;font-weight:800;letter-spacing:0.3px;">Täynnä</span>', true);
       document.getElementById('gps-warning').classList.remove('visible');
       if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
@@ -9922,11 +9926,11 @@
       if (_bs && _noArea && !inNav && !inFilter) {
         const _t = _bs.style.transform || '';
         if (zoom < POINTER_MINZOOM && !_t.includes('- 60px')) {
-          _bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+          _bs.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
           _bs.style.transform = 'translateY(calc(100% - 60px))';
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
         } else if (zoom >= POINTER_MINZOOM && (_t === '' || _t.includes('- 60px'))) {
-          _bs.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+          _bs.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
           _bs.style.transform = 'translateY(calc(100% - 90px))';
           currentY = _bs.offsetHeight - 90;
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
@@ -10379,7 +10383,7 @@
     function editorSheetSetY(y, animate) {
       const sheet = document.getElementById('editor-sheet'); if (!sheet) return;
       _editorSheetY = y;
-      sheet.style.transition = animate ? 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+      sheet.style.transition = animate ? 'transform 0.38s cubic-bezier(0.32,0.72,0,1)' : 'none';
       sheet.style.transform = 'translateY(' + y + 'px)';
     }
     function updateEditorSheetChevron() {
@@ -12828,7 +12832,7 @@
         if (!moved) { toggleSupportSatellites(); return; }   // a tap toggles the sector buttons
         const w = b.offsetWidth, r = b.getBoundingClientRect();
         const snapLeft = (r.left + w / 2) < window.innerWidth / 2;
-        b.style.transition = 'left 0.32s cubic-bezier(0.32,0.72,0,1)';
+        b.style.transition = 'left 0.38s cubic-bezier(0.32,0.72,0,1)';
         b.style.left = (snapLeft ? MARGIN : (window.innerWidth - w - MARGIN)) + 'px';
       }
       b.addEventListener('touchstart', onDown, { passive: true });
@@ -14094,7 +14098,7 @@
       if(!ov){
         ov = document.createElement('div');
         ov.id = 'charging-overlay';
-        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:130;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);';
+        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:130;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);';
         document.body.appendChild(ov);
       }
       const headerHtml =
@@ -14209,7 +14213,7 @@
       if(!ov){
         ov = document.createElement('div');
         ov.id = 'connector-picker-overlay';
-        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:129;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);';
+        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:129;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);';
         document.body.appendChild(ov);
       }
       _connectorPickerOpen = true;
@@ -14639,7 +14643,7 @@
       sheetFilter.classList.add('visible');
       sizeFilterSheet();
       if(window._trackFilterScrollbar) window._trackFilterScrollbar();
-      sheet.style.transition='transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      sheet.style.transition='transform 0.38s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform=`translateY(${window.innerHeight*0.6}px)`;
       currentY=window.innerHeight*0.6;
       btnContainer.classList.add('hidden');
@@ -14956,7 +14960,7 @@
               divider.style.display='none';
               setActionBtnText('Siirrä kursori pysäköintialueelle'); btn.classList.remove('active');
               gpsWarning.classList.add('visible');
-              sheet.style.transition='transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+              sheet.style.transition='transform 0.38s cubic-bezier(0.32,0.72,0,1)';
               sheet.style.transform='translateY(calc(100% - 90px))';
               currentY = sheet.offsetHeight - 90;
             }
@@ -15008,7 +15012,7 @@
         // flight — onSheetNavBtnClick collapses the sheet to 153px and any
         // re-snap to 150px from here cancels its animation.
         if (!_navigationInProgress) {
-          sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+          sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
           sheet.style.transform = 'translateY(calc(100% - 150px))';
           currentY = sheet.offsetHeight - 150;
         }
@@ -15024,7 +15028,7 @@
         setActionBtnText('Siirrä kursori pysäköintialueelle');
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
-        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform = 'translateY(calc(100% - 90px))';
         currentY = sheet.offsetHeight - 90;
         updateNavBtnVisibility();
@@ -16134,7 +16138,7 @@
         const targetY = (_sheetYBeforeParking != null)
           ? _sheetYBeforeParking
           : (sheet.offsetHeight - 153);
-        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = `translateY(${targetY}px)`;
         currentY = targetY;
         // Sync the map-dimming backdrop to the restored sheet position (same
@@ -16437,7 +16441,7 @@
         const overlay = document.getElementById('parking-overlay');
         overlay.classList.remove('open');
         btnContainer.classList.remove('hidden');
-        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = 'translateY(calc(100% - 60px))';
         currentY = sheet.offsetHeight - 60;
         showActiveParkingBanner();
@@ -16465,7 +16469,7 @@
       overlay.classList.remove('open');
       overlay.classList.remove('extending-mode');
       btnContainer.classList.remove('hidden');
-      sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
 
@@ -16589,7 +16593,7 @@
       document.getElementById('parking-summary-overlay').classList.remove('open');
       btnContainer.classList.remove('hidden');
       // Sheet stays at its minimal position — no active session
-      sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform  = 'translateY(calc(100% - 60px))';
       currentY = sheet.offsetHeight - 60;
     }
@@ -17393,7 +17397,7 @@
       // 3) Collapse the sheet to its 153px resting position.
       requestAnimationFrame(() => {
         const target = sheet.offsetHeight - 153;
-        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = 'translateY(calc(100% - 153px))';
         currentY = target;
         if (typeof sheetBackdrop !== 'undefined' && sheetBackdrop) {
@@ -17479,7 +17483,9 @@
       const isCharging = !!(typeEl && /Sähkölatauspiste/.test(typeEl.textContent || ''));
       // The charging badge now shows availability ("Tilaa"/"Täynnä"), not
       // an area code — so there's no code to embed in the share link.
-      const code     = isCharging ? '' : (codeEl && codeEl.textContent || '').trim();
+      // Badge näyttää nyt muodon "Alue 1"; jaettavaan linkkiin tarvitaan
+      // pelkkä numero, joten etuliite riisutaan.
+      const code     = isCharging ? '' : (codeEl && codeEl.textContent || '').trim().replace(/^Alue\s*/i, '');
 
       // Build a link back to the app itself, encoded as URL parameters.
       // `ll`, `z`, `c` are short keys so the URL stays compact enough to
@@ -17850,7 +17856,7 @@
 
     let startY=0,startTranslate=0,lastY=0,lastTime=0,velocity=0,isDragging=false;
     function snapTo(t){
-      sheet.style.transition='transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      sheet.style.transition='transform 0.38s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
 
@@ -18094,7 +18100,7 @@
         if(!wasDrag){
           if(_fcOver !== 0 && filterInner){
             // The content was over-pulled past the bottom → spring it back to rest.
-            filterInner.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+            filterInner.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
             filterInner.style.transform = 'translateY(0)';
             _fcOver = 0;
             return;
@@ -18212,7 +18218,7 @@
   </div>
 
   <!-- Pysäköintikiekko asetettu -vahvistusbanneri -->
-  <div id="disc-confirm-banner" style="position:fixed;left:50%;top:24px;transform:translateX(-50%) translateY(-160%);display:flex;align-items:center;gap:8px;background:#1faa4a;color:white;padding:14px 22px;border-radius:12px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;box-shadow:0 6px 20px rgba(0,0,0,0.28);z-index:130;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);pointer-events:none;white-space:nowrap;">✓ Pysäköintikiekko asetettu</div>
+  <div id="disc-confirm-banner" style="position:fixed;left:50%;top:24px;transform:translateX(-50%) translateY(-160%);display:flex;align-items:center;gap:8px;background:#1faa4a;color:white;padding:14px 22px;border-radius:12px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;box-shadow:0 6px 20px rgba(0,0,0,0.28);z-index:130;transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);pointer-events:none;white-space:nowrap;">✓ Pysäköintikiekko asetettu</div>
 
   <div id="admin-overlay" class="settings-detail-overlay" style="z-index:102;">
     <div class="overlay-header" style="justify-content:space-between;">
@@ -18297,8 +18303,8 @@
     <div id="editor-sheet" style="position:absolute;left:0;right:0;bottom:0;z-index:13;background:white;border-radius:20px 20px 0 0;box-shadow:0 -2px 22px rgba(0,0,0,0.18);padding-bottom:max(14px,env(safe-area-inset-bottom));transform:translateY(400px);will-change:transform;">
       <div id="editor-sheet-handle" style="width:100%;padding:10px 0 8px 0;display:flex;justify-content:center;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;">
         <div id="editor-sheet-chevron" style="position:relative;width:44px;height:11px;">
-          <span style="position:absolute;top:3px;left:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:left center;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);"></span>
-          <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);"></span>
+          <span style="position:absolute;top:3px;left:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:left center;transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);"></span>
+          <span style="position:absolute;top:3px;right:0;width:24px;height:4px;border-radius:2px;background:#c4c8ce;transform-origin:right center;transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);"></span>
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 18px 8px;font-family:Arial,sans-serif;font-size:13px;color:#555;">
