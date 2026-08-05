@@ -9239,24 +9239,13 @@
         });
         // Group highlight line — thick dark, toggled via setFilter
         map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'line-color':'#0C0243', 'line-width': 1.25, 'line-opacity': hlOpacity('groupLine') },
+          paint:{ 'line-color': groupLineColor(), 'line-width': 1.25, 'line-opacity': hlOpacity('groupLine') },
           filter:['==', ['get','id'], '__none__']
         });
         // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
         map.addLayer({ id:'master-poly-group-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{ 'fill-opacity': hlOpacity('groupFill'),
-            'fill-color': ['match', ['get','source'],
-              'community',          '#7F1F89',
-              'hel_ilmainen_pitka', '#7F1F89',
-              'hel_ilmainen_lyhyt', '#7F1F89',
-              'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
-              'hel_kertamaksu_1h',  '#1266f1',
-              'hel_kertamaksu_2h',  '#1266f1',
-              'hel_kertamaksu_4h',  '#1266f1',
-              'hel_maksullinen_ei_tunnusta',        '#1266f1',
-              'hel_kertamaksu_1h_ei_tunnusta',      '#1266f1',
-              '#1266f1'
-            ]
+            'fill-color': groupFillColor()
           },
           filter:['==', ['get','id'], '__none__']
         }, 'master-poly-group-line');
@@ -9403,6 +9392,34 @@
       return out;
     }
 
+    // Ryhmäkorostuksen (samat ominaisuustiedot kuin p-merkin alla oleva alue)
+    // värit. Vaaleassa tyylissä tummansininen kuten ennen. Tummassa tyylissä
+    // tummansininen sulautuu taustaan, joten ryhmä saa alueiden OMAN värin —
+    // sininen maksullisille, violetti ilmaisille. Läpinäkyvyysrampit (hlStops)
+    // ovat samat molemmissa, samoin p-merkin alla olevan alueen punainen.
+    const GROUP_FILL_OWN = ['match', ['get','source'],
+      'community',          '#7F1F89',
+      'hel_ilmainen_pitka', '#7F1F89',
+      'hel_ilmainen_lyhyt', '#7F1F89',
+      'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
+      'hel_kertamaksu_1h',  '#1266f1',
+      'hel_kertamaksu_2h',  '#1266f1',
+      'hel_kertamaksu_4h',  '#1266f1',
+      'hel_maksullinen_ei_tunnusta',        '#1266f1',
+      'hel_kertamaksu_1h_ei_tunnusta',      '#1266f1',
+      '#1266f1'
+    ];
+    const GROUP_LINE_OWN = ['match', ['get','source'],
+      'community',          '#611868',
+      'hel_ilmainen_pitka', '#611868',
+      'hel_ilmainen_lyhyt', '#611868',
+      'hel_sallittu_kiellon_ulkopuolella', '#611868',
+      '#0B49D0'
+    ];
+    const GROUP_CLR_LIGHT = '#0C0243';
+    function groupFillColor(){ return mapStyleChoice === 'dark' ? GROUP_FILL_OWN : GROUP_CLR_LIGHT; }
+    function groupLineColor(){ return mapStyleChoice === 'dark' ? GROUP_LINE_OWN : GROUP_CLR_LIGHT; }
+
     function applyHoverHighlight(props) {
       if (!map.getLayer('master-poly-hover-fill')) return;
       const hovId = props.id;   // keep native type: number for paid areas, string for free
@@ -9414,7 +9431,6 @@
       const _isFree  = _freeSrc.includes(props.source);
       const _lineClr = _isFree ? '#611868' : '#0B49D0';
       const _hoverFillClr = '#ff1744';   // hovered area → red (as before)
-      const _groupFillClr = '#0C0243';   // same-group areas → black (as before)
       // "Iso aluekokonaisuus" (large_area): p-merkin alla EI täyttöä lainkaan —
       // ei punaista eikä sinistä, vain punainen reuna. Punainen hover-täyttö
       // suodatetaan tältä alueelta kokonaan pois (ei hetkellistä vilahdusta), ja
@@ -9459,14 +9475,14 @@
       const _groupIds = _isLarge ? [] : groupMinusHov;
       // Subtle blue fill on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
-        map.setPaintProperty('master-poly-group-fill', 'fill-color', _groupFillClr);
+        map.setPaintProperty('master-poly-group-fill', 'fill-color', groupFillColor());
         map.setPaintProperty('master-poly-group-fill', 'fill-opacity', hlOpacity('groupFill'));
         map.setFilter('master-poly-group-fill',
           _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
         );
       }
       // Border on OTHER same-category areas → black, fully opaque
-      map.setPaintProperty('master-poly-group-line', 'line-color', _groupFillClr);
+      map.setPaintProperty('master-poly-group-line', 'line-color', groupLineColor());
       map.setPaintProperty('master-poly-group-line', 'line-opacity', hlOpacity('groupLine'));
       map.setFilter('master-poly-group-line',
         _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
