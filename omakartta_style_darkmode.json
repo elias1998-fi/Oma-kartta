@@ -1544,7 +1544,21 @@
         ]
       ],
       "paint": {
-        "line-color": "rgb(85,85,165)",
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#7a8192",
+          10,
+          "#545a6b",
+          13,
+          "#2a2f3b"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -2017,18 +2031,19 @@
         "line-cap": "butt"
       },
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              11,
-              "rgba(23,37,108,0)"
-            ],
-            [
-              11.5,
-              "rgb(23,37,108)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          "rgba(23,26,40,0)",
+          11.5,
+          "#171a28"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -2150,18 +2165,19 @@
         "line-cap": "butt"
       },
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              8,
-              "rgba(56,60,125,0)"
-            ],
-            [
-              9,
-              "rgb(56,60,125)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          "rgba(23,26,40,0)",
+          9,
+          "#171a28"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -2225,18 +2241,19 @@
         "line-cap": "butt"
       },
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              7,
-              "rgba(23,37,108,0)"
-            ],
-            [
-              9,
-              "rgb(23,37,108)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "rgba(23,26,40,0)",
+          9,
+          "#171a28"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -2618,18 +2635,21 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              11,
-              "rgba(85,85,165,0)"
-            ],
-            [
-              11.5,
-              "rgb(85,85,165)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          "rgba(70,76,91,0)",
+          11.5,
+          "#3f4453",
+          13,
+          "#2a2f3b"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -2753,18 +2773,23 @@
         "line-round-limit": 1.05
       },
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              7,
-              "rgba(84,85,154,0)"
-            ],
-            [
-              7.2,
-              "rgb(84,85,154)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "rgba(122,129,146,0)",
+          7.2,
+          "#777e8f",
+          10,
+          "#545a6b",
+          13,
+          "#2a2f3b"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -2824,7 +2849,21 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "rgb(85,85,165)",
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#7a8192",
+          10,
+          "#545a6b",
+          13,
+          "#2a2f3b"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -2891,18 +2930,19 @@
         ]
       ],
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              14,
-              "rgba(15,218,73,0)"
-            ],
-            [
-              15,
-              "rgb(15,218,73)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          "rgba(58,63,76,0)",
+          15,
+          "#3a3f4c"
+        ],
         "line-width": {
           "base": 1.4,
           "stops": [
@@ -3701,18 +3741,19 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              7,
-              "rgba(23,37,108,0)"
-            ],
-            [
-              9,
-              "rgb(23,37,108)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "rgba(23,26,40,0)",
+          9,
+          "#171a28"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -3835,18 +3876,19 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              8,
-              "rgba(56,60,125,0)"
-            ],
-            [
-              9,
-              "rgb(56,60,125)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          "rgba(23,26,40,0)",
+          9,
+          "#171a28"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -3908,18 +3950,19 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              7,
-              "rgba(23,37,108,0)"
-            ],
-            [
-              9,
-              "rgb(23,37,108)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "rgba(23,26,40,0)",
+          9,
+          "#171a28"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -4057,7 +4100,21 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "rgb(85,85,165)",
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#7a8192",
+          10,
+          "#545a6b",
+          13,
+          "#2a2f3b"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -4180,18 +4237,23 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": {
-          "stops": [
-            [
-              7,
-              "rgba(84,85,154,0)"
-            ],
-            [
-              7.2,
-              "rgb(84,85,154)"
-            ]
-          ]
-        },
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "rgba(122,129,146,0)",
+          7.2,
+          "#777e8f",
+          10,
+          "#545a6b",
+          13,
+          "#2a2f3b"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -4250,7 +4312,21 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "rgb(85,85,165)",
+        "line-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          "#7a8192",
+          10,
+          "#545a6b",
+          13,
+          "#2a2f3b"
+        ],
         "line-width": {
           "base": 1.2,
           "stops": [
@@ -4413,7 +4489,7 @@
         ]
       ],
       "paint": {
-        "line-color": "rgb(15,218,73)",
+        "line-color": "#3a3f4c",
         "line-width": {
           "base": 1.4,
           "stops": [
