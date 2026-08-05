@@ -64,7 +64,7 @@
     }
   },
   "sprite": "https://elias1998-fi.github.io/Oma-kartta/sprite/sprite",
-  "glyphs": "https://elias1998-fi.github.io/Oma-kartta/glyphs/{fontstack}/{range}.pbf",
+  "glyphs": "https://elias1998-fi.github.io/Oma-kartta/{fontstack}/{range}.pbf",
   "layers": [
     {
       "id": "background",
