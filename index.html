@@ -6051,7 +6051,7 @@
       center: _sharedInitialCenter || INITIAL_CENTER,
       zoom:   _sharedInitialZoom   || INITIAL_ZOOM,
       minZoom: MIN_ZOOM, maxZoom: 20, maxBounds: MAP_BOUNDS,
-      transformRequest, maxTileCacheSize: 50, fadeDuration: 250,
+      transformRequest, maxTileCacheSize: 50, fadeDuration: 300,
       dragRotate: false, touchPitch: false, pitchWithRotate: false,
       keyboard: false, attributionControl: false, doubleClickZoom: false
     });
@@ -11865,6 +11865,21 @@
       map.once('style.load', doReapply);
       map.setStyle(MAP_STYLE_URLS[choice], { diff: false });
       setTimeout(doReapply, 400);
+      applyMapThemeUi();
+    }
+    // The OSM credit and the zoom read-out sit ON the map, above the sheet.
+    // They are black with no halo, which disappears on the dark base — so they
+    // follow the selected style instead of being hard-coded.
+    function applyMapThemeUi() {
+      const dark = mapStyleChoice === 'dark';
+      const col  = dark ? '#a8abad' : '#000';
+      const halo = dark ? '0 0 2px rgba(0,0,0,0.9)' : 'none';
+      ['osm-attribution', 'zoom-indicator'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.color = col;
+        el.style.textShadow = halo;
+      });
     }
     // Reflect the saved map style in the settings selector on startup.
     (function(){
@@ -11873,6 +11888,7 @@
       document.querySelectorAll('#setting-mapstyle-options .settings-mapstyle-option').forEach(o => {
         o.classList.toggle('selected', o.dataset.style === mapStyleChoice);
       });
+      applyMapThemeUi();
     })();
 
     // ── Zoom read-out toggle ─────────────────────────────────────────────
