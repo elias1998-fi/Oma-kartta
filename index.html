@@ -5976,6 +5976,24 @@
       } catch(e){ return 'original'; }
     })();
     const _mapStyleUrl = MAP_STYLE_URLS[mapStyleChoice];
+    // Sivukartat (rajaus, editori, admin-esikatselu, sijainnin muokkaus)
+    // seuraavat samaa teemaa kuin pääkartta. Ne luodaan kerran ja pidetään
+    // muistissa, joten teeman vaihto asetuksista ei näy niissä heti — tyyli
+    // vaihdetaan vasta kun näkymä avataan seuraavan kerran. Näin vaihto ei
+    // maksa mitään silloin kun näkymä ei ole näkyvissä.
+    function currentMapStyleUrl(){
+      return MAP_STYLE_URLS[mapStyleChoice] || MAP_STYLE_URLS.original;
+    }
+    // Palauttaa true jos tyyli vaihdettiin. onReady ajetaan vasta kun uusi
+    // tyyli on ladattu, koska setStyle pudottaa kartan omat lähteet ja tasot
+    // (markerit ovat DOM-elementtejä eivätkä katoa).
+    function syncSideMapTheme(m, onReady){
+      if (!m || m._tpTheme === mapStyleChoice) return false;
+      m._tpTheme = mapStyleChoice;
+      m.setStyle(currentMapStyleUrl(), { diff: false });
+      if (typeof onReady === 'function') m.once('style.load', onReady);
+      return true;
+    }
     // Avausnäkymä, uloin sallittu zoom ja panorointirajaus.
     const MIN_ZOOM       = 4;
     const INITIAL_CENTER = [25.28, 65.05];   // koko Suomi näkyvissä
@@ -7334,17 +7352,18 @@
     function initAreaMap() {
       const center=map.getCenter(), zoom=map.getZoom();
       // Jokainen rajaussessio alkaa vektoritaustalla; molemmat haarat alla
-      // asettavat omakartta_style.json:n, joten nollataan lippu + nappi.
+      // asettavat valitun teeman tyylin, joten nollataan lippu + nappi.
       areaMapType = 0; mapTypePending = false; updateMapTypeBtn();
       resetAreaMapLock();
       if(!areaMap){
         areaMap=new maplibregl.Map({
-          container:'area-map', style:'omakartta_style.json',
+          container:'area-map', style:currentMapStyleUrl(),
           center:[center.lng,center.lat], zoom,
           minZoom:4, maxZoom:20, transformRequest,
           dragRotate:false, touchPitch:false, pitchWithRotate:false,
           keyboard:false, attributionControl:false, doubleClickZoom:false
         });
+        areaMap._tpTheme = mapStyleChoice;
         // Polygoni näkyviin heti kun TYYLI on valmis — ei odoteta tiilien
         // latautumista (mikä oli 2–3 s viiveen syy). initOnce ajetaan sen
         // tapahtuman kohdalla, joka ehtii ensin (style.load yleensä ennen load).
@@ -7377,12 +7396,20 @@
         });
       } else {
         areaMap.resize(); areaMap.setCenter([center.lng,center.lat]); areaMap.setZoom(zoom);
-        // EI setStyle-uudelleenlatausta: tyyli on jo ladattu, ja satelliitti/OSM
-        // ovat erillisiä rasteritasoja (ei tyylinvaihtoa). Aiempi setStyle latasi
-        // koko tyylin uudelleen joka avauksella → 2–3 s viive. Rakennetaan
-        // polygoni heti ja resize varmuudeksi.
-        initAreaCornersAndPolygon();
-        requestAnimationFrame(()=>{ if(areaMap){ areaMap.resize(); areaMap.triggerRepaint(); } });
+        // EI setStyle-uudelleenlatausta AVAUKSEN YHTEYDESSÄ: tyyli on jo ladattu, ja
+        // satelliitti/OSM ovat erillisiä rasteritasoja (ei tyylinvaihtoa). Aiempi
+        // setStyle latasi koko tyylin uudelleen joka avauksella → 2–3 s viive.
+        // Ainoa poikkeus: teema on vaihtunut asetuksista sitten edellisen avauksen,
+        // jolloin tyyli on pakko ladata uudelleen ja polygoni rakentaa vasta sen
+        // valmistuttua (setStyle pudottaa area-poly- ja existing-areas-tasot).
+        const _restyled = syncSideMapTheme(areaMap, () => {
+          initAreaCornersAndPolygon();
+          if (areaMap) { areaMap.resize(); areaMap.triggerRepaint(); }
+        });
+        if (!_restyled) {
+          initAreaCornersAndPolygon();
+          requestAnimationFrame(()=>{ if(areaMap){ areaMap.resize(); areaMap.triggerRepaint(); } });
+        }
       }
     }
 
@@ -8414,11 +8441,12 @@
         const _az = (typeof userLocation !== 'undefined' && userLocation) ? 16 : 14;
         adminPreviewMap = new maplibregl.Map({
           container: 'admin-preview-map',
-          style: 'omakartta_style.json',
+          style: currentMapStyleUrl(),
           center: _ac, zoom: _az,
           dragRotate: false, touchPitch: false, pitchWithRotate: false,
           keyboard: false, attributionControl: false, transformRequest, doubleClickZoom: false
         });
+        adminPreviewMap._tpTheme = mapStyleChoice;
         adminPreviewMap.on('load', () => {
           // Kartta pysyvästi lukittu pohjoiseen tässä näkymässä.
           adminPreviewMap.touchZoomRotate.disableRotation();
@@ -8445,8 +8473,10 @@
         adminPreviewMap.dragRotate.disable();
         adminPreviewMap.touchZoomRotate.disableRotation();
         adminPreviewMap.easeTo({ bearing: 0, pitch: 0, duration: 0 });
-        cb();
-        ensureAdminUserDot();
+        // Teema vaihtunut edellisen avauksen jälkeen → tyyli uusiksi, ja cb
+        // (joka lisää admin-sub- ja admin-master-tasot) vasta sen valmistuttua.
+        const _restyled = syncSideMapTheme(adminPreviewMap, () => { cb(); ensureAdminUserDot(); });
+        if (!_restyled) { cb(); ensureAdminUserDot(); }
       }
     }
 
@@ -10473,11 +10503,12 @@
     async function initEditorMap() {
       if (!editorMap) {
         editorMap = new maplibregl.Map({
-          container:'editor-map', style:'omakartta_style.json',
+          container:'editor-map', style:currentMapStyleUrl(),
           center:map.getCenter(), zoom:map.getZoom(),
           minZoom:4, maxZoom:20, transformRequest,
           dragRotate:false, attributionControl:false, doubleClickZoom:false
         });
+        editorMap._tpTheme = mapStyleChoice;
         editorMap.on('load', async () => {
           editorMap.touchZoomRotate.disableRotation();
           await loadEditorFeatures();
@@ -10487,6 +10518,12 @@
         editorMap.resize();
         editorMap.setCenter(map.getCenter());
         editorMap.setZoom(map.getZoom());
+        // Teeman vaihduttua editor-* -tasot on rakennettava uudelleen, koska
+        // setStyle pudottaa ne. Vuorovaikutuskäsittelijät ovat karttaobjektissa
+        // eivätkä tyylissä, joten setupEditorInteractionsia ei ajeta uudelleen.
+        if (syncSideMapTheme(editorMap)) {
+          await new Promise(res => editorMap.once('style.load', res));
+        }
         await loadEditorFeatures();
       }
     }
@@ -12475,11 +12512,12 @@
       };
       if (!locEditMap) {
         locEditMap = new maplibregl.Map({
-          container: 'loc-edit-map', style: 'omakartta_style.json',
+          container: 'loc-edit-map', style: currentMapStyleUrl(),
           center: [center.lng, center.lat], zoom: zoom,
           minZoom: 4, maxZoom: 20, transformRequest,
           dragRotate: false, attributionControl: false, doubleClickZoom: false
         });
+        locEditMap._tpTheme = mapStyleChoice;
         locEditMap.on('load', () => {
           locEditMap.touchZoomRotate.disableRotation();
           locEditMap.resize();
@@ -12489,6 +12527,9 @@
         locEditMap.resize();
         locEditMap.setCenter([center.lng, center.lat]);
         locEditMap.setZoom(zoom);
+        // Merkit ovat DOM-elementtejä eivätkä katoa tyylinvaihdossa, joten
+        // buildOrig voidaan ajaa heti; syncSideMapTheme vain vaihtaa taustan.
+        syncSideMapTheme(locEditMap);
         buildOrig();
       }
       setTimeout(() => { if (locEditMap) locEditMap.resize(); }, 380);
