@@ -4698,6 +4698,7 @@
       "id": "building_3d",
       "type": "fill-extrusion",
       "source": "vector",
+      "minzoom": 13,
       "source-layer": "building",
       "layout": {
         "visibility": "none"
@@ -4712,19 +4713,7 @@
           "property": "render_min_height",
           "type": "identity"
         },
-        "fill-extrusion-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          0.8
-        ]
+        "fill-extrusion-opacity": 0.8
       }
     },
     {
