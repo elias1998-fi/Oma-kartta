@@ -3666,7 +3666,15 @@
     }
     #tp-splash.gone { opacity: 0; pointer-events: none; }
     #tp-splash-name { font-size: 26px; font-weight: bold; color: #0C0243; letter-spacing: .3px; }
-    #tp-splash-ver  { font-size: 13px; color: #8a8a90; }
+    #tp-splash-tagline { font-size: 14px; color: #4a4a52; letter-spacing: .2px; }
+    /* Versio irrotettu keskitetystä pinosta omaan nurkkaansa. safe-area, jotta
+       se ei jää iPhonen kotipalkin alle. */
+    #tp-splash-ver {
+      position: absolute;
+      right: calc(18px + env(safe-area-inset-right, 0px));
+      bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+      font-size: 12px; color: #8a8a90;
+    }
   </style>
 </head>
 <body>
@@ -3679,11 +3687,12 @@
        silti tavallisia globaaleja, joten sovellusskripti näkee ne. -->
   <div id="tp-splash">
     <div id="tp-splash-name">TotalParking</div>
+    <div id="tp-splash-tagline">100% suomalainen</div>
     <div id="tp-splash-ver"></div>
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-b';
+    const APP_BUILD   = '2026-08-19-c';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
       const v = document.getElementById('tp-splash-ver');
@@ -4485,20 +4494,20 @@
           <div class="settings-row-text">
             <div class="settings-row-title">Kartan tyyli</div>
           </div>
-          <div class="settings-mapstyle-current" id="setting-mapstyle-current">Original</div>
+          <div class="settings-mapstyle-current" id="setting-mapstyle-current">HSL original</div>
           <div class="settings-mapstyle-chevron" id="setting-mapstyle-chevron">›</div>
         </div>
         <div class="settings-mapstyle-options" id="setting-mapstyle-options">
           <div class="settings-mapstyle-option" data-style="original" onclick="selectMapStyle('original', this)">
-            <span>Original</span>
+            <span>HSL original</span>
             <span class="settings-mapstyle-check">✓</span>
           </div>
           <div class="settings-mapstyle-option" data-style="dark" onclick="selectMapStyle('dark', this)">
-            <span>Tumma tila</span>
+            <span>HSL night</span>
             <span class="settings-mapstyle-check">✓</span>
           </div>
           <div class="settings-mapstyle-option" data-style="newstyle" onclick="selectMapStyle('newstyle', this)">
-            <span>Uusi tyyli</span>
+            <span>HSL day</span>
             <span class="settings-mapstyle-check">✓</span>
           </div>
         </div>
@@ -5998,10 +6007,14 @@
       dark:     'omakartta_style_darkmode.json',
       newstyle: 'omakartta_style_newstyle.json'
     };
+    // Näyttönimet asetusten "Kartan tyyli" -listassa. Tunnukset (original/dark/
+    // newstyle) ja tiedostonimet EIVÄT muutu — ne ovat localStoragessa
+    // (tp_mapstyle) tallessa vanhoilla laitteilla, joten uudelleennimeäminen
+    // rikkoisi tallennetun valinnan.
     const MAP_STYLE_LABELS = {
-      original: 'Original',
-      dark:     'Tumma tila',
-      newstyle: 'Uusi tyyli'
+      original: 'HSL original',
+      dark:     'HSL night',
+      newstyle: 'HSL day'
     };
     let mapStyleChoice = (function(){
       try {
@@ -6031,8 +6044,12 @@
     }
     // Avausnäkymä, uloin sallittu zoom ja panorointirajaus.
     const MIN_ZOOM       = 4;
-    const INITIAL_CENTER = [25.28, 65.05];   // koko Suomi näkyvissä
-    const INITIAL_ZOOM   = 4.2;
+    // Avausnäkymä: Helsingin Hietalahdentori. Sama piste on myös demo-sijainti
+    // (ks. showDemoLocation), joten kartan keskipiste ja sijaintipiste ovat
+    // avattaessa samassa paikassa. Jaettu linkki (?ll=&z=) ohittaa nämä.
+    const DEMO_LOCATION  = { lat: 60.1632, lon: 24.9299 };   // Hietalahdentori
+    const INITIAL_CENTER = [DEMO_LOCATION.lon, DEMO_LOCATION.lat];
+    const INITIAL_ZOOM   = 16;
     // Yksi kiinteä panorointirajaus kaikilla zoomeilla. Väljyys on
     // tarkoituksellista: maxBounds rajoittaa myös uloszoomausta, ja
     // tiukemmilla Suomi-rajoilla puhelimen näyttö ei mahtuisi rajojen
@@ -6256,6 +6273,39 @@
 
     let userLocation = null;
 
+    // ── Demo-sijainti: Hietalahdentori ───────────────────────────────────
+    // Sovellus NÄYTTÄÄ sijainnin Hietalahdentorilla vaikka laite olisi missä
+    // tahansa. Oikeaa paikannusta ei kysytä avattaessa lainkaan (ei siis
+    // sijaintilupakyselyä); vasta kun käyttäjä painaa oikean yläkulman
+    // sijaintinappia, GeolocateControl hakee todellisen sijainnin, demo-piste
+    // poistetaan ja MapLibren oma piste ottaa paikan.
+    // Piste piirretään MapLibren omalla luokalla (.maplibregl-user-location-dot),
+    // joten se on ulkoasultaan identtinen oikean kanssa — sama tapa kuin
+    // hyväksymisnäkymän ensureAdminUserDot().
+    let _demoLocationActive = false;
+    let _demoDotMarker = null;
+    function showDemoLocation() {
+      if (_demoDotMarker) return;
+      const el = document.createElement('div');
+      el.className = 'maplibregl-user-location-dot';
+      const arrow = document.createElement('div');
+      arrow.className = 'user-dot-arrow';
+      el.appendChild(arrow);
+      if (typeof _compassEnabled !== 'undefined' && _compassEnabled) el.classList.add('has-heading');
+      _demoDotMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([DEMO_LOCATION.lon, DEMO_LOCATION.lat])
+        .addTo(map);
+      _demoLocationActive = true;
+      // Kaikki etäisyyslaskenta ja "keskitä sijaintiin" käyttävät tätä, joten
+      // demo-sijainti näkyy myös niissä johdonmukaisesti.
+      userLocation = { lat: DEMO_LOCATION.lat, lon: DEMO_LOCATION.lon };
+    }
+    function clearDemoLocation() {
+      if (_demoDotMarker) { _demoDotMarker.remove(); _demoDotMarker = null; }
+      _demoLocationActive = false;
+    }
+    map.on('load', showDemoLocation);
+
     function calculateDistance(lat1, lon1, lat2, lon2) {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -6309,6 +6359,9 @@
     map.addControl(geolocate);
 
     geolocate.on('geolocate', (e) => {
+      // Todellinen sijainti saatu → demo-piste pois, muuten ruudulla olisi
+      // kaksi sijaintipistettä (meidän oma ja MapLibren oma).
+      clearDemoLocation();
       userLocation = {
         lat: e.coords.latitude,
         lon: e.coords.longitude
@@ -12015,7 +12068,7 @@
     // Reflect the saved map style in the settings selector on startup.
     (function(){
       const current = document.getElementById('setting-mapstyle-current');
-      if (current) current.textContent = MAP_STYLE_LABELS[mapStyleChoice] || 'Original';
+      if (current) current.textContent = MAP_STYLE_LABELS[mapStyleChoice] || MAP_STYLE_LABELS.original;
       document.querySelectorAll('#setting-mapstyle-options .settings-mapstyle-option').forEach(o => {
         o.classList.toggle('selected', o.dataset.style === mapStyleChoice);
       });
