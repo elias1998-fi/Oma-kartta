@@ -3269,11 +3269,13 @@
     #ajanhetki-card.expanded  { border-radius: 22px; box-shadow: 0 12px 40px rgba(0,0,0,.22); cursor: grab; }
     #ajanhetki-card.expanded:active { cursor: grabbing; }
 
-    /* Pill face — pinned bottom-left, exactly where the collapsed card sits. */
+    /* Pill face — pinned bottom-left, exactly where the collapsed card sits.
+       Vasen padding kasvatettu 7 → 14 px, koska ×-nappi on poistettu; oikea
+       kavennettu 14 → 7 px, jotta rulla ei jää kiinni pillerin reunaan. */
     #ajanhetki-pill {
       position: absolute; bottom: 0; left: 0;
       display: flex; align-items: center;
-      height: 38px; padding: 0 14px 0 7px;
+      height: 38px; padding: 0 7px 0 14px;
       white-space: nowrap;
       opacity: 1;
       transition: opacity .16s ease .14s;   /* fades back IN, after the shrink starts */
@@ -3282,33 +3284,19 @@
       opacity: 0; pointer-events: none;
       transition: opacity .12s ease;        /* fades straight OUT as it grows */
     }
-    /* × — deliberately set apart from the label: its own tinted circle plus a
-       hairline divider, so it reads as a separate button rather than part of
-       the pill's text. Tapping it removes the pill; tapping anywhere to the
-       right of the divider grows the card. */
-    #ajanhetki-dismiss {
+    /* Pienoisrulla pillerin oikeassa reunassa. Sama sylinteri kuin isossa
+       kortissa, mutta mahtuu pillerin 38 px korkeuteen — eli tarkoituksella
+       normaalia pienempi. touch-action:none, koska rullan kuuntelijat ovat
+       passiivisia eivätkä voi kutsua preventDefaultia. */
+    #ajanhetki-drum-zone {
       flex-shrink: 0;
-      width: 25px; height: 25px; padding: 0;
-      border: none; border-radius: 50%;
-      background: #eeeef1;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
+      width: 32px; height: 26px;
+      border: 1px solid #d8d8d8; border-radius: 7px;
+      overflow: hidden; position: relative;
+      cursor: grab; user-select: none; touch-action: none;
     }
-    #ajanhetki-dismiss:active { background: #dededf; }
-    /* − / + pillerin oikeassa reunassa. Sama ympyräkoko ja sävy kuin ×:llä,
-       jotta pillerin molemmat päät ovat visuaalisesti samaa perhettä. */
-    .ajanhetki-step {
-      flex-shrink: 0;
-      width: 25px; height: 25px; padding: 0; margin-left: 6px;
-      border: none; border-radius: 50%;
-      background: #eeeef1; color: #4a4a52;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-    }
-    .ajanhetki-step:active { background: #dededf; }
-    .ajanhetki-step svg { width: 12px; height: 12px; }
-    #ajanhetki-card.expanded .ajanhetki-step { pointer-events: none; }
-    #ajanhetki-dismiss svg { width: 11px; height: 11px; }
+    #ajanhetki-drum-zone:active { cursor: grabbing; }
+    #ajanhetki-drum-canvas { display: block; width: 32px; height: 26px; }
     .ajanhetki-pill-sep {
       flex-shrink: 0;
       width: 1px; height: 19px;
@@ -3324,7 +3312,10 @@
     }
     #ajanhetki-pill-main svg { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--tp-accent); }
     #ajanhetki-pill-main .ajanhetki-pill-label { color: #0C0243; }
-    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); }
+    /* Kiinteä leveys: pilleri kutistuu sisältöönsä, joten ilman tätä pillerin
+       leveys — ja sen mukana rulla — hyppisi sormen alla kun 9:05 vaihtuu
+       11:30:ksi. */
+    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); display: inline-block; min-width: 38px; text-align: right; }
 
     /* Window face — pinned top-left and held at the FULL expanded width in px
        (set from JS) so its layout never reflows while the card animates; the
@@ -3658,10 +3649,53 @@
   }
   #left-menu-pill.expanded #pill-ball { opacity: 1; }
   .pill-btn { position: relative; z-index: 1; }
+    /* ── Avausruutu (splash) ──────────────────────────────────────────────
+       Valkoinen koko ruudun peittävä näkymä, joka kertoo asennetun version.
+       Ainoa luotettava tapa nähdä pyöriikö laitteella uusin toimitus, kun
+       GitHub Pages ja kotivalikkoon asennettu PWA pitävät omia välimuistejaan.
+       z-index 100000 on korkeampi kuin mikään muu (suurin muu on 10020).
+       Näkyy SPLASH_MS ajan, sitten 0,3 s häivytys ja display:none. */
+    #tp-splash {
+      position: fixed; inset: 0;
+      background: #fff;
+      z-index: 100000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px;
+      font-family: Arial, sans-serif;
+      opacity: 1; transition: opacity .3s ease;
+    }
+    #tp-splash.gone { opacity: 0; pointer-events: none; }
+    #tp-splash-name { font-size: 26px; font-weight: bold; color: #0C0243; letter-spacing: .3px; }
+    #tp-splash-ver  { font-size: 13px; color: #8a8a90; }
   </style>
 </head>
 <body>
-  <!-- Splash Screen -->
+  <!-- ── Avausruutu ────────────────────────────────────────────────────────
+       Valkoinen näkymä, joka näyttää version SPLASH_MS:n ajan jokaisella
+       avauksella. NOSTA APP_BUILD JOKAISESSA TOIMITUKSESSA — se on ainoa
+       tapa nähdä laitteesta, onko käytössä uusin versio.
+       Versiovakiot ovat omassa skriptissään heti tässä, jotta teksti on
+       paikallaan jo ennen kuin iso sovellusskripti alkaa suorittua. Ne ovat
+       silti tavallisia globaaleja, joten sovellusskripti näkee ne. -->
+  <div id="tp-splash">
+    <div id="tp-splash-name">TotalParking</div>
+    <div id="tp-splash-ver"></div>
+  </div>
+  <script>
+    const APP_VERSION = '1.0.0';
+    const APP_BUILD   = '2026-08-19-a';
+    const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
+    (function () {
+      const v = document.getElementById('tp-splash-ver');
+      if (v) v.textContent = 'versio ' + APP_VERSION + '  ·  ' + APP_BUILD;
+      const el = document.getElementById('tp-splash');
+      if (!el) return;
+      setTimeout(function () {
+        el.classList.add('gone');
+        setTimeout(function () { el.style.display = 'none'; }, 320);
+      }, SPLASH_MS);
+    })();
+  </script>
   <div id="map"></div>
 
   <!-- Unified center marker — morphs between standalone P pin and full badge -->
@@ -5129,16 +5163,11 @@
            pill shape and the window shape, clipping its contents as it goes.
            The two faces below just cross-fade inside it. -->
       <div id="ajanhetki-card" class="collapsed size-large">
-        <!-- Pill face. The × is its own button at the left, set apart by a tinted
-             circle and a hairline divider so it reads as a separate control
-             rather than part of the pill's label. -->
+        <!-- Pilleri. Vasemman reunan × on poistettu: pilleri sisältää nyt vain
+             kellon ja pienoisrullan. Pilleri kasvaa kortiksi kun tekstiosaa
+             (#ajanhetki-pill-main) klikkaa; rulla on oma alueensa, joten sen
+             vetäminen ei kasvata korttia. -->
         <div id="ajanhetki-pill">
-          <button id="ajanhetki-dismiss" aria-label="Poista ajanhetki näkyvistä">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#8a8a90" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
-              <line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>
-            </svg>
-          </button>
-          <span class="ajanhetki-pill-sep"></span>
           <button id="ajanhetki-pill-main" aria-label="Muokkaa ajanhetkeä">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L15.5 14"/>
@@ -5146,20 +5175,14 @@
             <span class="ajanhetki-pill-label">Ajanhetki</span>
             <span id="ajanhetki-pill-time">–</span>
           </button>
-          <!-- Askelnapit pillerin oikeassa reunassa. Sama 30 min askel kuin
-               rullalla; + on uloimpana oikealla. Omat painikkeensa, joten
-               niiden painallus ei kasvata korttia. -->
+          <!-- Pienoisrulla +/− nappien tilalla. Sama jaettu tila kuin kortin ja
+               suodatinsheetin rullilla (refMinutes / refDrumPhase), joten kaikki
+               kolme pysyvät synkassa. Canvas on 2× tarkkuudella (64×52 → 32×26
+               CSS px), koska drawDrumOn johtaa kaikki mitat canvasin koosta. -->
           <span class="ajanhetki-pill-sep"></span>
-          <button class="ajanhetki-step" id="ajanhetki-step-minus" aria-label="Aikaisemmaksi">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-          </button>
-          <button class="ajanhetki-step" id="ajanhetki-step-plus" aria-label="Myöhemmäksi">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-          </button>
+          <div id="ajanhetki-drum-zone" aria-label="Säädä ajanhetkeä">
+            <canvas id="ajanhetki-drum-canvas" width="64" height="52"></canvas>
+          </div>
         </div>
         <div id="ajanhetki-float" role="dialog" aria-label="Ajanhetki">
           <div id="ajanhetki-handle-area"><div id="ajanhetki-handle"><span></span><span></span></div></div>
@@ -6003,17 +6026,19 @@
     // tiukemmilla Suomi-rajoilla puhelimen näyttö ei mahtuisi rajojen
     // sisään zoomilla 4 (MapLibre pysäyttäisi zoomauksen n. 4.2:een).
     const MAP_BOUNDS = [[10.0, 55.0], [40.0, 72.5]];
-    // Porrastettu ilmestyminen: latauspisteet ensin, sitten hallit, sitten
-    // pysäköintialueet. Jokainen häivyttyy esiin 0,2 zoomtason aikana ja
-    // niiden väliin jää tauko, joten ne eivät ilmesty päällekkäin.
-    const CHARGE_MINZOOM   = 11.5;   // täysin näkyvissä 11.7
-    const HALL_MINZOOM     = 12.1;   // täysin näkyvissä 12.3
-    const AREA_MINZOOM     = 12.8;   // täysin näkyvissä 13.0
-    const ICON_MINZOOM     = CHARGE_MINZOOM;   // varhaisin, yleisiä portteja varten
-    const POINTER_MINZOOM  = 13.5;   // P-merkki + sheetin "Lähennä karttaa"
-    const _fadeIn = z => ['interpolate', ['linear'], ['zoom'], z, 0, +(z + 0.2).toFixed(2), 1];
-    const CHARGE_FADE      = _fadeIn(CHARGE_MINZOOM);
-    const HALL_FADE        = _fadeIn(HALL_MINZOOM);
+    // KAIKKI ILMESTYY KERRALLA ZOOMILLA 13. Aiempi porrastus (latauspisteet
+    // 11.5 → hallit 12.1 → alueet 12.8 → P-merkki 13.5) ja jokaisen 0,2
+    // zoomtason häivytys on poistettu: kohteet joko ovat näkyvissä tai eivät.
+    // Yksi luku ohjaa nyt kaikkea — muuta tästä jos raja siirtyy.
+    const APPEAR_ZOOM      = 13;
+    const CHARGE_MINZOOM   = APPEAR_ZOOM;
+    const HALL_MINZOOM     = APPEAR_ZOOM;
+    const AREA_MINZOOM     = APPEAR_ZOOM;
+    const ICON_MINZOOM     = APPEAR_ZOOM;
+    const POINTER_MINZOOM  = APPEAR_ZOOM;   // P-merkki + sheetin "Lähennä karttaa"
+    // Täysi peitto heti minzoomista: ei enää interpolate-häivytystä.
+    const CHARGE_FADE      = 1;
+    const HALL_FADE        = 1;
     // Maksimikoot. Lukuarvot eroavat koska lähdekuvat ovat eri kokoisia:
     // halli-ikoni on 64x64 px ja latauspiste 128x128 px, molemmat
     // pixelRatio 2. Renderöity koko on siis 32*size vs 64*size CSS-pikseliä,
@@ -9398,8 +9423,12 @@
     // HUOM: ['zoom'] saa esiintyä VAIN top-level interpolaten syötteenä (sama
     // rajoitus joka aiemmin kaatoi icon-size-lausekkeen), siksi mahdollinen
     // ominaisuuskohtainen ['case'] menee interpolaten ULOSTULOIHIN, ei toisin päin.
-    // Kaikkien alue-tasojen läpinäkyvyys alkaa nollasta AREA_MINZOOMissa ja
-    // saavuttaa varsinaisen arvonsa zoomilla 13, eli 0,2 zoomtason häivytys.
+    // HUOM: aiemmin tähän lisättiin eteen stoppi [AREA_MINZOOM, 0], joka
+    // häivytti alueet esiin 0,2 zoomtason aikana. Se on poistettu — alueet
+    // ilmestyvät täysin peittävinä heti zoomilla 13. Prependiä EI saa palauttaa
+    // ilman että AREA_MINZOOM on aidosti pienempi kuin listan ensimmäinen
+    // stoppi (13): ei-nouseva stop-järjestys kaataa koko interpolate-lausekkeen
+    // ja jättää tason paintin asettamatta.
     function hlStops(key){
       const S = {
         hoverFill: [13, 0.95, 15, 0.78, 17, 0.55, 19, 0.42],  // p-merkin alla, kirkkaan punainen
@@ -9409,7 +9438,7 @@
         baseFill:  [13, 0.26, 15, 0.21, 17, 0.16, 19, 0.13],  // maksulliset + ilmaiset, perustila
         baseLine:  [13, 0.60, 15, 0.55, 17, 0.47, 19, 0.42]
       };
-      return [AREA_MINZOOM, 0].concat(S[key]);
+      return S[key].slice();
     }
     function hlOpacity(key){
       return ['interpolate', ['linear'], ['zoom']].concat(hlStops(key));
@@ -14760,14 +14789,10 @@
       }
       if (refTimeManual) ajanhetkiDismissed = false;
       updateAjanhetkiPillVisibility();
-      // Session intro (see ajanhetkiIntroShown): only when the card actually
-      // ended up on screen — if it stayed hidden (e.g. zoom < 13), the intro
-      // is saved for the next qualifying close instead of burning silently.
-      const _ahCard = document.getElementById('ajanhetki-card');
-      if (refTimeManual && !ajanhetkiIntroShown && _ahCard && _ahCard.classList.contains('visible')) {
-        ajanhetkiIntroShown = true;
-        openAjanhetkiFloat();          // avautuu suoraan isona + päivittää arvon/rullan
-      }
+      // Suodattimen sulkeutuessa kortti jää AINA pieneksi pilleriksi. Aiempi
+      // kerran-per-istunto -introlaajennus (ajanhetkiIntroShown) on poistettu:
+      // se avasi kortin isona perusnäkymän sheetin päälle. Isoksi pääsee vain
+      // klikkaamalla pilleriä.
       checkParking();
     }
     // filterBtn click handled in menuItemClick above
@@ -15187,12 +15212,54 @@
     let parkingMinutes=0, parkingMaxMinutes=1440, isIlmainen=false;
     let parkingStartTime = null;
     const PIXELS_PER_MINUTE=8, RADIANS_PER_PX=0.055, N_LINES=12;
-    const CW=52, CH=80, CY=CH/2, R=33;
     let drumPhase=0;
     const drumCanvas=document.getElementById('drum-canvas');
     const dctx=drumCanvas.getContext('2d');
 
-    function drawDrumOn(ctx, phase){ctx.clearRect(0,0,CW,CH);for(let x=0;x<CW;x++){const nx=(x-CW/2)/(CW/2);const shade=Math.sqrt(Math.max(0,1-nx*nx));const edge=Math.round(220+shade*20);ctx.fillStyle=`rgb(${edge},${edge},${edge})`;ctx.fillRect(x,0,1,CH);}for(let i=0;i<N_LINES;i++){const alpha=(i/N_LINES)*Math.PI*2+phase;const a=((alpha%(Math.PI*2))+Math.PI*2)%(Math.PI*2);const cosA=Math.cos(a);if(cosA<0)continue;const sinA=Math.sin(a);const y=CY+R*sinA;if(y<1||y>CH-1)continue;const opacity=cosA*0.8;const lineWidth=0.8+cosA*2.2;const colorVal=Math.round(60+(1-cosA)*60);ctx.save();ctx.globalAlpha=opacity;ctx.strokeStyle=`rgb(${colorVal},${colorVal-5},${colorVal+20})`;ctx.lineWidth=lineWidth;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(6,y);ctx.lineTo(CW-6,y);ctx.stroke();ctx.restore();}const tg=ctx.createLinearGradient(0,0,0,24);tg.addColorStop(0,'rgba(232,232,232,0.98)');tg.addColorStop(1,'rgba(232,232,232,0)');ctx.fillStyle=tg;ctx.fillRect(0,0,CW,24);const bg=ctx.createLinearGradient(0,CH-24,0,CH);bg.addColorStop(0,'rgba(232,232,232,0)');bg.addColorStop(1,'rgba(232,232,232,0.98)');ctx.fillStyle=bg;ctx.fillRect(0,CH-24,CW,24);ctx.save();ctx.strokeStyle='rgba(12,2,67,0.18)';ctx.lineWidth=1;ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(4,CY);ctx.lineTo(CW-4,CY);ctx.stroke();ctx.restore();}
+    // Yksi piirtofunktio kaikille rullille. Mitat luetaan canvasista, joten
+    // sama koodi piirtää isot 52×80 rullat ja pillerin pienen rullan. 52×80
+    // tuottaa täsmälleen entiset arvot (r=33, häivytyskaista 24, sisennys 6,
+    // viivanpaksuuden kerroin 1), joten vanhat rullat näyttävät ennallaan.
+    function drawDrumOn(ctx, phase){
+      const W = ctx.canvas.width, H = ctx.canvas.height;
+      const cy = H/2, r = H*0.4125, fade = H*0.30, inset = Math.max(2, W*(6/52));
+      const s = Math.max(0.5, H/80);                 // viivanpaksuuden skaalaus
+      ctx.clearRect(0,0,W,H);
+      for(let x=0;x<W;x++){
+        const nx=(x-W/2)/(W/2);
+        const shade=Math.sqrt(Math.max(0,1-nx*nx));
+        const edge=Math.round(220+shade*20);
+        ctx.fillStyle=`rgb(${edge},${edge},${edge})`;
+        ctx.fillRect(x,0,1,H);
+      }
+      for(let i=0;i<N_LINES;i++){
+        const alpha=(i/N_LINES)*Math.PI*2+phase;
+        const a=((alpha%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+        const cosA=Math.cos(a);
+        if(cosA<0)continue;
+        const y=cy+r*Math.sin(a);
+        if(y<1||y>H-1)continue;
+        const colorVal=Math.round(60+(1-cosA)*60);
+        ctx.save();
+        ctx.globalAlpha=cosA*0.8;
+        ctx.strokeStyle=`rgb(${colorVal},${colorVal-5},${colorVal+20})`;
+        ctx.lineWidth=(0.8+cosA*2.2)*s;
+        ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(inset,y);ctx.lineTo(W-inset,y);ctx.stroke();
+        ctx.restore();
+      }
+      const tg=ctx.createLinearGradient(0,0,0,fade);
+      tg.addColorStop(0,'rgba(232,232,232,0.98)');tg.addColorStop(1,'rgba(232,232,232,0)');
+      ctx.fillStyle=tg;ctx.fillRect(0,0,W,fade);
+      const bg=ctx.createLinearGradient(0,H-fade,0,H);
+      bg.addColorStop(0,'rgba(232,232,232,0)');bg.addColorStop(1,'rgba(232,232,232,0.98)');
+      ctx.fillStyle=bg;ctx.fillRect(0,H-fade,W,fade);
+      ctx.save();
+      ctx.strokeStyle='rgba(12,2,67,0.18)';ctx.lineWidth=1;ctx.setLineDash([2,2]);
+      const dash=4*(W/52);
+      ctx.beginPath();ctx.moveTo(dash,cy);ctx.lineTo(W-dash,cy);ctx.stroke();
+      ctx.restore();
+    }
     function drawDrum(){drawDrumOn(dctx, drumPhase);}
 
     function formatTimeDisplay(mins){if(mins===0)return'0 min';mins=Math.max(1,Math.min(mins,parkingMaxMinutes));if(mins<60)return`${mins} min`;const h=Math.floor(mins/60),m=mins%60;return m>0?`${h} h ${m} min`:`${h} h`;}
@@ -15511,9 +15578,14 @@
     // both drums — and the pill label — perfectly in sync.
     const refDrumCanvas2 = document.getElementById('ref-drum-canvas-2');
     const refDctx2 = refDrumCanvas2 ? refDrumCanvas2.getContext('2d') : null;
+    // Kolmas instanssi: pillerin pienoisrulla. Jakaa saman tilan kuin kaksi
+    // muuta, joten kaikki kolme näyttävät aina saman ajanhetken.
+    const refDrumCanvas3 = document.getElementById('ajanhetki-drum-canvas');
+    const refDctx3 = refDrumCanvas3 ? refDrumCanvas3.getContext('2d') : null;
     function drawRefDrum(){
       if (refDctx)  drawDrumOn(refDctx,  refDrumPhase);
       if (refDctx2) drawDrumOn(refDctx2, refDrumPhase);
+      if (refDctx3) drawDrumOn(refDctx3, refDrumPhase);
     }
     let refDrumTouching = false;
     let rStartY=null, rStartMin=0, rStartPhase=0, rLastY=0, rLastT=0, rVel=0, rInertiaVel=0, rInertiaRAF=null;
@@ -15771,36 +15843,10 @@
         anchor.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
         anchor.addEventListener('mousedown',  e => e.stopPropagation());
       }
-      // × on the pill dismisses the card entirely and returns the map to live
-      // ("nykyhetki") colouring, so the map is never left tinted for a hidden
-      // manual time.
-      // − / + siirtävät ajanhetkeä yhden rulla-askeleen (30 min) kerrallaan.
-      // Arvo pidetään samoissa rajoissa kuin rullassa, ja rullan kiertokulma
-      // päivitetään mukana, jottei rulla hyppää seuraavalla vedolla.
-      function stepRefTime(dir){
-        stopRefInertia();
-        const before = refRoundedMinutes();
-        const next = Math.max(0, Math.min(before + dir * REF_STEP_MIN, REF_MAX_MIN));
-        if (next === before && (next === 0 || next === REF_MAX_MIN)) return;
-        refDrumPhase += (next - refMinutes) * REF_PX_PER_MIN * RADIANS_PER_PX;
-        refMinutes = next;
-        refTimeManual = true;
-        drawRefDrum();
-        refreshRefFilter();
-        updateRefTimeUI();
-      }
-      const stepMinus = document.getElementById('ajanhetki-step-minus');
-      const stepPlus  = document.getElementById('ajanhetki-step-plus');
-      if (stepMinus) stepMinus.addEventListener('click', (e) => { e.stopPropagation(); stepRefTime(-1); });
-      if (stepPlus)  stepPlus.addEventListener('click',  (e) => { e.stopPropagation(); stepRefTime(+1); });
-
-      const cl = document.getElementById('ajanhetki-dismiss');
-      if (cl) cl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        ajanhetkiDismissed = true;
-        collapseAjanhetkiCard();
-        resetRefTime();
-      });
+      // POISTETTU: pillerin ×-nappi ja − / + askelnapit. Ajan säätö pillerissä
+      // tapahtuu nyt pienoisrullalla (#ajanhetki-drum-zone, sidonta alempana
+      // muiden rullien yhteydessä). ajanhetkiDismissed jää muuttujaksi, mutta
+      // sen ainoa nollaaja on closeFilter — pilleriä ei voi enää sulkea käsin.
       // "Palauta nykyhetkeen" returns to live time and LEAVES the card open;
       // the label simply flips to "Nykyhetki HH:MM".
       const rs = document.getElementById('ref-time-reset-2');
@@ -15915,6 +15961,46 @@
         rLastY = e.clientY; rLastT = Date.now(); rVel = 0;
         e.preventDefault();
       });
+    }
+
+    // Pillerin pienoisrulla — sama jaettu tila ja samat apurit. Ikkunatason
+    // mousemove/mouseup (sidottu refDrumZonen yhteydessä) jatkaa hiirivedon
+    // sille alueelle joka asetti refDrumTouchingin, joten tässä riittää
+    // touch + mousedown. Klikkikäsittelijää ei ole: kortin kasvatus istuu
+    // #ajanhetki-pill-mainissa, joten rullan veto ei avaa korttia.
+    const refDrumZone3 = document.getElementById('ajanhetki-drum-zone');
+    if (refDrumZone3) {
+      refDrumZone3.addEventListener('touchstart', e=>{
+        refDrumTouching = true; stopRefInertia();
+        if(!refTimeManual) refMinutes = nowRefMinutes();
+        rStartY = e.touches[0].clientY; rStartMin = refMinutes; rStartPhase = refDrumPhase;
+        rLastY = rStartY; rLastT = Date.now(); rVel = 0;
+      },{passive:true});
+      refDrumZone3.addEventListener('touchmove', e=>{
+        if(rStartY === null) return;
+        const y = e.touches[0].clientY;
+        const now = Date.now(), dt = now - rLastT;
+        if(dt > 0) rVel = (y - rLastY) / dt;
+        rLastY = y; rLastT = now;
+        refApplyDrag(y - rStartY);
+      },{passive:true});
+      const ref3TouchEnd = ()=>{
+        refDrumTouching = false;
+        if(rStartY === null) return;
+        rStartY = null; rInertiaVel = rVel;
+        if(Math.abs(rInertiaVel) > MIN_VEL) rInertiaRAF = requestAnimationFrame(runRefInertia);
+        else { refSnap(); refreshRefFilter(); }
+      };
+      refDrumZone3.addEventListener('touchend', ref3TouchEnd, {passive:true});
+      refDrumZone3.addEventListener('touchcancel', ref3TouchEnd, {passive:true});
+      refDrumZone3.addEventListener('mousedown', e=>{
+        refDrumTouching = true; stopRefInertia();
+        if(!refTimeManual) refMinutes = nowRefMinutes();
+        rStartY = e.clientY; rStartMin = refMinutes; rStartPhase = refDrumPhase;
+        rLastY = e.clientY; rLastT = Date.now(); rVel = 0;
+        e.preventDefault();
+      });
+      drawRefDrum();
     }
 
     drawDrum();
