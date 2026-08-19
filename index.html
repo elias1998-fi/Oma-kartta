@@ -1669,6 +1669,10 @@
       font-family: Arial, sans-serif;
       font-size: 12px;
       color: #888;
+      /* Negatiivinen margin-top nostaa huomautuksen lähemmäs vetokahvaa
+         koskematta #drag-handle-arean pehmusteeseen, joka on jaettu
+         suodatinsheetin otsikkorivin kanssa. */
+      margin-top: -5px;
       padding: 0 20px 12px 20px;
       opacity: 0;
       max-height: 0;
@@ -3721,7 +3725,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-f';
+    const APP_BUILD   = '2026-08-19-g';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
       const v = document.getElementById('tp-splash-ver');
@@ -9255,12 +9259,12 @@
     const SHEET_PILL_W = 68;
     const SHEET_PILL_H = 20;
     const SHEET_PILL_BORDER = '#0C0243';   // sama reunaväri kaikilla
-    // Täytöt: kartan omat värit 40 % peitolla, kuten alueilla kartalla.
-    const SHEET_PILL_PAID   = 'rgba(18,102,241,0.4)';   // #1266f1 maksullinen
-    const SHEET_PILL_FREE   = 'rgba(127,31,137,0.4)';   // #7F1F89 ilmainen
-    const SHEET_PILL_CHARGE = 'rgba(0,129,81,0.4)';     // #008151 latauspiste
-    const SHEET_PILL_HALLI  = 'rgba(21,101,192,0.4)';   // #1565C0 pysäköintihalli
-    // 40 % täytön päällä valkoinen teksti ei erotu (kontrasti ~1,8:1), joten
+    // Täytöt: kartan omat värit 20 % peitolla (oli 40 %, laskettu 19.8.).
+    const SHEET_PILL_PAID   = 'rgba(18,102,241,0.2)';   // #1266f1 maksullinen
+    const SHEET_PILL_FREE   = 'rgba(127,31,137,0.2)';   // #7F1F89 ilmainen
+    const SHEET_PILL_CHARGE = 'rgba(0,129,81,0.2)';     // #008151 latauspiste
+    const SHEET_PILL_HALLI  = 'rgba(21,101,192,0.2)';   // #1565C0 pysäköintihalli
+    // Näin vaalean täytön päällä valkoinen teksti ei erotu lainkaan, joten
     // teksti ja ikonit ovat samaa tummansinistä kuin reunaviiva.
     const SHEET_PILL_INK    = '#0C0243';
     function setSheetPill(html, bg) {
