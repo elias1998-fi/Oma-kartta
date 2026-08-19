@@ -3333,6 +3333,20 @@
       transition: opacity .2s ease .12s;    /* fades in once the box has room */
     }
 
+    /* × ison kortin oikeassa yläkulmassa: poistaa pillerin kokonaan ja
+       palauttaa ajanhetken nykyhetkeen. Sama toiminto kuin aiemmin pillerin
+       vasemmassa reunassa olleella ×:llä. */
+    #ajanhetki-close {
+      position: absolute; top: 4px; right: 10px; z-index: 2;
+      width: 22px; height: 22px; padding: 0;
+      border: none; border-radius: 50%;
+      background: #eeeef1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    #ajanhetki-close:active { background: #dededf; }
+    #ajanhetki-close svg { width: 10px; height: 10px; }
+
     /* Drag handle — purely a visual affordance (the whole card is the drag
        surface). Always a shallow "pull me down" chevron, in both sizes. */
     #ajanhetki-handle-area { display: flex; justify-content: center; padding: 0 0 6px; touch-action: none; }
@@ -3345,7 +3359,10 @@
     #ajanhetki-handle span:last-child  { right: 0; transform-origin: right center; transform: rotate(-13deg); }
 
     /* One tight row: clock column | drum | ×. */
-    .ajanhetki-float-body { display: flex; align-items: center; gap: 10px; }
+    /* margin-top: rivi lasketaan alemmas, jotta oikeaan yläkulmaan mahtuu ×.
+       Marginaali vaikuttaa asetteluun, joten ajanhetkiMetrics mittaa kortin
+       uuden korkeuden automaattisesti — kovakoodattuja lukuja ei tarvita. */
+    .ajanhetki-float-body { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
     .ajanhetki-float-left { flex: 1; min-width: 0; }
     .ajanhetki-float-title { display: block; font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
     #ref-time-value-2 { font-size: 26px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color .2s ease; }
@@ -3357,7 +3374,10 @@
     #ref-time-reset-2.visible { visibility: visible; }
     /* No × in the window any more — dismissing lives on the pill. The drum
        therefore sits flush against the window's right edge. */
-    #ref-drum-zone-2 { margin-right: -2px; }
+    /* top: 0 kumoaa .drum-scroll-zonen -10.5px noston VAIN tässä kortissa →
+       rulla laskeutuu riviin muiden kanssa. Suodatinsheetin ja pysäköintiajan
+       rullat pysyvät ennallaan. */
+    #ref-drum-zone-2 { margin-right: -2px; top: 0; }
 
     /* Hint rows: always laid out, so the card's measured heights are stable.
        At the medium size the card is simply short enough to clip them away. */
@@ -3660,13 +3680,16 @@
       background: #fff;
       z-index: 100000;
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 10px;
+      align-items: center; justify-content: center; gap: 0;
       font-family: Arial, sans-serif;
       opacity: 1; transition: opacity .3s ease;
     }
     #tp-splash.gone { opacity: 0; pointer-events: none; }
     #tp-splash-name { font-size: 26px; font-weight: bold; color: #0C0243; letter-spacing: .3px; }
-    #tp-splash-tagline { font-size: 14px; color: #4a4a52; letter-spacing: .2px; }
+    /* Iskulause käyttää profiilinäkymän .profile-brand-tagline -luokkaa
+       (käsialafontti, kursiivi, #3a4cb8) — ei omaa kopiota, jottei ulkoasu
+       voi eriytyä. Sen oma margin-top 6px hoitaa välin, siksi splashin
+       flex-gap on 0. */
     /* Versio irrotettu keskitetystä pinosta omaan nurkkaansa. safe-area, jotta
        se ei jää iPhonen kotipalkin alle. */
     #tp-splash-ver {
@@ -3687,12 +3710,12 @@
        silti tavallisia globaaleja, joten sovellusskripti näkee ne. -->
   <div id="tp-splash">
     <div id="tp-splash-name">TotalParking</div>
-    <div id="tp-splash-tagline">100% suomalainen</div>
+    <div id="tp-splash-tagline" class="profile-brand-tagline">100% suomalainen</div>
     <div id="tp-splash-ver"></div>
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-c';
+    const APP_BUILD   = '2026-08-19-d';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
       const v = document.getElementById('tp-splash-ver');
@@ -5204,6 +5227,11 @@
           </div>
         </div>
         <div id="ajanhetki-float" role="dialog" aria-label="Ajanhetki">
+          <button id="ajanhetki-close" aria-label="Poista ajanhetki näkyvistä">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8a8a90" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
+              <line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>
+            </svg>
+          </button>
           <div id="ajanhetki-handle-area"><div id="ajanhetki-handle"><span></span><span></span></div></div>
           <!-- One tight row: clock column | drum | ×. Merging the old header row
                into this one keeps the window short so more map stays visible. -->
@@ -6291,7 +6319,11 @@
       const arrow = document.createElement('div');
       arrow.className = 'user-dot-arrow';
       el.appendChild(arrow);
-      if (typeof _compassEnabled !== 'undefined' && _compassEnabled) el.classList.add('has-heading');
+      // HUOM: ei viittausta _compassEnabledIin — se on `let` joka esitellään
+      // vasta alempana, ja tämä funktio ajetaan HETI (TDZ:ssa jopa typeof
+      // heittää ReferenceErrorin). Nuolen näkyväksi tekevän .has-heading
+      // -luokan lisää ensureUserDotArrow() heti kun ensimmäinen
+      // suuntalukema saapuu.
       _demoDotMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([DEMO_LOCATION.lon, DEMO_LOCATION.lat])
         .addTo(map);
@@ -6304,7 +6336,11 @@
       if (_demoDotMarker) { _demoDotMarker.remove(); _demoDotMarker = null; }
       _demoLocationActive = false;
     }
-    map.on('load', showDemoLocation);
+    // Piirretään HETI, ei `map.on('load')`issa: load odottaa tyylin ja
+    // ensimmäisten tiilien latautumista, joten piste ilmestyi noin sekunnin
+    // muuta käyttöliittymää jäljessä. Marker toimii jo ennen loadia, koska
+    // kartan transform on olemassa heti konstruktorin jälkeen.
+    showDemoLocation();
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
       const R = 6371;
@@ -6441,6 +6477,26 @@
       _currentHeading = heading;
       applyHeadingToUserDot();
     }
+
+    // Suuntanuoli halutaan näkyviin heti, myös demo-sijainnissa, ilman että
+    // käyttäjä painaa sijaintinappia. Androidilla ja desktopilla lupaa ei
+    // tarvita → kompassi käynnistetään suoraan. iOS 13+ vaatii että
+    // requestPermission() kutsutaan käyttäjäeleestä, joten sinne ripustetaan
+    // kertakäyttöinen kuuntelija ensimmäiseen kosketukseen missä tahansa —
+    // silloin lupakysely tulee ensimmäisen napautuksen yhteydessä eikä vasta
+    // sijaintinapista.
+    (function autoEnableCompass(){
+      const needsGesture = (typeof DeviceOrientationEvent !== 'undefined' &&
+                            typeof DeviceOrientationEvent.requestPermission === 'function');
+      if (!needsGesture) { enableCompassHeading(); return; }
+      const once = () => {
+        document.removeEventListener('touchend', once, true);
+        document.removeEventListener('click', once, true);
+        enableCompassHeading();
+      };
+      document.addEventListener('touchend', once, { capture: true, passive: true });
+      document.addEventListener('click', once, true);
+    })();
 
     // Ensure our custom arrow element exists inside MapLibre's user dot.
     // MapLibre creates the dot only after the first successful geolocate, so
@@ -15958,10 +16014,21 @@
         anchor.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
         anchor.addEventListener('mousedown',  e => e.stopPropagation());
       }
-      // POISTETTU: pillerin ×-nappi ja − / + askelnapit. Ajan säätö pillerissä
-      // tapahtuu nyt pienoisrullalla (#ajanhetki-drum-zone, sidonta alempana
-      // muiden rullien yhteydessä). ajanhetkiDismissed jää muuttujaksi, mutta
-      // sen ainoa nollaaja on closeFilter — pilleriä ei voi enää sulkea käsin.
+      // POISTETTU: pillerin − / + askelnapit (ajan säätö tapahtuu nyt
+      // pienoisrullalla #ajanhetki-drum-zone, sidonta alempana muiden rullien
+      // yhteydessä) sekä pillerin vasemman reunan ×.
+      // × on nyt ISON KORTIN oikeassa yläkulmassa: poistaa pillerin kokonaan
+      // ja palauttaa ajanhetken nykyhetkeen. resetRefTime → updateRefTimeUI →
+      // syncAjanhetkiMirror → updateAjanhetkiPillVisibility piilottaa kortin,
+      // koska ajanhetkiDismissed on tosi. Takaisin se tulee vasta kun aikaa
+      // säädetään suodatinnäkymässä ja suodatin suljetaan.
+      const cl = document.getElementById('ajanhetki-close');
+      if (cl) cl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        ajanhetkiDismissed = true;
+        collapseAjanhetkiCard();
+        resetRefTime();
+      });
       // "Palauta nykyhetkeen" returns to live time and LEAVES the card open;
       // the label simply flips to "Nykyhetki HH:MM".
       const rs = document.getElementById('ref-time-reset-2');
@@ -15973,7 +16040,7 @@
       // The whole card is the drag surface — no need to grab the little handle
       // precisely. Only the three real controls are carved out: the × button,
       // the "Palauta nykyhetkeen" link, and the drum (which has its own drag).
-      const NO_DRAG = '#ref-time-reset-2, #ref-drum-zone-2';
+      const NO_DRAG = '#ref-time-reset-2, #ref-drum-zone-2, #ajanhetki-close';
       const isControl = t => !!(t && t.closest && t.closest(NO_DRAG));
       const clamp01 = v => Math.max(0, Math.min(1, v));
       let dragging = false, startY = 0, dy = 0, dragH0 = 0, dragM = null;
