@@ -219,8 +219,14 @@
       box-shadow: 0 0 0 1px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.25) !important;
       position: relative !important;
     }
-    /* Hide MapLibre's own cone-shaped heading indicator — we use our own */
+    /* Hide MapLibre's own cone-shaped heading indicator — we use our own.
+       (Huom: MapLibre 4 ei itse asiassa tue showUserHeadingiä lainkaan, joten
+       tämä sääntö ei osu mihinkään. Jätetty varalle.) */
     .maplibregl-user-location-dot-heading { display: none !important; }
+    /* MapLibren oma ::after piirtää vielä 19 px valkoisen renkaan + 3 px sumean
+       varjon oman 3 px kehyksemme sisään → näkyi vaaleanharmaana toisena
+       renkaana valkoisen alla. Pois; oma kehys ja varjo riittävät. */
+    .maplibregl-user-location-dot::after { display: none !important; }
     /* Custom direction arrow. Positioned dead-center over the user dot;
        a transform chain rotates first, then translates outward — so the
        arrow's base ends up flush against the dot's edge in the rotated
@@ -3715,7 +3721,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-d';
+    const APP_BUILD   = '2026-08-19-e';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
       const v = document.getElementById('tp-splash-ver');
@@ -6075,6 +6081,10 @@
     // Avausnäkymä: Helsingin Hietalahdentori. Sama piste on myös demo-sijainti
     // (ks. showDemoLocation), joten kartan keskipiste ja sijaintipiste ovat
     // avattaessa samassa paikassa. Jaettu linkki (?ll=&z=) ohittaa nämä.
+    // Tyhjän sheetin korkeus ("Siirrä kursori pysäköintialueelle" ja "Lähennä
+    // karttaa"). Sheet on ankkuroitu alareunaan, joten pienempi luku laskee
+    // koko sisällön — myös GPS-huomautuksen — saman verran alemmas.
+    const EMPTY_SHEET_PX = 78;
     const DEMO_LOCATION  = { lat: 60.1632, lon: 24.9299 };   // Hietalahdentori
     const INITIAL_CENTER = [DEMO_LOCATION.lon, DEMO_LOCATION.lat];
     const INITIAL_ZOOM   = 16;
@@ -6123,10 +6133,17 @@
     // siirretään ensimmäisen label_*-tason alapuolelle. Keskinäinen järjestys
     // säilyy listan mukaisena, eli hallit jäävät latauspisteiden päälle ja
     // korostukset perustasojen päälle.
-    const APP_LAYER_ORDER = [
+    // Aluepolygonit jäävät karttatekstien ALLE, mutta halli- ja
+    // latauspisteikonit nostetaan KAIKEN päälle, jotta POI-nimet eivät piirry
+    // niiden yli. Ikonit siirretään ilman beforeId:tä = tyylin päällimmäisiksi,
+    // ja koska moveLayer siirtää aina viimeisimmän ylimmäksi, listan
+    // järjestys ratkaisee: halli jää latauspisteen päälle.
+    const APP_POLY_ORDER = [
       'master-poly-fill','master-poly-line',
       'master-poly-group-fill','master-poly-group-line',
-      'master-poly-hover-fill','master-poly-hover-line',
+      'master-poly-hover-fill','master-poly-hover-line'
+    ];
+    const APP_ICON_ORDER = [
       'charging-icons','charging-hi-icon',
       'halli-icons','halli-hi-icon'
     ];
@@ -6139,9 +6156,13 @@
     }
     function promoteIconLayers(){
       const before = firstLabelLayerId();
-      APP_LAYER_ORDER.forEach(id => {
+      APP_POLY_ORDER.forEach(id => {
         if (!map.getLayer(id)) return;
         try { map.moveLayer(id, before); } catch(e){ try { map.moveLayer(id); } catch(e2){} }
+      });
+      APP_ICON_ORDER.forEach(id => {
+        if (!map.getLayer(id)) return;
+        try { map.moveLayer(id); } catch(e){}
       });
     }
 
@@ -6478,25 +6499,11 @@
       applyHeadingToUserDot();
     }
 
-    // Suuntanuoli halutaan näkyviin heti, myös demo-sijainnissa, ilman että
-    // käyttäjä painaa sijaintinappia. Androidilla ja desktopilla lupaa ei
-    // tarvita → kompassi käynnistetään suoraan. iOS 13+ vaatii että
-    // requestPermission() kutsutaan käyttäjäeleestä, joten sinne ripustetaan
-    // kertakäyttöinen kuuntelija ensimmäiseen kosketukseen missä tahansa —
-    // silloin lupakysely tulee ensimmäisen napautuksen yhteydessä eikä vasta
-    // sijaintinapista.
-    (function autoEnableCompass(){
-      const needsGesture = (typeof DeviceOrientationEvent !== 'undefined' &&
-                            typeof DeviceOrientationEvent.requestPermission === 'function');
-      if (!needsGesture) { enableCompassHeading(); return; }
-      const once = () => {
-        document.removeEventListener('touchend', once, true);
-        document.removeEventListener('click', once, true);
-        enableCompassHeading();
-      };
-      document.addEventListener('touchend', once, { capture: true, passive: true });
-      document.addEventListener('click', once, true);
-    })();
+    // HUOM: kompassia EI käynnistetä automaattisesti. enableCompassHeading()
+    // kutsutaan VAIN sijaintinapista (#location-btn), koska automaattinen
+    // käynnistys toi iOS:llä "Access Motion and Orientation" -lupakyselyn heti
+    // avattaessa. Siksi demo-sijainnissa ei myöskään näy suuntanuolta ennen
+    // kuin nappia on painettu.
 
     // Ensure our custom arrow element exists inside MapLibre's user dot.
     // MapLibre creates the dot only after the first successful geolocate, so
@@ -9169,7 +9176,11 @@
       document.getElementById('summary-header').textContent   = header;
       // Pyöreä tunnusmerkki: kiekkoalueella kiekkoikoni, muuten aluekoodi.
       if (isDisc) {
-        setSheetMedallion(DISC_BADGE_SVG, true);
+        // Ilmaispysäköinti: sama pilleri kuin maksullisilla, mutta lila täyttö
+        // ja valkoinen teksti. Kiekkoalueella tekstinä "Kiekko".
+        setSheetPill(isDisc === 'kiekko' ? 'Kiekko'
+                     : (areaCode ? 'Alue ' + areaCode : 'Ilmainen'),
+                     SHEET_PILL_FREE, '#ffffff');
         showCenterBadge(null);
       } else if (areaCode) {
         setSheetMedallion('Alue ' + areaCode, false);
@@ -9229,6 +9240,50 @@
     }
     function hideSheetMedallion(){ setSheetMedallion(null); }
 
+    // ── Sheetin pilleri-badge ────────────────────────────────────────────
+    // Sama muoto ja koko kuin aluekoodilaatalla ("Alue 123"): 1 px reunus,
+    // 5 px kulmat, 2/8 px pehmuste, 12 px lihava teksti. Vain täytön ja tekstin
+    // väri vaihtuu kohteen mukaan. Ikonivarianteissa (latauspiste) SVG:t ovat
+    // 12 px korkeita ja pystykeskitettyjä, jotta pillerin korkeus pysyy samana
+    // kuin tekstiversiossa.
+    const SHEET_PILL_BORDER = '#0C0243';   // sama reunaväri kaikilla
+    const SHEET_PILL_HALLI  = '#1565C0';   // pysäköintihalli: sininen
+    const SHEET_PILL_CHARGE = '#008151';   // latauspiste: vihreä
+    const SHEET_PILL_FREE   = '#7F1F89';   // ilmaispysäköinti: lila
+    function setSheetPill(html, bg, fg) {
+      const el = document.getElementById('area-code-badge');
+      if (!el) return;
+      el.innerHTML = html;
+      el.style.display      = 'inline-block';
+      el.style.background   = bg;
+      el.style.color        = fg;
+      el.style.border       = '1px solid ' + SHEET_PILL_BORDER;
+      el.style.fontSize     = '12px';
+      el.style.fontWeight   = 'bold';
+      el.style.padding      = '2px 8px';
+      el.style.borderRadius = '5px';
+    }
+    // Pistoke ILMAN salamaa + erillinen salama sen viereen. Kartan ikonissa
+    // salama on pistokkeen alla samassa polussa; tässä sama polku on pilkottu
+    // osapoluiksi ja salama piirretään omana SVG:nään.
+    const PLUG_ONLY_D = "M25.51 107.9C24.25 106.86 24.47 104.66 25.9 104.08C26.43 103.87 35.57 103.77 60.45 103.71C94.1 103.62 94.3 103.62 97.19 103.06C114.76 99.7 120.35 89.61 110.52 79.03C108.46 76.81 106.28 75.01 102.2 72.15L99.22 70.06L98.25 71.09C97.51 71.86 97.08 72.11 96.47 72.11C95.67 72.11 91.11 70 91.11 69.63C91.11 69.19 98.4 58.81 98.71 58.81C98.83 58.81 99.78 59.62 100.82 60.61C103.24 62.92 103.47 63.83 102.13 65.68C101.74 66.21 101.81 66.28 104.59 68.2C106.17 69.28 108.48 70.99 109.74 72C128.16 86.77 120.73 104.95 95.04 107.96C89.68 108.59 26.28 108.53 25.51 107.9ZM83.36 69.1C81.36 67.79 80.34 66.66 78.33 63.53C77.41 62.09 76.11 60.38 75.46 59.73C73.98 58.25 56.79 46.18 54.88 45.28C52.57 44.18 49.85 44.32 46.9 45.68C43.59 47.21 43.18 47.26 34.48 47.27C23.35 47.28 24.42 48.84 24.52 32.68L24.6 21.13L25.42 20.4L26.25 19.66L35.18 19.66C50.31 19.66 49.36 19.31 66.79 31.54C71.46 34.82 77.5 39.05 80.22 40.94C98.11 53.42 97.45 52.88 97.45 54.86C97.45 55.72 96.87 56.67 92.72 62.59C86.91 70.89 86.51 71.17 83.36 69.1ZM9.35 44.25C8 43.43 8 43.43 8 33.47C8 21.13 7.25 22.19 15.99 22.19L21.94 22.19L21.94 33.47L21.94 44.74L16.05 44.74C10.66 44.74 10.08 44.7 9.35 44.25Z";
+    const BOLT_ONLY_D = "M43.57 93.77C44.06 92.08 47.53 79.65 47.67 79.11L47.83 78.46L44.13 78.39L40.43 78.32L49.91 68.85L59.38 59.37L57.18 67.2L54.98 75.02L58.6 75.09C60.59 75.13 62.23 75.25 62.23 75.35C62.23 75.45 58 79.75 52.83 84.91C47.66 90.06 43.49 94.05 43.57 93.77Z";
+    function chargingPillHtml(){
+      return '<svg width="12" height="12" viewBox="0 0 128 128" style="display:inline-block;vertical-align:middle;">' +
+               '<path fill="#ffffff" fill-rule="evenodd" d="' + PLUG_ONLY_D + '"/></svg>' +
+             '<svg width="9" height="12" viewBox="38 57 26 39" style="display:inline-block;vertical-align:middle;margin-left:4px;">' +
+               '<path fill="#ffffff" fill-rule="evenodd" d="' + BOLT_ONLY_D + '"/></svg>';
+    }
+    // Kiekkopysäköinti erotetaan muusta ilmaispysäköinnistä, koska badgessa
+    // lukee silloin "Kiekko" aluekoodin sijaan.
+    function isKiekkoArea(props) {
+      if (!props) return false;
+      const at = props.area_type;
+      if (at === 'kiekko' || at === 'Kiekkopysäköinti') return true;
+      const src = props.source;
+      return typeof src === 'string' && src.toLowerCase().indexOf('kiekko') !== -1;
+    }
+
     // Purkaa kaiken mitä P-merkki on valinnut: alueen korostus, halli- ja
     // latauspistekorostukset sekä merkin laajennetun badge-muodon.
     function clearPointerSelection() {
@@ -9253,8 +9308,8 @@
       hideCenterBadge();
       const bs = document.getElementById('bottom-sheet');
       bs.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
-      bs.style.transform  = 'translateY(calc(100% - 90px))';
-      currentY = bs.offsetHeight - 90;
+      bs.style.transform  = 'translateY(calc(100% - ' + EMPTY_SHEET_PX + 'px))';
+      currentY = bs.offsetHeight - EMPTY_SHEET_PX;
       if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       document.getElementById('summary-header').textContent = '';
       document.getElementById('summary-type').textContent = '';
@@ -9848,10 +9903,9 @@
       // Garages carry no price/hours in the open data → no detail rows.
       document.getElementById('sheet-divider').style.display = 'none';
       setActionBtnText('Pysäköi täällä');
-      // Top-left sheet badge = the parking-garage icon (like the charging badge).
-      setSheetMedallion(
-        '<img src="' + halliIconSvg() + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        '<span style="vertical-align:middle;margin-left:5px;color:#111;font-size:14px;font-weight:800;letter-spacing:0.3px;">Täynnä</span>', true);
+      // Sheetin badge = aluekoodilaatan kokoinen pilleri, sininen täyttö ja
+      // valkoinen P. Kartan ikoni pysyy ennallaan.
+      setSheetPill('P', SHEET_PILL_HALLI, '#ffffff');
       document.getElementById('gps-warning').classList.remove('visible');
       if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
@@ -10078,7 +10132,12 @@
           // empty so the section structure stays consistent across areas.
           const extraInfoCleaned = cleanExtraInfoForSheet(extraInfo);
           detailsHTML += `<p class="price-label">Lisätiedot</p><p class="price-value">${extraInfoCleaned ? escapeHtml(extraInfoCleaned) : '—'}</p>`;
-          showCenterFeatureInSheet(line1, srcType, op, computeAreaCodeFromFeature(f), detailsHTML, isDiscOrFreeArea(p));
+          // 6. argumentti kertoo nyt myös MIKÄ ilmaistyyppi on kyseessä
+          // ('kiekko' | 'free' | ''), jotta badgeen saadaan oikea teksti.
+          // Merkkijono on yhä totuusarvoltaan tosi, joten vanhat if-haarat
+          // toimivat ennallaan.
+          showCenterFeatureInSheet(line1, srcType, op, computeAreaCodeFromFeature(f), detailsHTML,
+                                   isDiscOrFreeArea(p) ? (isKiekkoArea(p) ? 'kiekko' : 'free') : '');
         }
         // ALWAYS update btn when feature is under center (regardless of same/different ID)
         setActionBtnText(isDiscOrFreeArea(f.properties) ? 'Aseta elektroninen pysäköintikiekko' : 'Pysäköi tähän');
@@ -10127,8 +10186,8 @@
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.remove('visible');
         } else if (zoom >= POINTER_MINZOOM && (_t === '' || _t.includes('- 60px'))) {
           _bs.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
-          _bs.style.transform = 'translateY(calc(100% - 90px))';
-          currentY = _bs.offsetHeight - 90;
+          _bs.style.transform = 'translateY(calc(100% - ' + EMPTY_SHEET_PX + 'px))';
+          currentY = _bs.offsetHeight - EMPTY_SHEET_PX;
           const gw = document.getElementById('gps-warning'); if (gw) gw.classList.add('visible');
         }
       }
@@ -10214,6 +10273,11 @@
     // Vanha varmistus tarkisti vain onko kamera liikkunut LAINKAAN, joten se ei
     // huomannut katkennutta lentoa. Nyt tarkistetaan pikselietäisyys tavoitteesta
     // ja jatketaan lentoa kunnes ollaan perillä (tai yritykset loppuvat).
+    // Yksi kesto KAIKILLE kohteesta toiseen siirtymisille (alue, halli,
+    // latauspiste). Myös saapumisvahdin jatkolento käyttää tätä: aiempi 400 ms
+    // teki alueiden välisestä siirtymästä nopeamman tuntuisen kuin hallien,
+    // koska katkennut lento viimeisteltiin puolta lyhyemmällä liikkeellä.
+    const SELECT_FLY_MS = 800;
     const SEL_ARRIVE_PX = 8;     // tätä lähempänä = perillä
     const SEL_MAX_TRIES = 3;
     let _selTarget = null, _selTries = 0, _selId = '';
@@ -10241,7 +10305,7 @@
       }
       _selTries++;
       _selDiag(err, note + ' · jatkan');
-      map.flyTo({ center:[_selTarget.lng, _selTarget.lat], duration: 400 });
+      map.flyTo({ center:[_selTarget.lng, _selTarget.lat], duration: SELECT_FLY_MS });
     }
     map.on('moveend', () => _selCheck('moveend'));
     // Käyttäjän oma ele purkaa vahdin, muuten se taistelisi vetoa vastaan.
@@ -10259,7 +10323,7 @@
       _selTarget = { lng, lat };
       _selTries = 0;
       _selId = (f.properties && f.properties.id !== undefined) ? String(f.properties.id) : '';
-      map.flyTo({ center:[lng,lat], duration: 800 });
+      map.flyTo({ center:[lng,lat], duration: SELECT_FLY_MS });
       setTimeout(() => _selCheck('300ms'), 300);
       return true;
     }
@@ -10492,7 +10556,7 @@
           if (!selectionEnabled()) return;
           showHalliInfo(e);
           const coords = e.features[0].geometry.coordinates;
-          map.flyTo({ center: coords, duration: 800 });   // zoom ennallaan
+          map.flyTo({ center: coords, duration: SELECT_FLY_MS });   // zoom ennallaan
         });
         map.on('mouseleave', 'halli-icons', () => {
           map.getCanvas().style.cursor = '';
@@ -12420,6 +12484,7 @@
     }
     // Set the action button's text.
     const ZOOM_IN_LABEL = 'Lähennä karttaa';
+    const CURSOR_HINT_LABEL = 'Siirrä kursori pysäköintialueelle';
     function setActionBtnText(t) {
       const b = document.getElementById('action-btn');
       if (b) b.textContent = t;
@@ -12433,7 +12498,11 @@
       const b = document.getElementById('action-btn');
       const h = document.getElementById('drag-handle');
       if (!b || !h) return;
-      h.style.visibility = (b.textContent.trim() === ZOOM_IN_LABEL) ? 'hidden' : '';
+      // Kahva näkyy vain kun sheetissä on vedettävää sisältöä. Molemmissa
+      // kehotetiloissa ("Lähennä karttaa", "Siirrä kursori pysäköintialueelle")
+      // sheet on tyhjä → kahva piiloon.
+      const _t = b.textContent.trim();
+      h.style.visibility = (_t === ZOOM_IN_LABEL || _t === CURSOR_HINT_LABEL) ? 'hidden' : '';
     }
     map.on('zoom', () => {
       updateZoomIndicator();
@@ -13944,7 +14013,7 @@
                 hoveredChargingId = ft.properties.id;
                 scheduleHitRefetch();   // freshen this station's status on tap
                 showChargingInSheet(ft.properties);
-                if(coords) map.flyTo({ center: coords, duration: 800 });   // zoom ennallaan
+                if(coords) map.flyTo({ center: coords, duration: SELECT_FLY_MS });   // zoom ennallaan
               });
             }
           }
@@ -14340,12 +14409,10 @@
       );
       // Big action button label for a charging station.
       setActionBtnText('Lataa täällä');
-      // Top-left sheet badge = the charging-station icon (like the disc badge
-      // for free parking areas).
-      setSheetMedallion(
-        '<img src="' + chargingIconSvg(isAvail ? '#008151' : '#b4b7bd') + '" style="width:20px;height:20px;display:inline-block;vertical-align:middle;">' +
-        '<span style="vertical-align:middle;margin-left:5px;color:#111;font-size:14px;font-weight:800;letter-spacing:0.3px;">' +
-        (isAvail ? 'Tilaa' : 'Täynnä') + '</span>', true);
+      // Sheetin badge = aluekoodilaatan kokoinen pilleri, vihreä täyttö,
+      // sisällä pistoke ja sen vieressä erillinen salama. Kartan ikoni pysyy
+      // ennallaan (siinä salama on pistokkeen alla samassa polussa).
+      setSheetPill(chargingPillHtml(), SHEET_PILL_CHARGE, '#ffffff');
       // Match the parking-area look: no "GPS may be inaccurate" notice taking
       // space, so the station details aren't pushed partly out of the sheet.
       document.getElementById('gps-warning').classList.remove('visible');
@@ -15224,8 +15291,8 @@
               setActionBtnText('Siirrä kursori pysäköintialueelle'); btn.classList.remove('active');
               gpsWarning.classList.add('visible');
               sheet.style.transition='transform 0.38s cubic-bezier(0.32,0.72,0,1)';
-              sheet.style.transform='translateY(calc(100% - 90px))';
-              currentY = sheet.offsetHeight - 90;
+              sheet.style.transform='translateY(calc(100% - ' + EMPTY_SHEET_PX + 'px))';
+              currentY = sheet.offsetHeight - EMPTY_SHEET_PX;
             }
           }
         }
@@ -15292,8 +15359,8 @@
         btn.classList.remove('active');
         gpsWarning.classList.add('visible');
         sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
-        sheet.style.transform = 'translateY(calc(100% - 90px))';
-        currentY = sheet.offsetHeight - 90;
+        sheet.style.transform = 'translateY(calc(100% - ' + EMPTY_SHEET_PX + 'px))';
+        currentY = sheet.offsetHeight - EMPTY_SHEET_PX;
         updateNavBtnVisibility();
       }
     }
