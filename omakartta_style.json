@@ -2366,14 +2366,14 @@
       "minzoom": 13,
       "filter": ["all", ["==", "$type", "Point"], ["in", "class", "park"]],
       "layout": {
-        "text-size": 11,
+        "text-size": 10,
         "text-max-width": 8,
-        "text-font": ["Gotham Rounded Medium Italic"],
+        "text-font": ["Gotham Rounded Medium"],
         "text-anchor": "top",
         "text-field": "{name}"
       },
       "paint": {
-        "text-color": "#8ea66d",
+        "text-color": "#666",
         "text-halo-color": "#fff",
         "text-halo-width": 1
       }
