@@ -3721,7 +3721,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-e';
+    const APP_BUILD   = '2026-08-19-f';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
       const v = document.getElementById('tp-splash-ver');
@@ -9180,10 +9180,12 @@
         // ja valkoinen teksti. Kiekkoalueella tekstinä "Kiekko".
         setSheetPill(isDisc === 'kiekko' ? 'Kiekko'
                      : (areaCode ? 'Alue ' + areaCode : 'Ilmainen'),
-                     SHEET_PILL_FREE, '#ffffff');
+                     SHEET_PILL_FREE);
         showCenterBadge(null);
       } else if (areaCode) {
-        setSheetMedallion('Alue ' + areaCode, false);
+        // Maksullinen alue kulkee nyt saman pillerin kautta kuin muutkin,
+        // jotta koko ja muoto ovat varmasti identtiset.
+        setSheetPill('Alue ' + areaCode, SHEET_PILL_PAID);
         showCenterBadge(areaCode);
       } else {
         hideSheetMedallion();
@@ -9246,33 +9248,52 @@
     // väri vaihtuu kohteen mukaan. Ikonivarianteissa (latauspiste) SVG:t ovat
     // 12 px korkeita ja pystykeskitettyjä, jotta pillerin korkeus pysyy samana
     // kuin tekstiversiossa.
+    // KIINTEÄ KOKO kaikille badgeille sisällöstä riippumatta: leveys mitoitettu
+    // pisimmän tekstin mukaan ("Ilmainen" / "Alue 200" ≈ 52 px + 2×8 px ilmaa).
+    // Siksi flex-keskitys eikä pehmuste — pelkkä padding antaisi jokaiselle
+    // sisällölle eri leveyden.
+    const SHEET_PILL_W = 68;
+    const SHEET_PILL_H = 20;
     const SHEET_PILL_BORDER = '#0C0243';   // sama reunaväri kaikilla
-    const SHEET_PILL_HALLI  = '#1565C0';   // pysäköintihalli: sininen
-    const SHEET_PILL_CHARGE = '#008151';   // latauspiste: vihreä
-    const SHEET_PILL_FREE   = '#7F1F89';   // ilmaispysäköinti: lila
-    function setSheetPill(html, bg, fg) {
+    // Täytöt: kartan omat värit 40 % peitolla, kuten alueilla kartalla.
+    const SHEET_PILL_PAID   = 'rgba(18,102,241,0.4)';   // #1266f1 maksullinen
+    const SHEET_PILL_FREE   = 'rgba(127,31,137,0.4)';   // #7F1F89 ilmainen
+    const SHEET_PILL_CHARGE = 'rgba(0,129,81,0.4)';     // #008151 latauspiste
+    const SHEET_PILL_HALLI  = 'rgba(21,101,192,0.4)';   // #1565C0 pysäköintihalli
+    // 40 % täytön päällä valkoinen teksti ei erotu (kontrasti ~1,8:1), joten
+    // teksti ja ikonit ovat samaa tummansinistä kuin reunaviiva.
+    const SHEET_PILL_INK    = '#0C0243';
+    function setSheetPill(html, bg) {
       const el = document.getElementById('area-code-badge');
       if (!el) return;
       el.innerHTML = html;
-      el.style.display      = 'inline-block';
-      el.style.background   = bg;
-      el.style.color        = fg;
-      el.style.border       = '1px solid ' + SHEET_PILL_BORDER;
-      el.style.fontSize     = '12px';
-      el.style.fontWeight   = 'bold';
-      el.style.padding      = '2px 8px';
-      el.style.borderRadius = '5px';
+      el.style.display        = 'inline-flex';
+      el.style.alignItems     = 'center';
+      el.style.justifyContent = 'center';
+      el.style.width          = SHEET_PILL_W + 'px';
+      el.style.height         = SHEET_PILL_H + 'px';
+      el.style.padding        = '0';
+      el.style.background     = bg;
+      el.style.color          = SHEET_PILL_INK;
+      el.style.border         = '1px solid ' + SHEET_PILL_BORDER;
+      el.style.fontSize       = '12px';
+      el.style.fontWeight     = 'bold';
+      el.style.lineHeight     = '1';
+      el.style.borderRadius   = '5px';
     }
     // Pistoke ILMAN salamaa + erillinen salama sen viereen. Kartan ikonissa
     // salama on pistokkeen alla samassa polussa; tässä sama polku on pilkottu
     // osapoluiksi ja salama piirretään omana SVG:nään.
     const PLUG_ONLY_D = "M25.51 107.9C24.25 106.86 24.47 104.66 25.9 104.08C26.43 103.87 35.57 103.77 60.45 103.71C94.1 103.62 94.3 103.62 97.19 103.06C114.76 99.7 120.35 89.61 110.52 79.03C108.46 76.81 106.28 75.01 102.2 72.15L99.22 70.06L98.25 71.09C97.51 71.86 97.08 72.11 96.47 72.11C95.67 72.11 91.11 70 91.11 69.63C91.11 69.19 98.4 58.81 98.71 58.81C98.83 58.81 99.78 59.62 100.82 60.61C103.24 62.92 103.47 63.83 102.13 65.68C101.74 66.21 101.81 66.28 104.59 68.2C106.17 69.28 108.48 70.99 109.74 72C128.16 86.77 120.73 104.95 95.04 107.96C89.68 108.59 26.28 108.53 25.51 107.9ZM83.36 69.1C81.36 67.79 80.34 66.66 78.33 63.53C77.41 62.09 76.11 60.38 75.46 59.73C73.98 58.25 56.79 46.18 54.88 45.28C52.57 44.18 49.85 44.32 46.9 45.68C43.59 47.21 43.18 47.26 34.48 47.27C23.35 47.28 24.42 48.84 24.52 32.68L24.6 21.13L25.42 20.4L26.25 19.66L35.18 19.66C50.31 19.66 49.36 19.31 66.79 31.54C71.46 34.82 77.5 39.05 80.22 40.94C98.11 53.42 97.45 52.88 97.45 54.86C97.45 55.72 96.87 56.67 92.72 62.59C86.91 70.89 86.51 71.17 83.36 69.1ZM9.35 44.25C8 43.43 8 43.43 8 33.47C8 21.13 7.25 22.19 15.99 22.19L21.94 22.19L21.94 33.47L21.94 44.74L16.05 44.74C10.66 44.74 10.08 44.7 9.35 44.25Z";
     const BOLT_ONLY_D = "M43.57 93.77C44.06 92.08 47.53 79.65 47.67 79.11L47.83 78.46L44.13 78.39L40.43 78.32L49.91 68.85L59.38 59.37L57.18 67.2L54.98 75.02L58.6 75.09C60.59 75.13 62.23 75.25 62.23 75.35C62.23 75.45 58 79.75 52.83 84.91C47.66 90.06 43.49 94.05 43.57 93.77Z";
+    // Ikonit 12 → 15 px. Pillerin sisäkorkeus on SHEET_PILL_H − 2×reunus = 18 px,
+    // joten 15 px jättää 1,5 px ilmaa ylä- ja alapuolelle eikä osu reunaan.
+    const PILL_ICON_PX = 15;
     function chargingPillHtml(){
-      return '<svg width="12" height="12" viewBox="0 0 128 128" style="display:inline-block;vertical-align:middle;">' +
-               '<path fill="#ffffff" fill-rule="evenodd" d="' + PLUG_ONLY_D + '"/></svg>' +
-             '<svg width="9" height="12" viewBox="38 57 26 39" style="display:inline-block;vertical-align:middle;margin-left:4px;">' +
-               '<path fill="#ffffff" fill-rule="evenodd" d="' + BOLT_ONLY_D + '"/></svg>';
+      return '<svg width="' + PILL_ICON_PX + '" height="' + PILL_ICON_PX + '" viewBox="0 0 128 128" style="display:block;">' +
+               '<path fill="' + SHEET_PILL_INK + '" fill-rule="evenodd" d="' + PLUG_ONLY_D + '"/></svg>' +
+             '<svg width="' + Math.round(PILL_ICON_PX * 26 / 39) + '" height="' + PILL_ICON_PX + '" viewBox="38 57 26 39" style="display:block;margin-left:4px;">' +
+               '<path fill="' + SHEET_PILL_INK + '" fill-rule="evenodd" d="' + BOLT_ONLY_D + '"/></svg>';
     }
     // Kiekkopysäköinti erotetaan muusta ilmaispysäköinnistä, koska badgessa
     // lukee silloin "Kiekko" aluekoodin sijaan.
@@ -9905,7 +9926,7 @@
       setActionBtnText('Pysäköi täällä');
       // Sheetin badge = aluekoodilaatan kokoinen pilleri, sininen täyttö ja
       // valkoinen P. Kartan ikoni pysyy ennallaan.
-      setSheetPill('P', SHEET_PILL_HALLI, '#ffffff');
+      setSheetPill('P', SHEET_PILL_HALLI);
       document.getElementById('gps-warning').classList.remove('visible');
       if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
     }
@@ -14412,7 +14433,7 @@
       // Sheetin badge = aluekoodilaatan kokoinen pilleri, vihreä täyttö,
       // sisällä pistoke ja sen vieressä erillinen salama. Kartan ikoni pysyy
       // ennallaan (siinä salama on pistokkeen alla samassa polussa).
-      setSheetPill(chargingPillHtml(), SHEET_PILL_CHARGE, '#ffffff');
+      setSheetPill(chargingPillHtml(), SHEET_PILL_CHARGE);
       // Match the parking-area look: no "GPS may be inaccurate" notice taking
       // space, so the station details aren't pushed partly out of the sheet.
       document.getElementById('gps-warning').classList.remove('visible');
@@ -17893,7 +17914,10 @@
       // an area code — so there's no code to embed in the share link.
       // Badge näyttää nyt muodon "Alue 1"; jaettavaan linkkiin tarvitaan
       // pelkkä numero, joten etuliite riisutaan.
-      const code     = isCharging ? '' : (codeEl && codeEl.textContent || '').trim().replace(/^Alue\s*/i, '');
+      // Badge voi nyt sisältää myös "P", "Kiekko" tai "Ilmainen" — jaettavaan
+      // linkkiin kelpaa vain numeerinen aluekoodi, muuten kenttä jätetään tyhjäksi.
+      const _rawCode = (codeEl && codeEl.textContent || '').trim().replace(/^Alue\s*/i, '');
+      const code     = (isCharging || !/^\d+$/.test(_rawCode)) ? '' : _rawCode;
 
       // Build a link back to the app itself, encoded as URL parameters.
       // `ll`, `z`, `c` are short keys so the URL stays compact enough to
