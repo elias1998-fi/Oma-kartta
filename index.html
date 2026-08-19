@@ -3290,13 +3290,13 @@
        passiivisia eivätkä voi kutsua preventDefaultia. */
     #ajanhetki-drum-zone {
       flex-shrink: 0;
-      width: 32px; height: 26px;
+      width: 64px; height: 26px;
       border: 1px solid #d8d8d8; border-radius: 7px;
       overflow: hidden; position: relative;
       cursor: grab; user-select: none; touch-action: none;
     }
     #ajanhetki-drum-zone:active { cursor: grabbing; }
-    #ajanhetki-drum-canvas { display: block; width: 32px; height: 26px; }
+    #ajanhetki-drum-canvas { display: block; width: 64px; height: 26px; }
     .ajanhetki-pill-sep {
       flex-shrink: 0;
       width: 1px; height: 19px;
@@ -3683,7 +3683,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-a';
+    const APP_BUILD   = '2026-08-19-b';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
       const v = document.getElementById('tp-splash-ver');
@@ -4198,7 +4198,15 @@
         </div>
         <div class="settings-item" style="cursor:default;">
           <div class="settings-item-text"><div class="settings-item-label">Sovelluksen versio</div></div>
-          <div class="about-version">1.0.0</div>
+          <div class="about-version" id="about-version">1.0.0</div>
+        </div>
+        <!-- MITTAUSRIVI (poistetaan kun aluevalinnan katkeamisbugi on varmistettu
+             korjatuksi): kertoo viimeisimmän aluevalinnan lennon lopputuloksen —
+             kuinka monta pikseliä keskipiste jäi tavoitteesta ja monestiko
+             saapumisvahti joutui jatkamaan lentoa. -->
+        <div class="settings-item" style="cursor:default;">
+          <div class="settings-item-text"><div class="settings-item-label">Aluevalinta</div></div>
+          <div class="about-version" id="about-select">–</div>
         </div>
         <div class="settings-item" onclick="confirmOpenExternal('https://totalparking.fi')">
           <div class="settings-item-text"><div class="settings-item-label">Yrityksen kotisivut</div></div>
@@ -5152,10 +5160,12 @@
 
     <!-- Credit line. Shares its spot with the Ajanhetki pill: whenever the pill
          is visible this is hidden, and it returns the moment the pill goes away
-         (dismissed, filter open, or zoom < 13). The swap lives in
-         updateAjanhetkiPillVisibility(); updateOsmOpacity() still fades it with
-         the sheet. -->
-    <div id="osm-attribution" style="position:absolute;top:-16px;left:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;pointer-events:none;transition:opacity 0.2s ease;">&copy; OpenStreetMap</div>
+         (dismissed, filter open, or zoom < 13). SIIRRETTY OIKEAAN REUNAAN
+         2026-08-19-b: ajanhetki-pilleri kasvaa vasemmasta alakulmasta, joten
+         vasen paikka on sen alla. Väistäminen koskee nyt zoom-lukemaa
+         (updateAjanhetkiPillVisibility); updateOsmOpacity() häivyttää molemmat
+         sheetin mukana. -->
+    <div id="osm-attribution" style="position:absolute;top:-16px;right:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;pointer-events:none;transition:opacity 0.2s ease;">&copy; OpenStreetMap</div>
     <!-- Ajanhetki: rides with the sheet. The pill grows UPWARD into the window. -->
     <div id="ajanhetki-anchor">
       <!-- ONE morphing element. The card itself is what the user sees grow and
@@ -5181,7 +5191,7 @@
                CSS px), koska drawDrumOn johtaa kaikki mitat canvasin koosta. -->
           <span class="ajanhetki-pill-sep"></span>
           <div id="ajanhetki-drum-zone" aria-label="Säädä ajanhetkeä">
-            <canvas id="ajanhetki-drum-canvas" width="64" height="52"></canvas>
+            <canvas id="ajanhetki-drum-canvas" width="128" height="52"></canvas>
           </div>
         </div>
         <div id="ajanhetki-float" role="dialog" aria-label="Ajanhetki">
@@ -5208,8 +5218,10 @@
     </div>
     <!-- Zoom read-out. Mirrors #osm-attribution on the opposite side: same
          font, size and colour, same 16px above the sheet's top edge, and it
-         fades with the sheet through updateOsmOpacity(). On by default. -->
-    <div id="zoom-indicator" style="position:absolute;top:-16px;right:8px;z-index:5;color:#000;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;transition:opacity 0.2s ease;"></div>
+         fades with the sheet through updateOsmOpacity(). On by default.
+         VASEMMASSA reunassa 2026-08-19-b:stä alkaen, ja se on nyt se joka
+         väistyy ajanhetki-pillerin tieltä. -->
+    <div id="zoom-indicator" style="position:absolute;top:-16px;left:8px;z-index:5;color:#000;font-family:Arial,sans-serif;font-size:10px;pointer-events:none;transition:opacity 0.2s ease;"></div>
     <div id="drag-handle-area"><div id="drag-handle"></div><div id="filter-title">Suodata karttanäkymää</div><button id="filter-reset-btn" onclick="resetFilters()">Palauta</button><button id="filter-close-btn">✕</button></div>
     <div id="filter-topmask"></div>
     <div id="gps-warning">
@@ -10080,6 +10092,53 @@
     // Keskitys valittuun alueeseen. Omana funktionaan, koska sitä kutsutaan
     // sekä taso-kohtaisesta että kartan yleisestä click-käsittelijästä.
     // Zoom-tasoa ei muuteta: käyttäjä pysyy valitsemassaan mittakaavassa.
+    // ── Saapumisvahti ─────────────────────────────────────────────────────
+    // JUURISYY (luettu MapLibre 4:n lähdekoodista): kirjasto keskeyttää
+    // käynnissä olevan flyTo:n heti kun mikä tahansa syötekäsittelijä
+    // aktivoituu — `HandlerManager.handleEvent` kutsuu `map._stop(true)` ja
+    // `applyChanges` tekee saman kommentilla "stop any ongoing camera
+    // animations (easeTo, flyTo)". Kosketusnäytöllä valinta tehdään
+    // touchendistä, ja selain lähettää sen JÄLKEEN synteettiset hiiritapahtumat
+    // (mousemove → mousedown → click). Jos ne osuvat kesken 800 ms:n lennon,
+    // lento katkeaa puoliväliin — juuri se oire jossa kartta siirtyy "vain
+    // vähän" toista aluetta klikatessa.
+    // Vanha varmistus tarkisti vain onko kamera liikkunut LAINKAAN, joten se ei
+    // huomannut katkennutta lentoa. Nyt tarkistetaan pikselietäisyys tavoitteesta
+    // ja jatketaan lentoa kunnes ollaan perillä (tai yritykset loppuvat).
+    const SEL_ARRIVE_PX = 8;     // tätä lähempänä = perillä
+    const SEL_MAX_TRIES = 3;
+    let _selTarget = null, _selTries = 0, _selId = '';
+    function _selPixelError(){
+      if (!_selTarget) return 0;
+      const a = map.project([_selTarget.lng, _selTarget.lat]);
+      const b = map.project(map.getCenter());
+      return Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+    }
+    function _selDiag(err, note){
+      const el = document.getElementById('about-select');
+      if (el) el.textContent = (_selId !== '' ? 'id ' + _selId + ' · ' : '') +
+                               err + ' px · ' + _selTries + ' uusintaa · ' + note;
+    }
+    // Kutsutaan sekä moveendistä että kertaluonteisesta ajastimesta: jos lento
+    // pysäytetään ennen ensimmäistä framea, moveend ei välttämättä laukea.
+    function _selCheck(note){
+      if (!_selTarget) return;
+      if (map.isMoving()) return;                     // lento kesken → odota
+      const err = _selPixelError();
+      if (err <= SEL_ARRIVE_PX || _selTries >= SEL_MAX_TRIES) {
+        _selDiag(err, note + (err <= SEL_ARRIVE_PX ? ' · perillä' : ' · LUOVUTIN'));
+        _selTarget = null;
+        return;
+      }
+      _selTries++;
+      _selDiag(err, note + ' · jatkan');
+      map.flyTo({ center:[_selTarget.lng, _selTarget.lat], duration: 400 });
+    }
+    map.on('moveend', () => _selCheck('moveend'));
+    // Käyttäjän oma ele purkaa vahdin, muuten se taistelisi vetoa vastaan.
+    map.on('dragstart', () => { _selTarget = null; });
+    map.on('zoomstart', (e) => { if (e && e.originalEvent) _selTarget = null; });
+
     function centerOnAreaFeature(f) {
       if (!f || !f.geometry) return false;
       const geom = f.geometry;
@@ -10088,21 +10147,11 @@
       const lng = ring.reduce((s,c)=>s+c[0],0)/ring.length;
       const lat = ring.reduce((s,c)=>s+c[1],0)/ring.length;
       if (filterMode) closeFilter();
-      const from = map.getCenter();
-      const go = () => map.flyTo({ center:[lng,lat], duration: 800 });
-      go();
-      // Varmistus: ensimmäisellä napautuksella sheet avautuu samaan aikaan, ja
-      // jokin siitä seuraava tapahtuma ehti pysäyttää juuri aloitetun lennon
-      // ennen sen ensimmäistä framea (näkymä ei siirtynyt ennen kuin vasta
-      // toisella napautuksella). Jos kamera ei ole liikkunut lainkaan eikä ole
-      // liikkeessä seuraavassa framessa, aloitetaan lento uudelleen.
-      const retryIfStuck = () => {
-        const c = map.getCenter();
-        const stuck = Math.abs(c.lng - from.lng) < 1e-7 && Math.abs(c.lat - from.lat) < 1e-7;
-        if (stuck && !map.isMoving()) go();
-      };
-      requestAnimationFrame(retryIfStuck);
-      setTimeout(retryIfStuck, 250);
+      _selTarget = { lng, lat };
+      _selTries = 0;
+      _selId = (f.properties && f.properties.id !== undefined) ? String(f.properties.id) : '';
+      map.flyTo({ center:[lng,lat], duration: 800 });
+      setTimeout(() => _selCheck('300ms'), 300);
       return true;
     }
 
@@ -11971,6 +12020,13 @@
         o.classList.toggle('selected', o.dataset.style === mapStyleChoice);
       });
       applyMapThemeUi();
+    })();
+
+    // Tietoja-näkymän versiorivi samasta lähteestä kuin avausruutu, jotta ne
+    // eivät voi eritä toisistaan.
+    (function(){
+      const el = document.getElementById('about-version');
+      if (el && typeof APP_VERSION !== 'undefined') el.textContent = APP_VERSION + ' · ' + APP_BUILD;
     })();
 
     // ── Zoom read-out toggle ─────────────────────────────────────────────
@@ -15794,10 +15850,16 @@
       // näytetään aina vain nykyhetki, joten ajanhetken säätö ei ole tarpeen.
       const active = zoomOk && !ajanhetkiDismissed && showFreeParking && !filterMode && !hoveredChargingId && !(typeof hoveredHalliId !== 'undefined' && hoveredHalliId);
       card.classList.toggle('visible', active);
-      // The © OpenStreetMap credit shares the pill's spot: it stays visible on
-      // every zoom level EXCEPT while the pill occupies the space.
+      // Ajanhetki-pilleri kasvaa ankkurin VASEMMASTA alakulmasta, joten se
+      // peittää vasemman paikan. 2026-08-19-b: © OpenStreetMap siirtyi oikeaan
+      // reunaan (ei siis enää väisty koskaan — hyvä, koska maininta on pakko
+      // näyttää), ja väistäjä on nyt zoom-lukema.
+      // visibility (ei display), jotta asetuksen oma display-ohjaus
+      // (applyZoomIndicatorVisibility / updateZoomIndicator) pysyy voimassa.
+      const zi = document.getElementById('zoom-indicator');
+      if (zi) zi.style.visibility = active ? 'hidden' : 'visible';
       const osm = document.getElementById('osm-attribution');
-      if (osm) osm.style.visibility = active ? 'hidden' : 'visible';
+      if (osm) osm.style.visibility = 'visible';
       if (active) { applyAjanhetkiGeometry(); startAjanhetkiFade(); }
       else {
         stopAjanhetkiFade();
