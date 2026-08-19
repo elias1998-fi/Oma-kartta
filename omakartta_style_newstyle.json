@@ -703,19 +703,7 @@
           "#cde0b6"
         ],
         "fill-outline-color": "#acc78b",
-        "fill-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "fill-opacity": 1
       }
     },
     {
@@ -747,19 +735,7 @@
           "#f0c2c2"
         ],
         "fill-outline-color": "#cca5a5",
-        "fill-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "fill-opacity": 1
       }
     },
     {
@@ -1347,6 +1323,7 @@
       "id": "building_shadow",
       "type": "fill",
       "source": "vector",
+      "minzoom": 13,
       "source-layer": "building",
       "layout": {
         "visibility": "visible"
@@ -1406,25 +1383,14 @@
             ]
           ]
         },
-        "fill-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "fill-opacity": 1
       }
     },
     {
       "id": "building",
       "type": "fill",
       "source": "vector",
+      "minzoom": 13,
       "source-layer": "building",
       "layout": {
         "visibility": "visible"
@@ -1466,19 +1432,7 @@
           17,
           "#c2c3cc"
         ],
-        "fill-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "fill-opacity": 1
       }
     },
     {
@@ -1631,19 +1585,7 @@
           6,
           5
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -2337,19 +2279,7 @@
           22,
           26
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -2417,19 +2347,7 @@
           22,
           26
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -3073,19 +2991,7 @@
           1,
           1
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -4143,19 +4049,7 @@
           22,
           26
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -4203,19 +4097,7 @@
           22,
           60
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -4266,19 +4148,7 @@
           22,
           40
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -4330,19 +4200,7 @@
           22,
           26
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -4397,19 +4255,7 @@
           20,
           55
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -4470,19 +4316,7 @@
           20,
           65
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -4550,19 +4384,7 @@
           20,
           100
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -4629,19 +4451,7 @@
           20,
           100
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -5079,19 +4889,7 @@
           22,
           65
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -5135,19 +4933,7 @@
           22,
           50
         ],
-        "line-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ]
+        "line-opacity": 1
       }
     },
     {
@@ -5446,6 +5232,7 @@
       "id": "building_3d",
       "type": "fill-extrusion",
       "source": "vector",
+      "minzoom": 13,
       "source-layer": "building",
       "layout": {
         "visibility": "none"
@@ -5475,19 +5262,7 @@
           "property": "render_min_height",
           "type": "identity"
         },
-        "fill-extrusion-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          0.8
-        ]
+        "fill-extrusion-opacity": 0.8
       }
     },
     {
@@ -6616,19 +6391,7 @@
         "text-color": "#000000",
         "text-halo-color": "#ffffff",
         "text-halo-width": 1,
-        "text-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ],
+        "text-opacity": 1,
         "text-halo-blur": 1
       }
     },
@@ -6666,22 +6429,10 @@
         "text-padding": 2
       },
       "paint": {
-        "text-color": "#8ea66d",
+        "text-color": "#000000",
         "text-halo-color": "#ffffff",
         "text-halo-width": 1,
-        "text-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ],
+        "text-opacity": 1,
         "text-halo-blur": 1
       }
     },
@@ -6722,19 +6473,7 @@
         "text-color": "#000000",
         "text-halo-color": "#ffffff",
         "text-halo-width": 1,
-        "text-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          13,
-          0,
-          13.2,
-          1
-        ],
+        "text-opacity": 1,
         "text-halo-blur": 1
       }
     },
