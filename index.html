@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-b';
+    const APP_BUILD   = '2026-08-20-c';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9900,11 +9900,17 @@
     // Yksi väri, neljä peittoa (mitoitus johdettu EasyParkin väripoiminnoista).
     // ILMAISIIN ALUEISIIN EI KOSKETA: ne pitävät lilan värinsä, punaisen
     // p-merkki-korostuksensa ja vanhat zoom-ramppinsa.
-    // 20.8. takaisin alkuperäiseen siniseen (oli EasyParkista johdettu
-    // #2f2bdc). Reunaviivat pysyvät pois päältä — valitsematon maksullinen
-    // alue on pelkkä täyttö.
-    const PAID_AREA_CLR     = '#1266f1';
-    const PAID_FILL_BASE_OP = 0.25;   // valitsematon täyttö
+    // ── EasyParkin mitoitus, takaisinmallinnettu väripoiminnoista 20.8. ──
+    // Neljä poimintaa (tausta #fbfbfb) ratkesivat YHDEKSI väriksi neljällä
+    // peitolla; R- ja G-kanava antoivat saman alphan 0,004 tarkkuudella:
+    //   valitsematon täyttö #d5def9 → 23 %
+    //   valitsematon reuna  #557cf3 → 100 %  (= itse perusväri)
+    //   valittu       täyttö #b9c9f8 → 40 %
+    //   valittu       reuna  #567df3 → 99,3 % ≈ 100 % (1 px vs 2,5 px reunan
+    //                                   pehmennys selittää yhden yksikön eron)
+    // Perusväri on siis suoraan valitsemattoman reunan poiminta.
+    const PAID_AREA_CLR     = '#557cf3';
+    const PAID_FILL_BASE_OP = 0.23;   // valitsematon täyttö (EasyPark)
     // Valitsemattoman alueen reuna on KAKSIOSAINEN: 1,5 px sisempi kaista ja
     // 1,5 px ulompi kaista, yhteensä 3 px. Kaistat eivät ole päällekkäin —
     // line-offset siirtää ne viivan eri puolille.
@@ -9913,20 +9919,17 @@
     // Sisemmän oma arvo on siis paljon pienempi kuin näkyvä tulos, koska täyttö
     // on jo sen alla. HUOM: molemmat kaistat ovat nyt näkyvältä peitoltaan
     // 30 %, eli reuna näyttää yhtenäiseltä 3 px viivalta.
-    const PAID_LINE_W        = 1.5;
-    // 19.8.: VALITSEMATTOMALLA maksullisella alueella EI OLE REUNAVIIVAA
-    // lainkaan — pelkkä täyttö 25 %. Molemmat kaistat siis peitolla 0.
-    // Kaksiosaisen reunan koneisto (leveys, siirto, kaksi tasoa) on jätetty
-    // paikalleen, joten reunan saa takaisin pelkillä näillä kahdella luvulla
-    // (aiemmat arvot: sisempi 0.0667 → näkyvä 30 %, ulompi 0.30).
-    // VALITTU tila ei käytä näitä: se piirtyy hover-tasoilta ja pysyy ennallaan.
-    const PAID_LINE_INNER_OP = 0;
-    const PAID_LINE_OUTER_OP = 0;
+    // 20.8.: reunaviiva takaisin, EasyParkin mitoituksella — YKSI 1 px viiva
+    // täydellä peitolla, ei kaksiosaisuutta. Kaksiosaisen reunan koneisto
+    // (line-offset, toinen taso) on jätetty paikalleen mutta pois käytöstä:
+    // siirto 0 ja ulomman kaistan peitto 0. Se herää takaisin vaihtamalla
+    // PAID_LINE_INSET > 0 ja PAID_LINE_OUTER_OP > 0.
+    const PAID_LINE_W        = 1.0;
+    const PAID_LINE_INNER_OP = 1.0;   // varsinainen reunaviiva
+    const PAID_LINE_OUTER_OP = 0;     // ulompi kaista pois käytöstä
     // MapLibre: polygonilla POSITIIVINEN line-offset on inset (sisäänpäin),
-    // negatiivinen outset. Yksi luku ohjaa molempia, joten jos kaistat ovat
-    // laitteella väärin päin, tämän etumerkin vaihto riittää.
-    const PAID_LINE_INSET    = 0.75;
-    const PAID_LINE_BASE_OP = 0.40;   // valitsematon reuna (yhteensä, viitteeksi)
+    // negatiivinen outset. 0 = viiva keskittyy reunalle, kuten EasyParkilla.
+    const PAID_LINE_INSET    = 0;
     const PAID_FILL_SEL_OP  = 0.40;   // valittu: p-merkin alla TAI sama ryhmä
     const PAID_LINE_SEL_OP  = 1.00;
     const PAID_SEL_LINE_W   = 2.5;    // sama paksuus valitulle ja ryhmälle
