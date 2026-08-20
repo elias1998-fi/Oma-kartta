@@ -7519,32 +7519,8 @@
           0,
           -5.25
         ],
-        "icon-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          14,
-          0,
-          14.2,
-          1
-        ],
-        "text-opacity": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          14,
-          0,
-          14.2,
-          1
-        ],
+        "icon-opacity": 0.5,
+        "text-opacity": 0.5,
         "text-halo-blur": 1
       }
     },
