@@ -1716,7 +1716,9 @@
     #filter-reset-btn.visible { display: inline-flex; }
     #sheet-normal { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
     #sheet-summary { padding: 13px 20px 8px 20px; flex-shrink: 0; font-family: Arial, sans-serif; }
-    #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; }
+    /* margin-top laskee KAIKKI tiivistelmän tekstirivit; #area-code-badge on
+       position:absolute, joten se pysyy täsmälleen paikallaan. */
+    #summary-header { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 3px; margin-top: 7px; }
     #summary-type { font-size: 14px; color: #555; }
     #summary-operator { font-size: 14px; color: #555; margin-top: 2px; }
     #sheet-divider { border: none; border-top: 1px solid #eee; margin: 5px 20px 0 20px; flex-shrink: 0; }
@@ -3695,19 +3697,15 @@
       opacity: 1; transition: opacity .3s ease;
     }
     #tp-splash.gone { opacity: 0; pointer-events: none; }
-    #tp-splash-name { font-size: 26px; font-weight: bold; color: #0C0243; letter-spacing: .3px; }
+    #tp-splash-name { font-size: 34px; font-weight: bold; color: #0C0243; letter-spacing: .3px; }
+    /* Iskulause perii kaiken muun .profile-brand-taglineltä; vain koko on
+       avausruudussa isompi (profiilissa 16 px). */
+    #tp-splash-tagline { font-size: 21px; }
     /* Iskulause käyttää profiilinäkymän .profile-brand-tagline -luokkaa
        (käsialafontti, kursiivi, #3a4cb8) — ei omaa kopiota, jottei ulkoasu
        voi eriytyä. Sen oma margin-top 6px hoitaa välin, siksi splashin
        flex-gap on 0. */
-    /* Versio irrotettu keskitetystä pinosta omaan nurkkaansa. safe-area, jotta
-       se ei jää iPhonen kotipalkin alle. */
-    #tp-splash-ver {
-      position: absolute;
-      right: calc(18px + env(safe-area-inset-right, 0px));
-      bottom: calc(18px + env(safe-area-inset-bottom, 0px));
-      font-size: 12px; color: #8a8a90;
-    }
+
   </style>
 </head>
 <body>
@@ -3721,15 +3719,14 @@
   <div id="tp-splash">
     <div id="tp-splash-name">TotalParking</div>
     <div id="tp-splash-tagline" class="profile-brand-tagline">100% suomalainen</div>
-    <div id="tp-splash-ver"></div>
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-j';
+    const APP_BUILD   = '2026-08-19-k';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
-      const v = document.getElementById('tp-splash-ver');
-      if (v) v.textContent = 'versio ' + APP_VERSION + '  ·  ' + APP_BUILD;
+      // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
+      // yhä käytössä: Tietoja sovelluksesta -näkymän versiorivi lukee ne.
       const el = document.getElementById('tp-splash');
       if (!el) return;
       setTimeout(function () {
@@ -5207,7 +5204,7 @@
          vasen paikka on sen alla. Väistäminen koskee nyt zoom-lukemaa
          (updateAjanhetkiPillVisibility); updateOsmOpacity() häivyttää molemmat
          sheetin mukana. -->
-    <div id="osm-attribution" style="position:absolute;top:-16px;right:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;pointer-events:none;transition:opacity 0.2s ease;">&copy; OpenStreetMap</div>
+    <div id="osm-attribution" style="position:absolute;top:-16px;right:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;opacity:0.7;pointer-events:none;transition:opacity 0.2s ease;">&copy; OpenStreetMap</div>
     <!-- Ajanhetki: rides with the sheet. The pill grows UPWARD into the window. -->
     <div id="ajanhetki-anchor">
       <!-- ONE morphing element. The card itself is what the user sees grow and
@@ -6125,10 +6122,11 @@
                                   ICON_MAX_ZOOM, max];
     const HALL_ICON_SIZE   = _iconSizeExpr(HALL_ICON_MAX,   HALL_MINZOOM);
     const CHARGE_ICON_SIZE = _iconSizeExpr(CHARGE_ICON_MAX, CHARGE_MINZOOM);
-    // P-merkin alla oleva kohde suurenee — kertoo käyttäjälle että juuri tämä
-    // on valittuna. Kerroin tulee perusikonin päälle; hi-kuvissa on lisäksi
-    // punainen kehys, joka on jo valmiiksi n. 1,2x isompi.
-    const ICON_HI_SCALE    = 1.25;
+    // P-merkin alla oleva kohde EI enää suurene (oli 1.25). Valinta erottuu
+    // hi-kuvan omasta kehyksestä. HUOM: hi-kuvassa on kehys, joten merkki voi
+    // yhä näyttää aavistuksen isommalta — sen saa kutistettua alle yhden
+    // kertoimella jos tarpeen.
+    const ICON_HI_SCALE    = 1.0;
     const HALL_ICON_SIZE_HI   = _iconSizeExpr(HALL_ICON_MAX   * ICON_HI_SCALE, HALL_MINZOOM);
     const CHARGE_ICON_SIZE_HI = _iconSizeExpr(CHARGE_ICON_MAX * ICON_HI_SCALE, CHARGE_MINZOOM);
     // Hallit piirtyvät latauspisteiden PÄÄLLE: latauspisteitä on enemmän,
@@ -9665,11 +9663,14 @@
     // Valitsemattoman alueen reuna on KAKSIOSAINEN: 1,5 px sisempi kaista ja
     // 1,5 px ulompi kaista, yhteensä 3 px. Kaistat eivät ole päällekkäin —
     // line-offset siirtää ne viivan eri puolille.
-    //   sisempi: piirtyy TÄYTÖN päälle → näkyvä peitto = 25 % ⊕ 20 % = 40 %
+    //   sisempi: piirtyy TÄYTÖN päälle → näkyvä peitto = 25 % ⊕ 6,67 % = 30 %
     //   ulompi:  piirtyy TAUSTAN päälle → näkyvä peitto = 30 %
-    // Siksi sisemmän oma arvo on 0.20 vaikka mitattu väri (#aaa8de) vastaa 40 %:a.
+    // Sisemmän oma arvo on siis paljon pienempi kuin näkyvä tulos, koska täyttö
+    // on jo sen alla. HUOM: molemmat kaistat ovat nyt näkyvältä peitoltaan
+    // 30 %, eli reuna näyttää yhtenäiseltä 3 px viivalta.
     const PAID_LINE_W        = 1.5;
-    const PAID_LINE_INNER_OP = 0.20;
+    // 0.0667 ⊕ täytön 0.25 = 0.30 näkyvää peittoa (oli 0.20 → 0.40).
+    const PAID_LINE_INNER_OP = 0.0667;
     const PAID_LINE_OUTER_OP = 0.30;
     // MapLibre: polygonilla POSITIIVINEN line-offset on inset (sisäänpäin),
     // negatiivinen outset. Yksi luku ohjaa molempia, joten jos kaistat ovat
@@ -12318,8 +12319,12 @@
     // ── Zoom read-out toggle ─────────────────────────────────────────────
     // On by default: a missing key counts as on, so the indicator shows the
     // first time the app is opened. Switching it off writes '0' and sticks.
+    // Oletus: PÄÄLLÄ. Avain vaihdettiin 19.8. (tp_zoom_level → tp_zoom_level2),
+    // koska vanha avain saattoi olla laitteella nollassa aiemmasta kytkennästä
+    // ja piti lukeman piilossa vaikka oletus oli jo tosi. Asetus toimii
+    // normaalisti: käyttäjä voi kytkeä sen pois ja takaisin.
     let zoomLevelEnabled = (function(){
-      try { const v = localStorage.getItem('tp_zoom_level'); return v === null ? true : v === '1'; }
+      try { const v = localStorage.getItem('tp_zoom_level2'); return v === null ? true : v === '1'; }
       catch(e){ return true; }
     })();
     function applyZoomIndicatorVisibility() {
@@ -12329,7 +12334,7 @@
     function onZoomLevelToggle(input) {
       onSettingToggle(input);
       zoomLevelEnabled = input.checked;
-      try { localStorage.setItem('tp_zoom_level', zoomLevelEnabled ? '1' : '0'); } catch(e){}
+      try { localStorage.setItem('tp_zoom_level2', zoomLevelEnabled ? '1' : '0'); } catch(e){}
       applyZoomIndicatorVisibility();
     }
     (function(){
@@ -12613,9 +12618,12 @@
       if (!b || !h) return;
       // Kahva näkyy vain kun sheetissä on vedettävää sisältöä. Molemmissa
       // kehotetiloissa ("Lähennä karttaa", "Siirrä kursori pysäköintialueelle")
-      // sheet on tyhjä → kahva piiloon.
+      // perusnäkymän sheet on tyhjä → kahva piiloon.
+      // POIKKEUS: suodatinsheet käyttää SAMAA #drag-handle-areaa, ja se on aina
+      // vedettävä. Ilman tätä ehtoa kahva jäi suodattimessa piiloon, koska
+      // toimintonapin teksti on siellä yhä kehotetila.
       const _t = b.textContent.trim();
-      h.style.visibility = (_t === ZOOM_IN_LABEL || _t === CURSOR_HINT_LABEL) ? 'hidden' : '';
+      h.style.visibility = (!filterMode && (_t === ZOOM_IN_LABEL || _t === CURSOR_HINT_LABEL)) ? 'hidden' : '';
     }
     map.on('zoom', () => {
       updateZoomIndicator();
@@ -15103,6 +15111,8 @@
       btnContainer.classList.add('hidden');
       updateResetBtnVisibility();
       updateAjanhetkiPillVisibility();
+      // Kahva on suodatinnäkymässä aina näkyvissä — sheet on vedettävä.
+      updateDragHandleVisibility();
     }
     // Size the filter scroll area so, when the sheet is at its top position
     // (80% of the viewport), the content fills exactly down to the screen
@@ -18429,6 +18439,7 @@
     window.addEventListener('resize', cacheSheetMetrics);
     window.addEventListener('orientationchange', cacheSheetMetrics);
 
+    const OSM_MAX_OPACITY = 0.7;
     function updateOsmOpacity(ty){
       const el = document.getElementById('osm-attribution');
       const zi = document.getElementById('zoom-indicator');
@@ -18437,8 +18448,10 @@
         const fadeStart = _sh - 153;                     // fade begins once the sheet grows past 153px
         const fullOpen  = _sh - _wh * 0.8;               // fully open
         const o = Math.max(0, Math.min(1, (ty - fullOpen) / (fadeStart - fullOpen)));
-        if (el) el.style.opacity = o;
-        if (zi) zi.style.opacity = o;   // zoom-lukema häipyy samaa tahtia
+        // OSM-maininta on aina korkeintaan OSM_MAX_OPACITY; sheetin häivytys
+        // kertoo sen päälle. Zoom-lukema häipyy samaa tahtia täydellä peitolla.
+        if (el) el.style.opacity = o * OSM_MAX_OPACITY;
+        if (zi) zi.style.opacity = o;
       }
       _ahLastTop = null; applyAjanhetkiFade();
     }
