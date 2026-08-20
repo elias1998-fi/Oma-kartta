@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-h';
+    const APP_BUILD   = '2026-08-20-i';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9957,44 +9957,21 @@
         ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, base]
         : base;
     }
-    // ── Matala zoom 13–14: maksulliset yhtenä yhtenäisenä värilaikkuna ───
-    // Zoomeilla 13–14 maksullinen alue on TÄYSIN PEITTÄVÄ #007ac9 ja reunaviiva
-    // on samaa väriä, joten reunaa ei erotu lainkaan. Zoomin 14 jälkeen palataan
-    // normaaliin (täyttö 23 % #557cf3, reuna 1 px 100 %). Vaihto tehdään kahdella
-    // vierekkäisellä stopilla (14 ja 14.01), koska interpolate ei osaa askelta.
-    // HUOM: väri ja peitto pitää molemmat rakentaa niin että ['zoom'] on
-    // lausekkeen YLIMPÄNÄ syötteenä — ehdot menevät ULOSTULOIHIN.
-    const AREA_LOW_ZOOM_CLR = '#007ac9';
-    const LOW_END           = 14;      // viimeinen zoom jolla matala tila on voimassa
-    const LOW_OFF           = 14.01;   // ensimmäinen zoom normaalissa tilassa
+    // ── Alueen väri ja täytön peitto ─────────────────────────────────────
+    // ZOOM EI VAIKUTA VÄRIIN. Kokeiltiin (buildit -g/-h) että maksulliset olisivat
+    // zoomeilla 13–14 täysin peittävää #007ac9:ää ja reuna samaa väriä; PERUTTU
+    // 20.8. — alueen värin ei pidä muuttua zoomatessa, ei myöskään skaalauksen
+    // seurauksena. Väri on siis pelkkä ilmainen/maksullinen -valinta, ja täytön
+    // peitto on maksullisilla kiinteä (PAID_FILL_BASE_OP), ilmaisilla vanha
+    // baseFill-ramppi.
     // freeSel = lauseke joka on tosi "ilmaisilla" (voi olla aikatietoinen).
     function areaColorExpr(freeSel, freeClr, paidClr){
-      return ['interpolate', ['linear'], ['zoom'],
-        13,       ['case', freeSel, freeClr, AREA_LOW_ZOOM_CLR],
-        LOW_END,  ['case', freeSel, freeClr, AREA_LOW_ZOOM_CLR],
-        LOW_OFF,  ['case', freeSel, freeClr, paidClr]];
+      return ['case', freeSel, freeClr, paidClr];
     }
-    // Täytön peitto: ilmaisilla vanha baseFill-ramppi, maksullisilla 100 % zoomiin
-    // 14 asti ja sen jälkeen kiinteä PAID_FILL_BASE_OP.
+    // Nimi säilytetty, jotta kaikki kutsupaikat (täyttö, boost, korostus,
+    // palautus) käyttävät varmasti samaa peittoa.
     function areaFillOpacity(cond, whenTrue){
-      const st = hlStops('baseFill');                 // [13,.26, 15,.21, 17,.16, 19,.13]
-      const freeAt = (z) => {
-        for (let i = 0; i < st.length - 2; i += 2) {
-          if (z >= st[i] && z <= st[i+2]) {
-            const t = (z - st[i]) / (st[i+2] - st[i]);
-            return st[i+1] + (st[i+3] - st[i+1]) * t;
-          }
-        }
-        return z < st[0] ? st[1] : st[st.length-1];
-      };
-      const zs = [13, LOW_END, LOW_OFF, 15, 17, 19];
-      const out = ['interpolate', ['linear'], ['zoom']];
-      for (const z of zs) {
-        const paid = (z <= LOW_END) ? 1 : PAID_FILL_BASE_OP;
-        const normal = ['case', IS_FREE_EXPR, Math.round(freeAt(z)*1000)/1000, paid];
-        out.push(z, cond ? ['case', cond, whenTrue, normal] : normal);
-      }
-      return out;
+      return mixedOpacity('baseFill', PAID_FILL_BASE_OP, cond, whenTrue);
     }
 
     // ── Kaukonäkyvyys: "boost"-viiva alueen ULKOPUOLELLA ─────────────────
