@@ -3725,7 +3725,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-h';
+    const APP_BUILD   = '2026-08-19-i';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
       const v = document.getElementById('tp-splash-ver');
@@ -13640,8 +13640,13 @@
     // Paid areas whose fee is NOT in force at the Ajanhetki time render in
     // the free purple. freeExpr=null restores the plain source-based colours
     // (same values the layers were created with).
-    const TA_FREE_FILL = '#7F1F89', TA_PAID_FILL = '#1266f1';
-    const TA_FREE_LINE = '#611868', TA_PAID_LINE = '#0B49D0';
+    // ⚠️ TÄMÄ FUNKTIO YLIKIRJOITTAA ALUETASOJEN VÄRIT joka kerta kun suodatinta
+    // tai ajanhetkeä muutetaan — ja myös heti tasojen luonnin jälkeen
+    // (applyRangeFilter kutsuu tämän). Maksullisten väri on siis PAKKO pitää
+    // tässä samana kuin tasojen omassa määrittelyssä, muuten muutos tasoihin ei
+    // näy lainkaan.
+    const TA_FREE_FILL = '#7F1F89', TA_PAID_FILL = PAID_AREA_CLR;
+    const TA_FREE_LINE = '#611868', TA_PAID_LINE = PAID_AREA_CLR;
     const TA_STATIC_FILL = ['match', ['get','source'],
       'community', TA_FREE_FILL, 'hel_ilmainen_pitka', TA_FREE_FILL,
       'hel_ilmainen_lyhyt', TA_FREE_FILL, 'hel_sallittu_kiellon_ulkopuolella', TA_FREE_FILL,
