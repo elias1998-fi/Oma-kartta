@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-d';
+    const APP_BUILD   = '2026-08-20-e';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9696,7 +9696,7 @@
 
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'fill-opacity': mixedOpacity('baseFill', PAID_FILL_BASE_OP), 'fill-opacity-transition': { duration: 0 },
+          paint:{ 'fill-opacity': areaFillOpacity(), 'fill-opacity-transition': { duration: 0 },
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
               'hel_ilmainen_pitka', '#7F1F89',
@@ -9952,6 +9952,31 @@
         ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, base]
         : base;
     }
+    // ── Alueiden täytön peitto (20.8.) ───────────────────────────────────
+    // IDEA: zoomilla 13, kun alueet ilmestyvät, täyttö on SAMALLA peitolla kuin
+    // reunaviiva → reunaa ei erotu täytöstä lainkaan, alue on yhtenäinen läiskä.
+    // Lähemmäs zoomatessa täyttö kevenee tasaisesti, jolloin reunaviiva nousee
+    // esiin pelkän kontrastin kautta. Zoomista AREA_FILL_SETTLE eteenpäin täyttö
+    // on vakio (maksullisilla EasyParkin 23 %).
+    // Reunaviiva ei muutu missään vaiheessa — koko vaikutelma syntyy täytöstä.
+    // Stopit: [zoom, ilmainen, maksullinen]. Ilmaisten z13-arvon on vastattava
+    // baseLine-rampin z13-arvoa (0.60) ja maksullisten PAID_LINE_INNER_OP:ia (1.0),
+    // muuten reuna erottuisi jo ilmestymishetkellä.
+    const AREA_FILL_SETTLE = 16;
+    const AREA_FILL_STOPS = [
+      [13,                0.60,  1.00],
+      [AREA_FILL_SETTLE,  0.185, PAID_FILL_BASE_OP],
+      [17,                0.16,  PAID_FILL_BASE_OP],
+      [19,                0.13,  PAID_FILL_BASE_OP]
+    ];
+    function areaFillOpacity(cond, whenTrue){
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (const st of AREA_FILL_STOPS) {
+        const normal = ['case', IS_FREE_EXPR, st[1], st[2]];
+        out.push(st[0], cond ? ['case', cond, whenTrue, normal] : normal);
+      }
+      return out;
+    }
     function mixedOpacity(key, paidConst, cond, whenTrue){
       const st = hlStops(key), out = ['interpolate', ['linear'], ['zoom']];
       for (let i = 0; i < st.length; i += 2) {
@@ -10028,8 +10053,8 @@
       if (map.getLayer('master-poly-fill')) {
         map.setPaintProperty('master-poly-fill', 'fill-opacity',
           _hideFillIds.length
-            ? mixedOpacity('baseFill', PAID_FILL_BASE_OP, ['in', ['get','id'], ['literal', _hideFillIds]], 0)
-            : mixedOpacity('baseFill', PAID_FILL_BASE_OP)
+            ? areaFillOpacity(['in', ['get','id'], ['literal', _hideFillIds]], 0)
+            : areaFillOpacity()
         );
       }
 
@@ -10173,7 +10198,7 @@
       }
       // Restore the base fill for every area (iso alue palautuu normaaliksi).
       if (map.getLayer('master-poly-fill')) {
-        map.setPaintProperty('master-poly-fill', 'fill-opacity', mixedOpacity('baseFill', PAID_FILL_BASE_OP));
+        map.setPaintProperty('master-poly-fill', 'fill-opacity', areaFillOpacity());
       }
     }
 
