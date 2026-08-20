@@ -3728,6 +3728,17 @@
       padding: 12px 14px 10px 14px;
       font-family: Arial, sans-serif;
     }
+    .cl-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; min-height: 26px; }
+    .cl-title { font-size: 12px; color: #8a8a90; }
+    /* Palauta näkyy vasta kun jokin liuku poikkeaa alkutilanteesta. */
+    #cl-reset {
+      display: none; border: 1px solid #0C0243; background: #fff; color: #0C0243;
+      font-family: Arial, sans-serif; font-size: 12px; font-weight: bold;
+      padding: 5px 12px; border-radius: 999px; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #cl-reset.visible { display: block; }
+    #cl-reset:active { background: #f0f0f6; }
     .cl-row { display: flex; align-items: center; gap: 10px; }
     .cl-row + .cl-row { margin-top: 8px; }
     .cl-label { font-size: 13px; font-weight: bold; color: #0C0243; width: 46px; flex-shrink: 0; }
@@ -3755,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-a';
+    const APP_BUILD   = '2026-08-20-b';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -7480,8 +7491,16 @@
     let colorLabMap = null;
     const CL_FROM = [0x12, 0x66, 0xf1];   // #1266f1 — vanha täyttö
     const CL_TO   = [0x0b, 0x49, 0xd0];   // #0b49d0 — vanha reunaviiva
-    // Pohjavärin jana: valkoisesta lämpimän harmaan kautta vaaleansiniseen.
+    // "Pohja" EI muuta karttatyyliä. Se on oma MASKIKERROS polygonin sisällä,
+    // täyttövärin ALLA: kartta → maski → täyttö. Näin täyttö sekoittuu maskin
+    // väriin eikä kartan valkoiseen, mikä on koko idean ydin — alfa-sekoituksessa
+    // taustan vaaleus lyö läpi eikä sitä voi kiertää itse värillä.
+    // Kartta polygonin ULKOPUOLELLA pysyy täysin koskemattomana.
+    // Liu'un arvo 0 = EI MASKIA (= perusnäkymän nykytilanne). Yli 0 → maski on
+    // peittävä ja sen väri liikkuu tällä janalla.
     const CL_BG_STOPS = ['#ffffff','#f6f5f1','#eef1f6','#e4ecf7','#d7e5f6','#c9dcf4'];
+    // Alkutilanne = perusnäkymän nykytilanne: alkuperäinen sininen, 25 %, ei maskia.
+    const CL_DEFAULTS = { b: 0, o: 25, g: 0 };
     const _clHex = n => n.toString(16).padStart(2, '0');
     function clBlueAt(t){
       return '#' + CL_FROM.map((c,k) => _clHex(Math.round(c + (CL_TO[k]-c)*t))).join('');
@@ -7547,11 +7566,20 @@
       } else {
         colorLabMap.addSource('cl-areas', { type:'geojson', data });
       }
+      // Maski ENSIN, täyttö sen jälkeen → täyttö piirtyy maskin päälle.
+      const _clPaidOnly = ['!', ['in', ['get','source'], ['literal', FREE_SOURCES]]];
+      if (!colorLabMap.getLayer('cl-mask')) {
+        colorLabMap.addLayer({
+          id:'cl-mask', type:'fill', source:'cl-areas', minzoom: AREA_MINZOOM,
+          filter:_clPaidOnly,
+          paint:{ 'fill-color':'#ffffff', 'fill-opacity':0 }
+        });
+      }
       if (!colorLabMap.getLayer('cl-fill')) {
         colorLabMap.addLayer({
           id:'cl-fill', type:'fill', source:'cl-areas', minzoom: AREA_MINZOOM,
-          filter:['!', ['in', ['get','source'], ['literal', FREE_SOURCES]]],
-          paint:{ 'fill-color':'#1266f1', 'fill-opacity':0.25 }
+          filter:_clPaidOnly,
+          paint:{ 'fill-color':PAID_AREA_CLR, 'fill-opacity':0.25 }
         });
       }
     }
@@ -7565,23 +7593,43 @@
       const op  = Number(oEl.value);
       const bg  = clBgAt(Number(gEl.value)/100);
 
+      const gVal    = Number(gEl.value);
+      const maskOn  = gVal > 0;
+
       document.getElementById('cl-blue-chip').style.background = col;
-      document.getElementById('cl-bg-chip').style.background   = bg;
-      document.getElementById('cl-opacity-val').textContent    = op + ' %';
+      const bgChip = document.getElementById('cl-bg-chip');
+      bgChip.style.background = maskOn ? bg : 'transparent';
+      bgChip.style.borderStyle = maskOn ? 'solid' : 'dashed';
+      document.getElementById('cl-opacity-val').textContent = op + ' %';
       document.getElementById('cl-readout').textContent =
-        'alue ' + col + ' · peitto ' + op + ' % · pohja ' + bg;
+        'alue ' + col + ' · peitto ' + op + ' % · ' + (maskOn ? 'maski ' + bg : 'ei maskia');
+
+      // Palauta näkyy vain kun jokin arvo poikkeaa alkutilanteesta.
+      const dirty = (Number(bEl.value) !== CL_DEFAULTS.b) || (op !== CL_DEFAULTS.o) || (gVal !== CL_DEFAULTS.g);
+      const rst = document.getElementById('cl-reset');
+      if (rst) rst.classList.toggle('visible', dirty);
+
       try { localStorage.setItem('tp_colorlab', JSON.stringify({ b:bEl.value, o:oEl.value, g:gEl.value })); } catch(e){}
 
       if (!colorLabMap) return;
+      if (colorLabMap.getLayer('cl-mask')) {
+        colorLabMap.setPaintProperty('cl-mask', 'fill-color', bg);
+        colorLabMap.setPaintProperty('cl-mask', 'fill-opacity', maskOn ? 1 : 0);
+      }
       if (colorLabMap.getLayer('cl-fill')) {
         colorLabMap.setPaintProperty('cl-fill', 'fill-color', col);
         colorLabMap.setPaintProperty('cl-fill', 'fill-opacity', op/100);
       }
-      // Taustataso on tyylin oma "background" — sen värin muutos näkyy siellä
-      // missä maata ei peitä jokin landuse-taso (puistot, vesi ym. jäävät omiksi).
-      if (colorLabMap.getLayer('background')) {
-        try { colorLabMap.setPaintProperty('background', 'background-color', bg); } catch(e){}
-      }
+    }
+
+    function resetColorLab(){
+      const b = document.getElementById('cl-blue');
+      const o = document.getElementById('cl-opacity');
+      const g = document.getElementById('cl-bg');
+      if (b) b.value = CL_DEFAULTS.b;
+      if (o) o.value = CL_DEFAULTS.o;
+      if (g) g.value = CL_DEFAULTS.g;
+      applyColorLab();
     }
 
     function goToMyLocationInColorLab(){
@@ -9852,7 +9900,10 @@
     // Yksi väri, neljä peittoa (mitoitus johdettu EasyParkin väripoiminnoista).
     // ILMAISIIN ALUEISIIN EI KOSKETA: ne pitävät lilan värinsä, punaisen
     // p-merkki-korostuksensa ja vanhat zoom-ramppinsa.
-    const PAID_AREA_CLR     = '#2f2bdc';
+    // 20.8. takaisin alkuperäiseen siniseen (oli EasyParkista johdettu
+    // #2f2bdc). Reunaviivat pysyvät pois päältä — valitsematon maksullinen
+    // alue on pelkkä täyttö.
+    const PAID_AREA_CLR     = '#1266f1';
     const PAID_FILL_BASE_OP = 0.25;   // valitsematon täyttö
     // Valitsemattoman alueen reuna on KAKSIOSAINEN: 1,5 px sisempi kaista ja
     // 1,5 px ulompi kaista, yhteensä 3 px. Kaistat eivät ole päällekkäin —
@@ -19134,6 +19185,10 @@
     </button>
 
     <div id="colorlab-panel">
+      <div class="cl-head">
+        <span class="cl-title">Väripilotti</span>
+        <button id="cl-reset" onclick="resetColorLab()">Palauta</button>
+      </div>
       <div class="cl-row">
         <span class="cl-label">Sävy</span>
         <input id="cl-blue" class="cl-slider" type="range" min="0" max="100" step="1" value="0" aria-label="Alueen sävy">
@@ -19146,7 +19201,7 @@
       </div>
       <div class="cl-row">
         <span class="cl-label">Pohja</span>
-        <input id="cl-bg" class="cl-slider" type="range" min="0" max="100" step="1" value="0" aria-label="Kartan pohjaväri">
+        <input id="cl-bg" class="cl-slider" type="range" min="0" max="100" step="1" value="0" aria-label="Maskin väri polygonin alla">
         <span class="cl-chip" id="cl-bg-chip"></span>
       </div>
       <div class="cl-readout" id="cl-readout">—</div>
