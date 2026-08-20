@@ -3725,7 +3725,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-i';
+    const APP_BUILD   = '2026-08-19-j';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
       const v = document.getElementById('tp-splash-ver');
@@ -6143,7 +6143,7 @@
     // ja koska moveLayer siirtää aina viimeisimmän ylimmäksi, listan
     // järjestys ratkaisee: halli jää latauspisteen päälle.
     const APP_POLY_ORDER = [
-      'master-poly-fill','master-poly-line',
+      'master-poly-fill','master-poly-line','master-poly-line-outer',
       'master-poly-group-fill','master-poly-group-line',
       'master-poly-hover-fill','master-poly-hover-line'
     ];
@@ -9468,7 +9468,12 @@
         });
         // Base line layer
         map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'line-width': 1.0, 'line-opacity': mixedOpacity('baseLine', PAID_LINE_BASE_OP),
+          paint:{
+            // Ilmaisilla ennallaan: 1 px, ei siirtoa, vanha zoom-ramppi.
+            // Maksullisilla tämä on reunan SISEMPI kaista.
+            'line-width':  ['case', IS_FREE_EXPR, 1.0, PAID_LINE_W],
+            'line-offset': ['case', IS_FREE_EXPR, 0,   PAID_LINE_INSET],
+            'line-opacity': mixedOpacity('baseLine', PAID_LINE_INNER_OP),
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
               'hel_ilmainen_pitka', '#611868',
@@ -9476,6 +9481,16 @@
               'hel_sallittu_kiellon_ulkopuolella', '#611868',
               PAID_AREA_CLR
             ]
+          }
+        });
+        // Reunan ULOMPI kaista — vain maksullisilla (ilmaisilla peitto 0).
+        // Sama viiva siirrettynä ulospäin, joten se ei mene sisemmän päälle.
+        map.addLayer({ id:'master-poly-line-outer', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
+          paint:{
+            'line-width':   PAID_LINE_W,
+            'line-offset':  -PAID_LINE_INSET,
+            'line-color':   PAID_AREA_CLR,
+            'line-opacity': outerLineOpacity()
           }
         });
         // Hover fill — red, toggled via setFilter
@@ -9647,7 +9662,20 @@
     // p-merkki-korostuksensa ja vanhat zoom-ramppinsa.
     const PAID_AREA_CLR     = '#2f2bdc';
     const PAID_FILL_BASE_OP = 0.25;   // valitsematon täyttö
-    const PAID_LINE_BASE_OP = 0.40;   // valitsematon reuna
+    // Valitsemattoman alueen reuna on KAKSIOSAINEN: 1,5 px sisempi kaista ja
+    // 1,5 px ulompi kaista, yhteensä 3 px. Kaistat eivät ole päällekkäin —
+    // line-offset siirtää ne viivan eri puolille.
+    //   sisempi: piirtyy TÄYTÖN päälle → näkyvä peitto = 25 % ⊕ 20 % = 40 %
+    //   ulompi:  piirtyy TAUSTAN päälle → näkyvä peitto = 30 %
+    // Siksi sisemmän oma arvo on 0.20 vaikka mitattu väri (#aaa8de) vastaa 40 %:a.
+    const PAID_LINE_W        = 1.5;
+    const PAID_LINE_INNER_OP = 0.20;
+    const PAID_LINE_OUTER_OP = 0.30;
+    // MapLibre: polygonilla POSITIIVINEN line-offset on inset (sisäänpäin),
+    // negatiivinen outset. Yksi luku ohjaa molempia, joten jos kaistat ovat
+    // laitteella väärin päin, tämän etumerkin vaihto riittää.
+    const PAID_LINE_INSET    = 0.75;
+    const PAID_LINE_BASE_OP = 0.40;   // valitsematon reuna (yhteensä, viitteeksi)
     const PAID_FILL_SEL_OP  = 0.40;   // valittu: p-merkin alla TAI sama ryhmä
     const PAID_LINE_SEL_OP  = 1.00;
     const PAID_SEL_LINE_W   = 2.5;    // sama paksuus valitulle ja ryhmälle
@@ -9658,6 +9686,14 @@
     // interpolate pysyy ylimpänä ja ehdot menevät ULOSTULOIHIN — sama kikka
     // kuin hlOpacityCasessa. cond/whenTrue on valinnainen lisäehto (esim.
     // "piilota nämä id:t"), joka voittaa muut.
+    // Ulompi reunakaista: näkyvissä vain maksullisilla. Valitulla alueella ja
+    // sen ryhmällä piilotetaan (valittu tila on yksiviivainen, ennallaan).
+    function outerLineOpacity(hideIds){
+      const base = ['case', IS_FREE_EXPR, 0, PAID_LINE_OUTER_OP];
+      return (hideIds && hideIds.length)
+        ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, base]
+        : base;
+    }
     function mixedOpacity(key, paidConst, cond, whenTrue){
       const st = hlStops(key), out = ['interpolate', ['linear'], ['zoom']];
       for (let i = 0; i < st.length; i += 2) {
@@ -9753,9 +9789,12 @@
       if (map.getLayer('master-poly-line')) {
         map.setPaintProperty('master-poly-line', 'line-opacity',
           _hideLineIds.length
-            ? mixedOpacity('baseLine', PAID_LINE_BASE_OP, ['in', ['get','id'], ['literal', _hideLineIds]], 0)
-            : mixedOpacity('baseLine', PAID_LINE_BASE_OP)
+            ? mixedOpacity('baseLine', PAID_LINE_INNER_OP, ['in', ['get','id'], ['literal', _hideLineIds]], 0)
+            : mixedOpacity('baseLine', PAID_LINE_INNER_OP)
         );
+      }
+      if (map.getLayer('master-poly-line-outer')) {
+        map.setPaintProperty('master-poly-line-outer', 'line-opacity', outerLineOpacity(_hideLineIds));
       }
       // Show hover-line (thick RED border, fully opaque) on the hovered area.
       if (map.getLayer('master-poly-hover-line')) {
@@ -9884,7 +9923,10 @@
         map.setFilter('master-poly-hover-line', ['==','id','__none__']);
       // Restore the base border opacity for every area.
       if (map.getLayer('master-poly-line')) {
-        map.setPaintProperty('master-poly-line', 'line-opacity', mixedOpacity('baseLine', PAID_LINE_BASE_OP));
+        map.setPaintProperty('master-poly-line', 'line-opacity', mixedOpacity('baseLine', PAID_LINE_INNER_OP));
+      }
+      if (map.getLayer('master-poly-line-outer')) {
+        map.setPaintProperty('master-poly-line-outer', 'line-opacity', outerLineOpacity());
       }
       // Restore the base fill for every area (iso alue palautuu normaaliksi).
       if (map.getLayer('master-poly-fill')) {
@@ -12172,7 +12214,7 @@
       // switch. Otherwise a lingering source sends renderMasterRows/addHalliLayers
       // down their setData() path and the layer is never re-created → nothing
       // shows. Removing first guarantees a fresh re-add in BOTH directions.
-      ['master-poly-fill','master-poly-line','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill','halli-icons','charging-icons']
+      ['master-poly-fill','master-poly-line','master-poly-line-outer','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill','halli-icons','charging-icons']
         .forEach(id => { if (map.getLayer(id)) { try { map.removeLayer(id); } catch(e){} } });
       ['master-polygons','halli-points','charging-points']
         .forEach(id => { if (map.getSource(id)) { try { map.removeSource(id); } catch(e){} } });
@@ -13632,6 +13674,7 @@
       const f = parts.length === 1 ? null : parts;
       map.setFilter('master-poly-fill', f);
       map.setFilter('master-poly-line', f);
+      if (map.getLayer('master-poly-line-outer')) map.setFilter('master-poly-line-outer', f);
       applyTimeAwareColors(freeAtRef);
       updateHalliVisibility();   // garages are paid → follow the paid/free filter
       updateResetBtnVisibility();
@@ -13660,6 +13703,7 @@
       const line = freeExpr ? ['case', freeExpr, TA_FREE_LINE, TA_PAID_LINE] : TA_STATIC_LINE;
       if (map.getLayer('master-poly-fill'))       map.setPaintProperty('master-poly-fill', 'fill-color', fill);
       if (map.getLayer('master-poly-line'))       map.setPaintProperty('master-poly-line', 'line-color', line);
+      if (map.getLayer('master-poly-line-outer')) map.setPaintProperty('master-poly-line-outer', 'line-color', line);
       // Ryhmätäyttö: ÄLÄ ylikirjoita väriä kun p-merkki on alueen päällä
       // (hoveredPolyId). Silloin samoilla tiedoilla olevat alueet on värjätty
       // mustiksi (applyHoverHighlight), eikä ajan säätö saa muuttaa niitä
@@ -14002,7 +14046,7 @@
     // "Näytä julkiset sähkölatauspisteet" toggle is on. Garages (halli-icons)
     // are handled separately by updateHalliVisibility(), since they also follow
     // the paid/free filter.
-    const PARKING_LAYER_IDS = ['master-poly-fill','master-poly-line','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill'];
+    const PARKING_LAYER_IDS = ['master-poly-fill','master-poly-line','master-poly-line-outer','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill'];
     function setParkingLayersVisible(visible){
       PARKING_LAYER_IDS.forEach(id => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
