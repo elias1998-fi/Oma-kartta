@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-c';
+    const APP_BUILD   = '2026-08-20-d';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9930,9 +9930,13 @@
     // MapLibre: polygonilla POSITIIVINEN line-offset on inset (sisäänpäin),
     // negatiivinen outset. 0 = viiva keskittyy reunalle, kuten EasyParkilla.
     const PAID_LINE_INSET    = 0;
-    const PAID_FILL_SEL_OP  = 0.40;   // valittu: p-merkin alla TAI sama ryhmä
+    // HUOM: valittu tila ja ryhmäkorostus EIVÄT käytä näitä (20.8. alkaen).
+    // Ne piirtyvät vanhaan tapaan: valittu punainen #ff1744, ryhmä tummansininen,
+    // molemmat hlStops-zoom-rampeilla. Nämä vakiot jäivät sitä varten, jos
+    // hillitympään siniseen valintaan halutaan joskus palata.
+    const PAID_FILL_SEL_OP  = 0.40;
     const PAID_LINE_SEL_OP  = 1.00;
-    const PAID_SEL_LINE_W   = 2.5;    // sama paksuus valitulle ja ryhmälle
+    const PAID_SEL_LINE_W   = 2.5;
     const FREE_SOURCES = ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella'];
     const IS_FREE_EXPR = ['match', ['get','source'], FREE_SOURCES, true, false];
     // Ilmaisilla säilyy zoom-ramppi, maksullisilla peitto on kiinteä.
@@ -9993,14 +9997,14 @@
       const groupIds = getSameGroupIds(props);   // same native types
       const groupMinusHov = groupIds.filter(id => id !== hovId);
 
-      // Colour scheme: purple for free areas, blue for paid
-      const _isFree  = FREE_SOURCES.includes(props.source);
-      const _lineClr = _isFree ? '#611868' : PAID_AREA_CLR;
-      // MAKSULLISET: p-merkin alla oleva alue EI enää muutu punaiseksi, vaan saa
-      // saman värin voimakkaammalla peitolla — ja täsmälleen sama ulkoasu tulee
-      // kaikille samoilla ominaisuustiedoilla oleville alueille (ryhmä).
-      // ILMAISET: punainen korostus kuten ennen.
-      const _hoverFillClr = _isFree ? '#ff1744' : PAID_AREA_CLR;
+      // (Aiemmat _isFree / _lineClr -apumuuttujat poistettu: korostus on nyt
+      //  sama kaikille alueille, joten haarautumista ei enää tarvita.)
+      // 20.8. PALATTU VANHAAN: p-merkin alla oleva alue on PUNAINEN ja samoilla
+      // ominaisuustiedoilla olevat (ryhmä) tummansinisiä — sama sekä maksullisilla
+      // että ilmaisilla. Peitot tulevat zoom-rampeista (hlOpacity), eli korostus
+      // on kaukaa vahvempi ja lähellä läpinäkyvämpi. Vain VALITSEMATON maksullinen
+      // alue käyttää EasyParkin mitoitusta (#557cf3, täyttö 23 %, reuna 1 px).
+      const _hoverFillClr = '#ff1744';
       // "Iso aluekokonaisuus" (large_area): p-merkin alla EI täyttöä lainkaan —
       // ei punaista eikä sinistä, vain punainen reuna. Punainen hover-täyttö
       // suodatetaan tältä alueelta kokonaan pois (ei hetkellistä vilahdusta), ja
@@ -10009,24 +10013,18 @@
       const _isLarge = props.large_area === true || props.large_area === 'true';
 
       // Iso alue: p-merkin alla ei täyttöä lainkaan, vain reuna (vanha sääntö,
-      // koskee edelleen sekä maksullisia että ilmaisia).
-      // Maksullisilla korostustäyttö on kiinteä 40 %, ilmaisilla vanha ramppi.
+      // koskee sekä maksullisia että ilmaisia).
       map.setPaintProperty('master-poly-hover-fill', 'fill-color', _hoverFillClr);
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity',
-        _isFree ? hlOpacity('hoverFill') : PAID_FILL_SEL_OP);
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', hlOpacity('hoverFill'));
       map.setFilter('master-poly-hover-fill',
         (hovId && !_isLarge) ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
 
-      // Perustäyttö piilotetaan niiltä alueilta joiden päälle piirretään
-      // korostustäyttö. Maksullisilla se on PAKKO tehdä myös ryhmälle: 25 % ja
-      // 40 % päällekkäin antaisi ~55 %, eli valittu alue olisi liian tumma.
-      // Ilmaisilla korostus on lähes peittävä punainen, joten siellä säilyy
-      // vanha käytäntö (piilotetaan vain hoverattu iso alue).
-      const _groupIdsForFill = _isLarge ? [] : groupMinusHov;
-      const _hideFillIds = _isFree
-        ? (hovId && _isLarge ? [hovId] : [])
-        : [].concat(hovId != null ? [hovId] : [], _groupIdsForFill);
+      // Perustäyttö: piilotetaan vain hoverattu ISO alue (vanha käytäntö).
+      // Punainen korostus on lähes peittävä, joten sen alta ei tarvitse muuta
+      // piilottaa — toisin kuin buildissa -h..-c, jossa korostus oli hillitty
+      // 40 %:n sininen ja perustäyttö olisi kertautunut sen kanssa.
+      const _hideFillIds = (hovId && _isLarge) ? [hovId] : [];
       if (map.getLayer('master-poly-fill')) {
         map.setPaintProperty('master-poly-fill', 'fill-opacity',
           _hideFillIds.length
@@ -10035,11 +10033,10 @@
         );
       }
 
-      // Perusreuna piiloon hoveratulta alueelta (korvataan hover-linellä) ja
-      // maksullisilla myös ryhmältä (korvataan group-linellä).
-      const _hideLineIds = _isFree
-        ? (hovId != null ? [hovId] : [])
-        : [].concat(hovId != null ? [hovId] : [], _isLarge ? [] : groupMinusHov);
+      // Perusreuna piiloon hoveratulta alueelta — se korvataan hover-linellä.
+      // Ryhmän perusreuna JÄTETÄÄN näkyviin: group-line piirtyy sen päälle
+      // täydellä peitolla, kuten ennenkin.
+      const _hideLineIds = (hovId != null) ? [hovId] : [];
       if (map.getLayer('master-poly-line')) {
         map.setPaintProperty('master-poly-line', 'line-opacity',
           _hideLineIds.length
@@ -10053,8 +10050,7 @@
       // Show hover-line (thick RED border, fully opaque) on the hovered area.
       if (map.getLayer('master-poly-hover-line')) {
         map.setPaintProperty('master-poly-hover-line', 'line-color', _hoverFillClr);
-        map.setPaintProperty('master-poly-hover-line', 'line-opacity',
-          _isFree ? hlOpacity('hoverLine') : PAID_LINE_SEL_OP);
+        map.setPaintProperty('master-poly-hover-line', 'line-opacity', hlOpacity('hoverLine'));
         map.setFilter('master-poly-hover-line',
           hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
         );
@@ -10065,24 +10061,17 @@
       const _groupIds = _isLarge ? [] : groupMinusHov;
       // Subtle blue fill on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
-        // Maksullisilla ryhmä näyttää täsmälleen samalta kuin p-merkin alla
-        // oleva alue: sama väri, sama peitto. Ilmaisilla vanha korostus.
-        map.setPaintProperty('master-poly-group-fill', 'fill-color',
-          _isFree ? groupFillColor() : PAID_AREA_CLR);
-        map.setPaintProperty('master-poly-group-fill', 'fill-opacity',
-          _isFree ? hlOpacity('groupFill') : PAID_FILL_SEL_OP);
+        // Ryhmä = tummansininen (vaaleissa tyyleissä #0C0243), zoom-ramppi.
+        map.setPaintProperty('master-poly-group-fill', 'fill-color', groupFillColor());
+        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', hlOpacity('groupFill'));
         map.setFilter('master-poly-group-fill',
           _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
         );
       }
       // Border on OTHER same-category areas → black, fully opaque
-      map.setPaintProperty('master-poly-group-line', 'line-color',
-        _isFree ? groupLineColor() : PAID_AREA_CLR);
-      map.setPaintProperty('master-poly-group-line', 'line-opacity',
-        _isFree ? hlOpacity('groupLine') : PAID_LINE_SEL_OP);
-      // Sama reunapaksuus kuin valitulla alueella, jotta ryhmä ei erotu siitä.
-      map.setPaintProperty('master-poly-group-line', 'line-width',
-        _isFree ? 1.25 : PAID_SEL_LINE_W);
+      map.setPaintProperty('master-poly-group-line', 'line-color', groupLineColor());
+      map.setPaintProperty('master-poly-group-line', 'line-opacity', hlOpacity('groupLine'));
+      map.setPaintProperty('master-poly-group-line', 'line-width', 1.25);
       map.setFilter('master-poly-group-line',
         _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
       );
