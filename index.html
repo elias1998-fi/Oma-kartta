@@ -3725,7 +3725,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-19-g';
+    const APP_BUILD   = '2026-08-19-h';
     const SPLASH_MS   = 2000;          // näkyvissä 2 s, sitten 0,3 s häivytys
     (function () {
       const v = document.getElementById('tp-splash-ver');
@@ -9456,30 +9456,25 @@
 
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'fill-opacity': hlOpacity('baseFill'), 'fill-opacity-transition': { duration: 0 },
+          paint:{ 'fill-opacity': mixedOpacity('baseFill', PAID_FILL_BASE_OP), 'fill-opacity-transition': { duration: 0 },
             'fill-color': ['match', ['get','source'],
               'community',          '#7F1F89',
               'hel_ilmainen_pitka', '#7F1F89',
               'hel_ilmainen_lyhyt', '#7F1F89',
               'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
-              'hel_kertamaksu_1h',  '#1266f1',
-              'hel_kertamaksu_2h',  '#1266f1',
-              'hel_kertamaksu_4h',  '#1266f1',
-              'hel_maksullinen_ei_tunnusta',        '#1266f1',
-              'hel_kertamaksu_1h_ei_tunnusta',      '#1266f1',
-              '#1266f1'
+              PAID_AREA_CLR
             ]
           }
         });
         // Base line layer
         map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'line-width': 1.0, 'line-opacity': hlOpacity('baseLine'),
+          paint:{ 'line-width': 1.0, 'line-opacity': mixedOpacity('baseLine', PAID_LINE_BASE_OP),
             'line-color': ['match', ['get','source'],
               'community',          '#611868',
               'hel_ilmainen_pitka', '#611868',
               'hel_ilmainen_lyhyt', '#611868',
               'hel_sallittu_kiellon_ulkopuolella', '#611868',
-              '#0B49D0'
+              PAID_AREA_CLR
             ]
           }
         });
@@ -9646,6 +9641,31 @@
     }
     // Sama ramppi, mutta ehdon täyttäville featureille kiinteä arvo (esim. 0 =
     // piilota hoverattu alue). Ehto on ULOSTULOSSA, jotta zoom pysyy top-levelinä.
+    // ── Maksullisten alueiden värit ──────────────────────────────────────
+    // Yksi väri, neljä peittoa (mitoitus johdettu EasyParkin väripoiminnoista).
+    // ILMAISIIN ALUEISIIN EI KOSKETA: ne pitävät lilan värinsä, punaisen
+    // p-merkki-korostuksensa ja vanhat zoom-ramppinsa.
+    const PAID_AREA_CLR     = '#2f2bdc';
+    const PAID_FILL_BASE_OP = 0.25;   // valitsematon täyttö
+    const PAID_LINE_BASE_OP = 0.40;   // valitsematon reuna
+    const PAID_FILL_SEL_OP  = 0.40;   // valittu: p-merkin alla TAI sama ryhmä
+    const PAID_LINE_SEL_OP  = 1.00;
+    const PAID_SEL_LINE_W   = 2.5;    // sama paksuus valitulle ja ryhmälle
+    const FREE_SOURCES = ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella'];
+    const IS_FREE_EXPR = ['match', ['get','source'], FREE_SOURCES, true, false];
+    // Ilmaisilla säilyy zoom-ramppi, maksullisilla peitto on kiinteä.
+    // HUOM: zoom-lauseke EI saa olla toisen lausekkeen sisällä, joten
+    // interpolate pysyy ylimpänä ja ehdot menevät ULOSTULOIHIN — sama kikka
+    // kuin hlOpacityCasessa. cond/whenTrue on valinnainen lisäehto (esim.
+    // "piilota nämä id:t"), joka voittaa muut.
+    function mixedOpacity(key, paidConst, cond, whenTrue){
+      const st = hlStops(key), out = ['interpolate', ['linear'], ['zoom']];
+      for (let i = 0; i < st.length; i += 2) {
+        const normal = ['case', IS_FREE_EXPR, st[i+1], paidConst];
+        out.push(st[i], cond ? ['case', cond, whenTrue, normal] : normal);
+      }
+      return out;
+    }
     function hlOpacityCase(key, cond, whenTrue){
       const st = hlStops(key), out = ['interpolate', ['linear'], ['zoom']];
       for (let i = 0; i < st.length; i += 2) out.push(st[i], ['case', cond, whenTrue, st[i+1]]);
@@ -9657,24 +9677,21 @@
     // tummansininen sulautuu taustaan, joten ryhmä saa alueiden OMAN värin —
     // sininen maksullisille, violetti ilmaisille. Läpinäkyvyysrampit (hlStops)
     // ovat samat molemmissa, samoin p-merkin alla olevan alueen punainen.
+    // Käytössä vain tummassa tyylissä (ks. groupFillColor). Maksullisten sävy
+    // seuraa nyt PAID_AREA_CLRiä, jotta se on sama väri kaikkialla.
     const GROUP_FILL_OWN = ['match', ['get','source'],
       'community',          '#7F1F89',
       'hel_ilmainen_pitka', '#7F1F89',
       'hel_ilmainen_lyhyt', '#7F1F89',
       'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
-      'hel_kertamaksu_1h',  '#1266f1',
-      'hel_kertamaksu_2h',  '#1266f1',
-      'hel_kertamaksu_4h',  '#1266f1',
-      'hel_maksullinen_ei_tunnusta',        '#1266f1',
-      'hel_kertamaksu_1h_ei_tunnusta',      '#1266f1',
-      '#1266f1'
+      PAID_AREA_CLR
     ];
     const GROUP_LINE_OWN = ['match', ['get','source'],
       'community',          '#611868',
       'hel_ilmainen_pitka', '#611868',
       'hel_ilmainen_lyhyt', '#611868',
       'hel_sallittu_kiellon_ulkopuolella', '#611868',
-      '#0B49D0'
+      PAID_AREA_CLR
     ];
     const GROUP_CLR_LIGHT = '#0C0243';
     function groupFillColor(){ return mapStyleChoice === 'dark' ? GROUP_FILL_OWN : GROUP_CLR_LIGHT; }
@@ -9687,10 +9704,13 @@
       const groupMinusHov = groupIds.filter(id => id !== hovId);
 
       // Colour scheme: purple for free areas, blue for paid
-      const _freeSrc = ['community','hel_ilmainen_pitka','hel_ilmainen_lyhyt','hel_sallittu_kiellon_ulkopuolella'];
-      const _isFree  = _freeSrc.includes(props.source);
-      const _lineClr = _isFree ? '#611868' : '#0B49D0';
-      const _hoverFillClr = '#ff1744';   // hovered area → red (as before)
+      const _isFree  = FREE_SOURCES.includes(props.source);
+      const _lineClr = _isFree ? '#611868' : PAID_AREA_CLR;
+      // MAKSULLISET: p-merkin alla oleva alue EI enää muutu punaiseksi, vaan saa
+      // saman värin voimakkaammalla peitolla — ja täsmälleen sama ulkoasu tulee
+      // kaikille samoilla ominaisuustiedoilla oleville alueille (ryhmä).
+      // ILMAISET: punainen korostus kuten ennen.
+      const _hoverFillClr = _isFree ? '#ff1744' : PAID_AREA_CLR;
       // "Iso aluekokonaisuus" (large_area): p-merkin alla EI täyttöä lainkaan —
       // ei punaista eikä sinistä, vain punainen reuna. Punainen hover-täyttö
       // suodatetaan tältä alueelta kokonaan pois (ei hetkellistä vilahdusta), ja
@@ -9698,33 +9718,50 @@
       // kokonaan punainen kuten ennen.
       const _isLarge = props.large_area === true || props.large_area === 'true';
 
+      // Iso alue: p-merkin alla ei täyttöä lainkaan, vain reuna (vanha sääntö,
+      // koskee edelleen sekä maksullisia että ilmaisia).
+      // Maksullisilla korostustäyttö on kiinteä 40 %, ilmaisilla vanha ramppi.
       map.setPaintProperty('master-poly-hover-fill', 'fill-color', _hoverFillClr);
-      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity', hlOpacity('hoverFill'));
+      map.setPaintProperty('master-poly-hover-fill', 'fill-opacity',
+        _isFree ? hlOpacity('hoverFill') : PAID_FILL_SEL_OP);
       map.setFilter('master-poly-hover-fill',
         (hovId && !_isLarge) ? ['==', ['get','id'], hovId] : ['==','id','__none__']
       );
-      // Perustäyttö: piilota vain hoverattu iso alue (0), muut ennallaan (0.20).
+
+      // Perustäyttö piilotetaan niiltä alueilta joiden päälle piirretään
+      // korostustäyttö. Maksullisilla se on PAKKO tehdä myös ryhmälle: 25 % ja
+      // 40 % päällekkäin antaisi ~55 %, eli valittu alue olisi liian tumma.
+      // Ilmaisilla korostus on lähes peittävä punainen, joten siellä säilyy
+      // vanha käytäntö (piilotetaan vain hoverattu iso alue).
+      const _groupIdsForFill = _isLarge ? [] : groupMinusHov;
+      const _hideFillIds = _isFree
+        ? (hovId && _isLarge ? [hovId] : [])
+        : [].concat(hovId != null ? [hovId] : [], _groupIdsForFill);
       if (map.getLayer('master-poly-fill')) {
         map.setPaintProperty('master-poly-fill', 'fill-opacity',
-          (hovId && _isLarge)
-            ? hlOpacityCase('baseFill', ['==', ['get','id'], hovId], 0)
-            : hlOpacity('baseFill')
+          _hideFillIds.length
+            ? mixedOpacity('baseFill', PAID_FILL_BASE_OP, ['in', ['get','id'], ['literal', _hideFillIds]], 0)
+            : mixedOpacity('baseFill', PAID_FILL_BASE_OP)
         );
       }
 
-      // Hide the BASE border for the hovered area only. Case expression
-      // returns 0 opacity for the matching id, 0.30 for everything else.
+      // Perusreuna piiloon hoveratulta alueelta (korvataan hover-linellä) ja
+      // maksullisilla myös ryhmältä (korvataan group-linellä).
+      const _hideLineIds = _isFree
+        ? (hovId != null ? [hovId] : [])
+        : [].concat(hovId != null ? [hovId] : [], _isLarge ? [] : groupMinusHov);
       if (map.getLayer('master-poly-line')) {
         map.setPaintProperty('master-poly-line', 'line-opacity',
-          hovId
-            ? hlOpacityCase('baseLine', ['==', ['get','id'], hovId], 0)
-            : hlOpacity('baseLine')
+          _hideLineIds.length
+            ? mixedOpacity('baseLine', PAID_LINE_BASE_OP, ['in', ['get','id'], ['literal', _hideLineIds]], 0)
+            : mixedOpacity('baseLine', PAID_LINE_BASE_OP)
         );
       }
       // Show hover-line (thick RED border, fully opaque) on the hovered area.
       if (map.getLayer('master-poly-hover-line')) {
         map.setPaintProperty('master-poly-hover-line', 'line-color', _hoverFillClr);
-        map.setPaintProperty('master-poly-hover-line', 'line-opacity', hlOpacity('hoverLine'));
+        map.setPaintProperty('master-poly-hover-line', 'line-opacity',
+          _isFree ? hlOpacity('hoverLine') : PAID_LINE_SEL_OP);
         map.setFilter('master-poly-hover-line',
           hovId ? ['==', ['get','id'], hovId] : ['==','id','__none__']
         );
@@ -9735,15 +9772,24 @@
       const _groupIds = _isLarge ? [] : groupMinusHov;
       // Subtle blue fill on OTHER same-category areas
       if (map.getLayer('master-poly-group-fill')) {
-        map.setPaintProperty('master-poly-group-fill', 'fill-color', groupFillColor());
-        map.setPaintProperty('master-poly-group-fill', 'fill-opacity', hlOpacity('groupFill'));
+        // Maksullisilla ryhmä näyttää täsmälleen samalta kuin p-merkin alla
+        // oleva alue: sama väri, sama peitto. Ilmaisilla vanha korostus.
+        map.setPaintProperty('master-poly-group-fill', 'fill-color',
+          _isFree ? groupFillColor() : PAID_AREA_CLR);
+        map.setPaintProperty('master-poly-group-fill', 'fill-opacity',
+          _isFree ? hlOpacity('groupFill') : PAID_FILL_SEL_OP);
         map.setFilter('master-poly-group-fill',
           _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
         );
       }
       // Border on OTHER same-category areas → black, fully opaque
-      map.setPaintProperty('master-poly-group-line', 'line-color', groupLineColor());
-      map.setPaintProperty('master-poly-group-line', 'line-opacity', hlOpacity('groupLine'));
+      map.setPaintProperty('master-poly-group-line', 'line-color',
+        _isFree ? groupLineColor() : PAID_AREA_CLR);
+      map.setPaintProperty('master-poly-group-line', 'line-opacity',
+        _isFree ? hlOpacity('groupLine') : PAID_LINE_SEL_OP);
+      // Sama reunapaksuus kuin valitulla alueella, jotta ryhmä ei erotu siitä.
+      map.setPaintProperty('master-poly-group-line', 'line-width',
+        _isFree ? 1.25 : PAID_SEL_LINE_W);
       map.setFilter('master-poly-group-line',
         _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
       );
@@ -9838,11 +9884,11 @@
         map.setFilter('master-poly-hover-line', ['==','id','__none__']);
       // Restore the base border opacity for every area.
       if (map.getLayer('master-poly-line')) {
-        map.setPaintProperty('master-poly-line', 'line-opacity', hlOpacity('baseLine'));
+        map.setPaintProperty('master-poly-line', 'line-opacity', mixedOpacity('baseLine', PAID_LINE_BASE_OP));
       }
       // Restore the base fill for every area (iso alue palautuu normaaliksi).
       if (map.getLayer('master-poly-fill')) {
-        map.setPaintProperty('master-poly-fill', 'fill-opacity', hlOpacity('baseFill'));
+        map.setPaintProperty('master-poly-fill', 'fill-opacity', mixedOpacity('baseFill', PAID_FILL_BASE_OP));
       }
     }
 
