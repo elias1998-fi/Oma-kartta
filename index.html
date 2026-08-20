@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-k';
+    const APP_BUILD   = '2026-08-20-l';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9707,7 +9707,7 @@
             'line-width':   boostWidth(),
             'line-offset':  boostOffset(),
             'line-color':   BOOST_DEBUG_CLR || areaColorExpr(IS_FREE_EXPR, '#7F1F89', PAID_AREA_CLR),
-            'line-opacity': BOOST_DEBUG_CLR ? 1 : areaFillOpacity()
+            'line-opacity': BOOST_DEBUG_CLR ? 1 : boostOpacity()
           },
           layout:{ 'line-join':'round', 'line-cap':'round' }
         });
@@ -9720,11 +9720,12 @@
         // Base line layer
         map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{
-            // Paksuus kasvaa 0,25 px:stä (zoom 13) täyteen 1 px:iin — ks.
-            // areaLineWidth. Peitto: ilmaisilla vanha ramppi, maksullisilla 100 %.
+            // Paksuus kasvaa 0,25 px:stä (zoom 13) täyteen 1 px:iin, peitto
+            // nollasta täyteen, ja viiva kelluu kaistan ulkoreunassa kunnes
+            // kaista katoaa ja se laskeutuu polygonin omalle reunalle.
             'line-width':  areaLineWidth(),
-            'line-offset': ['case', IS_FREE_EXPR, 0,   PAID_LINE_INSET],
-            'line-opacity': mixedOpacity('baseLine', PAID_LINE_INNER_OP),
+            'line-offset': areaLineOffset(),
+            'line-opacity': areaLineOpacity(),
             'line-color': areaColorExpr(IS_FREE_EXPR, '#611868', PAID_AREA_CLR)
           }
         });
@@ -9989,24 +9990,22 @@
     // Isot aluekokonaisuudet (large_area) erottuvat jo pelkällä täytöllä →
     // selvästi pienemmät leveydet.
     const IS_LARGE_EXPR = ['to-boolean', ['coalesce', ['get','large_area'], false]];
-    // MITOITUS: nämä ovat samat leveydet kuin alkuperäisessä versiossa, ja ne on
-    // käyttäjän valinnasta palautettu (20.8.) — alue on kaukaa selvästi näkyvä
-    // ja kutistuu kohti todellista kokoaan lähemmäs zoomatessa.
-    // HUOM 1: koska kaista on polygonin ULKOPUOLELLA (line-offset), se lisää
-    // leveyttä MOLEMMILLE puolille → näkyvä leveys = geometria + 2 × kaista.
-    // Alkuperäisessä viiva oli keskitetty reunalle, joten siellä lisäys oli
-    // puolet tästä; meillä alue on siis vastaavasti paksumpi.
-    // HUOM 2: näkyvä leveys ei ole vakio vaan LASKEE zoomatessa sisään
-    // (z13 ≈ 10,5 px → z15,5 ≈ 3,0 px), koska kaista kutistuu nopeammin kuin
-    // geometria kasvaa. Kokeiltiin myös vakioleveyttä (build -h, kaista =
-    // (3 px − geometria) / 2), mutta se ei erottunut riittävästi — palattu tähän.
+    // MITOITUS (20.8.): kokonaisleveys ei saa missään zoomissa ylittää sitä
+    // leveyttä joka alueella on zoomilla FULL_ZOOM — eli 15,5:n oma koko on katto.
+    // Kaista = (kattoleveys − geometria) / 2, koska kaista on polygonin
+    // ULKOPUOLELLA (line-offset) ja lisää leveyttä MOLEMMILLE puolille.
+    // Geometria Helsingin leveysasteella 2,5 m kadunvarsialueelle: z13 0,53 px ·
+    // z14 1,05 · z15 2,10 · z15,5 2,97. Isot aluekokonaisuudet erottuvat jo
+    // täytöllä → murto-osa.
+    // Ero aiempaan: alue ei enää turpoa kaukana (z13 oli 10,5 px leveä). Näkyvä
+    // muutos zoomatessa tulee nyt PEITOSTA ja REUNAVIIVASTA, ei leveydestä.
     // ⚠️ TILAPÄINEN DIAGNOSTIIKKA: kun tämä on väri (esim. '#ff1744'), paksunnus-
     // viiva piirretään sillä värillä eikä alueen omalla. Näin näkee heti onko taso
     // päällä ja kummalle puolelle reunaa se piirtyy. Aseta null kun asia on
     // varmistettu — silloin paksunnus sulautuu täyttöön kuten kuuluu.
     const BOOST_DEBUG_CLR = null;
     // stopit: [zoom, tavallinen, iso, …]
-    const BOOST_STOPS = [13, 5.0, 1.0,  14, 3.6, 0.7,  15, 1.6, 0.3,  FULL_ZOOM, 0, 0];
+    const BOOST_STOPS = [13, 1.25, 0.30,  14, 1.00, 0.25,  15, 0.45, 0.10,  FULL_ZOOM, 0, 0];
     function boostWidth(){
       const out = ['interpolate', ['linear'], ['zoom']];
       for (let i = 0; i < BOOST_STOPS.length; i += 3)
@@ -10019,6 +10018,48 @@
       const out = ['interpolate', ['linear'], ['zoom']];
       for (let i = 0; i < BOOST_STOPS.length; i += 3)
         out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2]/2, -BOOST_STOPS[i+1]/2]);
+      return out;
+    }
+    // Kaista on vahvimmillaan kaukana ja häipyy nollaan siihen mennessä kun se
+    // on kutistunut pois. Ei sidottu täytön peittoon, koska kaistan tehtävä on
+    // eri: se korvaa näkyvyyden jota geometrialla ei vielä ole.
+    const BOOST_MAX_OP = 0.40;
+    function boostOpacity(hideIds){
+      const mk = (v) => (hideIds && hideIds.length)
+        ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, v] : v;
+      return ['interpolate', ['linear'], ['zoom'], 13, mk(BOOST_MAX_OP), FULL_ZOOM, mk(0)];
+    }
+    // Reunaviiva siirretään kaistan ULKOREUNAAN: siirto = koko kaistan leveys.
+    // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
+    // täsmälleen polygonin omalle reunalle. Näin viiva "kelluu" ulkoreunassa
+    // koko matkan eikä hyppää paikaltaan missään vaiheessa.
+    function areaLineOffset(){
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (let i = 0; i < BOOST_STOPS.length; i += 3)
+        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2], -BOOST_STOPS[i+1]]);
+      return out;
+    }
+    // Reunaviiva häivyttyy esiin: näkymätön zoomilla 13, täysi FULL_ZOOMilla.
+    // Ilmaisilla loppuarvo on vanha baseLine-ramppi, maksullisilla 100 %.
+    function areaLineOpacity(cond, whenTrue){
+      const st = hlStops('baseLine');            // [13,.60, 15,.55, 17,.47, 19,.42]
+      const freeAt = (z) => {
+        for (let i = 0; i < st.length - 2; i += 2) {
+          if (z >= st[i] && z <= st[i+2]) {
+            const t = (z - st[i]) / (st[i+2] - st[i]);
+            return st[i+1] + (st[i+3] - st[i+1]) * t;
+          }
+        }
+        return z < st[0] ? st[1] : st[st.length-1];
+      };
+      const zs = [13, FULL_ZOOM, 17, 19];
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (const z of zs) {
+        const free = (z === 13) ? 0 : Math.round(freeAt(z)*1000)/1000;
+        const paid = (z === 13) ? 0 : PAID_LINE_INNER_OP;
+        const normal = ['case', IS_FREE_EXPR, free, paid];
+        out.push(z, cond ? ['case', cond, whenTrue, normal] : normal);
+      }
       return out;
     }
 
@@ -10121,9 +10162,7 @@
       if (map.getLayer('master-poly-boost')) {
         const _hideBoost = [].concat(hovId != null ? [hovId] : [], _isLarge ? [] : groupMinusHov);
         map.setPaintProperty('master-poly-boost', 'line-opacity',
-          BOOST_DEBUG_CLR ? 1 : (_hideBoost.length
-            ? areaFillOpacity(['in', ['get','id'], ['literal', _hideBoost]], 0)
-            : areaFillOpacity())
+          BOOST_DEBUG_CLR ? 1 : boostOpacity(_hideBoost)
         );
       }
 
@@ -10134,8 +10173,8 @@
       if (map.getLayer('master-poly-line')) {
         map.setPaintProperty('master-poly-line', 'line-opacity',
           _hideLineIds.length
-            ? mixedOpacity('baseLine', PAID_LINE_INNER_OP, ['in', ['get','id'], ['literal', _hideLineIds]], 0)
-            : mixedOpacity('baseLine', PAID_LINE_INNER_OP)
+            ? areaLineOpacity(['in', ['get','id'], ['literal', _hideLineIds]], 0)
+            : areaLineOpacity()
         );
       }
       if (map.getLayer('master-poly-line-outer')) {
@@ -10260,7 +10299,7 @@
         map.setFilter('master-poly-hover-line', ['==','id','__none__']);
       // Restore the base border opacity for every area.
       if (map.getLayer('master-poly-line')) {
-        map.setPaintProperty('master-poly-line', 'line-opacity', mixedOpacity('baseLine', PAID_LINE_INNER_OP));
+        map.setPaintProperty('master-poly-line', 'line-opacity', areaLineOpacity());
       }
       if (map.getLayer('master-poly-line-outer')) {
         map.setPaintProperty('master-poly-line-outer', 'line-opacity', outerLineOpacity());
@@ -10270,7 +10309,7 @@
         map.setPaintProperty('master-poly-fill', 'fill-opacity', areaFillOpacity());
       }
       if (map.getLayer('master-poly-boost')) {
-        map.setPaintProperty('master-poly-boost', 'line-opacity', BOOST_DEBUG_CLR ? 1 : areaFillOpacity());
+        map.setPaintProperty('master-poly-boost', 'line-opacity', BOOST_DEBUG_CLR ? 1 : boostOpacity());
       }
     }
 
