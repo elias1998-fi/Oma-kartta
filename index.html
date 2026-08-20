@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-f';
+    const APP_BUILD   = '2026-08-20-g';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -6163,7 +6163,9 @@
     // halli-ikoni on 64x64 px ja latauspiste 128x128 px, molemmat
     // pixelRatio 2. Renderöity koko on siis 32*size vs 64*size CSS-pikseliä,
     // ja 0.675 / 0.3375 antavat molemmille saman 21,6 px:n koon.
-    const ICON_MAX_ZOOM    = 15;      // tässä saavutetaan maksimikoko
+    // "Valmis"-zoom: tässä kaikki zoom-sidotut asiat ovat täydessä koossaan.
+    const FULL_ZOOM        = 15.5;
+    const ICON_MAX_ZOOM    = FULL_ZOOM;   // tässä saavutetaan maksimikoko
     const HALL_ICON_MAX    = 0.675;
     const CHARGE_ICON_MAX  = 0.3375;
     const ICON_START_SCALE = 0.7;     // 30 % pienempi ilmestyessä
@@ -6193,7 +6195,7 @@
     // ja koska moveLayer siirtää aina viimeisimmän ylimmäksi, listan
     // järjestys ratkaisee: halli jää latauspisteen päälle.
     const APP_POLY_ORDER = [
-      'master-poly-fill','master-poly-line','master-poly-line-outer',
+      'master-poly-boost','master-poly-fill','master-poly-line','master-poly-line-outer',
       'master-poly-group-fill','master-poly-group-line',
       'master-poly-hover-fill','master-poly-hover-line'
     ];
@@ -6687,13 +6689,17 @@
       // wiped the chosen filters; now the screen underneath stays exactly as
       // it was, and closing the overlay returns to it.
       // Ball stays put at X — pressed button briefly flashes light gray instead
+      // TOIMINTO AJETAAN HETI. Aiemmin se odotti 180 ms välähdystä + 60 ms
+      // lisäviivettä, eli näkymä avautui vasta neljäsosasekunnin päästä (ja
+      // avautumisanimaation kanssa se tuntui puolelta sekunnilta). Välähdys
+      // hoidetaan nyt omalla ajastimellaan, joka ei viivytä mitään.
       const btn = PILL_BTNS[idx];
-      if (btn) btn.classList.add('pill-flash');
-      setTimeout(() => {
-        if (btn) btn.classList.remove('pill-flash');
-        if (keepMenuOpen) armMenuAutoClose(); else closeMenu();
-        setTimeout(action, 60);
-      }, 180);
+      if (btn) {
+        btn.classList.add('pill-flash');
+        setTimeout(() => btn.classList.remove('pill-flash'), 180);
+      }
+      if (keepMenuOpen) armMenuAutoClose(); else closeMenu();
+      if (typeof action === 'function') action();
     }
 
     // ── Profile dim, driven by the panel's real position ──────────────────
@@ -9694,16 +9700,21 @@
         // First load — create source + layers
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
 
+        // Kaukonäkyvyyden paksunnusviiva — lisätään ENNEN täyttöä, joten se jää
+        // sen alle. Väri ja peitto seuraavat täyttöä, joten muoto näyttää yhdeltä.
+        map.addLayer({ id:'master-poly-boost', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
+          paint:{
+            'line-width':   boostWidth(),
+            'line-offset':  boostOffset(),
+            'line-color':   areaColorExpr(IS_FREE_EXPR, '#7F1F89', PAID_AREA_CLR),
+            'line-opacity': areaFillOpacity()
+          },
+          layout:{ 'line-join':'round', 'line-cap':'round' }
+        });
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'fill-opacity': mixedOpacity('baseFill', PAID_FILL_BASE_OP), 'fill-opacity-transition': { duration: 0 },
-            'fill-color': ['match', ['get','source'],
-              'community',          '#7F1F89',
-              'hel_ilmainen_pitka', '#7F1F89',
-              'hel_ilmainen_lyhyt', '#7F1F89',
-              'hel_sallittu_kiellon_ulkopuolella', '#7F1F89',
-              PAID_AREA_CLR
-            ]
+          paint:{ 'fill-opacity': areaFillOpacity(), 'fill-opacity-transition': { duration: 0 },
+            'fill-color': areaColorExpr(IS_FREE_EXPR, '#7F1F89', PAID_AREA_CLR)
           }
         });
         // Base line layer
@@ -9714,13 +9725,7 @@
             'line-width':  areaLineWidth(),
             'line-offset': ['case', IS_FREE_EXPR, 0,   PAID_LINE_INSET],
             'line-opacity': mixedOpacity('baseLine', PAID_LINE_INNER_OP),
-            'line-color': ['match', ['get','source'],
-              'community',          '#611868',
-              'hel_ilmainen_pitka', '#611868',
-              'hel_ilmainen_lyhyt', '#611868',
-              'hel_sallittu_kiellon_ulkopuolella', '#611868',
-              PAID_AREA_CLR
-            ]
+            'line-color': areaColorExpr(IS_FREE_EXPR, '#611868', PAID_AREA_CLR)
           }
         });
         // Reunan ULOMPI kaista — vain maksullisilla (ilmaisilla peitto 0).
@@ -9952,6 +9957,78 @@
         ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, base]
         : base;
     }
+    // ── Matala zoom 13–14: maksulliset yhtenä yhtenäisenä värilaikkuna ───
+    // Zoomeilla 13–14 maksullinen alue on TÄYSIN PEITTÄVÄ #007ac9 ja reunaviiva
+    // on samaa väriä, joten reunaa ei erotu lainkaan. Zoomin 14 jälkeen palataan
+    // normaaliin (täyttö 23 % #557cf3, reuna 1 px 100 %). Vaihto tehdään kahdella
+    // vierekkäisellä stopilla (14 ja 14.01), koska interpolate ei osaa askelta.
+    // HUOM: väri ja peitto pitää molemmat rakentaa niin että ['zoom'] on
+    // lausekkeen YLIMPÄNÄ syötteenä — ehdot menevät ULOSTULOIHIN.
+    const AREA_LOW_ZOOM_CLR = '#007ac9';
+    const LOW_END           = 14;      // viimeinen zoom jolla matala tila on voimassa
+    const LOW_OFF           = 14.01;   // ensimmäinen zoom normaalissa tilassa
+    // freeSel = lauseke joka on tosi "ilmaisilla" (voi olla aikatietoinen).
+    function areaColorExpr(freeSel, freeClr, paidClr){
+      return ['interpolate', ['linear'], ['zoom'],
+        13,       ['case', freeSel, freeClr, AREA_LOW_ZOOM_CLR],
+        LOW_END,  ['case', freeSel, freeClr, AREA_LOW_ZOOM_CLR],
+        LOW_OFF,  ['case', freeSel, freeClr, paidClr]];
+    }
+    // Täytön peitto: ilmaisilla vanha baseFill-ramppi, maksullisilla 100 % zoomiin
+    // 14 asti ja sen jälkeen kiinteä PAID_FILL_BASE_OP.
+    function areaFillOpacity(cond, whenTrue){
+      const st = hlStops('baseFill');                 // [13,.26, 15,.21, 17,.16, 19,.13]
+      const freeAt = (z) => {
+        for (let i = 0; i < st.length - 2; i += 2) {
+          if (z >= st[i] && z <= st[i+2]) {
+            const t = (z - st[i]) / (st[i+2] - st[i]);
+            return st[i+1] + (st[i+3] - st[i+1]) * t;
+          }
+        }
+        return z < st[0] ? st[1] : st[st.length-1];
+      };
+      const zs = [13, LOW_END, LOW_OFF, 15, 17, 19];
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (const z of zs) {
+        const paid = (z <= LOW_END) ? 1 : PAID_FILL_BASE_OP;
+        const normal = ['case', IS_FREE_EXPR, Math.round(freeAt(z)*1000)/1000, paid];
+        out.push(z, cond ? ['case', cond, whenTrue, normal] : normal);
+      }
+      return out;
+    }
+
+    // ── Kaukonäkyvyys: "boost"-viiva alueen ULKOPUOLELLA ─────────────────
+    // Malli tuotu sovelluksen toisesta versiosta. Ongelma: kadunvarsialue on
+    // ~2,5 m leveä, eli zoomilla 13 noin 0,25 px — pelkkä täyttö katoaa.
+    // Ratkaisu siellä: alueen omanvärinen viiva paksuntaa muotoa kaukaa ja
+    // kutistuu nollaan lähellä. Leveydet ovat NÄKYVYYSKORJAUS, ei geometrian
+    // muutos.
+    // MUUTOS ALKUPERÄISEEN: siellä kaikki tasot olivat täysin peittäviä, joten
+    // päällekkäisyys ei haitannut. Meillä täyttö on läpikuultava, ja päällekkäin
+    // menevät läpikuultavat tasot summautuisivat (0,23 ⊕ 0,23 ≈ 0,41) — juuri se
+    // "sipulimainen rengaskuvio" josta alkuperäisen kommentti varoittaa. Siksi
+    // boost työnnetään line-offsetilla KOKONAAN polygonin ulkopuolelle, jolloin
+    // se ei mene täytön päälle millään peitolla.
+    // Isot aluekokonaisuudet (large_area) erottuvat jo pelkällä täytöllä →
+    // selvästi pienemmät leveydet.
+    const IS_LARGE_EXPR = ['to-boolean', ['coalesce', ['get','large_area'], false]];
+    // stopit: [zoom, tavallinen, iso, …]
+    const BOOST_STOPS = [13, 5.0, 1.0,  14, 3.6, 0.7,  15, 1.6, 0.3,  FULL_ZOOM, 0, 0];
+    function boostWidth(){
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (let i = 0; i < BOOST_STOPS.length; i += 3)
+        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, BOOST_STOPS[i+2], BOOST_STOPS[i+1]]);
+      return out;
+    }
+    // Ulospäin siirto = puolet leveydestä, jolloin kaista alkaa täsmälleen
+    // polygonin reunasta. MapLibressa NEGATIIVINEN offset on outset.
+    function boostOffset(){
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (let i = 0; i < BOOST_STOPS.length; i += 3)
+        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2]/2, -BOOST_STOPS[i+1]/2]);
+      return out;
+    }
+
     // ── Alueen reunaviivan paksuus (20.8.) ───────────────────────────────
     // Zoomilla 13, kun alueet ilmestyvät, reuna on hiuksenohut 0,25 px ja
     // kasvaa tasaisesti täyteen 1 px:iin zoomiin LINE_W_FULL_ZOOM mennessä.
@@ -9959,7 +10036,7 @@
     // (Kokeiltiin myös täytön peiton sitomista zoomiin; PERUTTU, täyttö on taas
     //  kiinteä: maksullisilla 23 %, ilmaisilla vanha baseFill-ramppi.)
     const LINE_W_MIN       = 0.25;
-    const LINE_W_FULL_ZOOM = 16;
+    const LINE_W_FULL_ZOOM = FULL_ZOOM;
     function areaLineWidth(){
       return ['interpolate', ['linear'], ['zoom'],
         13,                 ['case', IS_FREE_EXPR, LINE_W_MIN, LINE_W_MIN],
@@ -10041,8 +10118,19 @@
       if (map.getLayer('master-poly-fill')) {
         map.setPaintProperty('master-poly-fill', 'fill-opacity',
           _hideFillIds.length
-            ? mixedOpacity('baseFill', PAID_FILL_BASE_OP, ['in', ['get','id'], ['literal', _hideFillIds]], 0)
-            : mixedOpacity('baseFill', PAID_FILL_BASE_OP)
+            ? areaFillOpacity(['in', ['get','id'], ['literal', _hideFillIds]], 0)
+            : areaFillOpacity()
+        );
+      }
+      // Boost piiloon valitulta alueelta JA ryhmältä: niiden päälle piirtyy
+      // punainen / tummansininen korostus, ja ulkopuolelle jäävä värikaista
+      // näyttäisi muuten vanhalta reunukselta.
+      if (map.getLayer('master-poly-boost')) {
+        const _hideBoost = [].concat(hovId != null ? [hovId] : [], _isLarge ? [] : groupMinusHov);
+        map.setPaintProperty('master-poly-boost', 'line-opacity',
+          _hideBoost.length
+            ? areaFillOpacity(['in', ['get','id'], ['literal', _hideBoost]], 0)
+            : areaFillOpacity()
         );
       }
 
@@ -10186,7 +10274,10 @@
       }
       // Restore the base fill for every area (iso alue palautuu normaaliksi).
       if (map.getLayer('master-poly-fill')) {
-        map.setPaintProperty('master-poly-fill', 'fill-opacity', mixedOpacity('baseFill', PAID_FILL_BASE_OP));
+        map.setPaintProperty('master-poly-fill', 'fill-opacity', areaFillOpacity());
+      }
+      if (map.getLayer('master-poly-boost')) {
+        map.setPaintProperty('master-poly-boost', 'line-opacity', areaFillOpacity());
       }
     }
 
@@ -12470,7 +12561,7 @@
       // switch. Otherwise a lingering source sends renderMasterRows/addHalliLayers
       // down their setData() path and the layer is never re-created → nothing
       // shows. Removing first guarantees a fresh re-add in BOTH directions.
-      ['master-poly-fill','master-poly-line','master-poly-line-outer','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill','halli-icons','charging-icons']
+      ['master-poly-boost','master-poly-fill','master-poly-line','master-poly-line-outer','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill','halli-icons','charging-icons']
         .forEach(id => { if (map.getLayer(id)) { try { map.removeLayer(id); } catch(e){} } });
       ['master-polygons','halli-points','charging-points']
         .forEach(id => { if (map.getSource(id)) { try { map.removeSource(id); } catch(e){} } });
@@ -13937,6 +14028,7 @@
       map.setFilter('master-poly-fill', f);
       map.setFilter('master-poly-line', f);
       if (map.getLayer('master-poly-line-outer')) map.setFilter('master-poly-line-outer', f);
+      if (map.getLayer('master-poly-boost'))      map.setFilter('master-poly-boost', f);
       applyTimeAwareColors(freeAtRef);
       updateHalliVisibility();   // garages are paid → follow the paid/free filter
       updateResetBtnVisibility();
@@ -13961,9 +14053,13 @@
       'hel_ilmainen_lyhyt', TA_FREE_LINE, 'hel_sallittu_kiellon_ulkopuolella', TA_FREE_LINE,
       TA_PAID_LINE];
     function applyTimeAwareColors(freeExpr) {
-      const fill = freeExpr ? ['case', freeExpr, TA_FREE_FILL, TA_PAID_FILL] : TA_STATIC_FILL;
-      const line = freeExpr ? ['case', freeExpr, TA_FREE_LINE, TA_PAID_LINE] : TA_STATIC_LINE;
+      // Zoom 13–14 -väri kääritään tähänkin, muuten tämä funktio pyyhkisi sen
+      // pois heti (sama ansa joka söi aiemman värimuutoksen kokonaan).
+      const _freeSel = freeExpr || IS_FREE_EXPR;
+      const fill = areaColorExpr(_freeSel, TA_FREE_FILL, TA_PAID_FILL);
+      const line = areaColorExpr(_freeSel, TA_FREE_LINE, TA_PAID_LINE);
       if (map.getLayer('master-poly-fill'))       map.setPaintProperty('master-poly-fill', 'fill-color', fill);
+      if (map.getLayer('master-poly-boost'))      map.setPaintProperty('master-poly-boost', 'line-color', fill);
       if (map.getLayer('master-poly-line'))       map.setPaintProperty('master-poly-line', 'line-color', line);
       if (map.getLayer('master-poly-line-outer')) map.setPaintProperty('master-poly-line-outer', 'line-color', line);
       // Ryhmätäyttö: ÄLÄ ylikirjoita väriä kun p-merkki on alueen päällä
@@ -14308,7 +14404,7 @@
     // "Näytä julkiset sähkölatauspisteet" toggle is on. Garages (halli-icons)
     // are handled separately by updateHalliVisibility(), since they also follow
     // the paid/free filter.
-    const PARKING_LAYER_IDS = ['master-poly-fill','master-poly-line','master-poly-line-outer','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill'];
+    const PARKING_LAYER_IDS = ['master-poly-boost','master-poly-fill','master-poly-line','master-poly-line-outer','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill'];
     function setParkingLayersVisible(visible){
       PARKING_LAYER_IDS.forEach(id => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
