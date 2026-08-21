@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-21-h';
+    const APP_BUILD   = '2026-08-21-i';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -10056,9 +10056,13 @@
     // väriä eikä zoom-sidonnaista sekoittumista — kartta kuultaa läpi joka
     // zoomilla samalla tavalla. Sama logiikka molemmille alueryhmille; vain
     // väri eroaa.
-    const AREA_FILL_OP = 0.50;
+    // Peitto laskee tasaisesti kaukaa lähelle ja on sen jälkeen vakio.
+    const AREA_FILL_OP_FAR  = 0.50;   // zoom 13
+    const AREA_FILL_OP_NEAR = 0.25;   // FULL_ZOOM (15,5) ja siitä eteenpäin
     function areaFillOpacity(cond, whenTrue){
-      return cond ? ['case', cond, whenTrue, AREA_FILL_OP] : AREA_FILL_OP;
+      const mk = (v) => cond ? ['case', cond, whenTrue, v] : v;
+      return ['interpolate', ['linear'], ['zoom'],
+        13, mk(AREA_FILL_OP_FAR), FULL_ZOOM, mk(AREA_FILL_OP_NEAR)];
     }
     function areaFillColor(freeSel){
       return areaColorExpr(freeSel, '#7F1F89', PAID_AREA_CLR);
@@ -10226,8 +10230,8 @@
     // Sama peitto ja väri kuin täytöllä → kaista näyttää täytön jatkeelta.
     function boostOpacity(hideIds){
       return (hideIds && hideIds.length)
-        ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, AREA_FILL_OP]
-        : AREA_FILL_OP;
+        ? areaFillOpacity(['in', ['get','id'], ['literal', hideIds]], 0)
+        : areaFillOpacity();
     }
     // Reunaviiva siirretään kaistan ULKOREUNAAN: siirto = koko kaistan leveys.
     // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
@@ -10239,8 +10243,9 @@
     // kaistan ulkoreunassa ja laskeutuu polygonin omalle reunalle silloin kun
     // kaista on kutistunut nollaan. Leveys ja peitto eivät muutu matkalla —
     // vain sijainti.
-    const LINE_W_FAR = 2.0, LINE_W_NEAR = 1.0;
-    const LINE_OP_FAR = 0.90, LINE_OP_NEAR = 1.0;
+    // Reunaviiva on aina 1 px; vain peitto muuttuu.
+    const LINE_W_FAR = 1.0, LINE_W_NEAR = 1.0;
+    const LINE_OP_FAR = 0.85, LINE_OP_NEAR = 1.0;
     function areaLineOpacity(cond, whenTrue){
       const mk = (v) => cond ? ['case', cond, whenTrue, v] : v;
       return ['interpolate', ['linear'], ['zoom'],
@@ -10257,9 +10262,9 @@
     const LINE_W_MIN       = 1.0;   // kiinteä: myös LINE_W_FULL_ZOOMilla 1 px
     const LINE_W_FULL_ZOOM = FULL_ZOOM;
     // ── Reunaviiva (21.8.) ───────────────────────────────────────────────
-    // Keskitetty polygonin reunalle, ei siirtoa, ei kotelointia. Kaukana paksu
-    // ja hieman läpikuultava, lähellä ohut ja täysin peittävä:
-    //   zoom 13   → 2 px, peitto 90 %
+    // Keskitetty polygonin reunalle, ei siirtoa, ei kotelointia. Leveys on
+    // kiinteä 1 px; kaukana viiva on hieman läpikuultava ja lähellä peittävä:
+    //   zoom 13   → 1 px, peitto 85 %
     //   FULL_ZOOM → 1 px, peitto 100 %
     // Koska viiva on keskitetty eikä sen sisään jää peitettävää jäännettä,
     // täyttö saa olla läpikuultava ilman että reunan viereen tulee raitaa.
