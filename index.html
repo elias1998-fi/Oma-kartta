@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-q';
+    const APP_BUILD   = '2026-08-20-r';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9702,7 +9702,9 @@
 
         // Kaukonäkyvyyden paksunnusviiva — lisätään ENNEN täyttöä, joten se jää
         // sen alle. Väri ja peitto seuraavat täyttöä, joten muoto näyttää yhdeltä.
-        map.addLayer({ id:'master-poly-boost', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
+        // Kaikki muut kohdat tarkistavat map.getLayer('master-poly-boost'), joten
+        // pelkkä lisäämättä jättäminen riittää kytkemään sen pois.
+        if (BOOST_FILL_ENABLED) map.addLayer({ id:'master-poly-boost', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{
             'line-width':   boostWidth(),
             'line-offset':  boostOffset(),
@@ -10007,6 +10009,13 @@
     // päällä ja kummalle puolelle reunaa se piirtyy. Aseta null kun asia on
     // varmistettu — silloin paksunnus sulautuu täyttöön kuten kuuluu.
     const BOOST_DEBUG_CLR = null;
+    // ⚠️ PAKSUNNOSKAISTA POIS KÄYTÖSTÄ 20.8. — mutta SIIRTYMÄ JÄÄ.
+    // Reunaviiva lukee yhä BOOST_STOPSia sijaintiinsa, joten se on kaukana
+    // polygonin ulkopuolella ja laskeutuu reunalle zoomilla BOOST_END. Kaukaa
+    // alue on siis ääriviiva + oma 23 %:n täyttönsä, ei täyteen väritetty läiskä.
+    // Tämä poistaa samalla läpikuultavien tasojen päällekkäisyyden ja keskelle
+    // jääneen vaalean juovan. Aseta true jos kaista halutaan takaisin.
+    const BOOST_FILL_ENABLED = false;
     // stopit: [zoom, tavallinen, iso, …]
     const BOOST_STOPS = [13, 1.735, 0.43,  BOOST_END, 0, 0];
     function boostWidth(){
