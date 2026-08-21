@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-o';
+    const APP_BUILD   = '2026-08-20-p';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9720,9 +9720,9 @@
         // Base line layer
         map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{
-            // Alueen AINOA reunaviiva. Aina 100 %, leveys 0,5 → 1 px, ja se
-            // kelluu kaistan ulkoreunassa kunnes kaista katoaa ja viiva
-            // laskeutuu polygonin omalle reunalle.
+            // Paksuus kasvaa 0,25 px:stä (zoom 13) täyteen 1 px:iin, peitto
+            // nollasta täyteen, ja viiva kelluu kaistan ulkoreunassa kunnes
+            // kaista katoaa ja se laskeutuu polygonin omalle reunalle.
             'line-width':  areaLineWidth(),
             'line-offset': areaLineOffset(),
             'line-opacity': areaLineOpacity(),
@@ -9916,13 +9916,7 @@
     //                                   pehmennys selittää yhden yksikön eron)
     // Perusväri on siis suoraan valitsemattoman reunan poiminta.
     const PAID_AREA_CLR     = '#557cf3';
-    // Täytön peitto lähizoomeilla. 23 % oli EasyParkista laskettu tarkka arvo;
-    // pyöristetty 25 %:iin selvyyden vuoksi 20.8.
-    const PAID_FILL_BASE_OP = 0.25;
-    // Kaukana (zoom 13) alue on selvästi vahvempi ja kevenee tasaisesti kohti
-    // FULL_ZOOMia. Sama arvo koskee sekä täyttöä että paksunnuskaistaa, jotta ne
-    // näyttävät yhdeltä muodolta.
-    const AREA_FILL_FAR_OP  = 0.50;
+    const PAID_FILL_BASE_OP = 0.23;   // valitsematon täyttö (EasyPark)
     // Valitsemattoman alueen reuna on KAKSIOSAINEN: 1,5 px sisempi kaista ja
     // 1,5 px ulompi kaista, yhteensä 3 px. Kaistat eivät ole päällekkäin —
     // line-offset siirtää ne viivan eri puolille.
@@ -9975,14 +9969,10 @@
     function areaColorExpr(freeSel, freeClr, paidClr){
       return ['case', freeSel, freeClr, paidClr];
     }
-    // Täytön JA paksunnuskaistan yhteinen peitto: 50 % zoomilla 13 → 25 %
-    // zoomilla FULL_ZOOM, sen jälkeen vakio (interpolate pitää viimeisen arvon).
-    // Sama sekä maksullisilla että ilmaisilla — ero tulee väristä, ei peitosta.
+    // Nimi säilytetty, jotta kaikki kutsupaikat (täyttö, boost, korostus,
+    // palautus) käyttävät varmasti samaa peittoa.
     function areaFillOpacity(cond, whenTrue){
-      const mk = (v) => cond ? ['case', cond, whenTrue, v] : v;
-      return ['interpolate', ['linear'], ['zoom'],
-        13,        mk(AREA_FILL_FAR_OP),
-        FULL_ZOOM, mk(PAID_FILL_BASE_OP)];
+      return mixedOpacity('baseFill', PAID_FILL_BASE_OP, cond, whenTrue);
     }
 
     // ── Kaukonäkyvyys: "boost"-viiva alueen ULKOPUOLELLA ─────────────────
@@ -10005,18 +9995,18 @@
     // on vain alueen oma geometria + reunaviiva.
     // Kaista on polygonin ULKOPUOLELLA (line-offset), joten se lisää leveyttä
     // MOLEMMILLE puolille → näkyvä leveys = geometria + 2 × kaista.
-    // z13: geometria 0,53 px + 2 × 2,40 = 5,33 px.
+    // z13: geometria 0,53 px + 2 × 2,235 = 5,00 px.
     // Geometria Helsingin leveysasteella 2,5 m kadunvarsialueelle: z13 0,53 px ·
     // z14 1,05 · z14,8 1,83. Isot aluekokonaisuudet erottuvat jo täytöllä →
     // murto-osa, muuten ne turpoaisivat kaukaa aivan liian isoiksi.
-    const BOOST_END = FULL_ZOOM;
+    const BOOST_END = 14.8;
     // ⚠️ TILAPÄINEN DIAGNOSTIIKKA: kun tämä on väri (esim. '#ff1744'), paksunnus-
     // viiva piirretään sillä värillä eikä alueen omalla. Näin näkee heti onko taso
     // päällä ja kummalle puolelle reunaa se piirtyy. Aseta null kun asia on
     // varmistettu — silloin paksunnus sulautuu täyttöön kuten kuuluu.
     const BOOST_DEBUG_CLR = null;
     // stopit: [zoom, tavallinen, iso, …]
-    const BOOST_STOPS = [13, 2.40, 0.60,  BOOST_END, 0, 0];
+    const BOOST_STOPS = [13, 2.235, 0.56,  BOOST_END, 0, 0];
     function boostWidth(){
       const out = ['interpolate', ['linear'], ['zoom']];
       for (let i = 0; i < BOOST_STOPS.length; i += 3)
@@ -10031,12 +10021,14 @@
         out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2]/2, -BOOST_STOPS[i+1]/2]);
       return out;
     }
-    // Kaista käyttää TÄSMÄLLEEN samaa peittoa kuin täyttö — se on täytön jatke,
-    // ei oma elementtinsä. Näkyvyyden hoitaa leveys, ei erillinen peitto.
+    // Kaista on vahvimmillaan kaukana ja häipyy nollaan siihen mennessä kun se
+    // on kutistunut pois. Ei sidottu täytön peittoon, koska kaistan tehtävä on
+    // eri: se korvaa näkyvyyden jota geometrialla ei vielä ole.
+    const BOOST_MAX_OP = 0.75;
     function boostOpacity(hideIds){
-      return (hideIds && hideIds.length)
-        ? areaFillOpacity(['in', ['get','id'], ['literal', hideIds]], 0)
-        : areaFillOpacity();
+      const mk = (v) => (hideIds && hideIds.length)
+        ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, v] : v;
+      return ['interpolate', ['linear'], ['zoom'], 13, mk(BOOST_MAX_OP), BOOST_END, mk(0)];
     }
     // Reunaviiva siirretään kaistan ULKOREUNAAN: siirto = koko kaistan leveys.
     // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
@@ -10048,22 +10040,38 @@
         out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2], -BOOST_STOPS[i+1]]);
       return out;
     }
-    // ALUEELLA ON VAIN YKSI REUNAVIIVA, eikä se koskaan häivy — se on aina
-    // 100 %. Viiva istuu kaistan ULKOREUNASSA (areaLineOffset) ja liukuu
-    // sisäänpäin sitä mukaa kun kaista kutistuu, kunnes zoomilla FULL_ZOOM se on
-    // polygonin omalla reunalla. Se hoitaa siis sekä kaistan että polygonin
-    // reunaviivan virkaa — erillistä polygonin reunaviivaa ei tarvita.
+    // Reunaviiva häivyttyy esiin: näkymätön zoomilla 13, täysi BOOST_ENDillä —
+    // eli juuri silloin kun kaista on kadonnut alta.
+    // Ilmaisilla loppuarvo on vanha baseLine-ramppi, maksullisilla 100 %.
     function areaLineOpacity(cond, whenTrue){
-      return cond ? ['case', cond, whenTrue, 1] : 1;
+      const st = hlStops('baseLine');            // [13,.60, 15,.55, 17,.47, 19,.42]
+      const freeAt = (z) => {
+        for (let i = 0; i < st.length - 2; i += 2) {
+          if (z >= st[i] && z <= st[i+2]) {
+            const t = (z - st[i]) / (st[i+2] - st[i]);
+            return st[i+1] + (st[i+3] - st[i+1]) * t;
+          }
+        }
+        return z < st[0] ? st[1] : st[st.length-1];
+      };
+      const zs = [13, BOOST_END, 17, 19];
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (const z of zs) {
+        const free = (z === 13) ? 0 : Math.round(freeAt(z)*1000)/1000;
+        const paid = (z === 13) ? 0 : PAID_LINE_INNER_OP;
+        const normal = ['case', IS_FREE_EXPR, free, paid];
+        out.push(z, cond ? ['case', cond, whenTrue, normal] : normal);
+      }
+      return out;
     }
 
     // ── Alueen reunaviivan paksuus (20.8.) ───────────────────────────────
-    // Zoomilla 13 reuna on 0,5 px ja kasvaa tasaisesti täyteen 1 px:iin zoomiin
-    // LINE_W_FULL_ZOOM mennessä. Peitto (100 %) ja väri eivät muutu — vain
-    // paksuus ja sijainti (ks. areaLineOffset).
+    // Zoomilla 13, kun alueet ilmestyvät, reuna on hiuksenohut 0,25 px ja
+    // kasvaa tasaisesti täyteen 1 px:iin zoomiin LINE_W_FULL_ZOOM mennessä.
+    // Peitto ja väri eivät muutu — vain paksuus.
     // (Kokeiltiin myös täytön peiton sitomista zoomiin; PERUTTU, täyttö on taas
     //  kiinteä: maksullisilla 23 %, ilmaisilla vanha baseFill-ramppi.)
-    const LINE_W_MIN       = 0.5;
+    const LINE_W_MIN       = 0.25;
     const LINE_W_FULL_ZOOM = FULL_ZOOM;
     function areaLineWidth(){
       return ['interpolate', ['linear'], ['zoom'],
