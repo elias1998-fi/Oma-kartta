@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-21-d';
+    const APP_BUILD   = '2026-08-21-f';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9740,7 +9740,7 @@
             // Emme tarvitse tätä ääriviivaa lainkaan: piirrämme oman 1 px
             // reunaviivan master-poly-line-tasolla.
             'fill-antialias': false,
-            'fill-color': areaColorExpr(IS_FREE_EXPR, FREE_FILL_CLR, PAID_FILL_CLR)
+            'fill-color': areaFillColor(IS_FREE_EXPR)
           }
         });
         // Base line layer
@@ -10039,13 +10039,36 @@
     // Sama ramppi maksullisille ja ilmaisille — ero tulee väristä, ei peitosta.
     // (Ilmaisilla oli aiemmin oma baseFill-ramppi 0,26 → 0,13; se korvautui
     //  tällä, jotta molemmat käyttäytyvät samoin.)
+    // ⚠️ TÄYTTÖ ON TÄYSIN PEITTÄVÄ (21.8.). Läpikuultavuus on kokonaan väreissä
+    // (boostColorExpr), ei alphassa. Kaksi syytä:
+    //  1) Kotelointimallissa reunaviiva on keskitetty ja ulottuu myös polygonin
+    //     SISÄÄN. Kaista peittää siitä osan, mutta väliin jää 1 px reunaväriä.
+    //     Vain täyttö voi peittää sen — ja vain jos se on peittävä.
+    //  2) Samalla katoaa viimeinenkin läpikuultavien tasojen päällekkäisyys,
+    //     joka aiheutti aiemmin tummumista.
+    // Näkyvä sävy on täsmälleen sama kuin ennen, koska väri interpoloidaan
+    // niiden lopputulosten välillä joihin läpikuultava täyttö päätyi
+    // (näkyvä 50 % → 25 %). Hinta: kartta ei kuulla alueiden läpi millään
+    // zoomilla. Palautus: vaihda tähän takaisin eff()-pohjainen ramppi.
+    // true  = täyttö peittävä, läpikuultavuus väreissä. Reunaviivan sisään
+    //         jäävä osa peittyy → näkyvä reuna on tasan 1 px.
+    // false = täyttö läpikuultava kuten ennen (kartta kuultaa läpi), mutta
+    //         reunaviivan sisäpuolisko näkyy haaleana raitana sen vieressä.
+    const AREA_FILL_OPAQUE = true;
     function areaFillOpacity(cond, whenTrue){
       const mk = (v) => cond ? ['case', cond, whenTrue, v] : v;
+      if (AREA_FILL_OPAQUE) return mk(1);
       // eff() muuntaa halutun NÄKYVÄN peiton esisekoitetun värin peitoksi.
       const eff = (v) => Math.min(1, Math.round(v / FILL_BLEND * 10000) / 10000);
       return ['interpolate', ['linear'], ['zoom'],
         13,         mk(eff(AREA_FILL_FAR_OP)),
         BOOST_END,  mk(eff(PAID_FILL_BASE_OP))];
+    }
+    // Täytön väri seuraa kytkintä: peittävänä lopputulosten interpolaatio,
+    // läpikuultavana esisekoitettu perusväri.
+    function areaFillColor(freeSel){
+      return AREA_FILL_OPAQUE ? boostColorExpr(freeSel)
+                              : areaColorExpr(freeSel, FREE_FILL_CLR, PAID_FILL_CLR);
     }
 
     // ── Renkaiden sauman korjaus (21.8.) ─────────────────────────────────
@@ -14258,7 +14281,7 @@
       const _freeSel = freeExpr || IS_FREE_EXPR;
       const fill = areaColorExpr(_freeSel, TA_FREE_FILL, TA_PAID_FILL);
       const line = areaColorExpr(_freeSel, TA_FREE_LINE, TA_PAID_LINE);
-      if (map.getLayer('master-poly-fill'))       map.setPaintProperty('master-poly-fill', 'fill-color', fill);
+      if (map.getLayer('master-poly-fill'))       map.setPaintProperty('master-poly-fill', 'fill-color', areaFillColor(_freeSel));
       if (map.getLayer('master-poly-boost') && !BOOST_DEBUG_CLR) map.setPaintProperty('master-poly-boost', 'line-color', boostColorExpr(_freeSel));
       if (map.getLayer('master-poly-line'))       map.setPaintProperty('master-poly-line', 'line-color', line);
       if (map.getLayer('master-poly-line-outer')) map.setPaintProperty('master-poly-line-outer', 'line-color', line);
