@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-x';
+    const APP_BUILD   = '2026-08-20-y';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9708,7 +9708,7 @@
           paint:{
             'line-width':   boostWidth(),
             'line-offset':  boostOffset(),
-            'line-color':   BOOST_DEBUG_CLR || areaColorExpr(IS_FREE_EXPR, FREE_FILL_CLR, PAID_FILL_CLR),
+            'line-color':   BOOST_DEBUG_CLR || boostColorExpr(IS_FREE_EXPR),
             'line-opacity': BOOST_DEBUG_CLR ? 1 : boostOpacity()
           },
           layout:{ 'line-join':'round', 'line-cap':'round' }
@@ -9951,6 +9951,10 @@
     const FILL_BLEND    = 0.50;
     const PAID_FILL_CLR = '#a2b6f2';
     const FREE_FILL_CLR = '#b888be';
+    // Samat värit rampin TOISESSA päässä (näkyvä 25 %). Kaista käyttää näitä
+    // ollakseen TÄYSIN PEITTÄVÄ joka zoomilla — ks. boostColorExpr.
+    const PAID_FILL_CLR_NEAR = '#c9d4f2';
+    const FREE_FILL_CLR_NEAR = '#d4bcd8';
     // Zoom jolla kaukokäsittely päättyy: reunaviiva on laskeutunut polygonin
     // omalle reunalle ja täyttö on saavuttanut lähiarvonsa.
     const BOOST_END = 14.8;
@@ -10075,12 +10079,26 @@
         out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2]/2, -BOOST_STOPS[i+1]/2]);
       return out;
     }
-    // Kaistan peitto on SAMA kuin täytöllä — se on täytön jatke, ei oma
-    // elementtinsä. Jos nämä eroavat, alueen keskelle jää eri sävyinen juova.
+    // ⚠️ KAISTA PIIRRETÄÄN TÄYSIN PEITTÄVÄNÄ (build -y). Syy: viivatason
+    // geometria menee itsensä päälle kulmissa (liitoksen viuhka + molempien
+    // segmenttien nelikulmiot), ja MapLibre sekoittaa jokaisen kolmion erikseen.
+    // Kun peitto oli alle 1, sama pikseli sekoittui kahdesti ja kulmiin syntyi
+    // TUMMEMPIA LÄISKIÄ. Ilmiö korostui pienillä zoomeilla, koska siirto on
+    // silloin suuri suhteessa alueen omaan kokoon → päällekkäisyyttä on eniten.
+    // Ratkaisu: läpikuultavuus leivotaan väriin eikä alphaan. Kaistan väri
+    // interpoloidaan samojen kahden lopputuloksen välillä joihin läpikuultava
+    // täyttö päätyisi (näkyvä 50 % → 25 %), ja alpha on aina 1. Silloin
+    // päällekkäiset kolmiot eivät voi tummentaa mitään.
+    // HUOM: sama tekniikka kuin täytön esisekoituksessa, vain viety loppuun asti.
+    function boostColorExpr(freeSel){
+      return ['interpolate', ['linear'], ['zoom'],
+        13,        ['case', freeSel, FREE_FILL_CLR,      PAID_FILL_CLR],
+        BOOST_END, ['case', freeSel, FREE_FILL_CLR_NEAR, PAID_FILL_CLR_NEAR]];
+    }
     function boostOpacity(hideIds){
       return (hideIds && hideIds.length)
-        ? areaFillOpacity(['in', ['get','id'], ['literal', hideIds]], 0)
-        : areaFillOpacity();
+        ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, 1]
+        : 1;
     }
     // Reunaviiva siirretään kaistan ULKOREUNAAN: siirto = koko kaistan leveys.
     // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
@@ -14130,7 +14148,7 @@
       const fill = areaColorExpr(_freeSel, TA_FREE_FILL, TA_PAID_FILL);
       const line = areaColorExpr(_freeSel, TA_FREE_LINE, TA_PAID_LINE);
       if (map.getLayer('master-poly-fill'))       map.setPaintProperty('master-poly-fill', 'fill-color', fill);
-      if (map.getLayer('master-poly-boost') && !BOOST_DEBUG_CLR) map.setPaintProperty('master-poly-boost', 'line-color', fill);
+      if (map.getLayer('master-poly-boost') && !BOOST_DEBUG_CLR) map.setPaintProperty('master-poly-boost', 'line-color', boostColorExpr(_freeSel));
       if (map.getLayer('master-poly-line'))       map.setPaintProperty('master-poly-line', 'line-color', line);
       if (map.getLayer('master-poly-line-outer')) map.setPaintProperty('master-poly-line-outer', 'line-color', line);
       // Ryhmätäyttö: ÄLÄ ylikirjoita väriä kun p-merkki on alueen päällä
