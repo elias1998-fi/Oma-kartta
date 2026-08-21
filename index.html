@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-t';
+    const APP_BUILD   = '2026-08-20-u';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9921,10 +9921,11 @@
     // Täytön peitto lähellä. 23 % oli EasyParkista laskettu tarkka arvo;
     // pyöristetty 25 %:iin selvyyden vuoksi 20.8.
     const PAID_FILL_BASE_OP = 0.25;
-    // Kaukana (zoom 13) täyttö on selvästi vahvempi ja kevenee tasaisesti kohti
+    // Kaukana (zoom 13) täyttö on hieman vahvempi ja kevenee tasaisesti kohti
     // PAID_FILL_BASE_OP:ia siihen mennessä kun reunaviiva on laskeutunut
-    // polygonin omalle reunalle (BOOST_END).
-    const AREA_FILL_FAR_OP  = 0.75;
+    // polygonin omalle reunalle (BOOST_END). Ero on tarkoituksella pieni:
+    // 35 % → 25 %. (Kokeiltiin 75 %, liikaa.)
+    const AREA_FILL_FAR_OP  = 0.35;
     // Zoom jolla kaukokäsittely päättyy: reunaviiva on laskeutunut polygonin
     // omalle reunalle ja täyttö on saavuttanut lähiarvonsa.
     const BOOST_END = 14.8;
