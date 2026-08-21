@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-y';
+    const APP_BUILD   = '2026-08-20-z';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9716,6 +9716,19 @@
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{ 'fill-opacity': areaFillOpacity(), 'fill-opacity-transition': { duration: 0 },
+            // ⚠️ fill-antialias: false — TÄMÄ ON KULMIEN TUMMENTUMISEN KORJAUS.
+            // Oletusarvolla true MapLibre piirtää täytön PÄÄLLE vielä erillisen
+            // ääriviivapiirron (painter/fill.ts: "Draw stroke"), joka käyttää
+            // samaa väriä ja samaa fill-opacityä. Läpikuultavalla täytöllä se
+            // tummentaa polygonin koko reunan, ja kulmissa kaksinkertaisesti,
+            // koska ääriviivan liitokset menevät itsensä päälle.
+            // Miksi vain pienillä zoomeilla: siellä oma reunaviivamme on
+            // siirretty 1,74 px ULOS, joten se ei enää peitä polygonin omaa
+            // reunaa ja tummennus paljastuu. Lähellä siirto on 0 ja reunaviiva
+            // peittää sen kokonaan → ilmiö katoaa.
+            // Emme tarvitse tätä ääriviivaa lainkaan: piirrämme oman 1 px
+            // reunaviivan master-poly-line-tasolla.
+            'fill-antialias': false,
             'fill-color': areaColorExpr(IS_FREE_EXPR, FREE_FILL_CLR, PAID_FILL_CLR)
           }
         });
