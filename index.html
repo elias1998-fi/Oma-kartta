@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-ab';
+    const APP_BUILD   = '2026-08-21-a';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9693,18 +9693,24 @@
           requestAnimationFrame(() => {
             if (map.getSource('master-polygons'))
               map.getSource('master-polygons').setData(geojson);
+            if (map.getSource('master-rings'))
+              map.getSource('master-rings').setData(ringsToLines(geojson));
           });
           return;
         }
 
         // First load — create source + layers
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
+        // Viivatasojen oma lähde: samat alueet renkaina, sauma segmentin
+        // keskipisteessä (ks. ringsToLines). Ominaisuustiedot kopioidaan
+        // sellaisenaan, joten kaikki suodattimet ja lausekkeet toimivat samoin.
+        map.addSource('master-rings', { type:'geojson', data: ringsToLines(geojson), generateId: true });
 
         // Kaukonäkyvyyden paksunnusviiva — lisätään ENNEN täyttöä, joten se jää
         // sen alle. Väri ja peitto seuraavat täyttöä, joten muoto näyttää yhdeltä.
         // Kaikki muut kohdat tarkistavat map.getLayer('master-poly-boost'), joten
         // pelkkä lisäämättä jättäminen riittää kytkemään sen pois.
-        if (BOOST_FILL_ENABLED) map.addLayer({ id:'master-poly-boost', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
+        if (BOOST_FILL_ENABLED) map.addLayer({ id:'master-poly-boost', type:'line', source:'master-rings', minzoom:AREA_MINZOOM,
           paint:{
             'line-width':   boostWidth(),
             'line-offset':  boostOffset(),
@@ -9733,7 +9739,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-rings', minzoom:AREA_MINZOOM,
           paint:{
             // Paksuus kasvaa 0,25 px:stä (zoom 13) täyteen 1 px:iin, peitto
             // nollasta täyteen, ja viiva kelluu kaistan ulkoreunassa kunnes
@@ -10037,6 +10043,51 @@
         BOOST_END,  mk(eff(PAID_FILL_BASE_OP))];
     }
 
+    // ── Renkaiden sauman korjaus (21.8.) ─────────────────────────────────
+    // ⚠️ JUURISYY, todennettu kuvakaappauksista ja MapLibren lähdekoodista:
+    // `offsetLine` käsittelee polygonin renkaan AVOIMENA viivana. Ensimmäinen
+    // kärki (index 0) siirretään pelkästään ENSIMMÄISEN segmentin normaalia
+    // pitkin ja viimeinen (index n-1) pelkästään VIIMEISEN segmentin normaalia
+    // pitkin — mitään puolikulmaa ei lasketa. Suljetulla renkaalla nämä ovat
+    // sama piste, mutta ne siirtyvät ERI SUUNTIIN → rengas aukeaa, päät eivät
+    // kohtaa ja renderöijä piirtää niihin viivan PÄÄT (cap) liitoksen sijaan.
+    // Kuvassa se näkyi kahtena erillisenä pyöreäpäisenä tolppana kulmassa.
+    // Ilmiö skaalautuu siirron mukana → katosi kun siirto meni nollaan.
+    //
+    // KORJAUS: viivatasot eivät piirrä polygoneja vaan oman LineString-lähteen,
+    // jossa jokainen rengas alkaa ja päättyy SEGMENTIN KESKIPISTEESEEN. Silloin
+    // molemmat päät ovat keskellä suoraa osuutta, molemmat siirretään saman
+    // segmentin normaalia pitkin ja ne osuvat TÄSMÄLLEEN samaan pisteeseen —
+    // sauma jää päällekkäin eikä näy. Kärjet ovat kaikki renkaan sisällä, joten
+    // ne saavat oikean puolikulmasiirron.
+    function ringsToLines(fc){
+      const out = [];
+      const feats = (fc && fc.features) || [];
+      for (const f of feats) {
+        const g = f.geometry; if (!g) continue;
+        const polys = g.type === 'Polygon' ? [g.coordinates]
+                    : g.type === 'MultiPolygon' ? g.coordinates : [];
+        for (const poly of polys) {
+          for (const ring of poly) {
+            if (!ring || ring.length < 4) continue;
+            const r = ring.slice();
+            const a = r[0], z = r[r.length-1];
+            if (a[0] === z[0] && a[1] === z[1]) r.pop();      // pudota kaksoiskappale
+            const n = r.length;
+            if (n < 3) continue;
+            const m = [(r[0][0] + r[1][0]) / 2, (r[0][1] + r[1][1]) / 2];
+            const coords = [m];
+            for (let i = 1; i < n; i++) coords.push(r[i]);
+            coords.push(r[0]);
+            coords.push(m);
+            out.push({ type:'Feature', properties: f.properties,
+                       geometry:{ type:'LineString', coordinates: coords } });
+          }
+        }
+      }
+      return { type:'FeatureCollection', features: out };
+    }
+
     // ── Kaukonäkyvyys: "boost"-viiva alueen ULKOPUOLELLA ─────────────────
     // Malli tuotu sovelluksen toisesta versiosta. Ongelma: kadunvarsialue on
     // ~2,5 m leveä, eli zoomilla 13 noin 0,25 px — pelkkä täyttö katoaa.
@@ -10067,14 +10118,10 @@
     // viiva piirretään sillä värillä eikä alueen omalla. Näin näkee heti onko taso
     // päällä ja kummalle puolelle reunaa se piirtyy. Aseta null kun asia on
     // varmistettu — silloin paksunnus sulautuu täyttöön kuten kuuluu.
-    // ⚠️ TILAPÄINEN DIAGNOSTIIKKA (build -aa). Kun tämä on väri, paksunnuskaista
-    // piirretään sillä värillä täydellä peitolla. Näin kuvakaappauksesta näkee
-    // heti kumpi taso tekee kulmiin sen tumman/korostuneen kohdan:
-    //   punainen kulmassa  → kaista (line-offset + liitosgeometria)
-    //   sininen kulmassa   → reunaviiva master-poly-line
-    //   ei kumpikaan       → täyttö tai jokin muu taso
-    // Aseta null kun asia on selvitetty.
-    const BOOST_DEBUG_CLR = '#ff1744';
+    // Diagnostiikkaväri kaistalle: kun tämä on väri, kaista piirretään sillä
+    // täydellä peitolla. Kätevä kun pitää nähdä kummasta tasosta jokin ilmiö
+    // tulee. Oletus null.
+    const BOOST_DEBUG_CLR = null;
     // Paksunnuskaista TÄYTTÄÄ VÄLIN polygonin reunan ja ulospäin siirretyn
     // reunaviivan välistä. Ilman sitä kaukana näkyisi ääriviiva, sen sisällä
     // tyhjää karttaa ja vasta keskellä alkuperäisen kokoinen täyttö.
@@ -10084,14 +10131,7 @@
     // ei mene täytön päälle eikä peitto kertaudu.
     const BOOST_FILL_ENABLED = true;
     // stopit: [zoom, tavallinen, iso, …]
-    // ⚠️ TILAPÄINEN DIAGNOSTIIKKA (build -ab): siirto kasvatettu 1,735 → 10 px,
-    // jotta kulmailmiö suurenee ~6-kertaiseksi ja näkyy paljaalla silmällä.
-    // TESTI: jos kulmat ovat nyt SELVÄSTI paksumpia kuin suorat sivut, syy on
-    // geometriassa — offsetLine siirtää kärkeä kertoimella 1/sin(kulma/2), eli
-    // 90° kulmassa 1,41-kertaisesti (14,1 px vs sivujen 10 px). Jos kulmat ovat
-    // sen sijaan samanpaksuisia mutta tummempia, syy on sekoittumisessa.
-    // PALAUTUS: 10 → 1.735 ja 2.5 → 0.43.
-    const BOOST_STOPS = [13, 10, 2.5,  BOOST_END, 0, 0];
+    const BOOST_STOPS = [13, 1.735, 0.43,  BOOST_END, 0, 0];
     function boostWidth(){
       const out = ['interpolate', ['linear'], ['zoom']];
       for (let i = 0; i < BOOST_STOPS.length; i += 3)
@@ -12679,7 +12719,9 @@
       // shows. Removing first guarantees a fresh re-add in BOTH directions.
       ['master-poly-boost','master-poly-fill','master-poly-line','master-poly-line-outer','master-poly-hover-fill','master-poly-hover-line','master-poly-group-line','master-poly-group-fill','halli-icons','charging-icons']
         .forEach(id => { if (map.getLayer(id)) { try { map.removeLayer(id); } catch(e){} } });
-      ['master-polygons','halli-points','charging-points']
+      // master-rings on viivatasojen oma lähde (ks. ringsToLines) — se pitää
+      // poistaa samalla, muuten uudelleenlisäys kaatuu "source already exists".
+      ['master-polygons','master-rings','halli-points','charging-points']
         .forEach(id => { if (map.getSource(id)) { try { map.removeSource(id); } catch(e){} } });
 
       // Parking-area polygons (fill/line layers — no icons needed).
