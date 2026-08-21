@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-r';
+    const APP_BUILD   = '2026-08-20-s';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9918,7 +9918,16 @@
     //                                   pehmennys selittää yhden yksikön eron)
     // Perusväri on siis suoraan valitsemattoman reunan poiminta.
     const PAID_AREA_CLR     = '#557cf3';
-    const PAID_FILL_BASE_OP = 0.23;   // valitsematon täyttö (EasyPark)
+    // Täytön peitto lähellä. 23 % oli EasyParkista laskettu tarkka arvo;
+    // pyöristetty 25 %:iin selvyyden vuoksi 20.8.
+    const PAID_FILL_BASE_OP = 0.25;
+    // Kaukana (zoom 13) täyttö on selvästi vahvempi ja kevenee tasaisesti kohti
+    // PAID_FILL_BASE_OP:ia siihen mennessä kun reunaviiva on laskeutunut
+    // polygonin omalle reunalle (BOOST_END).
+    const AREA_FILL_FAR_OP  = 0.75;
+    // Zoom jolla kaukokäsittely päättyy: reunaviiva on laskeutunut polygonin
+    // omalle reunalle ja täyttö on saavuttanut lähiarvonsa.
+    const BOOST_END = 14.8;
     // Valitsemattoman alueen reuna on KAKSIOSAINEN: 1,5 px sisempi kaista ja
     // 1,5 px ulompi kaista, yhteensä 3 px. Kaistat eivät ole päällekkäin —
     // line-offset siirtää ne viivan eri puolille.
@@ -9973,8 +9982,14 @@
     }
     // Nimi säilytetty, jotta kaikki kutsupaikat (täyttö, boost, korostus,
     // palautus) käyttävät varmasti samaa peittoa.
+    // Sama ramppi maksullisille ja ilmaisille — ero tulee väristä, ei peitosta.
+    // (Ilmaisilla oli aiemmin oma baseFill-ramppi 0,26 → 0,13; se korvautui
+    //  tällä, jotta molemmat käyttäytyvät samoin.)
     function areaFillOpacity(cond, whenTrue){
-      return mixedOpacity('baseFill', PAID_FILL_BASE_OP, cond, whenTrue);
+      const mk = (v) => cond ? ['case', cond, whenTrue, v] : v;
+      return ['interpolate', ['linear'], ['zoom'],
+        13,         mk(AREA_FILL_FAR_OP),
+        BOOST_END,  mk(PAID_FILL_BASE_OP)];
     }
 
     // ── Kaukonäkyvyys: "boost"-viiva alueen ULKOPUOLELLA ─────────────────
@@ -10003,7 +10018,6 @@
     // Geometria Helsingin leveysasteella 2,5 m kadunvarsialueelle: z13 0,53 px ·
     // z14 1,05 · z14,8 1,83. Isot aluekokonaisuudet erottuvat jo täytöllä →
     // murto-osa, muuten ne turpoaisivat kaukaa aivan liian isoiksi.
-    const BOOST_END = 14.8;
     // ⚠️ TILAPÄINEN DIAGNOSTIIKKA: kun tämä on väri (esim. '#ff1744'), paksunnus-
     // viiva piirretään sillä värillä eikä alueen omalla. Näin näkee heti onko taso
     // päällä ja kummalle puolelle reunaa se piirtyy. Aseta null kun asia on
