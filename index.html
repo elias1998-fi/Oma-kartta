@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-u';
+    const APP_BUILD   = '2026-08-20-w';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9729,7 +9729,17 @@
             'line-offset': areaLineOffset(),
             'line-opacity': areaLineOpacity(),
             'line-color': areaColorExpr(IS_FREE_EXPR, '#611868', PAID_AREA_CLR)
-          }
+          },
+          // ROUND, ei oletuksena oleva MITER. Pyöristetyn liitoksen ulkokaaren
+          // säde on siirto + puolet leveydestä, eli se skaalautuu itsestään:
+          //   z13   siirto 1,74 + 0,5 → 2,24 px säde → alue on pillerimäinen
+          //   z14,8 siirto 0    + 0,5 → 0,50 px säde → nurkka on käytännössä terävä
+          // Zoom-lauseketta ei siis tarvita, ja koska line-join on LAYOUT-
+          // ominaisuus, sen muuttaminen zoomin mukana pakottaisi tason
+          // uudelleenlaskennan — tällä tavalla se vältetään kokonaan.
+          // Sivuhyöty: miter tuottaa terävissä kulmissa piikkejä (MapLibre
+          // pudottaa ne beveliksi vasta kun miter-pituus ylittää 2), round ei.
+          layout:{ 'line-join':'round' }
         });
         // Reunan ULOMPI kaista — vain maksullisilla (ilmaisilla peitto 0).
         // Sama viiva siirrettynä ulospäin, joten se ei mene sisemmän päälle.
@@ -9923,9 +9933,9 @@
     const PAID_FILL_BASE_OP = 0.25;
     // Kaukana (zoom 13) täyttö on hieman vahvempi ja kevenee tasaisesti kohti
     // PAID_FILL_BASE_OP:ia siihen mennessä kun reunaviiva on laskeutunut
-    // polygonin omalle reunalle (BOOST_END). Ero on tarkoituksella pieni:
-    // 35 % → 25 %. (Kokeiltiin 75 %, liikaa.)
-    const AREA_FILL_FAR_OP  = 0.35;
+    // polygonin omalle reunalle (BOOST_END). Nyt 50 % → 25 %.
+    // (Kokeiltu matkan varrella: 75 % liikaa, 35 % liian vähäeleinen.)
+    const AREA_FILL_FAR_OP  = 0.50;
     // Zoom jolla kaukokäsittely päättyy: reunaviiva on laskeutunut polygonin
     // omalle reunalle ja täyttö on saavuttanut lähiarvonsa.
     const BOOST_END = 14.8;
