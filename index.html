@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-20-w';
+    const APP_BUILD   = '2026-08-20-x';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9708,7 +9708,7 @@
           paint:{
             'line-width':   boostWidth(),
             'line-offset':  boostOffset(),
-            'line-color':   BOOST_DEBUG_CLR || areaColorExpr(IS_FREE_EXPR, '#7F1F89', PAID_AREA_CLR),
+            'line-color':   BOOST_DEBUG_CLR || areaColorExpr(IS_FREE_EXPR, FREE_FILL_CLR, PAID_FILL_CLR),
             'line-opacity': BOOST_DEBUG_CLR ? 1 : boostOpacity()
           },
           layout:{ 'line-join':'round', 'line-cap':'round' }
@@ -9716,7 +9716,7 @@
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{ 'fill-opacity': areaFillOpacity(), 'fill-opacity-transition': { duration: 0 },
-            'fill-color': areaColorExpr(IS_FREE_EXPR, '#7F1F89', PAID_AREA_CLR)
+            'fill-color': areaColorExpr(IS_FREE_EXPR, FREE_FILL_CLR, PAID_FILL_CLR)
           }
         });
         // Base line layer
@@ -9936,6 +9936,21 @@
     // polygonin omalle reunalle (BOOST_END). Nyt 50 % → 25 %.
     // (Kokeiltu matkan varrella: 75 % liikaa, 35 % liian vähäeleinen.)
     const AREA_FILL_FAR_OP  = 0.50;
+    // ── Esisekoitetut täyttövärit ────────────────────────────────────────
+    // Täyttö (ja sen jatke, paksunnuskaista) piirretään värillä joka on jo
+    // valmiiksi sekoitettu karttapohjaan #f0f1f2 puoliksi. Näin zoomilla 13
+    // täyttö voi olla TÄYSIN PEITTÄVÄ eikä kartta kuulla lainkaan läpi, vaikka
+    // sävy on täsmälleen sama kuin ennen.
+    //   #557cf3 @ 50 % pohjan päällä  =  #a2b6f2
+    //   #7F1F89 @ 50 % pohjan päällä  =  #b888be
+    // Koska väri on jo puoliksi taustaa, sama lopputulos saadaan
+    // KAKSINKERTAISELLA peitolla: uusi väri peitolla a näyttää samalta kuin
+    // alkuperäinen peitolla a/2. Siksi peitto jaetaan FILL_BLENDillä.
+    // Reunaviiva EI käytä näitä — se on 100 % peittävä ja säilyttää täyden
+    // värinsä (#557cf3 / #611868).
+    const FILL_BLEND    = 0.50;
+    const PAID_FILL_CLR = '#a2b6f2';
+    const FREE_FILL_CLR = '#b888be';
     // Zoom jolla kaukokäsittely päättyy: reunaviiva on laskeutunut polygonin
     // omalle reunalle ja täyttö on saavuttanut lähiarvonsa.
     const BOOST_END = 14.8;
@@ -9998,9 +10013,11 @@
     //  tällä, jotta molemmat käyttäytyvät samoin.)
     function areaFillOpacity(cond, whenTrue){
       const mk = (v) => cond ? ['case', cond, whenTrue, v] : v;
+      // eff() muuntaa halutun NÄKYVÄN peiton esisekoitetun värin peitoksi.
+      const eff = (v) => Math.min(1, Math.round(v / FILL_BLEND * 10000) / 10000);
       return ['interpolate', ['linear'], ['zoom'],
-        13,         mk(AREA_FILL_FAR_OP),
-        BOOST_END,  mk(PAID_FILL_BASE_OP)];
+        13,         mk(eff(AREA_FILL_FAR_OP)),
+        BOOST_END,  mk(eff(PAID_FILL_BASE_OP))];
     }
 
     // ── Kaukonäkyvyys: "boost"-viiva alueen ULKOPUOLELLA ─────────────────
@@ -14096,7 +14113,7 @@
     // (applyRangeFilter kutsuu tämän). Maksullisten väri on siis PAKKO pitää
     // tässä samana kuin tasojen omassa määrittelyssä, muuten muutos tasoihin ei
     // näy lainkaan.
-    const TA_FREE_FILL = '#7F1F89', TA_PAID_FILL = PAID_AREA_CLR;
+    const TA_FREE_FILL = FREE_FILL_CLR, TA_PAID_FILL = PAID_FILL_CLR;   // esisekoitetut, ks. FILL_BLEND
     const TA_FREE_LINE = '#611868', TA_PAID_LINE = PAID_AREA_CLR;
     const TA_STATIC_FILL = ['match', ['get','source'],
       'community', TA_FREE_FILL, 'hel_ilmainen_pitka', TA_FREE_FILL,
