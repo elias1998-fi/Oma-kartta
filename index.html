@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-21-a';
+    const APP_BUILD   = '2026-08-21-b';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -4294,6 +4294,11 @@
         <div class="settings-item" style="cursor:default;">
           <div class="settings-item-text"><div class="settings-item-label">Aluevalinta</div></div>
           <div class="about-version" id="about-select">–</div>
+        </div>
+        <!-- MITTAUSRIVI (poistetaan kun renkaiden sauma-asia on ratkaistu). -->
+        <div class="settings-item" style="cursor:default;">
+          <div class="settings-item-text"><div class="settings-item-label">Aluedata</div></div>
+          <div class="about-version" id="about-rings" style="font-size:12px;">–</div>
         </div>
         <div class="settings-item" onclick="confirmOpenExternal('https://totalparking.fi')">
           <div class="settings-item-text"><div class="settings-item-label">Yrityksen kotisivut</div></div>
@@ -10060,6 +10065,7 @@
     // segmentin normaalia pitkin ja ne osuvat TÄSMÄLLEEN samaan pisteeseen —
     // sauma jää päällekkäin eikä näy. Kärjet ovat kaikki renkaan sisällä, joten
     // ne saavat oikean puolikulmasiirron.
+    let TP_RING_DIAG = '–';
     function ringsToLines(fc){
       const out = [];
       const feats = (fc && fc.features) || [];
@@ -10085,6 +10091,24 @@
           }
         }
       }
+      // MITTAUSRIVI: kertoo montako aluetta ja rengasta datassa on, montako
+      // rengasta on GEOMETRIALTAAN IDENTTISIÄ (päällekkäiset kaksoiskappaleet
+      // tuottaisivat kaksi sauman lähdettä samaan kohtaan) ja montako rengasta
+      // alkaa rappeutuneella segmentillä (r[0] == r[1] → keskipiste osuisi
+      // kärkeen eikä sauma piiloutuisi).
+      try {
+        const seen = new Map(); let dup = 0, degen = 0;
+        for (const l of out) {
+          const c = l.geometry.coordinates;
+          const key = c.length + '|' + c[1].join(',') + '|' + c[Math.floor(c.length/2)].join(',');
+          if (seen.has(key)) dup++; else seen.set(key, 1);
+          if (c[0][0] === c[1][0] && c[0][1] === c[1][1]) degen++;
+        }
+        TP_RING_DIAG = feats.length + ' aluetta · ' + out.length + ' rengasta · ' +
+                       dup + ' kaksoiskappaletta · ' + degen + ' rappeutunutta';
+        const el = document.getElementById('about-rings');
+        if (el) el.textContent = TP_RING_DIAG;
+      } catch(e){}
       return { type:'FeatureCollection', features: out };
     }
 
@@ -12818,6 +12842,8 @@
     (function(){
       const el = document.getElementById('about-version');
       if (el && typeof APP_VERSION !== 'undefined') el.textContent = APP_VERSION + ' · ' + APP_BUILD;
+      const rg = document.getElementById('about-rings');
+      if (rg && typeof TP_RING_DIAG !== 'undefined') rg.textContent = TP_RING_DIAG;
     })();
 
     // ── Zoom read-out toggle ─────────────────────────────────────────────
