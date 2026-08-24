@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-21-o';
+    const APP_BUILD   = '2026-08-21-p';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -10089,6 +10089,10 @@
     // segmentin normaalia pitkin ja ne osuvat TÄSMÄLLEEN samaan pisteeseen —
     // sauma jää päällekkäin eikä näy. Kärjet ovat kaikki renkaan sisällä, joten
     // ne saavat oikean puolikulmasiirron.
+    // Kiertosuunnan etumerkki. +1 = renkaat pakotetaan vastapäivään, mikä tekee
+    // negatiivisesta line-offsetista ULOSPÄIN suuntautuvan. Jos levennys menee
+    // laitteella väärään suuntaan (alue kapenee), vaihda tämä arvoon -1.
+    const BOOST_WINDING = 1;
     let TP_RING_DIAG = '–';
     function ringsToLines(fc){
       const out = [];
@@ -10121,6 +10125,21 @@
               if (d > bd) { bd = d; bi = i; }
             }
             if (bd <= 0) continue;                       // rappeutunut rengas
+            // ⚠️ KIERTOSUUNNAN NORMALISOINTI (21.8.).
+            // line-offsetin suunta riippuu siitä kumpaan suuntaan rengas kulkee.
+            // POLYGONEILLE MapLibre normalisoi kiertosuunnan, VIIVOILLE EI —
+            // ja koska viivatasot lukevat näitä LineStringejä, suunta jäisi
+            // datan varaan. Jos se on väärä, siirto menee sisäänpäin ja alue
+            // KAPENEE levenemisen sijaan.
+            // Pakotetaan kaikki renkaat vastapäivään (positiivinen pinta-ala
+            // lon/lat-avaruudessa = GeoJSONin oikean käden sääntö). Silloin
+            // negatiivinen line-offset on aina ulospäin.
+            let area2 = 0;
+            for (let i = 0; i < n; i++) {
+              const p1 = r[i], p2 = r[(i + 1) % n];
+              area2 += p1[0] * p2[1] - p2[0] * p1[1];
+            }
+            if (area2 * BOOST_WINDING < 0) { r.reverse(); bi = n - 2 - bi; if (bi < 0) bi += n; }
             const A = r[bi], B = r[(bi + 1) % n];
             const m = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
             // m → B → (koko rengas) → A → m
