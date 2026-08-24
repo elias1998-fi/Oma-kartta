@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-21-l';
+    const APP_BUILD   = '2026-08-21-m';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -6201,8 +6201,8 @@
     // järjestys ratkaisee: halli jää latauspisteen päälle.
     const APP_POLY_ORDER = [
       // Kaista alimmaksi, täyttö sen päälle, reunaviiva ylimmäksi.
-      // Kotelo (reunaviiva) ALIMMAKSI, kaista sen päälle, täyttö ylimmäksi.
-      'master-poly-line','master-poly-boost','master-poly-fill','master-poly-line-outer',
+      // Kaista ja täyttö alle, reunaviiva päälle (se on muodon uloin raja).
+      'master-poly-boost','master-poly-fill','master-poly-line','master-poly-line-outer',
       'master-poly-group-fill','master-poly-group-line',
       'master-poly-hover-fill','master-poly-hover-line'
     ];
@@ -9700,29 +9700,31 @@
           requestAnimationFrame(() => {
             if (map.getSource('master-polygons'))
               map.getSource('master-polygons').setData(geojson);
-            ringsToLines(geojson);   // vain mittarin päivitys
+            if (map.getSource('master-rings'))
+              map.getSource('master-rings').setData(ringsToLines(geojson));
           });
           return;
         }
 
         // First load — create source + layers
         map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
-        // Renkaita ei enää tarvita omana lähteenään, koska line-offset on pois
-        // ja polygonin renkaat piirtyvät suljettuina. Kutsu jää mittaria varten.
-        ringsToLines(geojson);
+        // Viivatasojen oma lähde: renkaat LineStringeinä, sauma pisimmän
+        // segmentin keskellä (ks. ringsToLines). Tarvitaan koska line-offset
+        // avaisi polygonin renkaan väärästä kohdasta.
+        map.addSource('master-rings', { type:'geojson', data: ringsToLines(geojson), generateId: true });
 
         // Kaukonäkyvyyden paksunnusviiva — lisätään ENNEN täyttöä, joten se jää
         // sen alle. Väri ja peitto seuraavat täyttöä, joten muoto näyttää yhdeltä.
         // Kaikki muut kohdat tarkistavat map.getLayer('master-poly-boost'), joten
         // pelkkä lisäämättä jättäminen riittää kytkemään sen pois.
-        if (BOOST_FILL_ENABLED) map.addLayer({ id:'master-poly-boost', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
+        if (BOOST_FILL_ENABLED) map.addLayer({ id:'master-poly-boost', type:'line', source:'master-rings', minzoom:AREA_MINZOOM,
           paint:{
             'line-width':   boostWidth(),
             'line-offset':  boostOffset(),
-            'line-color':   BOOST_DEBUG_CLR || boostColorExpr(IS_FREE_EXPR),
+            'line-color':   BOOST_DEBUG_CLR || areaFillColor(IS_FREE_EXPR),
             'line-opacity': BOOST_DEBUG_CLR ? 1 : boostOpacity()
           },
-          layout:{ 'line-join':'round', 'line-cap':'round' }
+          layout:{ 'line-join':'round', 'line-cap':'butt' }
         });
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
@@ -9744,7 +9746,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-rings', minzoom:AREA_MINZOOM,
           paint:{
             // Paksuus kasvaa 0,25 px:stä (zoom 13) täyteen 1 px:iin, peitto
             // nollasta täyteen, ja viiva kelluu kaistan ulkoreunassa kunnes
@@ -9782,12 +9784,12 @@
         });
         // Hover outline — on the red hovered area, toggled via setFilter
         map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'line-color':'#0B49D0', 'line-width': 2.5, 'line-opacity': hlOpacity('hoverLine') },
+          paint:{ 'line-color':'#0B49D0', 'line-width': hlLineWidth(2.5), 'line-opacity': hlOpacity('hoverLine') },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
         map.addLayer({ id:'master-poly-group-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'line-color': groupLineColor(), 'line-width': 1.25, 'line-opacity': hlOpacity('groupLine') },
+          paint:{ 'line-color': groupLineColor(), 'line-width': hlLineWidth(1.25), 'line-opacity': hlOpacity('groupLine') },
           filter:['==', ['get','id'], '__none__']
         });
         // Same-group fill highlight — 50% opacity, same colors as base, toggled via setFilter
@@ -10103,10 +10105,27 @@
             if (a[0] === z[0] && a[1] === z[1]) r.pop();      // pudota kaksoiskappale
             const n = r.length;
             if (n < 3) continue;
-            const m = [(r[0][0] + r[1][0]) / 2, (r[0][1] + r[1][1]) / 2];
+            // ⚠️ SAUMA PISIMMÄN SEGMENTIN KESKELLE (21.8.).
+            // Aiemmin käytettiin ensimmäistä segmenttiä. Kadunvarsialueella se
+            // on usein LYHYT PÄÄTY — zoomilla 13 vain ~0,5 px. Viivan päätteet
+            // ovat leveitä (säde = puolet viivan leveydestä, ~1 px), joten ne
+            // pursuivat lyhyen segmentin yli molempiin kulmiin ja sauma näkyi
+            // juuri siellä minne sitä yritettiin piilottaa.
+            // Pisin segmentti on käytännössä aina alueen pitkä sivu, jolloin
+            // päätteet jäävät keskelle suoraa osuutta ja peittävät toisensa.
+            let bi = 0, bd = -1;
+            for (let i = 0; i < n; i++) {
+              const p = r[i], q = r[(i + 1) % n];
+              const dx = q[0] - p[0], dy = q[1] - p[1];
+              const d = dx * dx + dy * dy;
+              if (d > bd) { bd = d; bi = i; }
+            }
+            if (bd <= 0) continue;                       // rappeutunut rengas
+            const A = r[bi], B = r[(bi + 1) % n];
+            const m = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+            // m → B → (koko rengas) → A → m
             const coords = [m];
-            for (let i = 1; i < n; i++) coords.push(r[i]);
-            coords.push(r[0]);
+            for (let k = 1; k <= n; k++) coords.push(r[(bi + k) % n]);
             coords.push(m);
             out.push({ type:'Feature', properties: f.properties,
                        geometry:{ type:'LineString', coordinates: coords } });
@@ -10184,7 +10203,7 @@
     // Erilleen ne saa vain line-offsetilla, joka avaa polygonin renkaan ja
     // tuottaa kulmasauman; ainoa muu tapa peittää se on peittävä väri.
     // Koneisto on tallessa: true palauttaa levennyksen.
-    const BOOST_FILL_ENABLED = false;
+    const BOOST_FILL_ENABLED = true;
     // ⚠️ `line-offset` ON POISTETTU KOKONAAN KÄYTÖSTÄ (21.8.).
     // Se tuotti kulmiin sauman, jota ei saatu pois edes syöttämällä renkaat
     // valmiiksi katkaistuina LineStringeinä (mittaus: päät 2 × siirron päässä
@@ -10211,17 +10230,26 @@
     const BOOST_STOPS = [13, 1.985, 0.50,  BOOST_END, 0, 0];
     // Kaista: keskitetty polygonin reunalle, leveys 2w → ulottuu w kumpaankin
     // suuntaan. Ei siirtoa, joten rengas pysyy suljettuna eikä saumaa synny.
-    // Kaista peittää kotelosta kaiken paitsi uloimman 1 px:n: leveys 2w − 1.
+    // Kaista on leveydeltään w ja siirretty ULOS puolella leveydestään, joten
+    // se peittää tasan välin 0…w polygonin reunasta ULOSPÄIN eikä mene täytön
+    // päälle lainkaan. Siksi se voi olla samaa 50 %:n läpikuultavuutta kuin
+    // täyttö ilman että mitään summautuu.
     function boostWidth(){
       const out = ['interpolate', ['linear'], ['zoom']];
       for (let i = 0; i < BOOST_STOPS.length; i += 3)
-        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR,
-          Math.max(0, 2*BOOST_STOPS[i+2] - 1), Math.max(0, 2*BOOST_STOPS[i+1] - 1)]);
+        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, BOOST_STOPS[i+2], BOOST_STOPS[i+1]]);
       return out;
     }
     // Ulospäin siirto = puolet leveydestä, jolloin kaista alkaa täsmälleen
     // polygonin reunasta. MapLibressa NEGATIIVINEN offset on outset.
-    function boostOffset(){ return 0; }
+    // MapLibressa negatiivinen line-offset on outset. Siirto = puolet
+    // leveydestä → kaistan sisäreuna osuu tasan polygonin reunaan.
+    function boostOffset(){
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (let i = 0; i < BOOST_STOPS.length; i += 3)
+        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2]/2, -BOOST_STOPS[i+1]/2]);
+      return out;
+    }
     // ⚠️ KAISTA PIIRRETÄÄN TÄYSIN PEITTÄVÄNÄ (build -y). Syy: viivatason
     // geometria menee itsensä päälle kulmissa (liitoksen viuhka + molempien
     // segmenttien nelikulmiot), ja MapLibre sekoittaa jokaisen kolmion erikseen.
@@ -10259,16 +10287,26 @@
           2*BOOST_STOPS[i+2] + base, 2*BOOST_STOPS[i+1] + base]);
       return out;
     }
+    // Sama peitto kuin täytöllä. Koska kaista ei mene täytön päälle, tulos on
+    // tasainen 50 % koko muodon alueella.
     function boostOpacity(hideIds){
       return (hideIds && hideIds.length)
-        ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, 1]
-        : 1;
+        ? areaFillOpacity(['in', ['get','id'], ['literal', hideIds]], 0)
+        : areaFillOpacity();
     }
     // Reunaviiva siirretään kaistan ULKOREUNAAN: siirto = koko kaistan leveys.
     // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
     // täsmälleen polygonin omalle reunalle. Näin viiva "kelluu" ulkoreunassa
     // koko matkan eikä hyppää paikaltaan missään vaiheessa.
-    function areaLineOffset(){ return 0; }
+    // Reunaviiva siirretään w verran ulos → se istuu tasan kaistan ulkoreunaan.
+    // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
+    // polygonin omalle reunalle.
+    function areaLineOffset(){
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (let i = 0; i < BOOST_STOPS.length; i += 3)
+        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2], -BOOST_STOPS[i+1]]);
+      return out;
+    }
     // Kaistan ULKOREUNAN viiva: kiinteä 1 px ja 100 % peitto KAIKILLA zoomeilla.
     // Sijainti seuraa kaistan leveyttä (areaLineOffset), joten viiva pysyy aina
     // kaistan ulkoreunassa ja laskeutuu polygonin omalle reunalle silloin kun
@@ -10430,7 +10468,7 @@
       // Border on OTHER same-category areas → black, fully opaque
       map.setPaintProperty('master-poly-group-line', 'line-color', groupLineColor());
       map.setPaintProperty('master-poly-group-line', 'line-opacity', hlOpacity('groupLine'));
-      map.setPaintProperty('master-poly-group-line', 'line-width', 1.25);
+      map.setPaintProperty('master-poly-group-line', 'line-width', hlLineWidth(1.25));
       map.setFilter('master-poly-group-line',
         _groupIds.length ? ['in', ['get','id'], ['literal', _groupIds]] : ['==','id','__none__']
       );
@@ -14321,7 +14359,7 @@
       const fill = areaColorExpr(_freeSel, TA_FREE_FILL, TA_PAID_FILL);
       const line = areaColorExpr(_freeSel, TA_FREE_LINE, TA_PAID_LINE);
       if (map.getLayer('master-poly-fill'))       map.setPaintProperty('master-poly-fill', 'fill-color', areaFillColor(_freeSel));
-      if (map.getLayer('master-poly-boost') && !BOOST_DEBUG_CLR) map.setPaintProperty('master-poly-boost', 'line-color', boostColorExpr(_freeSel));
+      if (map.getLayer('master-poly-boost') && !BOOST_DEBUG_CLR) map.setPaintProperty('master-poly-boost', 'line-color', areaFillColor(_freeSel));
       if (map.getLayer('master-poly-line'))       map.setPaintProperty('master-poly-line', 'line-color', line);
       if (map.getLayer('master-poly-line-outer')) map.setPaintProperty('master-poly-line-outer', 'line-color', line);
       // Ryhmätäyttö: ÄLÄ ylikirjoita väriä kun p-merkki on alueen päällä
