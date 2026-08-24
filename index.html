@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-22-b';
+    const APP_BUILD   = '2026-08-24-b';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -10202,11 +10202,18 @@
       return px * mpp;
     }
     let _lastAreaGeojson = null;
-    let _bufRaf = 0, _bufLastZ = null;
+    let _bufRaf = 0, _bufLastZ = null, _bufMinMs = 0, _bufLastMs = 0;
     function pushAreaData(){
       if (!_lastAreaGeojson || !map.getSource('master-polygons')) return;
       _bufLastZ = map.getZoom();
+      const t0 = performance.now();
       map.getSource('master-polygons').setData(bufferRings(_lastAreaGeojson, currentBufferMetres()));
+      // Sopeutuva hillintä: mitataan paljonko päivitys maksoi ja pidetään
+      // seuraavaan vähintään kaksinkertainen tauko. Nopealla laitteella tämä
+      // on ~0 ms eli päivitys seuraa zoomia joka ruudulla; hitaalla se harvenee
+      // itsestään sen sijaan että kartta alkaisi nykiä.
+      _bufMinMs = Math.min(250, Math.round((performance.now() - t0) * 2));
+      _bufLastMs = performance.now();
     }
 
     // ── Jatkuva päivitys zoomauksen aikana ───────────────────────────────
@@ -10216,14 +10223,13 @@
     // Siksi päivitys ajetaan myös zoomauksen AIKANA, mutta hillitysti:
     //  · korkeintaan kerran ruudunpiirtoa kohti (requestAnimationFrame)
     //  · vain jos zoom on muuttunut yli BUF_LIVE_STEPin verran
-    //  · ja vain jos alueita on alle BUF_LIVE_MAX (isolla määrällä uudelleen-
-    //    tiilitys maksaisi enemmän kuin nytkähdys)
-    const BUF_LIVE_STEP = 0.03;
-    const BUF_LIVE_MAX  = 4000;
+    //  · ja vain jos edellisestä päivityksestä on kulunut _bufMinMs, joka
+    //    mitataan edellisen päivityksen kestosta (ks. pushAreaData)
+    // Pienin zoom-muutos joka laukaisee uudelleenlaskennan.
+    const BUF_LIVE_STEP = 0.02;
     function scheduleAreaBuffer(){
-      if (_bufRaf) return;
-      if (!_lastAreaGeojson) return;
-      if ((_lastAreaGeojson.features || []).length > BUF_LIVE_MAX) return;
+      if (_bufRaf || !_lastAreaGeojson) return;
+      if (performance.now() - _bufLastMs < _bufMinMs) return;
       _bufRaf = requestAnimationFrame(() => {
         _bufRaf = 0;
         if (_bufLastZ !== null && Math.abs(map.getZoom() - _bufLastZ) < BUF_LIVE_STEP) return;
