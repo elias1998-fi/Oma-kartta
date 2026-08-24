@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-21-i';
+    const APP_BUILD   = '2026-08-21-j';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -10227,11 +10227,18 @@
         13,        ['case', freeSel, FREE_FILL_CLR,      PAID_FILL_CLR],
         BOOST_END, ['case', freeSel, FREE_FILL_CLR_NEAR, PAID_FILL_CLR_NEAR]];
     }
-    // Sama peitto ja väri kuin täytöllä → kaista näyttää täytön jatkeelta.
+    // Kaista on TÄYSIN PEITTÄVÄ (21.8.) ja alueen omalla värillä. Kaksi
+    // seurausta jotka kannattaa tietää:
+    //  · Kaista on keskitetty, joten se peittää myös polygonin sisäpuolelta
+    //    w:n levyisen vyön. Koska väri on sama kuin täytöllä, tulos on siellä
+    //    tasan kaistan väri — se aiemmin näkynyt tummempi päällekkäisyysvyö
+    //    katoaa kokonaan (0,5 ⊕ 0,5 tilalle tulee pelkkä peittävä väri).
+    //  · Reunaviiva on samaa väriä, joten kaukana se sulautuu kaistaan
+    //    näkymättömiin ja paljastuu vasta kun kaista kutistuu.
     function boostOpacity(hideIds){
       return (hideIds && hideIds.length)
-        ? areaFillOpacity(['in', ['get','id'], ['literal', hideIds]], 0)
-        : areaFillOpacity();
+        ? ['case', ['in', ['get','id'], ['literal', hideIds]], 0, 1]
+        : 1;
     }
     // Reunaviiva siirretään kaistan ULKOREUNAAN: siirto = koko kaistan leveys.
     // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
