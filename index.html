@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-22-a';
+    const APP_BUILD   = '2026-08-22-b';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9714,7 +9714,7 @@
         // sen alle. Väri ja peitto seuraavat täyttöä, joten muoto näyttää yhdeltä.
         // Kaikki muut kohdat tarkistavat map.getLayer('master-poly-boost'), joten
         // pelkkä lisäämättä jättäminen riittää kytkemään sen pois.
-        if (BOOST_FILL_ENABLED) map.addLayer({ id:'master-poly-boost', type:'line', source:'master-rings', minzoom:AREA_MINZOOM,
+        if (BOOST_FILL_ENABLED) map.addLayer({ id:'master-poly-boost', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{
             'line-width':   boostWidth(),
             'line-offset':  boostOffset(),
@@ -9743,7 +9743,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-rings', minzoom:AREA_MINZOOM,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
           paint:{
             // Paksuus kasvaa 0,25 px:stä (zoom 13) täyteen 1 px:iin, peitto
             // nollasta täyteen, ja viiva kelluu kaistan ulkoreunassa kunnes
@@ -10202,9 +10202,33 @@
       return px * mpp;
     }
     let _lastAreaGeojson = null;
+    let _bufRaf = 0, _bufLastZ = null;
     function pushAreaData(){
       if (!_lastAreaGeojson || !map.getSource('master-polygons')) return;
+      _bufLastZ = map.getZoom();
       map.getSource('master-polygons').setData(bufferRings(_lastAreaGeojson, currentBufferMetres()));
+    }
+
+    // ── Jatkuva päivitys zoomauksen aikana ───────────────────────────────
+    // Puskuri on pikselimitassa, joten geometria on laskettava uudelleen kun
+    // zoom muuttuu. Pelkkä zoomend päivittäisi vasta kun sormi nostetaan, ja
+    // alue skaalautuisi nipistyksen ajan kartan mukana ja nytkähtäisi lopuksi.
+    // Siksi päivitys ajetaan myös zoomauksen AIKANA, mutta hillitysti:
+    //  · korkeintaan kerran ruudunpiirtoa kohti (requestAnimationFrame)
+    //  · vain jos zoom on muuttunut yli BUF_LIVE_STEPin verran
+    //  · ja vain jos alueita on alle BUF_LIVE_MAX (isolla määrällä uudelleen-
+    //    tiilitys maksaisi enemmän kuin nytkähdys)
+    const BUF_LIVE_STEP = 0.03;
+    const BUF_LIVE_MAX  = 4000;
+    function scheduleAreaBuffer(){
+      if (_bufRaf) return;
+      if (!_lastAreaGeojson) return;
+      if ((_lastAreaGeojson.features || []).length > BUF_LIVE_MAX) return;
+      _bufRaf = requestAnimationFrame(() => {
+        _bufRaf = 0;
+        if (_bufLastZ !== null && Math.abs(map.getZoom() - _bufLastZ) < BUF_LIVE_STEP) return;
+        pushAreaData();
+      });
     }
 
     let TP_RING_DIAG = '–';
@@ -16067,9 +16091,8 @@
         checkCenterHighlight();
       });
     });
-    // Levennys on pikselimitassa, joten geometria lasketaan uudelleen kun
-    // zoom muuttuu. zoomend kattaa nipistyksen ja kaksoisnapautuksen lopun.
-    map.on('zoomend', pushAreaData);
+    map.on('zoom', scheduleAreaBuffer);
+    map.on('zoomend', pushAreaData);   // varmistaa lopullisen tarkan koon
     map.on('moveend', onMapIdle);
     map.on('zoomend', onMapIdle);
     // When the user starts dragging the map, drop the 4s "feature locked" hold
