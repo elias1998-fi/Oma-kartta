@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-21-p';
+    const APP_BUILD   = '2026-08-21-q';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -10089,10 +10089,13 @@
     // segmentin normaalia pitkin ja ne osuvat TÄSMÄLLEEN samaan pisteeseen —
     // sauma jää päällekkäin eikä näy. Kärjet ovat kaikki renkaan sisällä, joten
     // ne saavat oikean puolikulmasiirron.
-    // Kiertosuunnan etumerkki. +1 = renkaat pakotetaan vastapäivään, mikä tekee
-    // negatiivisesta line-offsetista ULOSPÄIN suuntautuvan. Jos levennys menee
-    // laitteella väärään suuntaan (alue kapenee), vaihda tämä arvoon -1.
-    const BOOST_WINDING = 1;
+    // Kiertosuunnan etumerkki. TODENNETTU LAITTEELLA 21.8.: arvolla +1 alueet
+    // kapenivat zoomatessa ulos, eli siirto meni sisäänpäin. Oikea arvo on -1,
+    // jolloin renkaat pakotetaan myötäpäivään ja negatiivinen line-offset vie
+    // ULOSPÄIN. Älä muuta ilman uutta laitetestiä — suuntaa ei voi päätellä
+    // koodista, koska se riippuu datan kiertosuunnasta ja tiiligeometrian
+    // koordinaatiston y-akselin suunnasta.
+    const BOOST_WINDING = -1;
     let TP_RING_DIAG = '–';
     function ringsToLines(fc){
       const out = [];
