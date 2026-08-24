@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-21-r';
+    const APP_BUILD   = '2026-08-21-s';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -10210,7 +10210,7 @@
     // Diagnostiikkaväri kaistalle: kun tämä on väri, kaista piirretään sillä
     // täydellä peitolla. Kätevä kun pitää nähdä kummasta tasosta jokin ilmiö
     // tulee. Oletus null.
-    const BOOST_DEBUG_CLR = '#ff1744';
+    const BOOST_DEBUG_CLR = null;
     // Paksunnuskaista TÄYTTÄÄ VÄLIN polygonin reunan ja ulospäin siirretyn
     // reunaviivan välistä. Ilman sitä kaukana näkyisi ääriviiva, sen sisällä
     // tyhjää karttaa ja vasta keskellä alkuperäisen kokoinen täyttö.
@@ -10325,12 +10325,19 @@
     // Reunaviiva siirretään w verran ulos → se istuu tasan kaistan ulkoreunaan.
     // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
     // polygonin omalle reunalle.
-    function areaLineOffset(){
-      const out = ['interpolate', ['linear'], ['zoom']];
-      for (let i = 0; i < BOOST_STOPS.length; i += 3)
-        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2], -BOOST_STOPS[i+1]]);
-      return out;
-    }
+    // ⚠️ REUNAVIIVALLA EI OLE SIIRTOA (21.8.).
+    // Aiemmin viiva siirrettiin kaistan ulkoreunaan (−w) ja kaista puolella
+    // siitä (−w/2). Ne EIVÄT PYSY YHDESSÄ KULMISSA: MapLibre venyttää siirtoa
+    // kertoimella 1/sin(kulma/2), ja koska kerroin kertoo kummankin siirron
+    // erikseen, niiden ero kasvaa samassa suhteessa. 45° kulmassa kerroin on
+    // 2,6 → reunaviiva karkaa 2,6w päähän kärjestä mutta kaista yltää vain
+    // 1,8w:hen, ja väliin jää yli pikselin rako josta näkyy kartta.
+    // Suoralla sivulla ne osuvat yhteen, joten vika näkyi vain kulmissa ja
+    // kutistui siirron mukana — juuri kuten käyttäjä havaitsi.
+    // Parametreilla sitä ei korjata; ero on suoraan verrannollinen siirtojen
+    // erotukseen. Siksi reunaviiva on nyt polygonin OMALLA reunalla, jolloin
+    // sillä ei ole siirtoa eikä siten kulmavirhettä lainkaan.
+    function areaLineOffset(){ return 0; }
     // Kaistan ULKOREUNAN viiva: kiinteä 1 px ja 100 % peitto KAIKILLA zoomeilla.
     // Sijainti seuraa kaistan leveyttä (areaLineOffset), joten viiva pysyy aina
     // kaistan ulkoreunassa ja laskeutuu polygonin omalle reunalle silloin kun
