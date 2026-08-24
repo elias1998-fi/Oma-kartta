@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-24-d';
+    const APP_BUILD   = '2026-08-24-e';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9696,22 +9696,26 @@
         const geojson = { type: 'FeatureCollection', features };
         console.log('Rendering', features.length, 'polygon features');
 
+        // Kärjet tasoitetaan KERRAN. Tasoitus on kiinteä metrimitta eikä
+        // riipu zoomista, joten tätä ei tarvitse laskea uudelleen zoomatessa.
+        const smoothed = filletRings(geojson);
+
         if (map.getSource('master-polygons')) {
           requestAnimationFrame(() => {
             if (map.getSource('master-polygons'))
-              map.getSource('master-polygons').setData(geojson);
+              map.getSource('master-polygons').setData(smoothed);
             if (map.getSource('master-rings'))
-              map.getSource('master-rings').setData(ringsToLines(geojson));
+              map.getSource('master-rings').setData(ringsToLines(smoothed));
           });
           return;
         }
 
         // First load — create source + layers
-        map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
+        map.addSource('master-polygons', { type:'geojson', data: smoothed, generateId: true });
         // Viivatasojen oma lähde: renkaat LineStringeinä, sauma pisimmän
         // segmentin keskellä (ks. ringsToLines). Tarvitaan koska line-offset
         // avaisi polygonin renkaan väärästä kohdasta.
-        map.addSource('master-rings', { type:'geojson', data: ringsToLines(geojson), generateId: true });
+        map.addSource('master-rings', { type:'geojson', data: ringsToLines(smoothed), generateId: true });
 
         // Kaukonäkyvyyden paksunnusviiva — lisätään ENNEN täyttöä, joten se jää
         // sen alle. Väri ja peitto seuraavat täyttöä, joten muoto näyttää yhdeltä.
@@ -10096,6 +10100,97 @@
     // koodista, koska se riippuu datan kiertosuunnasta ja tiiligeometrian
     // koordinaatiston y-akselin suunnasta.
     const BOOST_WINDING = -1;
+    // ── Kärkien tasoitus (24.8.) ─────────────────────────────────────────
+    // ⚠️ TÄMÄ ON KULMARAON KORJAUS. Lue tämä ennen kuin muutat kulmia.
+    // Rako kaistan ja reunaviivan välillä syntyi siitä, että line-offset venyy
+    // kärjessä kertoimella k = 1/sin(kulma/2). Kaista on siirretty w/2 ja
+    // reunaviiva w, joten kulmassa ne päätyvät eri etäisyyksille ja väliin jää
+    // rako — sitä isompi mitä terävämpi kärki.
+    // Ratkaisu: POISTETAAN TERÄVÄT KÄRJET DATASTA. Jokainen kärki korvataan
+    // pienellä monikulmaisella kaarella, jossa yksikään käännös ei ylitä
+    // FILLET_MAX_TURN astetta. Silloin k ≈ 1,01 kaikkialla eikä rako voi
+    // syntyä millään kulmalla — ei pyöristetylläkään liitoksella.
+    // Pyöristys ei katoa: kun tällaista muotoa levennetään ulospäin, kaaren
+    // säde kasvaa levennyksen verran (kaaren siirto on samankeskinen kaari).
+    // Kaukana säde ≈ levennys, lähellä se kutistuu takaisin tasoituksen kokoon.
+    // Tasoitus on KIINTEÄ metrimitta eikä riipu zoomista → lasketaan kerran,
+    // eikä zoomaus tarvitse mitään uudelleenlaskentaa.
+    const FILLET_M         = 0.6;   // kärjen leikkausetäisyys metreinä
+    const FILLET_MAX_TURN  = 15;    // suurin sallittu käännös per piste, astetta
+    const FILLET_MAX_FRAC  = 0.35;  // leikkaus enintään tämä osuus sivun pituudesta
+    function filletRings(fc){
+      const out = [];
+      for (const f of ((fc && fc.features) || [])) {
+        const g = f.geometry; if (!g) { out.push(f); continue; }
+        const isMulti = g.type === 'MultiPolygon';
+        const polys = g.type === 'Polygon' ? [g.coordinates] : isMulti ? g.coordinates : null;
+        if (!polys) { out.push(f); continue; }
+        const newPolys = polys.map(poly => poly.map(ring => {
+          if (!ring || ring.length < 4) return ring;
+          const r = ring.slice();
+          const a0 = r[0], z0 = r[r.length-1];
+          if (a0[0] === z0[0] && a0[1] === z0[1]) r.pop();
+          const n = r.length;
+          if (n < 3) return ring;
+          const lat0 = r[0][1];
+          const mx = 111320 * Math.cos(lat0 * Math.PI / 180), my = 111320;
+          const P = r.map(pt => [pt[0]*mx, pt[1]*my]);
+          const res = [];
+          for (let i = 0; i < n; i++) {
+            const prev = P[(i-1+n)%n], cur = P[i], next = P[(i+1)%n];
+            const v1 = [prev[0]-cur[0], prev[1]-cur[1]];
+            const v2 = [next[0]-cur[0], next[1]-cur[1]];
+            const l1 = Math.hypot(v1[0], v1[1]), l2 = Math.hypot(v2[0], v2[1]);
+            if (l1 < 1e-6 || l2 < 1e-6) continue;
+            const u1 = [v1[0]/l1, v1[1]/l1], u2 = [v2[0]/l2, v2[1]/l2];
+            // Käännöksen suuruus: 180° − sisäkulma.
+            let cosT = u1[0]*u2[0] + u1[1]*u2[1];
+            cosT = Math.max(-1, Math.min(1, cosT));
+            const interior = Math.acos(cosT) * 180 / Math.PI;
+            const turn = 180 - interior;
+            if (turn <= FILLET_MAX_TURN) { res.push(cur); continue; }
+            const d = Math.min(FILLET_M, l1*FILLET_MAX_FRAC, l2*FILLET_MAX_FRAC);
+            const A = [cur[0] + u1[0]*d, cur[1] + u1[1]*d];
+            const B = [cur[0] + u2[0]*d, cur[1] + u2[1]*d];
+            // OIKEA YMPYRÄNKAARI, ei Bézier. Bézier pakkaa käännöksen keskelle,
+            // jolloin terävässä kärjessä yksittäinen käännös jäi yli 50 asteen
+            // eikä rako poistunut. Kaarella käännös jakautuu tasan pisteille.
+            // Kaari on tangentiaalinen molempiin sivuihin: keskipiste on
+            // sisäkulman puolittajalla etäisyydellä d / cos(sisäkulma/2).
+            const half = (interior / 2) * Math.PI / 180;
+            let bx = u1[0] + u2[0], by = u1[1] + u2[1];
+            const bl = Math.hypot(bx, by);
+            const steps = Math.max(2, Math.ceil(turn / FILLET_MAX_TURN));
+            if (bl < 1e-9 || Math.cos(half) < 1e-6) {
+              res.push(A); res.push(B);
+            } else {
+              bx /= bl; by /= bl;
+              const cd = d / Math.cos(half);
+              const C = [cur[0] + bx*cd, cur[1] + by*cd];
+              let aA = Math.atan2(A[1]-C[1], A[0]-C[0]);
+              let aB = Math.atan2(B[1]-C[1], B[0]-C[0]);
+              let da = aB - aA;
+              while (da >  Math.PI) da -= 2*Math.PI;
+              while (da < -Math.PI) da += 2*Math.PI;
+              const R = Math.hypot(A[0]-C[0], A[1]-C[1]);
+              for (let k = 0; k <= steps; k++) {
+                const ang = aA + da * (k / steps);
+                res.push([C[0] + Math.cos(ang)*R, C[1] + Math.sin(ang)*R]);
+              }
+            }
+          }
+          if (res.length < 3) return ring;
+          const back = res.map(pt => [pt[0]/mx, pt[1]/my]);
+          back.push(back[0]);
+          return back;
+        }));
+        out.push({ type:'Feature', properties: f.properties,
+                   geometry: isMulti ? { type:'MultiPolygon', coordinates:newPolys }
+                                     : { type:'Polygon', coordinates:newPolys[0] } });
+      }
+      return { type:'FeatureCollection', features: out };
+    }
+
     let TP_RING_DIAG = '–';
     function ringsToLines(fc){
       const out = [];
