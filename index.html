@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-24-c';
+    const APP_BUILD   = '2026-08-24-d';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9724,7 +9724,7 @@
             'line-color':   BOOST_DEBUG_CLR || areaFillColor(IS_FREE_EXPR),
             'line-opacity': BOOST_DEBUG_CLR ? 1 : boostOpacity()
           },
-          layout:{ 'line-join':'round', 'line-cap':'butt' }
+          layout:{ 'line-join':_cornerJoin, 'line-cap':'butt', 'line-miter-limit': 10 }
         });
         // Base fill layer
         map.addLayer({ id:'master-poly-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
@@ -9765,7 +9765,7 @@
           // uudelleenlaskennan — tällä tavalla se vältetään kokonaan.
           // Sivuhyöty: miter tuottaa terävissä kulmissa piikkejä (MapLibre
           // pudottaa ne beveliksi vasta kun miter-pituus ylittää 2), round ei.
-          layout:{ 'line-join':'round' }
+          layout:{ 'line-join':_cornerJoin, 'line-miter-limit': 10 }
         });
         // Reunan ULOMPI kaista — vain maksullisilla (ilmaisilla peitto 0).
         // Sama viiva siirrettynä ulospäin, joten se ei mene sisemmän päälle.
@@ -10226,6 +10226,17 @@
     // tuottaa kulmasauman; ainoa muu tapa peittää se on peittävä väri.
     // Koneisto on tallessa: true palauttaa levennyksen.
     const BOOST_FILL_ENABLED = true;
+    // ── Kulmien käsittely ────────────────────────────────────────────────
+    // 'round' = pyöristetyt kulmat kaukana, mutta kaistan ulkoraja jää
+    //           kulmassa kohtaan (w/2)·k + w/2 kun reunaviiva on kohdassa w·k
+    //           (k = 1/sin(kulma/2)) → terävissä kulmissa niiden väliin jää
+    //           rako. 90° kulmassa rako on nolla, 45° kulmassa 1,6 px.
+    // 'sharp' = miter-liitos vie kaistan ulkorajan TASAN kohtaan w·k eli
+    //           reunaviivan keskiviivaan → rakoa ei synny millään kulmalla,
+    //           mutta kulmat ovat kärkiä eivät kaaria.
+    // Molemmat ovat puhtaasti lausekkeita, joten zoomaus pysyy sulavana.
+    const AREA_CORNER_MODE = 'round';
+    const _cornerJoin = AREA_CORNER_MODE === 'sharp' ? 'miter' : 'round';
     // ⚠️ `line-offset` ON POISTETTU KOKONAAN KÄYTÖSTÄ (21.8.).
     // Se tuotti kulmiin sauman, jota ei saatu pois edes syöttämällä renkaat
     // valmiiksi katkaistuina LineStringeinä (mittaus: päät 2 × siirron päässä
