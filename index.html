@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-24-b';
+    const APP_BUILD   = '2026-08-24-c';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9696,25 +9696,28 @@
         const geojson = { type: 'FeatureCollection', features };
         console.log('Rendering', features.length, 'polygon features');
 
-        _lastAreaGeojson = geojson;
-        ringsToLines(geojson);   // vain Aluedata-mittarin päivitys
-
         if (map.getSource('master-polygons')) {
-          requestAnimationFrame(pushAreaData);
+          requestAnimationFrame(() => {
+            if (map.getSource('master-polygons'))
+              map.getSource('master-polygons').setData(geojson);
+            if (map.getSource('master-rings'))
+              map.getSource('master-rings').setData(ringsToLines(geojson));
+          });
           return;
         }
 
-        // First load — create source + layers. Lähteessä on LEVENNETTY
-        // geometria; kaikki aluetasot (täyttö, reuna, korostus) käyttävät
-        // samaa muotoa, joten mikään ei voi olla eri kokoinen kuin toinen.
-        map.addSource('master-polygons', { type:'geojson',
-          data: bufferRings(geojson, currentBufferMetres()), generateId: true });
+        // First load — create source + layers
+        map.addSource('master-polygons', { type:'geojson', data: geojson, generateId: true });
+        // Viivatasojen oma lähde: renkaat LineStringeinä, sauma pisimmän
+        // segmentin keskellä (ks. ringsToLines). Tarvitaan koska line-offset
+        // avaisi polygonin renkaan väärästä kohdasta.
+        map.addSource('master-rings', { type:'geojson', data: ringsToLines(geojson), generateId: true });
 
         // Kaukonäkyvyyden paksunnusviiva — lisätään ENNEN täyttöä, joten se jää
         // sen alle. Väri ja peitto seuraavat täyttöä, joten muoto näyttää yhdeltä.
         // Kaikki muut kohdat tarkistavat map.getLayer('master-poly-boost'), joten
         // pelkkä lisäämättä jättäminen riittää kytkemään sen pois.
-        if (BOOST_FILL_ENABLED) map.addLayer({ id:'master-poly-boost', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
+        if (BOOST_FILL_ENABLED) map.addLayer({ id:'master-poly-boost', type:'line', source:'master-rings', minzoom:AREA_MINZOOM,
           paint:{
             'line-width':   boostWidth(),
             'line-offset':  boostOffset(),
@@ -9743,7 +9746,7 @@
           }
         });
         // Base line layer
-        map.addLayer({ id:'master-poly-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
+        map.addLayer({ id:'master-poly-line', type:'line', source:'master-rings', minzoom:AREA_MINZOOM,
           paint:{
             // Paksuus kasvaa 0,25 px:stä (zoom 13) täyteen 1 px:iin, peitto
             // nollasta täyteen, ja viiva kelluu kaistan ulkoreunassa kunnes
@@ -10093,150 +10096,6 @@
     // koodista, koska se riippuu datan kiertosuunnasta ja tiiligeometrian
     // koordinaatiston y-akselin suunnasta.
     const BOOST_WINDING = -1;
-    // ── Alueiden levennys (22.8.) ────────────────────────────────────────
-    // ⚠️ TÄMÄ KORVAA KOKO AIEMMAN KAKSITASOISEN MALLIN.
-    // Aiemmin muoto koostettiin polygonin täytöstä JA sen ulkopuolelle
-    // siirretystä viivakaistasta. Se ei koskaan toiminut kunnolla, koska
-    // kaksi eri line-offsetia venyvät kulmassa eri tavalla (kerroin
-    // 1/sin(kulma/2) kertoo kummankin siirron) → reunaviiva ja kaista
-    // erkanivat toisistaan ja väliin jäi rako. Ne olivat kaksi eri asiaa.
-    // Nyt levennys tehdään GEOMETRIAAN: polygoni puskuroidaan ulospäin
-    // pyöristetyin kulmin, ja sille piirretään yksi 1 px reuna ja yksi
-    // 30 % täyttö. Yksi muoto → mikään ei voi erkaantua mistään.
-    // Pyöristys tulee ilmaiseksi: kulmiin ladotaan kaari säteellä r, ja kun
-    // r kutistuu nollaan zoomia lähennettäessä, kulmat muuttuvat teräviksi.
-    const BUF_ARC_STEPS = 6;      // kaaren pisteitä 90° kohti
-    function bufferRings(fc, metres){
-      if (!(metres > 0.01)) return fc;
-      const out = [];
-      for (const f of ((fc && fc.features) || [])) {
-        const g = f.geometry; if (!g) continue;
-        const isMulti = g.type === 'MultiPolygon';
-        const polys = g.type === 'Polygon' ? [g.coordinates] : isMulti ? g.coordinates : [];
-        if (!polys.length) { out.push(f); continue; }
-        const newPolys = [];
-        for (const poly of polys) {
-          const newRings = [];
-          for (let ri = 0; ri < poly.length; ri++) {
-            const ring = poly[ri];
-            if (!ring || ring.length < 4) { newRings.push(ring); continue; }
-            const r = ring.slice();
-            const a0 = r[0], z0 = r[r.length-1];
-            if (a0[0] === z0[0] && a0[1] === z0[1]) r.pop();
-            const n = r.length;
-            if (n < 3) { newRings.push(ring); continue; }
-            // Paikallinen metrikoordinaatisto, jotta puskuri on joka suuntaan
-            // yhtä leveä (lon-asteet ovat leveyspiirillä lyhyempiä).
-            const lat0 = r[0][1];
-            const mx = 111320 * Math.cos(lat0 * Math.PI / 180), my = 111320;
-            const P = r.map(p => [p[0] * mx, p[1] * my]);
-            // Kiertosuunta: positiivinen pinta-ala = vastapäivään.
-            let a2 = 0;
-            for (let i = 0; i < n; i++) { const p = P[i], q = P[(i+1)%n]; a2 += p[0]*q[1] - q[0]*p[1]; }
-            const sgn = a2 >= 0 ? 1 : -1;   // ulkonormaalin suunta seuraa tästä
-            const outRing = [];
-            for (let i = 0; i < n; i++) {
-              const prev = P[(i-1+n)%n], cur = P[i], next = P[(i+1)%n];
-              const e1 = [cur[0]-prev[0], cur[1]-prev[1]];
-              const e2 = [next[0]-cur[0], next[1]-cur[1]];
-              const l1 = Math.hypot(e1[0], e1[1]), l2 = Math.hypot(e2[0], e2[1]);
-              if (l1 < 1e-9 || l2 < 1e-9) continue;
-              // Ulkonormaali = segmentin suunta käännettynä 90°, kiertosuunnan mukaan.
-              const n1 = [ sgn * e1[1] / l1, -sgn * e1[0] / l1 ];
-              const n2 = [ sgn * e2[1] / l2, -sgn * e2[0] / l2 ];
-              const cross = e1[0]*e2[1] - e1[1]*e2[0];
-              const convex = (cross * sgn) > 0;   // CCW-renkaalla kupera kärki kääntyy vasempaan
-              if (convex) {
-                // Kupera kärki → kaari säteellä metres kärjen ympäri.
-                let a1 = Math.atan2(n1[1], n1[0]), a2b = Math.atan2(n2[1], n2[0]);
-                let d = a2b - a1;
-                while (d >  Math.PI) d -= 2*Math.PI;
-                while (d < -Math.PI) d += 2*Math.PI;
-                const steps = Math.max(1, Math.ceil(Math.abs(d) / (Math.PI/2) * BUF_ARC_STEPS));
-                for (let k = 0; k <= steps; k++) {
-                  const ang = a1 + d * (k / steps);
-                  outRing.push([cur[0] + Math.cos(ang)*metres, cur[1] + Math.sin(ang)*metres]);
-                }
-              } else {
-                // Kovera kärki → yksi piste normaalien keskisuunnassa (miter),
-                // rajoitettuna ettei se karkaa terävissä kuopissa.
-                let bx = n1[0] + n2[0], by = n1[1] + n2[1];
-                const bl = Math.hypot(bx, by);
-                if (bl < 1e-9) { outRing.push([cur[0] + n1[0]*metres, cur[1] + n1[1]*metres]); continue; }
-                bx /= bl; by /= bl;
-                const cosHalf = bx*n1[0] + by*n1[1];
-                const scale = Math.min(4, cosHalf > 1e-3 ? 1/cosHalf : 4);
-                outRing.push([cur[0] + bx*metres*scale, cur[1] + by*metres*scale]);
-              }
-            }
-            if (outRing.length < 3) { newRings.push(ring); continue; }
-            const back = outRing.map(p => [p[0] / mx, p[1] / my]);
-            back.push(back[0]);
-            newRings.push(back);
-          }
-          newPolys.push(newRings);
-        }
-        out.push({ type:'Feature', properties: f.properties,
-                   geometry: isMulti ? { type:'MultiPolygon', coordinates:newPolys }
-                                     : { type:'Polygon', coordinates:newPolys[0] } });
-      }
-      return { type:'FeatureCollection', features: out };
-    }
-
-    // Levennys pikseleinä nykyisellä zoomilla → metreinä.
-    function currentBufferMetres(){
-      const z = map.getZoom();
-      const stops = [];
-      for (let i = 0; i < BOOST_STOPS.length; i += 3) stops.push([BOOST_STOPS[i], BOOST_STOPS[i+1]]);
-      let px = stops[stops.length-1][1];
-      if (z <= stops[0][0]) px = stops[0][1];
-      else for (let i = 0; i < stops.length-1; i++) {
-        if (z >= stops[i][0] && z <= stops[i+1][0]) {
-          const t = (z - stops[i][0]) / (stops[i+1][0] - stops[i][0]);
-          px = stops[i][1] + (stops[i+1][1] - stops[i][1]) * t; break;
-        }
-      }
-      if (!(px > 0)) return 0;
-      const lat = map.getCenter().lat;
-      const mpp = 40075016.686 * Math.cos(lat * Math.PI/180) / (512 * Math.pow(2, z));
-      return px * mpp;
-    }
-    let _lastAreaGeojson = null;
-    let _bufRaf = 0, _bufLastZ = null, _bufMinMs = 0, _bufLastMs = 0;
-    function pushAreaData(){
-      if (!_lastAreaGeojson || !map.getSource('master-polygons')) return;
-      _bufLastZ = map.getZoom();
-      const t0 = performance.now();
-      map.getSource('master-polygons').setData(bufferRings(_lastAreaGeojson, currentBufferMetres()));
-      // Sopeutuva hillintä: mitataan paljonko päivitys maksoi ja pidetään
-      // seuraavaan vähintään kaksinkertainen tauko. Nopealla laitteella tämä
-      // on ~0 ms eli päivitys seuraa zoomia joka ruudulla; hitaalla se harvenee
-      // itsestään sen sijaan että kartta alkaisi nykiä.
-      _bufMinMs = Math.min(250, Math.round((performance.now() - t0) * 2));
-      _bufLastMs = performance.now();
-    }
-
-    // ── Jatkuva päivitys zoomauksen aikana ───────────────────────────────
-    // Puskuri on pikselimitassa, joten geometria on laskettava uudelleen kun
-    // zoom muuttuu. Pelkkä zoomend päivittäisi vasta kun sormi nostetaan, ja
-    // alue skaalautuisi nipistyksen ajan kartan mukana ja nytkähtäisi lopuksi.
-    // Siksi päivitys ajetaan myös zoomauksen AIKANA, mutta hillitysti:
-    //  · korkeintaan kerran ruudunpiirtoa kohti (requestAnimationFrame)
-    //  · vain jos zoom on muuttunut yli BUF_LIVE_STEPin verran
-    //  · ja vain jos edellisestä päivityksestä on kulunut _bufMinMs, joka
-    //    mitataan edellisen päivityksen kestosta (ks. pushAreaData)
-    // Pienin zoom-muutos joka laukaisee uudelleenlaskennan.
-    const BUF_LIVE_STEP = 0.02;
-    function scheduleAreaBuffer(){
-      if (_bufRaf || !_lastAreaGeojson) return;
-      if (performance.now() - _bufLastMs < _bufMinMs) return;
-      _bufRaf = requestAnimationFrame(() => {
-        _bufRaf = 0;
-        if (_bufLastZ !== null && Math.abs(map.getZoom() - _bufLastZ) < BUF_LIVE_STEP) return;
-        pushAreaData();
-      });
-    }
-
     let TP_RING_DIAG = '–';
     function ringsToLines(fc){
       const out = [];
@@ -10366,8 +10225,7 @@
     // Erilleen ne saa vain line-offsetilla, joka avaa polygonin renkaan ja
     // tuottaa kulmasauman; ainoa muu tapa peittää se on peittävä väri.
     // Koneisto on tallessa: true palauttaa levennyksen.
-    // Kaistaa ei enää tarvita: levennys tehdään geometriaan (bufferRings).
-    const BOOST_FILL_ENABLED = false;
+    const BOOST_FILL_ENABLED = true;
     // ⚠️ `line-offset` ON POISTETTU KOKONAAN KÄYTÖSTÄ (21.8.).
     // Se tuotti kulmiin sauman, jota ei saatu pois edes syöttämällä renkaat
     // valmiiksi katkaistuina LineStringeinä (mittaus: päät 2 × siirron päässä
@@ -10444,9 +10302,13 @@
     // kaukozoomeilla muoto on 2w leveämpi kuin geometria. Siksi korostuksen
     // reunaviivat levennetään samalla 2w:llä — silloin ulkoraja pysyy
     // paikallaan ja vain väri vaihtuu.
-    // Korostus piirtää samaa levennettyä geometriaa kuin muutkin, joten
-    // leveyttä ei tarvitse enää kompensoida.
-    function hlLineWidth(base){ return base; }
+    function hlLineWidth(base){
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (let i = 0; i < BOOST_STOPS.length; i += 3)
+        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR,
+          2*BOOST_STOPS[i+2] + base, 2*BOOST_STOPS[i+1] + base]);
+      return out;
+    }
     // Sama peitto kuin täytöllä. Koska kaista ei mene täytön päälle, tulos on
     // tasainen 50 % koko muodon alueella.
     function boostOpacity(hideIds){
@@ -10461,8 +10323,12 @@
     // Reunaviiva siirretään w verran ulos → se istuu tasan kaistan ulkoreunaan.
     // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
     // polygonin omalle reunalle.
-    // Ei siirtoa. Reunaviiva on levennetyn polygonin omalla reunalla.
-    function areaLineOffset(){ return 0; }
+    function areaLineOffset(){
+      const out = ['interpolate', ['linear'], ['zoom']];
+      for (let i = 0; i < BOOST_STOPS.length; i += 3)
+        out.push(BOOST_STOPS[i], ['case', IS_LARGE_EXPR, -BOOST_STOPS[i+2], -BOOST_STOPS[i+1]]);
+      return out;
+    }
     // Kaistan ULKOREUNAN viiva: kiinteä 1 px ja 100 % peitto KAIKILLA zoomeilla.
     // Sijainti seuraa kaistan leveyttä (areaLineOffset), joten viiva pysyy aina
     // kaistan ulkoreunassa ja laskeutuu polygonin omalle reunalle silloin kun
@@ -16097,8 +15963,6 @@
         checkCenterHighlight();
       });
     });
-    map.on('zoom', scheduleAreaBuffer);
-    map.on('zoomend', pushAreaData);   // varmistaa lopullisen tarkan koon
     map.on('moveend', onMapIdle);
     map.on('zoomend', onMapIdle);
     // When the user starts dragging the map, drop the 4s "feature locked" hold
