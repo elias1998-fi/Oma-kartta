@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-24-e';
+    const APP_BUILD   = '2026-08-24-f';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9696,9 +9696,11 @@
         const geojson = { type: 'FeatureCollection', features };
         console.log('Rendering', features.length, 'polygon features');
 
-        // Kärjet tasoitetaan KERRAN. Tasoitus on kiinteä metrimitta eikä
-        // riipu zoomista, joten tätä ei tarvitse laskea uudelleen zoomatessa.
-        const smoothed = filletRings(geojson);
+        // ⚠️ KÄRKIEN TASOITUS POIS KÄYTÖSTÄ 24.8. Se pyöristi alueet myös
+        // suurilla zoomeilla, joissa niiden pitää olla alkuperäisiä.
+        // filletRings on tallessa jos sitä joskus tarvitaan.
+        const FILLET_ENABLED = false;
+        const smoothed = FILLET_ENABLED ? filletRings(geojson) : geojson;
 
         if (map.getSource('master-polygons')) {
           requestAnimationFrame(() => {
@@ -9711,11 +9713,21 @@
         }
 
         // First load — create source + layers
-        map.addSource('master-polygons', { type:'geojson', data: smoothed, generateId: true });
+        // ⚠️ tolerance: 0 = EI YKSINKERTAISTUSTA. Tämä on renkaan sauman
+        // korjaus. Oletuksella (0.375) MapLibre karsii tiiliä tehdessään
+        // pisteitä, joiden poikkeama alittaa toleranssin — pienillä zoomeilla
+        // se on noin 1,8 metriä. Kadunvarsialueen pääty on 2,5 m leveä, joten
+        // sauman viereinen kulmapiste karsiutui pois, viivan alkusuunta muuttui
+        // ja siirretyn renkaan PÄÄT eivät enää osuneet samaan pisteeseen.
+        // Oire: "viivojen päät eivät kohtaa" — mutta vain NIILLÄ alueilla
+        // joilla karsinta sattui osumaan sauman viereen.
+        // Sama arvo molemmille lähteille, jotta täyttö ja reunaviiva seuraavat
+        // täsmälleen samaa geometriaa.
+        map.addSource('master-polygons', { type:'geojson', data: smoothed, generateId: true, tolerance: 0 });
         // Viivatasojen oma lähde: renkaat LineStringeinä, sauma pisimmän
         // segmentin keskellä (ks. ringsToLines). Tarvitaan koska line-offset
         // avaisi polygonin renkaan väärästä kohdasta.
-        map.addSource('master-rings', { type:'geojson', data: ringsToLines(smoothed), generateId: true });
+        map.addSource('master-rings', { type:'geojson', data: ringsToLines(smoothed), generateId: true, tolerance: 0 });
 
         // Kaukonäkyvyyden paksunnusviiva — lisätään ENNEN täyttöä, joten se jää
         // sen alle. Väri ja peitto seuraavat täyttöä, joten muoto näyttää yhdeltä.
