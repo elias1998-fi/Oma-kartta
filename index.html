@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-q -->
+<head><!-- TP_BUILD 2026-08-25-r -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3804,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-q';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-r';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -16441,6 +16441,20 @@
       g.el.style.transition = ''; g.el.style.transform = ''; g.el.style.willChange = '';
       if (g.dim) { g.dim.style.transition = ''; g.dim.style.opacity = ''; }
     }
+    // Alla olevien elementtien tyylit takaisin. Erillinen funktio, koska tämä
+    // pitää ajaa ENNEN näkymän sulkemista — ks. kutsukohta.
+    function swipeResetUnder(g){
+      if (!g.under) return;
+      for (const u of g.under) {
+        // Palautetaan TÄSMÄLLEEN se inline-tyyli joka elementillä oli ennen
+        // elettä, ei tyhjä. Ks. selitys touchmoven talteenoton kohdalla.
+        u.style.transform  = u._swInline   || '';
+        u.style.transition = u._swInlineTr || '';
+        u.style.willChange = '';
+        delete u._swBase; delete u._swInline; delete u._swInlineTr;
+      }
+      g.under = null;
+    }
     function swipeRehide(g){
       if (g && g.unhidden) for (const u of g.unhidden) u.classList.add('hidden');
     }
@@ -16449,14 +16463,7 @@
       g.el.style.transition = ''; g.el.style.transform = '';
       g.el.style.borderTopLeftRadius = ''; g.el.style.borderBottomLeftRadius = '';
       g.el.style.overflow = ''; g.el.style.boxShadow = ''; g.el.style.willChange = '';
-      if (g.under) for (const u of g.under) {
-        // Palautetaan TÄSMÄLLEEN se inline-tyyli joka elementillä oli ennen
-        // elettä, ei tyhjä. Ks. selitys touchmoven talteenoton kohdalla.
-        u.style.transform  = u._swInline   || '';
-        u.style.transition = u._swInlineTr || '';
-        u.style.willChange = '';
-        delete u._swBase; delete u._swInline; delete u._swInlineTr;
-      }
+      swipeResetUnder(g);
       // ⚠️ Z-indeksi palautetaan VIIVEELLÄ. Elementin häivytys (opacity 0.3 s)
       // on vielä kesken kun animaatio päättyy; jos z-indeksi palautettaisiin
       // heti, elementti olisi hetken sekä näkyvissä että korkealla kerroksella
@@ -16683,6 +16690,13 @@
           // Varjo pois ennen tyylien palautusta, jottei se ehdi vilahtaa
           // silloin kun näkymä siirtyy inline-arvosta CSS-arvoon.
           g.el.style.boxShadow = 'none';
+          // ⚠️ ALLA OLEVIEN TYYLIT PALAUTETAAN ENNEN SULKEMISTA.
+          // Näkymän oma sulkulogiikka asettaa usein alla olevan näkymän tilan
+          // (esim. goBackToMap palauttaa bottom sheetin asennon). Jos eleen
+          // palautus ajettaisiin vasta sen jälkeen, se ylikirjoittaisi juuri
+          // asetetun arvon eleen alun vanhalla arvolla, ja sheetin asento ja
+          // sisältö ajautuisivat eri tahtiin.
+          swipeResetUnder(g);
           g.el.style.transition = 'none';
           g.btn.click();
           requestAnimationFrame(() => requestAnimationFrame(() => swipeReset(g)));
