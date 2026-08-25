@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-24-m';
+    const APP_BUILD   = '2026-08-24-n';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -6200,9 +6200,18 @@
     // ja koska moveLayer siirtää aina viimeisimmän ylimmäksi, listan
     // järjestys ratkaisee: halli jää latauspisteen päälle.
     const APP_POLY_ORDER = [
-      // Kaista alimmaksi, täyttö sen päälle, reunaviiva ylimmäksi.
-      // Kaista ja täyttö alle, reunaviiva päälle (se on muodon uloin raja).
-      'master-poly-boost','master-poly-fill','master-poly-line','master-poly-line-outer',
+      // ⚠️ REUNAVIIVA TÄYTTÖJEN ALLE (24.8.).
+      // MapLibre piirtää tasot kokonaan yksi kerrallaan, joten reunaviivataso
+      // oli aiemmin KAIKKIEN täyttöjen yläpuolella. Silloin alemman alueen
+      // reunaviiva ei kuultanut ylemmän täytön läpi vaan piirtyi sen PÄÄLLE
+      // täydellä voimalla — juuri päinvastoin kuin kerrostumisen pitäisi mennä.
+      // Kun viivataso on täyttöjen alla, päällimmäisen alueen täyttö peittää
+      // alemman reunaviivan omalla peitollaan: kaukana (85 %) se lähes katoaa,
+      // lähellä (25 %) se kuultaa haaleana läpi. Juuri niin kuin pitääkin.
+      // Alueen OMA reunaviiva ei kärsi: se on keskitetty reunalle, joten vain
+      // sisempi puolikas jää oman täytön alle — ja koska täyttö on samaa väriä
+      // kuin viiva, siitä ei synny näkyvää eroa.
+      'master-poly-boost','master-poly-line','master-poly-fill','master-poly-line-outer',
       'master-poly-group-fill','master-poly-group-line',
       'master-poly-hover-fill','master-poly-hover-line'
     ];
