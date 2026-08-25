@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-e -->
+<head><!-- TP_BUILD 2026-08-25-g -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3804,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-e';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-g';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -5299,7 +5299,6 @@
          vasen paikka on sen alla. Väistäminen koskee nyt zoom-lukemaa
          (updateAjanhetkiPillVisibility); updateOsmOpacity() häivyttää molemmat
          sheetin mukana. -->
-    <div id="build-badge" style="position:absolute;top:-16px;right:8px;z-index:6;font-family:Arial,sans-serif;font-size:10px;font-weight:bold;pointer-events:none;display:none;"></div>
     <div id="osm-attribution" style="position:absolute;top:-16px;right:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;opacity:0.5;pointer-events:none;transition:opacity 0.2s ease;">&copy; OpenStreetMap</div>
     <!-- Ajanhetki: rides with the sheet. The pill grows UPWARD into the window. -->
     <div id="ajanhetki-anchor">
@@ -16274,44 +16273,10 @@
         checkCenterHighlight();
       });
     });
-    // ── Versiotarkistus (25.8.) ──────────────────────────────────────────
-    // Haetaan sovelluksen OMA osoite verkosta ja luetaan siitä TP_BUILD-
-    // kommentti. Vertailukohta on siis se mikä on oikeasti julkaistuna, ei
-    // se mikä on committina — julkaisussa voi olla minuutin viive.
-    // Haku rajataan ensimmäisiin tavuihin Range-otsakkeella, joten pyyntö on
-    // muutaman sadan tavun kokoinen. Jos palvelin ei tue Rangea, se palauttaa
-    // koko tiedoston ja lukeminen toimii silti.
-    // ⚠️ cache: 'no-store' JA aikaleima kyselyparametrissa ovat pakollisia:
-    // ilman niitä service worker tai selaimen välimuisti palauttaisi saman
-    // vanhan tiedoston, jolloin vertailtaisiin vanhaa vanhaan ja tulos olisi
-    // aina "Uusi".
-    async function checkBuildFreshness(){
-      const el = document.getElementById('build-badge');
-      if (!el) return;
-      try {
-        const url = location.pathname + '?_v=' + Date.now();
-        const res = await fetch(url, {
-          cache: 'no-store',
-          headers: { 'Range': 'bytes=0-399' }
-        });
-        if (!res.ok && res.status !== 206) return;
-        const head = await res.text();
-        const m = head.match(/TP_BUILD\s+([A-Za-z0-9._-]+)/);
-        if (!m) return;
-        const latest = m[1];
-        const fresh  = (latest === APP_BUILD);
-        el.textContent = fresh ? 'Uusi' : 'Vanha';
-        el.style.color = fresh ? '#1b7a3a' : '#c0392b';
-        el.style.display = 'block';
-        // Attribuutio siirtyy vasemmalle, jottei merkki mene sen päälle.
-        const attr = document.getElementById('osm-attribution');
-        if (attr) attr.style.right = (el.offsetWidth + 14) + 'px';
-        if (!fresh) console.log('[TP] käytössä ' + APP_BUILD + ', julkaistuna ' + latest);
-      } catch (e) {
-        // Verkkoa ei ole → ei tietoa, ei merkkiä.
-      }
-    }
-    window.addEventListener('load', () => setTimeout(checkBuildFreshness, 1200));
+    // Versiotarkistus ("Uusi"/"Vanha" attribuution vieressä) oli käytössä
+    // buildeissa 2026-08-25-a…-e, mutta poistettiin käyttäjän pyynnöstä.
+    // TP_BUILD-kommentti <head>-elementissä jäi paikalleen: se on nyt
+    // versionumeron ainoa lähde, josta readBuildComment() lukee APP_BUILDin.
 
     // ── Eleet: vaakaswipe takaisin, pystyswipe sulkee sheetin (25.8.) ────
     // Vaakaele SEURAA SORMEA: näkymä liukuu mukana ja alta paljastuu se mihin
@@ -16334,7 +16299,12 @@
     // näyttää siltä että päällimmäinen vain katoaa.
     const SWIPE_PARALLAX   = 0.30;  // alla oleva on aluksi tämä osuus vasemmalla
     const SWIPE_DIM_MAX    = 0.22;  // alla olevan päällä oleva verho kun peitossa
-    const SWIPE_RADIUS     = 38;    // liikkuvan näkymän vasemman reunan pyöristys
+    // Liikkuvan näkymän vasemman reunan pyöristys. Mitattu vertailukuvasta
+    // ympyrää sovittamalla: 59 laitepikseliä ≈ 55 CSS px, mikä vastaa
+    // iPhone 15:n / 14 Pron näytön kulmasädettä. Aiempi 38 oli liian pieni.
+    // Huom: iOS:n oma kulma on "squircle", CSS:n border-radius on ympyrä,
+    // joten hitusen suurempi arvo näyttää lähempänä oikeaa.
+    const SWIPE_RADIUS     = 55;
     const SWIPE_MS_DONE    = 340;   // loppuun vietävän animaation kesto
     const SWIPE_MS_CANCEL  = 300;   // vieterin kesto
     const SWIPE_EASE       = 'cubic-bezier(0.32,0.72,0,1)';
@@ -16389,23 +16359,32 @@
       // päällimmäiselle: jos se ohitettaisiin jo kelpuutusvaiheessa, ele osuisi
       // sen ALLA olevaan näkymään ja palaisi väärästä paikasta.
       if (top.host.querySelector('.maplibregl-map, .maplibregl-canvas')) return null;
-      // ⚠️ PARALLAKSI SIIRTÄÄ KOKO BODYÄ, ei yksittäisiä elementtejä.
-      // Aiemmin siirrettiin bodyn suoria lapsia, mutta suuri osa käyttö-
-      // liittymästä (p-merkki, alasheetit, iso toimintonappi) on sisempänä
-      // DOM:issa, joten ne jäivät paikalleen ja siirtymä näytti rikkinäiseltä.
-      // Kun body siirtyy, KAIKKI siirtyy kerralla — myös se mitä emme tiedä.
-      // Liikkuva näkymä on itsekin bodyn sisällä, joten sen omaan siirtoon
-      // lisätään vastakkainen kompensaatio (ks. touchmove).
-      return { btn: top.btn, host: top.host, under: [document.body] };
+      // ⚠️ ÄLÄ SIIRRÄ document.bodyä. Kokeiltu buildeissa -e/-f ja se rikkoi
+      // asettelun: kun bodyllä on transform, siitä tulee position:fixed
+      // -elementtien SIJOITUSPERUSTA, jolloin inset:0 ei enää tarkoita ruutua
+      // vaan bodyn laatikkoa. Näkymät venyivät väärän levyisiksi ja
+      // takaisin-nappien näkyvyystesti meni pieleen, jolloin ele lakkasi
+      // toimimasta kokonaan.
+      // Siirretään siis bodyn suoria lapsia. Kaikki päätason kerrokset
+      // (kartta, p-merkki, alasheetit, toimintonapit, näkymät) ovat bodyn
+      // suoria lapsia, joten tämä kattaa käyttöliittymän.
+      const under = [];
+      for (const el of document.body.children) {
+        if (el === top.host || el === _swDim) continue;
+        if (el.nodeType !== 1) continue;
+        const tag = el.tagName;
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK') continue;
+        if (!swipeOnScreen(el)) continue;
+        under.push(el);
+      }
+      return { btn: top.btn, host: top.host, under: under };
     }
 
     function swipeDim(){
       if (_swDim) return _swDim;
       _swDim = document.createElement('div');
-      // Verho on ruutua leveämpi, koska body liikkuu sen alla ja kapea verho
-      // jättäisi reunaan himmentämättömän kaistaleen.
-      _swDim.style.cssText = 'position:fixed;top:0;bottom:0;left:-50%;right:-50%;' +
-                             'background:#000;opacity:0;pointer-events:none;display:none;';
+      _swDim.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;' +
+                             'pointer-events:none;display:none;';
       document.body.appendChild(_swDim);
       return _swDim;
     }
@@ -16535,10 +16514,12 @@
       if (_g.mode === 'back') {
         const w = window.innerWidth || 400;
         const p = Math.min(1, Math.max(0, dx / w));     // 0 = peitossa, 1 = kokonaan auki
-        // Body siirtyy S verran vasemmalle; jotta liikkuva näkymä näyttää
-        // olevan kohdassa dx, sen omaan siirtoon lisätään -S.
         const S = -(1 - p) * SWIPE_PARALLAX * w;
-        _g.el.style.transform = 'translateX(' + (Math.max(0, dx) - S) + 'px)';
+        _g.el.style.transform = 'translateX(' + Math.max(0, dx) + 'px)';
+        // ⚠️ Parallaksi lisätään alkuperäisen transformin PÄÄLLE (_swBase).
+        // Jos se ylikirjoitettaisiin, ruudun ulkopuolella oleva suljettu
+        // näkymä (esim. profiilivalikko translateX(-100%)) siirtyisi
+        // parallaksin arvoon ja tulisi vahingossa näkyviin.
         if (_g.under) for (const u of _g.under)
           u.style.transform = ('translateX(' + S + 'px) ' + (u._swBase || '')).trim();
         swipeDim().style.opacity = String((1 - p) * SWIPE_DIM_MAX);
@@ -16568,7 +16549,6 @@
         const w  = window.innerWidth || 400;
         const go = dx > w * 0.5 || (dx / dt > SWIPE_FLICK_V && dx > SWIPE_FLICK_MIN);
         const ms = go ? SWIPE_MS_DONE : SWIPE_MS_CANCEL;
-        let endOffset = 0;
         const d  = swipeDim();
         d.style.transition = 'opacity ' + ms + 'ms ' + SWIPE_EASE;
         d.style.opacity = go ? '0' : String(SWIPE_DIM_MAX);
@@ -16578,10 +16558,8 @@
             u.style.transition = 'transform ' + ms + 'ms ' + SWIPE_EASE;
             u.style.transform = ('translateX(' + endS + 'px) ' + (u._swBase || '')).trim();
           }
-          endOffset = endS;
         }
-        animateTo(g.el, go ? 'translateX(' + (w - endOffset) + 'px)'
-                           : 'translateX(' + (-endOffset) + 'px)', ms, () => {
+        animateTo(g.el, go ? 'translateX(100%)' : 'translateX(0px)', ms, () => {
           if (!go) { swipeReset(g); return; }
           // ⚠️ JÄRJESTYS ON TÄRKEÄ, muuten syntyy "bounce back".
           // Näkymä on nyt inline-tyylillä kohdassa translateX(100%). Jos
