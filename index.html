@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-g -->
+<head><!-- TP_BUILD 2026-08-25-j -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3804,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-g';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-j';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -9850,12 +9850,19 @@
         });
         // Hover fill — red, toggled via setFilter
         map.addLayer({ id:'master-poly-hover-fill', type:'fill', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'fill-color':'#1266f1', 'fill-opacity': hlOpacity('hoverFill') },
+          // ⚠️ Luontiväri on SAMA punainen jonka applyHoverHighlight asettaa.
+          // Aiemmin tässä oli vanha sininen #1266f1, ja koska väri asetetaan
+          // vasta korostushetkellä, ENSIMMÄISELLÄ kerralla ehti renderöityä
+          // yksi ruutu vanhalla värillä → alue välähti sinisenä ennen kuin se
+          // muuttui punaiseksi. Myöhemmillä kerroilla väri oli jo oikea, minkä
+          // takia vika näkyi vain sovelluksen ensimmäisellä käyttökerralla.
+          paint:{ 'fill-color':'#ff1744', 'fill-opacity': hlOpacity('hoverFill') },
           filter:['==', ['get','id'], '__none__']
         });
         // Hover outline — on the red hovered area, toggled via setFilter
         map.addLayer({ id:'master-poly-hover-line', type:'line', source:'master-polygons', minzoom:AREA_MINZOOM,
-          paint:{ 'line-color':'#0B49D0', 'line-width': hlLineWidth(2.5), 'line-opacity': hlOpacity('hoverLine') },
+          // Sama syy kuin hover-fillillä: luontiväri vastaa lopullista.
+          paint:{ 'line-color':'#ff1744', 'line-width': hlLineWidth(2.5), 'line-opacity': hlOpacity('hoverLine') },
           filter:['==', ['get','id'], '__none__']
         });
         // Group highlight line — thick dark, toggled via setFilter
@@ -16087,6 +16094,11 @@
       sheetFilter.classList.add('visible');
       sizeFilterSheet();
       if(window._trackFilterScrollbar) window._trackFilterScrollbar();
+      // ⚠️ Muista sheetin asento ENNEN suodatinnäkymää. Suodatin laskee
+      // sheetin alas ja ylikirjoittaa currentY:n; ilman talteenottoa
+      // sulkeminen jättäisi sheetin siihen alempaan asentoon, jolloin
+      // alueen tiedoista näkyisi vain yläosa.
+      _sheetYBeforeFilter = currentY;
       sheet.style.transition='transform 0.38s cubic-bezier(0.32,0.72,0,1)';
       sheet.style.transform=`translateY(${window.innerHeight*0.6}px)`;
       currentY=window.innerHeight*0.6;
@@ -16099,6 +16111,7 @@
     // Size the filter scroll area so, when the sheet is at its top position
     // (80% of the viewport), the content fills exactly down to the screen
     // bottom — no leftover white strip — while keeping all content reachable.
+    let _sheetYBeforeFilter = null;
     function sizeFilterSheet(){
       // Fill the content area exactly to the screen bottom when the sheet is at
       // its top position. The sheet's top edge then sits at 20% of the viewport,
@@ -16120,6 +16133,13 @@
       centerPointerEl.classList.remove('hidden');
       sheetNormal.style.display='flex';
       sheetFilter.classList.remove('visible');
+      // Palauta sheetin asento siihen mihin se jäi ennen suodatinnäkymää.
+      if (_sheetYBeforeFilter !== null) {
+        currentY = _sheetYBeforeFilter;
+        _sheetYBeforeFilter = null;
+        sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transform = `translateY(${currentY}px)`;
+      }
       // NOTE: deliberately no filter-state reset here. Closing with ✕ only
       // hides the sheet — the chosen filters (e.g. the max-time range) stay
       // applied. "Palauta" is the only thing that resets them.
@@ -16403,6 +16423,9 @@
       g.el.style.transition = ''; g.el.style.transform = ''; g.el.style.willChange = '';
       if (g.dim) { g.dim.style.transition = ''; g.dim.style.opacity = ''; }
     }
+    function swipeRehide(g){
+      if (g && g.unhidden) for (const u of g.unhidden) u.classList.add('hidden');
+    }
     function swipeReset(g){
       g.el.style.transition = ''; g.el.style.transform = '';
       g.el.style.borderTopLeftRadius = ''; g.el.style.borderBottomLeftRadius = '';
@@ -16438,17 +16461,23 @@
         _g = { mode:'sheet', el:sheet, x:t.clientX, y:t.clientY, t:Date.now(), on:false };
         return;
       }
-      // Vasemmalta tuleva laatikko (profiilivalikko) suljetaan vetämällä
-      // OIKEALTA VASEMMALLE, samaan suuntaan josta se tuli. Se on merkitty
-      // data-swipe-dir="left", eikä siinä ole takaisin-nappia, joten se
-      // tunnistetaan erikseen ennen tavallisia näkymiä.
-      for (const dr of document.querySelectorAll('[data-swipe-dir="left"]')) {
-        if (!swipeOnScreen(dr)) continue;
-        _g = { mode:'drawer', el:dr, x:t.clientX, y:t.clientY, t:Date.now(), on:false };
+      // ⚠️ JÄRJESTYS: takaisin-nappinäkymä TARKISTETAAN ENSIN.
+      // Asetukset, Tili, Pysäköintitapahtumat yms. avautuvat profiilivalikon
+      // PÄÄLLE, ja profiilivalikko jää auki niiden alle. Jos laatikko
+      // tarkistettaisiin ensin, se kaappaisi eleen aina ja näiden näkymien
+      // paluu ei toimisi lainkaan — juuri se vika joka havaittiin.
+      const tgt = swipeBackTarget();
+      if (!tgt) {
+        // Vasemmalta tuleva laatikko (profiilivalikko) suljetaan vetämällä
+        // OIKEALTA VASEMMALLE, samaan suuntaan josta se tuli. Siinä ei ole
+        // takaisin-nappia, joten se tunnistetaan data-swipe-dir-attribuutista.
+        for (const dr of document.querySelectorAll('[data-swipe-dir="left"]')) {
+          if (!swipeOnScreen(dr)) continue;
+          _g = { mode:'drawer', el:dr, x:t.clientX, y:t.clientY, t:Date.now(), on:false };
+          return;
+        }
         return;
       }
-      const tgt = swipeBackTarget();
-      if (!tgt) return;
       _g = { mode:'back', el:tgt.host, btn:tgt.btn, under:tgt.under,
              x:t.clientX, y:t.clientY, t:Date.now(), on:false };
     }, { passive: true });
@@ -16494,6 +16523,19 @@
             u._swBase = (cur && cur !== 'none') ? cur : '';
             u.style.transition = 'none';
             u.style.willChange = 'transform';
+          }
+          // ⚠️ Alla olevan näkymän piilotetut osat esiin eleen ajaksi.
+          // Esim. pysäköintinäkymä piilottaa kartan ison toimintonapin
+          // (#btn-container saa luokan 'hidden'), joten paluueleessä alta
+          // paljastuva näkymä oli vajaa. Luokka poistetaan eleen alussa ja
+          // palautetaan jos ele peruuntuu; jos ele viedään loppuun, näkymän
+          // oma sulkulogiikka hoitaa lopputilan.
+          _g.unhidden = [];
+          if (_g.under) for (const u of _g.under) {
+            if (u.classList && u.classList.contains('hidden')) {
+              u.classList.remove('hidden');
+              _g.unhidden.push(u);
+            }
           }
           const d = swipeDim();
           d.style.display = 'block';
@@ -16560,7 +16602,7 @@
           }
         }
         animateTo(g.el, go ? 'translateX(100%)' : 'translateX(0px)', ms, () => {
-          if (!go) { swipeReset(g); return; }
+          if (!go) { swipeRehide(g); swipeReset(g); return; }
           // ⚠️ JÄRJESTYS ON TÄRKEÄ, muuten syntyy "bounce back".
           // Näkymä on nyt inline-tyylillä kohdassa translateX(100%). Jos
           // inline-tyylit nollattaisiin ENNEN sulkemista, elementti hyppäisi
