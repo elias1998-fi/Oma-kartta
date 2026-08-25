@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-k -->
+<head><!-- TP_BUILD 2026-08-25-l -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3804,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-k';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-l';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -16431,8 +16431,12 @@
       g.el.style.borderTopLeftRadius = ''; g.el.style.borderBottomLeftRadius = '';
       g.el.style.overflow = ''; g.el.style.boxShadow = ''; g.el.style.willChange = '';
       if (g.under) for (const u of g.under) {
-        u.style.transition = ''; u.style.transform = ''; u.style.willChange = '';
-        delete u._swBase;
+        // Palautetaan TÄSMÄLLEEN se inline-tyyli joka elementillä oli ennen
+        // elettä, ei tyhjä. Ks. selitys touchmoven talteenoton kohdalla.
+        u.style.transform  = u._swInline   || '';
+        u.style.transition = u._swInlineTr || '';
+        u.style.willChange = '';
+        delete u._swBase; delete u._swInline; delete u._swInlineTr;
       }
       if (g.zfixed) for (const [u, z] of g.zfixed) u.style.zIndex = z || '';
       if (g.backdrop) { g.backdrop.style.transition = ''; g.backdrop.style.opacity = ''; }
@@ -16520,6 +16524,15 @@
           // siirtyisi parallaksin arvoon ja tulisi vahingossa näkyviin —
           // juuri se vika jossa hakunäkymän alta paljastui profiilivalikko.
           if (_g.under) for (const u of _g.under) {
+            // ⚠️ ALKUPERÄINEN INLINE-TYYLI TALTEEN, ei vain laskettu arvo.
+            // Osan elementeistä asentoa ohjaa sovellus itse inline-tyylillä —
+            // esim. #bottom-sheet: sheet.style.transform = translateY(currentY).
+            // Jos eleen lopuksi tyyli nollattaisiin tyhjäksi, sovelluksen oma
+            // asento pyyhkiytyisi ja sheet hyppäisi nollakohtaan, mistä
+            // sovelluksen logiikka palauttaisi sen takaisin — juuri se nopea
+            // pudotus ja paluu jonka käyttäjä havaitsi.
+            u._swInline   = u.style.transform;
+            u._swInlineTr = u.style.transition;
             const cur = getComputedStyle(u).transform;
             u._swBase = (cur && cur !== 'none') ? cur : '';
             u.style.transition = 'none';
