@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-c -->
+<head><!-- TP_BUILD 2026-08-25-d -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3444,23 +3444,42 @@
     .payment-text .payment-name { flex: none; }
     .payment-sub { font-size: 12px; color: #888; font-family: Arial, sans-serif; margin-top: 1px; display: none; }
 
+    /* Sheetit animoituvat auki ja kiinni. Aiemmin ne olivat pelkkä
+       display:none/block, jolloin ne rävähtivät näkyviin ilman siirtymää.
+       display:ta ei voi animoida, joten näkyvyys hoidetaan visibilityllä:
+       auettaessa se vaihtuu heti, sulkeutuessa vasta animaation jälkeen
+       (transition-delay). Paneeli liukuu alhaalta ja verho häivähtää. */
     #vehicle-sheet, #payment-sheet, #price-detail-sheet {
       position: fixed; inset: 0;
       z-index: 200;
-      display: none;
+      display: block;
+      visibility: hidden;
+      pointer-events: none;
+      transition: visibility 0s linear 0.38s;
     }
-    #vehicle-sheet.open, #payment-sheet.open, #price-detail-sheet.open { display: block; }
+    #vehicle-sheet.open, #payment-sheet.open, #price-detail-sheet.open {
+      visibility: visible;
+      pointer-events: auto;
+      transition: visibility 0s linear 0s;
+    }
     .sheet-backdrop {
       position: absolute; inset: 0;
       background: rgba(0,0,0,0.3);
+      opacity: 0;
+      transition: opacity 0.34s cubic-bezier(0.32,0.72,0,1);
     }
+    .open > .sheet-backdrop { opacity: 1; }
     .sheet-panel {
       position: absolute; left: 0; right: 0; bottom: 0;
       background: white;
       border-radius: 20px 20px 0 0;
       padding: 16px 0;
       padding-bottom: max(24px, env(safe-area-inset-bottom));
+      transform: translateY(100%);
+      transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
+      will-change: transform;
     }
+    .open > .sheet-panel { transform: translateY(0); }
     .sheet-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 20px 12px 20px;
@@ -3785,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-c';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-d';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -16329,8 +16348,11 @@
     function swipeOnScreen(el){
       const r = el.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) return false;
-      if (r.right <= 0 || r.left >= window.innerWidth) return false;
-      if (r.bottom <= 0 || r.top >= window.innerHeight) return false;
+      // Marginaali 1 px: translateX(-100%) antaa right-arvoksi tasan 0, ja
+      // liukuluvun pyöristys voi tehdä siitä hitusen positiivisen, jolloin
+      // suljettu näkymä tulkittaisiin näkyväksi.
+      if (r.right <= 1 || r.left >= window.innerWidth - 1) return false;
+      if (r.bottom <= 1 || r.top >= window.innerHeight - 1) return false;
       const cs = getComputedStyle(el);
       return cs.visibility !== 'hidden' && cs.display !== 'none';
     }
@@ -16381,6 +16403,15 @@
         const tag = el.tagName;
         if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK') continue;
         if (!swipeOnScreen(el)) continue;
+        // ⚠️ OHITA ELEMENTIT JOILLA ON JO OMA SIIRTO.
+        // Suljetut näkymät ovat piilossa nimenomaan transformilla
+        // (profiilivalikko translateX(-100%), muut translateX(100%)).
+        // Jos niiden transform ylikirjoitetaan parallaksiarvolla, ne
+        // VEDETÄÄN RUUDULLE — juuri näin profiilivalikko ilmestyi esiin
+        // hakunäkymästä palatessa. Identiteettimatriisi tarkoittaa että
+        // elementti on paikallaan ja sen saa siirtää.
+        const tr = getComputedStyle(el).transform;
+        if (tr && tr !== 'none' && tr !== 'matrix(1, 0, 0, 1, 0, 0)') continue;
         under.push(el);
       }
       return { btn: top.btn, host: top.host, under: under };
@@ -16411,6 +16442,7 @@
       g.el.style.overflow = ''; g.el.style.boxShadow = ''; g.el.style.willChange = '';
       if (g.under) for (const u of g.under) {
         u.style.transition = ''; u.style.transform = ''; u.style.willChange = '';
+        delete u._swBase;
       }
       if (g.backdrop) { g.backdrop.style.transition = ''; g.backdrop.style.opacity = ''; }
       const d = swipeDim();
@@ -16428,6 +16460,14 @@
         // Sheet auki → vaakaele ei palaa taaksepäin. Sen sijaan sheetin voi
         // vetää alas pois, ja ele otetaan vain jos se alkaa sheetin päältä.
         if (!e.target.closest('.sheet-panel')) return;
+        // Jos ele alkaa listasta joka on jo vieritetty alaspäin, se kuuluu
+        // listalle eikä sheetille — muuten sheet lähtisi liikkeelle kesken
+        // vierityksen ja kumpikin liikkuisi yhtä aikaa.
+        let sc = e.target;
+        while (sc && sc !== sheet) {
+          if (sc.scrollHeight > sc.clientHeight + 2 && sc.scrollTop > 0) return;
+          sc = sc.parentElement;
+        }
         _g = { mode:'sheet', el:sheet, x:t.clientX, y:t.clientY, t:Date.now(), on:false };
         return;
       }
@@ -16460,7 +16500,14 @@
           _g.el.style.borderTopLeftRadius = SWIPE_RADIUS + 'px';
           _g.el.style.borderBottomLeftRadius = SWIPE_RADIUS + 'px';
           _g.el.style.boxShadow = '-10px 0 28px rgba(0,0,0,0.22)';
+          // ⚠️ ALKUPERÄINEN TRANSFORM TALTEEN, ja parallaksi lisätään sen
+          // PÄÄLLE. Jos transform ylikirjoitettaisiin, ruudun ulkopuolella
+          // oleva suljettu näkymä (esim. profiilivalikko translateX(-100%))
+          // siirtyisi parallaksin arvoon ja tulisi vahingossa näkyviin —
+          // juuri se vika jossa hakunäkymän alta paljastui profiilivalikko.
           if (_g.under) for (const u of _g.under) {
+            const cur = getComputedStyle(u).transform;
+            u._swBase = (cur && cur !== 'none') ? cur : '';
             u.style.transition = 'none';
             u.style.willChange = 'transform';
           }
@@ -16485,7 +16532,8 @@
         const p = Math.min(1, Math.max(0, dx / w));     // 0 = peitossa, 1 = kokonaan auki
         const shift = 'translateX(' + (-(1 - p) * SWIPE_PARALLAX * w) + 'px)';
         _g.el.style.transform = 'translateX(' + Math.max(0, dx) + 'px)';
-        if (_g.under) for (const u of _g.under) u.style.transform = shift;
+        if (_g.under) for (const u of _g.under)
+          u.style.transform = (shift + ' ' + (u._swBase || '')).trim();
         swipeDim().style.opacity = String((1 - p) * SWIPE_DIM_MAX);
       } else {
         const h = _g.el.getBoundingClientRect().height || 300;
@@ -16516,7 +16564,7 @@
                               : 'translateX(' + (-SWIPE_PARALLAX * w) + 'px)';
           for (const u of g.under) {
             u.style.transition = 'transform ' + ms + 'ms ' + SWIPE_EASE;
-            u.style.transform = endShift;
+            u.style.transform = (endShift + ' ' + (u._swBase || '')).trim();
           }
         }
         animateTo(g.el, go ? 'translateX(100%)' : 'translateX(0px)', ms, () => {
@@ -17705,12 +17753,10 @@
     function openVehicleSheet() {
       renderVehicleOptions();
       document.getElementById('vehicle-sheet').classList.add('open');
-      // Hide the big dark-blue start button while the selection sheet is open
-      document.getElementById('start-btn-container').style.display = 'none';
+      // Ks. openPaymentSheet: nappia ei piiloteta, verho hoitaa himmennyksen.
     }
     function closeVehicleSheet() {
       document.getElementById('vehicle-sheet').classList.remove('open');
-      document.getElementById('start-btn-container').style.display = '';
     }
 
     function addVehicle() {
@@ -17802,12 +17848,14 @@
     function openPaymentSheet() {
       renderPaymentOptions();
       document.getElementById('payment-sheet').classList.add('open');
-      // Hide the big dark-blue start button while the selection sheet is open
-      document.getElementById('start-btn-container').style.display = 'none';
+      // ⚠️ Isoa nappia EI enää piiloteta. Aiemmin se asetettiin display:none,
+      // jolloin se katosi kokonaan ja ilmestyi takaisin vasta kun sheet oli
+      // suljettu — käyttäjän silmissä se "rävähti" esiin. Sheetin verho
+      // himmentää sen jo valmiiksi, ja kun sheettiä vedetään alas, verho
+      // häipyy eleen mukana ja nappi kirkastuu vähitellen esiin.
     }
     function closePaymentSheet() {
       document.getElementById('payment-sheet').classList.remove('open');
-      document.getElementById('start-btn-container').style.display = '';
     }
 
     function openAddPaymentMethodFromParking() {
