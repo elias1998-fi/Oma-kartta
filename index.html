@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-24-r';
+    const APP_BUILD   = '2026-08-24-t';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -10105,9 +10105,12 @@
     // Kiinteä kaikilla zoomeilla. Ei ramppia — alue näyttää samalta kaukaa
     // ja läheltä, vain kartan mittakaava muuttuu.
     const AREA_FILL_OP = 0.30;
-    const LINE_HALF_W      = 0.5;
-    const LINE_INNER_OP    = 0.50;   // näkyy 65 %:na oman täytön alta
-    const LINE_OUTER_OP    = 0.30;   // näkyy sellaisenaan
+    // Reunaviiva on YKSI 1 px viiva, peitto 100 %, keskitettynä polygonin
+    // reunalle. Kokeiltu ja peruttu: jako kahteen 0,5 px puoliskoon eri
+    // peitoilla (build -r).
+    const LINE_HALF_W   = 1.0;
+    const LINE_INNER_OP = 1.00;
+    const LINE_OUTER_OP = 0;     // ulompi puolisko pois käytöstä
     function areaFillOpacity(cond, whenTrue){
       return cond ? ['case', cond, whenTrue, AREA_FILL_OP] : AREA_FILL_OP;
     }
@@ -10580,9 +10583,8 @@
     // Reunaviiva siirretään w verran ulos → se istuu tasan kaistan ulkoreunaan.
     // Kun kaista kutistuu nollaan, siirto menee nollaan ja viiva laskeutuu
     // polygonin omalle reunalle.
-    // Sisempi puolisko siirretään neljännespikselin verran SISÄÄNPÄIN, jotta
-    // sen ulkoreuna osuu polygonin reunaan. Negatiivinen on ulospäin.
-    function areaLineOffset(){ return LINE_HALF_W / 2; }
+    // Ei siirtoa — viiva on polygonin omalla reunalla.
+    function areaLineOffset(){ return 0; }
     // Kaistan ULKOREUNAN viiva: kiinteä 1 px ja 100 % peitto KAIKILLA zoomeilla.
     // Sijainti seuraa kaistan leveyttä (areaLineOffset), joten viiva pysyy aina
     // kaistan ulkoreunassa ja laskeutuu polygonin omalle reunalle silloin kun
@@ -16233,6 +16235,65 @@
         checkCenterHighlight();
       });
     });
+    // ── Swipe vasemmalta oikealle = palaa edelliseen näkymään (24.8.) ────
+    // Toimii kaikissa näkymissä joissa on takaisin-nappi. Nappia ei etsitä
+    // nimeltä vaan valitsimella, joten uudet näkymät saavat eleen automaatti-
+    // sesti kunhan niissä on samanlainen nappi.
+    // POIKKEUS: karttanäkymät (esim. "Lisää uusi alue", alueen muokkaus,
+    // sijainnin siirto) ohitetaan kokonaan. Ne tunnistetaan siitä että näkymä
+    // sisältää MapLibre-kartan — ei siis nimilistalla, joka vanhenisi.
+    const SWIPE_BACK_SELECTORS =
+      '.overlay-back-btn, #back-btn, #summary-back-btn, #c-back-btn, #cp-back-btn';
+    // Elementit joiden päältä ele ei ala: kytkimet, liu'ut, syöttökentät,
+    // kartat ja vaakasuunnassa vieritettävät listat.
+    const SWIPE_BLOCK_SELECTORS =
+      'input, select, textarea, [contenteditable], .ios-switch, .settings-row-toggle,' +
+      ' .maplibregl-map, .maplibregl-canvas, canvas, [data-noswipe]';
+    const SWIPE_MIN_DX  = 70;    // vähimmäismatka pikseleinä
+    const SWIPE_MAX_DT  = 800;   // ele saa kestää korkeintaan tämän, ms
+    const SWIPE_SLOPE   = 0.6;   // pystyliike saa olla enintään tämä osuus vaakaliikkeestä
+
+    function swipeBackTarget(){
+      const btns = Array.from(document.querySelectorAll(SWIPE_BACK_SELECTORS));
+      let best = null, bestZ = -Infinity;
+      for (const b of btns) {
+        // Näkyvyys: offsetParent on null piilotetuilla, ja getClientRects
+        // tyhjä nollakokoisilla.
+        if (b.offsetParent === null || !b.getClientRects().length) continue;
+        const host = b.closest('[id$="-overlay"], [id$="-panel"], [id$="-sheet"]')
+                  || b.parentElement;
+        if (!host) continue;
+        // Karttanäkymä → ohita kokonaan.
+        if (host.querySelector('.maplibregl-map, .maplibregl-canvas')) continue;
+        const z = parseInt(getComputedStyle(host).zIndex, 10);
+        const zz = isNaN(z) ? 0 : z;
+        if (zz >= bestZ) { bestZ = zz; best = b; }
+      }
+      return best;
+    }
+
+    let _swipe = null;
+    document.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) { _swipe = null; return; }
+      const t = e.touches[0];
+      if (e.target && e.target.closest && e.target.closest(SWIPE_BLOCK_SELECTORS)) {
+        _swipe = null; return;
+      }
+      _swipe = { x: t.clientX, y: t.clientY, t: Date.now() };
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      const st = _swipe; _swipe = null;
+      if (!st || !e.changedTouches || !e.changedTouches.length) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - st.x, dy = t.clientY - st.y;
+      if (dx < SWIPE_MIN_DX) return;                       // vain vasemmalta oikealle
+      if (Math.abs(dy) > Math.abs(dx) * SWIPE_SLOPE) return; // liian pystysuora
+      if (Date.now() - st.t > SWIPE_MAX_DT) return;        // liian hidas, ei ele
+      const btn = swipeBackTarget();
+      if (btn) btn.click();
+    }, { passive: true });
+
     // Nämä tarvitaan vain jos levennys on käytössä: silloin geometria on
     // laskettava uudelleen zoomin muuttuessa, ja koska joukko rajataan ruutuun,
     // myös siirron jälkeen. Ilman levennystä data asetetaan kerran eikä
