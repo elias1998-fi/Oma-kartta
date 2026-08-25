@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-l -->
+<head><!-- TP_BUILD 2026-08-25-p -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3804,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-l';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-p';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -16328,6 +16328,15 @@
     const SWIPE_MS_DONE    = 340;   // loppuun vietävän animaation kesto
     const SWIPE_MS_CANCEL  = 300;   // vieterin kesto
     const SWIPE_EASE       = 'cubic-bezier(0.32,0.72,0,1)';
+    // ⚠️ Loppuun viety ele vie näkymän hieman ruudun reunan YLI.
+    // translateX(100%) jättää näkymän vasemman reunan tasan ruudun laitaan,
+    // mutta sen varjo (-10px siirto + 28px sumennus) ulottuu siitä ruudun
+    // SISÄÄN koko korkeudelta ja näkyy tummana kaistana oikeassa reunassa.
+    // Lisäys kattaa varjon, jolloin mitään ei jää näkyviin.
+    const SWIPE_SHADOW_PAD = 44;
+    // Kerros johon liikkuva näkymä nostetaan eleen ajaksi. Riittävän korkea
+    // ohittamaan sovelluksen omat kerrokset (suurin käytössä ~9995).
+    const SWIPE_Z_TOP      = 2000000;
 
     // ⚠️ ÄLÄ KÄYTÄ offsetParentia näkyvyystestinä. Näkymät ovat position:fixed,
     // ja fixed-elementin lapsilla offsetParent on AINA null myös näkyvissä.
@@ -16427,6 +16436,7 @@
       if (g && g.unhidden) for (const u of g.unhidden) u.classList.add('hidden');
     }
     function swipeReset(g){
+      if (g.zHost !== undefined) g.el.style.zIndex = g.zHost || '';
       g.el.style.transition = ''; g.el.style.transform = '';
       g.el.style.borderTopLeftRadius = ''; g.el.style.borderBottomLeftRadius = '';
       g.el.style.overflow = ''; g.el.style.boxShadow = ''; g.el.style.willChange = '';
@@ -16438,7 +16448,14 @@
         u.style.willChange = '';
         delete u._swBase; delete u._swInline; delete u._swInlineTr;
       }
-      if (g.zfixed) for (const [u, z] of g.zfixed) u.style.zIndex = z || '';
+      // ⚠️ Z-indeksi palautetaan VIIVEELLÄ. Elementin häivytys (opacity 0.3 s)
+      // on vielä kesken kun animaatio päättyy; jos z-indeksi palautettaisiin
+      // heti, elementti olisi hetken sekä näkyvissä että korkealla kerroksella
+      // ja vilahtaisi näkymän päälle.
+      if (g.zfixed) {
+        const _zf = g.zfixed;
+        setTimeout(() => { for (const [u, z] of _zf) u.style.zIndex = z || ''; }, 340);
+      }
       if (g.backdrop) { g.backdrop.style.transition = ''; g.backdrop.style.opacity = ''; }
       const d = swipeDim();
       d.style.transition = ''; d.style.opacity = '0'; d.style.display = 'none';
@@ -16546,7 +16563,7 @@
           // oma sulkulogiikka hoitaa lopputilan.
           _g.unhidden = [];
           _g.zfixed = [];
-          const _hostZ = parseInt(getComputedStyle(_g.el).zIndex, 10) || 100;
+          const _hostZ = SWIPE_Z_TOP;
           if (_g.under) for (const u of _g.under) {
             if (u.classList && u.classList.contains('hidden')) {
               u.classList.remove('hidden');
@@ -16564,12 +16581,21 @@
               u.style.zIndex = String(_hostZ - 2);
             }
           }
+          // ⚠️ KERROSJÄRJESTYS PAKOTETAAN ELEEN AJAKSI.
+          // Verho on tarkoitettu alla olevien päälle mutta liikkuvan näkymän
+          // alle. Pelkkä "näkymän z-index miinus yksi" ei riitä: ruudulla voi
+          // olla muita samantasoisia kerroksia, ja jos näkymällä ei ole
+          // z-indeksiä lainkaan (auto), laskettu arvo nousee sen yläpuolelle
+          // ja verho peittää myös liikkuvan näkymän — juuri se vika jossa koko
+          // ruutu näytti harmaalta.
+          // Nostetaan siis näkymä eleen ajaksi varmasti ylimmäksi ja verho
+          // tasan sen alle. Alkuperäinen arvo palautetaan swipeResetissä.
+          _g.zHost = _g.el.style.zIndex;
+          _g.el.style.zIndex = String(SWIPE_Z_TOP);
           const d = swipeDim();
           d.style.display = 'block';
           d.style.transition = 'none';
-          // Verho alla olevien päälle mutta liikkuvan näkymän alle.
-          const hz = parseInt(getComputedStyle(_g.el).zIndex, 10);
-          d.style.zIndex = (isNaN(hz) ? 100 : hz) - 1;
+          d.style.zIndex = String(SWIPE_Z_TOP - 1);
         } else {
           // Sheetin verho häivytetään eleen mukana, jotta alla oleva näkymä
           // kirkastuu sitä mukaa kun sheet laskeutuu. Ilman tätä verho pysyy
@@ -16628,8 +16654,16 @@
             u.style.transform = ('translateX(' + endS + 'px) ' + (u._swBase || '')).trim();
           }
         }
-        animateTo(g.el, go ? 'translateX(100%)' : 'translateX(0px)', ms, () => {
-          if (!go) { swipeRehide(g); swipeReset(g); return; }
+        // ⚠️ Piilotus takaisin HETI, ei vasta animaation lopuksi. Luokan
+        // 'hidden' häivytys kestää 0,3 s, joten se ehtii tapahtua samaan
+        // aikaan vieterin kanssa. Jos se tehtäisiin vasta lopuksi, nappi jäisi
+        // näkyviin koko vieterin ajaksi ja vielä häivytyksen keston verran.
+        if (!go) swipeRehide(g);
+        const _endT = go
+          ? 'translateX(calc(100% + ' + SWIPE_SHADOW_PAD + 'px))'
+          : 'translateX(0px)';
+        animateTo(g.el, _endT, ms, () => {
+          if (!go) { swipeReset(g); return; }
           // ⚠️ JÄRJESTYS ON TÄRKEÄ, muuten syntyy "bounce back".
           // Näkymä on nyt inline-tyylillä kohdassa translateX(100%). Jos
           // inline-tyylit nollattaisiin ENNEN sulkemista, elementti hyppäisi
@@ -16637,6 +16671,9 @@
           // uudelleen ulos — juuri se nopea toisto jonka käyttäjä näki.
           // Siksi: katkaise transition, sulje näkymä (luokka vie sen samaan
           // 100 %:iin jossa se jo on), ja vasta seuraavassa framessa siivoa.
+          // Varjo pois ennen tyylien palautusta, jottei se ehdi vilahtaa
+          // silloin kun näkymä siirtyy inline-arvosta CSS-arvoon.
+          g.el.style.boxShadow = 'none';
           g.el.style.transition = 'none';
           g.btn.click();
           requestAnimationFrame(() => requestAnimationFrame(() => swipeReset(g)));
@@ -16801,6 +16838,13 @@
               headerName, style.label, 'Helsingin kaupunki',
               `${valid?`<p class="price-label">Voimassaolo</p><p class="price-value">${valid}</p>`:''}`
             );
+            // ⚠️ Napin teksti korjattava heti perään.
+            // showMasterFeatureInSheet on tarkoitettu kartan NAPAUTUKSEEN ja
+            // asettaa napin tekstiksi alueen nimen. Tämä haara on kuitenkin
+            // p-merkin havainto, jolloin napissa kuuluu lukea toiminto.
+            // Ilman tätä esim. suodatinnäkymän sulkeminen p-merkin ollessa
+            // alueella jätti nappiin alueen nimen.
+            setActionBtnText(isDiscOrFreeArea(p) ? 'Aseta elektroninen pysäköintikiekko' : 'Pysäköi tähän');
             return; // skip rest of checkParking
           } else {
             return; // same area, already shown
