@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-24-o';
+    const APP_BUILD   = '2026-08-24-q';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -10230,8 +10230,19 @@
       return { type:'FeatureCollection', features: out };
     }
 
+    // ⚠️ ALUEIDEN SKAALAUS POIS KÄYTÖSTÄ (24.8.). Alueet piirtyvät aina
+    // todellisen kokoisinaan kaikilla zoomeilla.
+    // Kun tämä on false:
+    //  · currentBufferMetres palauttaa 0 → bufferRings ohitetaan kokonaan
+    //  · zoom- ja moveend-kuuntelijoita ei rekisteröidä → ei mitään
+    //    ajonaikaista geometrialaskentaa, ei ruutuun rajausta
+    // Koneisto (bufferRings, viewportSubset, scheduleAreaBuffer) on tallessa
+    // ja true palauttaa sen käyttöön.
+    const AREA_WIDEN_ENABLED = false;
+
     // Levennys pikseleinä nykyisellä zoomilla → metreinä.
     function currentBufferMetres(){
+      if (!AREA_WIDEN_ENABLED) return 0;
       const z = map.getZoom();
       const stops = [];
       for (let i = 0; i < BOOST_STOPS.length; i += 3) stops.push([BOOST_STOPS[i], BOOST_STOPS[i+1]]);
@@ -10286,11 +10297,15 @@
       f.bbox = [x0,y0,x1,y1];
       return f.bbox;
     }
+    const VIEWPORT_MARGIN = 0.75;
     function viewportSubset(fc){
       try {
         const b = map.getBounds();
-        const dx = (b.getEast() - b.getWest()) * 0.25;
-        const dy = (b.getNorth() - b.getSouth()) * 0.25;
+        // Marginaali ruudun ympärille. Sen pitää kattaa se matka jonka
+        // käyttäjä ehtii vetää yhdellä eleellä ennen kuin moveend päivittää
+        // joukon uudelleen — muuten ruudun reunaan tulee tyhjää.
+        const dx = (b.getEast() - b.getWest()) * VIEWPORT_MARGIN;
+        const dy = (b.getNorth() - b.getSouth()) * VIEWPORT_MARGIN;
         const W = b.getWest()-dx, E = b.getEast()+dx;
         const S = b.getSouth()-dy, N = b.getNorth()+dy;
         return { type:'FeatureCollection', features: (fc.features || []).filter(f => {
@@ -16201,8 +16216,15 @@
         checkCenterHighlight();
       });
     });
-    map.on('zoom', scheduleAreaBuffer);
-    map.on('zoomend', pushAreaData);   // varmistaa lopullisen tarkan koon
+    // Nämä tarvitaan vain jos levennys on käytössä: silloin geometria on
+    // laskettava uudelleen zoomin muuttuessa, ja koska joukko rajataan ruutuun,
+    // myös siirron jälkeen. Ilman levennystä data asetetaan kerran eikä
+    // ajonaikaista laskentaa ole lainkaan.
+    if (AREA_WIDEN_ENABLED) {
+      map.on('zoom', scheduleAreaBuffer);
+      map.on('zoomend', pushAreaData);
+      map.on('moveend', pushAreaData);
+    }
     map.on('moveend', onMapIdle);
     map.on('zoomend', onMapIdle);
     // When the user starts dragging the map, drop the 4s "feature locked" hold
