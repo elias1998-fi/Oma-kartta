@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-a -->
+<head><!-- TP_BUILD 2026-08-25-b -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3781,7 +3781,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-a';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-b';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -16304,6 +16304,17 @@
     const SWIPE_FLICK_MIN  = 45;    // heiton vähimmäismatka
     const SHEET_CLOSE_FRAC = 0.35;  // sheet sulkeutuu kun se on vedetty tämän osuuden alas
     const SHEET_FLICK_V    = 0.5;
+    // ── iOS-tyylisen paluusiirtymän mitat ────────────────────────────────
+    // Alla oleva näkymä ei ole paikallaan vaan siirrettynä vasemmalle. Se
+    // liukuu paikalleen samaa tahtia kun päällimmäinen liukuu oikealle, ja
+    // siitä syntyy se "työntyminen esiin" -vaikutelma. Ilman tätä siirtymä
+    // näyttää siltä että päällimmäinen vain katoaa.
+    const SWIPE_PARALLAX   = 0.30;  // alla oleva on aluksi tämä osuus vasemmalla
+    const SWIPE_DIM_MAX    = 0.22;  // alla olevan päällä oleva verho kun peitossa
+    const SWIPE_RADIUS     = 38;    // liikkuvan näkymän vasemman reunan pyöristys
+    const SWIPE_MS_DONE    = 340;   // loppuun vietävän animaation kesto
+    const SWIPE_MS_CANCEL  = 300;   // vieterin kesto
+    const SWIPE_EASE       = 'cubic-bezier(0.32,0.72,0,1)';
 
     // ⚠️ ÄLÄ KÄYTÄ offsetParentia näkyvyystestinä. Näkymät ovat position:fixed,
     // ja fixed-elementin lapsilla offsetParent on AINA null myös näkyvissä.
@@ -16318,7 +16329,6 @@
       return cs.visibility !== 'hidden' && cs.display !== 'none';
     }
 
-    // Päällimmäinen avoin alasheet, jos sellainen on.
     function openSheetPanel(){
       let best = null, bestZ = -Infinity;
       for (const p of document.querySelectorAll('.sheet-panel')) {
@@ -16331,37 +16341,69 @@
       return best;
     }
 
+    // Kaikki ruudulla olevat näkymät, joissa on takaisin-nappi, z-indeksin
+    // mukaan. Palautetaan päällimmäinen JA se mikä jää sen alle — jälkimmäistä
+    // tarvitaan parallaksiin.
     function swipeBackTarget(){
-      const btns = Array.from(document.querySelectorAll(SWIPE_BACK_SELECTORS));
-      let best = null, bestHost = null, bestZ = -Infinity;
-      for (const b of btns) {
+      const found = [];
+      for (const b of document.querySelectorAll(SWIPE_BACK_SELECTORS)) {
         if (!swipeOnScreen(b)) continue;
         const host = b.closest('[id$="-overlay"], [id$="-panel"], [id$="-sheet"]')
                   || b.parentElement;
         if (!host) continue;
         const z = parseInt(getComputedStyle(host).zIndex, 10);
-        const zz = isNaN(z) ? 0 : z;
-        if (zz >= bestZ) { bestZ = zz; best = b; bestHost = host; }
+        found.push({ btn: b, host: host, z: isNaN(z) ? 0 : z });
       }
+      if (!found.length) return null;
+      found.sort((a, b) => b.z - a.z);
+      const top = found[0];
       // Karttanäkymä päällimmäisenä → ei tehdä mitään. Tarkistus VASTA
       // päällimmäiselle: jos se ohitettaisiin jo kelpuutusvaiheessa, ele osuisi
       // sen ALLA olevaan näkymään ja palaisi väärästä paikasta.
-      if (best && bestHost &&
-          bestHost.querySelector('.maplibregl-map, .maplibregl-canvas')) return null;
-      return { btn: best, host: bestHost };
+      if (top.host.querySelector('.maplibregl-map, .maplibregl-canvas')) return null;
+      // Alla oleva: seuraava eri näkymä, tai kartta jos muuta ei ole.
+      let under = null;
+      for (let i = 1; i < found.length; i++) {
+        if (found[i].host !== top.host) { under = found[i].host; break; }
+      }
+      if (!under) under = document.getElementById('map');
+      return { btn: top.btn, host: top.host, under: under };
+    }
+
+    // Verho alla olevan näkymän päälle. Yksi kappale, luodaan kerran.
+    let _swDim = null;
+    function swipeDim(){
+      if (_swDim) return _swDim;
+      _swDim = document.createElement('div');
+      _swDim.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;' +
+                             'pointer-events:none;display:none;';
+      document.body.appendChild(_swDim);
+      return _swDim;
     }
 
     function animateTo(el, transform, ms, done){
-      el.style.transition = 'transform ' + ms + 'ms cubic-bezier(0.32,0.72,0,1)';
+      el.style.transition = 'transform ' + ms + 'ms ' + SWIPE_EASE;
       el.style.transform  = transform;
       let fired = false;
       const fin = () => { if (fired) return; fired = true;
         el.removeEventListener('transitionend', fin); done && done(); };
       el.addEventListener('transitionend', fin);
-      setTimeout(fin, ms + 60);   // varmistus jos transitionend jää tulematta
+      setTimeout(fin, ms + 80);   // varmistus jos transitionend jää tulematta
     }
 
-    let _g = null;   // käynnissä oleva ele
+    function swipeReset(g){
+      g.el.style.transition = ''; g.el.style.transform = '';
+      g.el.style.borderTopLeftRadius = ''; g.el.style.borderBottomLeftRadius = '';
+      g.el.style.overflow = ''; g.el.style.boxShadow = ''; g.el.style.willChange = '';
+      if (g.under) {
+        g.under.style.transition = ''; g.under.style.transform = '';
+        g.under.style.willChange = '';
+      }
+      const d = swipeDim();
+      d.style.transition = ''; d.style.opacity = '0'; d.style.display = 'none';
+    }
+
+    let _g = null;
     document.addEventListener('touchstart', (e) => {
       _g = null;
       if (e.touches.length !== 1) return;
@@ -16370,15 +16412,15 @@
       const sheet = openSheetPanel();
       if (sheet) {
         // Sheet auki → vaakaele ei palaa taaksepäin. Sen sijaan sheetin voi
-        // vetää alas pois. Ele otetaan vain jos se alkaa sheetin päältä.
+        // vetää alas pois, ja ele otetaan vain jos se alkaa sheetin päältä.
         if (!e.target.closest('.sheet-panel')) return;
-        _g = { mode: 'sheet', el: sheet, x: t.clientX, y: t.clientY, t: Date.now(), on: false };
+        _g = { mode:'sheet', el:sheet, x:t.clientX, y:t.clientY, t:Date.now(), on:false };
         return;
       }
       const tgt = swipeBackTarget();
-      if (!tgt || !tgt.btn) return;
-      _g = { mode: 'back', el: tgt.host, btn: tgt.btn,
-             x: t.clientX, y: t.clientY, t: Date.now(), on: false };
+      if (!tgt) return;
+      _g = { mode:'back', el:tgt.host, btn:tgt.btn, under:tgt.under,
+             x:t.clientX, y:t.clientY, t:Date.now(), on:false };
     }, { passive: true });
 
     document.addEventListener('touchmove', (e) => {
@@ -16386,7 +16428,6 @@
       const t = e.touches[0];
       const dx = t.clientX - _g.x, dy = t.clientY - _g.y;
       if (!_g.on) {
-        // Suunta ratkaistaan kerran: vaaka takaisin, pysty sheetille.
         if (_g.mode === 'back') {
           if (Math.abs(dy) > Math.abs(dx)) { _g = null; return; }
           if (dx < SWIPE_START_DX) return;
@@ -16396,15 +16437,45 @@
         }
         _g.on = true;
         _g.el.style.transition = 'none';
+        _g.el.style.willChange = 'transform';
+        if (_g.mode === 'back') {
+          // Vasen reuna on nyt ruudun sisällä, joten se pyöristetään laitteen
+          // kulmien tapaan ja siihen tulee varjo. overflow:hidden on pakko,
+          // muuten sisältö vuotaisi pyöristyksen yli.
+          _g.el.style.overflow = 'hidden';
+          _g.el.style.borderTopLeftRadius = SWIPE_RADIUS + 'px';
+          _g.el.style.borderBottomLeftRadius = SWIPE_RADIUS + 'px';
+          _g.el.style.boxShadow = '-10px 0 28px rgba(0,0,0,0.22)';
+          if (_g.under) {
+            _g.under.style.transition = 'none';
+            _g.under.style.willChange = 'transform';
+          }
+          const d = swipeDim();
+          d.style.display = 'block';
+          d.style.transition = 'none';
+          if (_g.under) {
+            // Verho alla olevan päälle mutta liikkuvan alle.
+            const uz = parseInt(getComputedStyle(_g.under).zIndex, 10);
+            d.style.zIndex = (isNaN(uz) ? 1 : uz) + 1;
+          }
+        }
       }
-      if (_g.mode === 'back') _g.el.style.transform = 'translateX(' + Math.max(0, dx) + 'px)';
-      else                    _g.el.style.transform = 'translateY(' + Math.max(0, dy) + 'px)';
+      if (_g.mode === 'back') {
+        const w = window.innerWidth || 400;
+        const p = Math.min(1, Math.max(0, dx / w));     // 0 = peitossa, 1 = kokonaan auki
+        _g.el.style.transform = 'translateX(' + Math.max(0, dx) + 'px)';
+        if (_g.under)
+          _g.under.style.transform = 'translateX(' + (-(1 - p) * SWIPE_PARALLAX * w) + 'px)';
+        swipeDim().style.opacity = String((1 - p) * SWIPE_DIM_MAX);
+      } else {
+        _g.el.style.transform = 'translateY(' + Math.max(0, dy) + 'px)';
+      }
     }, { passive: true });
 
     document.addEventListener('touchend', (e) => {
       const g = _g; _g = null;
       if (!g || !g.on || !e.changedTouches || !e.changedTouches.length) {
-        if (g && g.on) { g.el.style.transition = ''; g.el.style.transform = ''; }
+        if (g && g.on) swipeReset(g);
         return;
       }
       const t  = e.changedTouches[0];
@@ -16413,36 +16484,35 @@
         const dx = Math.max(0, t.clientX - g.x);
         const w  = window.innerWidth || 400;
         const go = dx > w * 0.5 || (dx / dt > SWIPE_FLICK_V && dx > SWIPE_FLICK_MIN);
-        if (go) {
-          animateTo(g.el, 'translateX(100%)', 220, () => {
-            // Näkymä on jo ruudun ulkopuolella → nollataan tyylit ja annetaan
-            // sovelluksen oman sulkulogiikan hoitaa loput.
-            g.el.style.transition = '';
-            g.el.style.transform  = '';
-            g.btn.click();
-          });
-        } else {
-          animateTo(g.el, 'translateX(0px)', 200, () => {
-            g.el.style.transition = ''; g.el.style.transform = '';
-          });
+        const ms = go ? SWIPE_MS_DONE : SWIPE_MS_CANCEL;
+        const d  = swipeDim();
+        d.style.transition = 'opacity ' + ms + 'ms ' + SWIPE_EASE;
+        d.style.opacity = go ? '0' : String(SWIPE_DIM_MAX);
+        if (g.under) {
+          g.under.style.transition = 'transform ' + ms + 'ms ' + SWIPE_EASE;
+          g.under.style.transform = go
+            ? 'translateX(0px)'
+            : 'translateX(' + (-SWIPE_PARALLAX * w) + 'px)';
         }
+        animateTo(g.el, go ? 'translateX(100%)' : 'translateX(0px)', ms, () => {
+          const btn = g.btn;
+          swipeReset(g);
+          if (go) btn.click();
+        });
       } else {
         const dy = Math.max(0, t.clientY - g.y);
         const h  = g.el.getBoundingClientRect().height || 300;
         const go = dy > h * SHEET_CLOSE_FRAC || (dy / dt > SHEET_FLICK_V && dy > SWIPE_FLICK_MIN);
-        if (go) {
-          animateTo(g.el, 'translateY(100%)', 220, () => {
-            g.el.style.transition = ''; g.el.style.transform = '';
-            const host = g.el.parentElement;
+        animateTo(g.el, go ? 'translateY(100%)' : 'translateY(0px)',
+                  go ? SWIPE_MS_DONE : SWIPE_MS_CANCEL, () => {
+          const host = g.el.parentElement;
+          swipeReset(g);
+          if (go) {
             const close = host && (host.querySelector('.sheet-close-btn') ||
                                    host.querySelector('.sheet-backdrop'));
             if (close) close.click();
-          });
-        } else {
-          animateTo(g.el, 'translateY(0px)', 200, () => {
-            g.el.style.transition = ''; g.el.style.transform = '';
-          });
-        }
+          }
+        });
       }
     }, { passive: true });
 
