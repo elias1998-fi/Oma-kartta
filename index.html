@@ -3766,7 +3766,7 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-24-t';
+    const APP_BUILD   = '2026-08-24-u';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -16249,26 +16249,43 @@
     const SWIPE_BLOCK_SELECTORS =
       'input, select, textarea, [contenteditable], .ios-switch, .settings-row-toggle,' +
       ' .maplibregl-map, .maplibregl-canvas, canvas, [data-noswipe]';
-    const SWIPE_MIN_DX  = 70;    // vähimmäismatka pikseleinä
-    const SWIPE_MAX_DT  = 800;   // ele saa kestää korkeintaan tämän, ms
-    const SWIPE_SLOPE   = 0.6;   // pystyliike saa olla enintään tämä osuus vaakaliikkeestä
+    const SWIPE_MIN_DX  = 60;    // vähimmäismatka pikseleinä
+    const SWIPE_MAX_DT  = 1000;  // ele saa kestää korkeintaan tämän, ms
+    const SWIPE_SLOPE   = 0.8;   // pystyliike saa olla enintään tämä osuus vaakaliikkeestä
 
+    // ⚠️ ÄLÄ KÄYTÄ offsetParentia näkyvyystestinä. Näkymät ovat
+    // position: fixed, ja fixed-elementin lapsilla offsetParent on AINA null
+    // myös täysin näkyvissä ollessaan — se suodatti aiemmin kaikki pois eikä
+    // ele löytänyt koskaan kohdetta.
+    // Suljetut näkymät eivät myöskään ole display:none vaan siirretty ruudun
+    // ulkopuolelle (transform: translateX(100%)), joten oikea testi on:
+    // onko napin suorakulmio todella ruudulla.
+    function swipeOnScreen(el){
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return false;
+      if (r.right <= 0 || r.left >= window.innerWidth) return false;
+      if (r.bottom <= 0 || r.top >= window.innerHeight) return false;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden' || cs.display === 'none') return false;
+      return true;
+    }
     function swipeBackTarget(){
       const btns = Array.from(document.querySelectorAll(SWIPE_BACK_SELECTORS));
-      let best = null, bestZ = -Infinity;
+      let best = null, bestHost = null, bestZ = -Infinity;
       for (const b of btns) {
-        // Näkyvyys: offsetParent on null piilotetuilla, ja getClientRects
-        // tyhjä nollakokoisilla.
-        if (b.offsetParent === null || !b.getClientRects().length) continue;
+        if (!swipeOnScreen(b)) continue;
         const host = b.closest('[id$="-overlay"], [id$="-panel"], [id$="-sheet"]')
                   || b.parentElement;
         if (!host) continue;
-        // Karttanäkymä → ohita kokonaan.
-        if (host.querySelector('.maplibregl-map, .maplibregl-canvas')) continue;
         const z = parseInt(getComputedStyle(host).zIndex, 10);
         const zz = isNaN(z) ? 0 : z;
-        if (zz >= bestZ) { bestZ = zz; best = b; }
+        if (zz >= bestZ) { bestZ = zz; best = b; bestHost = host; }
       }
+      // Karttanäkymä päällimmäisenä → ei tehdä mitään. Tarkistus tehdään VASTA
+      // päällimmäiselle: jos karttanäkymä ohitettaisiin jo kelpuutusvaiheessa,
+      // ele osuisi sen ALLA olevaan näkymään ja palaisi väärästä paikasta.
+      if (best && bestHost &&
+          bestHost.querySelector('.maplibregl-map, .maplibregl-canvas')) return null;
       return best;
     }
 
