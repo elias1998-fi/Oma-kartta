@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-p -->
+<head><!-- TP_BUILD 2026-08-25-q -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3804,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-p';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-q';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -16375,8 +16375,17 @@
       const found = [];
       for (const b of document.querySelectorAll(SWIPE_BACK_SELECTORS)) {
         if (!swipeOnScreen(b)) continue;
-        const host = b.closest('[id$="-overlay"], [id$="-panel"], [id$="-sheet"]')
-                  || b.parentElement;
+        // ⚠️ NÄKYMÄ = SE ESI-ISÄ JOKA ON BODYN SUORA LAPSI.
+        // Aiemmin näkymä etsittiin tunnisteen päätteestä ('-overlay',
+        // '-panel', '-sheet'). Osa näkymistä on kuitenkin nimetty toisin —
+        // #about-detail, #app-settings-detail, #account-detail — jolloin haku
+        // ei löytänyt mitään ja koodi tyytyi napin emoelementtiin eli
+        // OTSIKKOPALKKIIN. Silloin vain otsikko liikkui ja verho peitti loput.
+        // Bodyn suora lapsi on aina koko kerros, eikä se riipu nimeämisestä.
+        let host = b;
+        while (host && host.parentElement && host.parentElement !== document.body)
+          host = host.parentElement;
+        if (!host || host.parentElement !== document.body) host = b.parentElement;
         if (!host) continue;
         const z = parseInt(getComputedStyle(host).zIndex, 10);
         found.push({ btn: b, host: host, z: isNaN(z) ? 0 : z });
