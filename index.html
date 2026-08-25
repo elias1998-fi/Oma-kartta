@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head>
+<head><!-- TP_BUILD 2026-08-25-a -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3766,7 +3766,22 @@
   </div>
   <script>
     const APP_VERSION = '1.0.0';
-    const APP_BUILD   = '2026-08-24-u';
+    // ── Versionumero (25.8.) ─────────────────────────────────────────────
+    // Numero on VAIN YHDESSÄ PAIKASSA: <head>-elementin ensimmäisenä
+    // kommenttina. Sovellus lukee sen sieltä itselleen, ja versiotarkistus
+    // hakee saman kommentin verkosta. Näin kaksoiskirjanpitoa ei synny.
+    function readBuildComment(node){
+      const scan = (parent) => {
+        if (!parent) return null;
+        for (const n of parent.childNodes) {
+          if (n.nodeType === 8 && n.nodeValue.indexOf('TP_BUILD') !== -1)
+            return n.nodeValue.replace(/^[\s\S]*TP_BUILD\s+/, '').trim();
+        }
+        return null;
+      };
+      return scan(document.head) || scan(document.documentElement) || scan(document);
+    }
+    const APP_BUILD   = readBuildComment() || '2026-08-25-a';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -5261,6 +5276,7 @@
          vasen paikka on sen alla. Väistäminen koskee nyt zoom-lukemaa
          (updateAjanhetkiPillVisibility); updateOsmOpacity() häivyttää molemmat
          sheetin mukana. -->
+    <div id="build-badge" style="position:absolute;top:-16px;right:8px;z-index:6;font-family:Arial,sans-serif;font-size:10px;font-weight:bold;pointer-events:none;display:none;"></div>
     <div id="osm-attribution" style="position:absolute;top:-16px;right:8px;z-index:5;font-family:Arial,sans-serif;font-size:10px;color:#000;opacity:0.5;pointer-events:none;transition:opacity 0.2s ease;">&copy; OpenStreetMap</div>
     <!-- Ajanhetki: rides with the sheet. The pill grows UPWARD into the window. -->
     <div id="ajanhetki-anchor">
@@ -16235,40 +16251,86 @@
         checkCenterHighlight();
       });
     });
-    // ── Swipe vasemmalta oikealle = palaa edelliseen näkymään (24.8.) ────
-    // Toimii kaikissa näkymissä joissa on takaisin-nappi. Nappia ei etsitä
-    // nimeltä vaan valitsimella, joten uudet näkymät saavat eleen automaatti-
-    // sesti kunhan niissä on samanlainen nappi.
-    // POIKKEUS: karttanäkymät (esim. "Lisää uusi alue", alueen muokkaus,
-    // sijainnin siirto) ohitetaan kokonaan. Ne tunnistetaan siitä että näkymä
-    // sisältää MapLibre-kartan — ei siis nimilistalla, joka vanhenisi.
+    // ── Versiotarkistus (25.8.) ──────────────────────────────────────────
+    // Haetaan sovelluksen OMA osoite verkosta ja luetaan siitä TP_BUILD-
+    // kommentti. Vertailukohta on siis se mikä on oikeasti julkaistuna, ei
+    // se mikä on committina — julkaisussa voi olla minuutin viive.
+    // Haku rajataan ensimmäisiin tavuihin Range-otsakkeella, joten pyyntö on
+    // muutaman sadan tavun kokoinen. Jos palvelin ei tue Rangea, se palauttaa
+    // koko tiedoston ja lukeminen toimii silti.
+    // ⚠️ cache: 'no-store' JA aikaleima kyselyparametrissa ovat pakollisia:
+    // ilman niitä service worker tai selaimen välimuisti palauttaisi saman
+    // vanhan tiedoston, jolloin vertailtaisiin vanhaa vanhaan ja tulos olisi
+    // aina "Uusi".
+    async function checkBuildFreshness(){
+      const el = document.getElementById('build-badge');
+      if (!el) return;
+      try {
+        const url = location.pathname + '?_v=' + Date.now();
+        const res = await fetch(url, {
+          cache: 'no-store',
+          headers: { 'Range': 'bytes=0-399' }
+        });
+        if (!res.ok && res.status !== 206) return;
+        const head = await res.text();
+        const m = head.match(/TP_BUILD\s+([A-Za-z0-9._-]+)/);
+        if (!m) return;
+        const latest = m[1];
+        const fresh  = (latest === APP_BUILD);
+        el.textContent = fresh ? 'Uusi' : 'Vanha';
+        el.style.color = fresh ? '#1b7a3a' : '#c0392b';
+        el.style.display = 'block';
+        // Attribuutio siirtyy vasemmalle, jottei merkki mene sen päälle.
+        const attr = document.getElementById('osm-attribution');
+        if (attr) attr.style.right = (el.offsetWidth + 14) + 'px';
+        if (!fresh) console.log('[TP] käytössä ' + APP_BUILD + ', julkaistuna ' + latest);
+      } catch (e) {
+        // Verkkoa ei ole → ei tietoa, ei merkkiä.
+      }
+    }
+    window.addEventListener('load', () => setTimeout(checkBuildFreshness, 1200));
+
+    // ── Eleet: vaakaswipe takaisin, pystyswipe sulkee sheetin (25.8.) ────
+    // Vaakaele SEURAA SORMEA: näkymä liukuu mukana ja alta paljastuu se mihin
+    // ollaan palaamassa. Vapautettaessa joko viedään loppuun tai palautetaan
+    // vieterinä takaisin — kynnys on puoli ruutua TAI riittävän nopea heitto.
     const SWIPE_BACK_SELECTORS =
       '.overlay-back-btn, #back-btn, #summary-back-btn, #c-back-btn, #cp-back-btn';
-    // Elementit joiden päältä ele ei ala: kytkimet, liu'ut, syöttökentät,
-    // kartat ja vaakasuunnassa vieritettävät listat.
     const SWIPE_BLOCK_SELECTORS =
       'input, select, textarea, [contenteditable], .ios-switch, .settings-row-toggle,' +
       ' .maplibregl-map, .maplibregl-canvas, canvas, [data-noswipe]';
-    const SWIPE_MIN_DX  = 60;    // vähimmäismatka pikseleinä
-    const SWIPE_MAX_DT  = 1000;  // ele saa kestää korkeintaan tämän, ms
-    const SWIPE_SLOPE   = 0.8;   // pystyliike saa olla enintään tämä osuus vaakaliikkeestä
+    const SWIPE_START_DX   = 12;    // tästä lähtien ele tulkitaan vaakaeleeksi
+    const SWIPE_FLICK_V    = 0.45;  // px/ms — tätä nopeampi heitto riittää yksin
+    const SWIPE_FLICK_MIN  = 45;    // heiton vähimmäismatka
+    const SHEET_CLOSE_FRAC = 0.35;  // sheet sulkeutuu kun se on vedetty tämän osuuden alas
+    const SHEET_FLICK_V    = 0.5;
 
-    // ⚠️ ÄLÄ KÄYTÄ offsetParentia näkyvyystestinä. Näkymät ovat
-    // position: fixed, ja fixed-elementin lapsilla offsetParent on AINA null
-    // myös täysin näkyvissä ollessaan — se suodatti aiemmin kaikki pois eikä
-    // ele löytänyt koskaan kohdetta.
+    // ⚠️ ÄLÄ KÄYTÄ offsetParentia näkyvyystestinä. Näkymät ovat position:fixed,
+    // ja fixed-elementin lapsilla offsetParent on AINA null myös näkyvissä.
     // Suljetut näkymät eivät myöskään ole display:none vaan siirretty ruudun
-    // ulkopuolelle (transform: translateX(100%)), joten oikea testi on:
-    // onko napin suorakulmio todella ruudulla.
+    // ulkopuolelle (translateX(100%)). Oikea testi on suorakulmion sijainti.
     function swipeOnScreen(el){
       const r = el.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) return false;
       if (r.right <= 0 || r.left >= window.innerWidth) return false;
       if (r.bottom <= 0 || r.top >= window.innerHeight) return false;
       const cs = getComputedStyle(el);
-      if (cs.visibility === 'hidden' || cs.display === 'none') return false;
-      return true;
+      return cs.visibility !== 'hidden' && cs.display !== 'none';
     }
+
+    // Päällimmäinen avoin alasheet, jos sellainen on.
+    function openSheetPanel(){
+      let best = null, bestZ = -Infinity;
+      for (const p of document.querySelectorAll('.sheet-panel')) {
+        if (!swipeOnScreen(p)) continue;
+        const host = p.parentElement;
+        const z = parseInt(getComputedStyle(host || p).zIndex, 10);
+        const zz = isNaN(z) ? 0 : z;
+        if (zz >= bestZ) { bestZ = zz; best = p; }
+      }
+      return best;
+    }
+
     function swipeBackTarget(){
       const btns = Array.from(document.querySelectorAll(SWIPE_BACK_SELECTORS));
       let best = null, bestHost = null, bestZ = -Infinity;
@@ -16281,34 +16343,107 @@
         const zz = isNaN(z) ? 0 : z;
         if (zz >= bestZ) { bestZ = zz; best = b; bestHost = host; }
       }
-      // Karttanäkymä päällimmäisenä → ei tehdä mitään. Tarkistus tehdään VASTA
-      // päällimmäiselle: jos karttanäkymä ohitettaisiin jo kelpuutusvaiheessa,
-      // ele osuisi sen ALLA olevaan näkymään ja palaisi väärästä paikasta.
+      // Karttanäkymä päällimmäisenä → ei tehdä mitään. Tarkistus VASTA
+      // päällimmäiselle: jos se ohitettaisiin jo kelpuutusvaiheessa, ele osuisi
+      // sen ALLA olevaan näkymään ja palaisi väärästä paikasta.
       if (best && bestHost &&
           bestHost.querySelector('.maplibregl-map, .maplibregl-canvas')) return null;
-      return best;
+      return { btn: best, host: bestHost };
     }
 
-    let _swipe = null;
+    function animateTo(el, transform, ms, done){
+      el.style.transition = 'transform ' + ms + 'ms cubic-bezier(0.32,0.72,0,1)';
+      el.style.transform  = transform;
+      let fired = false;
+      const fin = () => { if (fired) return; fired = true;
+        el.removeEventListener('transitionend', fin); done && done(); };
+      el.addEventListener('transitionend', fin);
+      setTimeout(fin, ms + 60);   // varmistus jos transitionend jää tulematta
+    }
+
+    let _g = null;   // käynnissä oleva ele
     document.addEventListener('touchstart', (e) => {
-      if (e.touches.length !== 1) { _swipe = null; return; }
+      _g = null;
+      if (e.touches.length !== 1) return;
       const t = e.touches[0];
-      if (e.target && e.target.closest && e.target.closest(SWIPE_BLOCK_SELECTORS)) {
-        _swipe = null; return;
+      if (e.target && e.target.closest && e.target.closest(SWIPE_BLOCK_SELECTORS)) return;
+      const sheet = openSheetPanel();
+      if (sheet) {
+        // Sheet auki → vaakaele ei palaa taaksepäin. Sen sijaan sheetin voi
+        // vetää alas pois. Ele otetaan vain jos se alkaa sheetin päältä.
+        if (!e.target.closest('.sheet-panel')) return;
+        _g = { mode: 'sheet', el: sheet, x: t.clientX, y: t.clientY, t: Date.now(), on: false };
+        return;
       }
-      _swipe = { x: t.clientX, y: t.clientY, t: Date.now() };
+      const tgt = swipeBackTarget();
+      if (!tgt || !tgt.btn) return;
+      _g = { mode: 'back', el: tgt.host, btn: tgt.btn,
+             x: t.clientX, y: t.clientY, t: Date.now(), on: false };
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!_g || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - _g.x, dy = t.clientY - _g.y;
+      if (!_g.on) {
+        // Suunta ratkaistaan kerran: vaaka takaisin, pysty sheetille.
+        if (_g.mode === 'back') {
+          if (Math.abs(dy) > Math.abs(dx)) { _g = null; return; }
+          if (dx < SWIPE_START_DX) return;
+        } else {
+          if (Math.abs(dx) > Math.abs(dy)) { _g = null; return; }
+          if (dy < SWIPE_START_DX) return;
+        }
+        _g.on = true;
+        _g.el.style.transition = 'none';
+      }
+      if (_g.mode === 'back') _g.el.style.transform = 'translateX(' + Math.max(0, dx) + 'px)';
+      else                    _g.el.style.transform = 'translateY(' + Math.max(0, dy) + 'px)';
     }, { passive: true });
 
     document.addEventListener('touchend', (e) => {
-      const st = _swipe; _swipe = null;
-      if (!st || !e.changedTouches || !e.changedTouches.length) return;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - st.x, dy = t.clientY - st.y;
-      if (dx < SWIPE_MIN_DX) return;                       // vain vasemmalta oikealle
-      if (Math.abs(dy) > Math.abs(dx) * SWIPE_SLOPE) return; // liian pystysuora
-      if (Date.now() - st.t > SWIPE_MAX_DT) return;        // liian hidas, ei ele
-      const btn = swipeBackTarget();
-      if (btn) btn.click();
+      const g = _g; _g = null;
+      if (!g || !g.on || !e.changedTouches || !e.changedTouches.length) {
+        if (g && g.on) { g.el.style.transition = ''; g.el.style.transform = ''; }
+        return;
+      }
+      const t  = e.changedTouches[0];
+      const dt = Math.max(1, Date.now() - g.t);
+      if (g.mode === 'back') {
+        const dx = Math.max(0, t.clientX - g.x);
+        const w  = window.innerWidth || 400;
+        const go = dx > w * 0.5 || (dx / dt > SWIPE_FLICK_V && dx > SWIPE_FLICK_MIN);
+        if (go) {
+          animateTo(g.el, 'translateX(100%)', 220, () => {
+            // Näkymä on jo ruudun ulkopuolella → nollataan tyylit ja annetaan
+            // sovelluksen oman sulkulogiikan hoitaa loput.
+            g.el.style.transition = '';
+            g.el.style.transform  = '';
+            g.btn.click();
+          });
+        } else {
+          animateTo(g.el, 'translateX(0px)', 200, () => {
+            g.el.style.transition = ''; g.el.style.transform = '';
+          });
+        }
+      } else {
+        const dy = Math.max(0, t.clientY - g.y);
+        const h  = g.el.getBoundingClientRect().height || 300;
+        const go = dy > h * SHEET_CLOSE_FRAC || (dy / dt > SHEET_FLICK_V && dy > SWIPE_FLICK_MIN);
+        if (go) {
+          animateTo(g.el, 'translateY(100%)', 220, () => {
+            g.el.style.transition = ''; g.el.style.transform = '';
+            const host = g.el.parentElement;
+            const close = host && (host.querySelector('.sheet-close-btn') ||
+                                   host.querySelector('.sheet-backdrop'));
+            if (close) close.click();
+          });
+        } else {
+          animateTo(g.el, 'translateY(0px)', 200, () => {
+            g.el.style.transition = ''; g.el.style.transform = '';
+          });
+        }
+      }
     }, { passive: true });
 
     // Nämä tarvitaan vain jos levennys on käytössä: silloin geometria on
