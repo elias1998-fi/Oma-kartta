@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-d -->
+<head><!-- TP_BUILD 2026-08-25-e -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3804,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-d';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-e';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -3886,7 +3886,7 @@
        profile panel while it is open. Tapping the dim closes the profile. -->
   <div id="profile-dim" onclick="closeProfileOverlay()"></div>
 
-  <div id="profile-overlay">
+  <div id="profile-overlay" data-swipe-dir="left">
     <!-- Brand wordmark — placeholder until the logo is ready -->
     <div class="profile-brand">
       <div class="profile-brand-inner">
@@ -16389,39 +16389,23 @@
       // päällimmäiselle: jos se ohitettaisiin jo kelpuutusvaiheessa, ele osuisi
       // sen ALLA olevaan näkymään ja palaisi väärästä paikasta.
       if (top.host.querySelector('.maplibregl-map, .maplibregl-canvas')) return null;
-      // ⚠️ PARALLAKSI KOSKEE KAIKKEA ALLA OLEVAA, ei vain taustakarttaa.
-      // Aiemmin siirrettiin pelkkää #map-elementtiä, jolloin iso toimintonappi,
-      // sheetit ja muu käyttöliittymä jäivät paikalleen ja siirtymä näytti
-      // puolinaiselta. Nyt otetaan KAIKKI bodyn suorat lapset jotka ovat
-      // ruudulla — ne liikkuvat yhtenä kerroksena kuten natiivissa.
-      // Ruudun ulkopuolella olevat (suljetut näkymät translateX(100%)) jäävät
-      // pois, jottei niiden transformia ylikirjoiteta ja tuoda vahingossa esiin.
-      const under = [];
-      for (const el of document.body.children) {
-        if (el === top.host || el === _swDim) continue;
-        if (el.nodeType !== 1) continue;
-        const tag = el.tagName;
-        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK') continue;
-        if (!swipeOnScreen(el)) continue;
-        // ⚠️ OHITA ELEMENTIT JOILLA ON JO OMA SIIRTO.
-        // Suljetut näkymät ovat piilossa nimenomaan transformilla
-        // (profiilivalikko translateX(-100%), muut translateX(100%)).
-        // Jos niiden transform ylikirjoitetaan parallaksiarvolla, ne
-        // VEDETÄÄN RUUDULLE — juuri näin profiilivalikko ilmestyi esiin
-        // hakunäkymästä palatessa. Identiteettimatriisi tarkoittaa että
-        // elementti on paikallaan ja sen saa siirtää.
-        const tr = getComputedStyle(el).transform;
-        if (tr && tr !== 'none' && tr !== 'matrix(1, 0, 0, 1, 0, 0)') continue;
-        under.push(el);
-      }
-      return { btn: top.btn, host: top.host, under: under };
+      // ⚠️ PARALLAKSI SIIRTÄÄ KOKO BODYÄ, ei yksittäisiä elementtejä.
+      // Aiemmin siirrettiin bodyn suoria lapsia, mutta suuri osa käyttö-
+      // liittymästä (p-merkki, alasheetit, iso toimintonappi) on sisempänä
+      // DOM:issa, joten ne jäivät paikalleen ja siirtymä näytti rikkinäiseltä.
+      // Kun body siirtyy, KAIKKI siirtyy kerralla — myös se mitä emme tiedä.
+      // Liikkuva näkymä on itsekin bodyn sisällä, joten sen omaan siirtoon
+      // lisätään vastakkainen kompensaatio (ks. touchmove).
+      return { btn: top.btn, host: top.host, under: [document.body] };
     }
 
     function swipeDim(){
       if (_swDim) return _swDim;
       _swDim = document.createElement('div');
-      _swDim.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;' +
-                             'pointer-events:none;display:none;';
+      // Verho on ruutua leveämpi, koska body liikkuu sen alla ja kapea verho
+      // jättäisi reunaan himmentämättömän kaistaleen.
+      _swDim.style.cssText = 'position:fixed;top:0;bottom:0;left:-50%;right:-50%;' +
+                             'background:#000;opacity:0;pointer-events:none;display:none;';
       document.body.appendChild(_swDim);
       return _swDim;
     }
@@ -16436,6 +16420,10 @@
       setTimeout(fin, ms + 80);   // varmistus jos transitionend jää tulematta
     }
 
+    function swipeResetDrawer(g){
+      g.el.style.transition = ''; g.el.style.transform = ''; g.el.style.willChange = '';
+      if (g.dim) { g.dim.style.transition = ''; g.dim.style.opacity = ''; }
+    }
     function swipeReset(g){
       g.el.style.transition = ''; g.el.style.transform = '';
       g.el.style.borderTopLeftRadius = ''; g.el.style.borderBottomLeftRadius = '';
@@ -16471,6 +16459,15 @@
         _g = { mode:'sheet', el:sheet, x:t.clientX, y:t.clientY, t:Date.now(), on:false };
         return;
       }
+      // Vasemmalta tuleva laatikko (profiilivalikko) suljetaan vetämällä
+      // OIKEALTA VASEMMALLE, samaan suuntaan josta se tuli. Se on merkitty
+      // data-swipe-dir="left", eikä siinä ole takaisin-nappia, joten se
+      // tunnistetaan erikseen ennen tavallisia näkymiä.
+      for (const dr of document.querySelectorAll('[data-swipe-dir="left"]')) {
+        if (!swipeOnScreen(dr)) continue;
+        _g = { mode:'drawer', el:dr, x:t.clientX, y:t.clientY, t:Date.now(), on:false };
+        return;
+      }
       const tgt = swipeBackTarget();
       if (!tgt) return;
       _g = { mode:'back', el:tgt.host, btn:tgt.btn, under:tgt.under,
@@ -16485,6 +16482,9 @@
         if (_g.mode === 'back') {
           if (Math.abs(dy) > Math.abs(dx)) { _g = null; return; }
           if (dx < SWIPE_START_DX) return;
+        } else if (_g.mode === 'drawer') {
+          if (Math.abs(dy) > Math.abs(dx)) { _g = null; return; }
+          if (-dx < SWIPE_START_DX) return;
         } else {
           if (Math.abs(dx) > Math.abs(dy)) { _g = null; return; }
           if (dy < SWIPE_START_DX) return;
@@ -16492,7 +16492,12 @@
         _g.on = true;
         _g.el.style.transition = 'none';
         _g.el.style.willChange = 'transform';
-        if (_g.mode === 'back') {
+        if (_g.mode === 'drawer') {
+          // Laatikko liukuu itse pois; taustan himmennys (#profile-dim)
+          // häivytetään eleen mukana.
+          _g.dim = document.getElementById('profile-dim');
+          if (_g.dim) _g.dim.style.transition = 'none';
+        } else if (_g.mode === 'back') {
           // Vasen reuna on nyt ruudun sisällä, joten se pyöristetään laitteen
           // kulmien tapaan ja siihen tulee varjo. overflow:hidden on pakko,
           // muuten sisältö vuotaisi pyöristyksen yli.
@@ -16530,11 +16535,18 @@
       if (_g.mode === 'back') {
         const w = window.innerWidth || 400;
         const p = Math.min(1, Math.max(0, dx / w));     // 0 = peitossa, 1 = kokonaan auki
-        const shift = 'translateX(' + (-(1 - p) * SWIPE_PARALLAX * w) + 'px)';
-        _g.el.style.transform = 'translateX(' + Math.max(0, dx) + 'px)';
+        // Body siirtyy S verran vasemmalle; jotta liikkuva näkymä näyttää
+        // olevan kohdassa dx, sen omaan siirtoon lisätään -S.
+        const S = -(1 - p) * SWIPE_PARALLAX * w;
+        _g.el.style.transform = 'translateX(' + (Math.max(0, dx) - S) + 'px)';
         if (_g.under) for (const u of _g.under)
-          u.style.transform = (shift + ' ' + (u._swBase || '')).trim();
+          u.style.transform = ('translateX(' + S + 'px) ' + (u._swBase || '')).trim();
         swipeDim().style.opacity = String((1 - p) * SWIPE_DIM_MAX);
+      } else if (_g.mode === 'drawer') {
+        const dw = _g.el.getBoundingClientRect().width || 300;
+        const off = Math.min(0, dx);
+        _g.el.style.transform = 'translateX(' + off + 'px)';
+        if (_g.dim) _g.dim.style.opacity = String(Math.max(0, 1 + off / dw));
       } else {
         const h = _g.el.getBoundingClientRect().height || 300;
         const p = Math.min(1, Math.max(0, dy / h));
@@ -16556,18 +16568,20 @@
         const w  = window.innerWidth || 400;
         const go = dx > w * 0.5 || (dx / dt > SWIPE_FLICK_V && dx > SWIPE_FLICK_MIN);
         const ms = go ? SWIPE_MS_DONE : SWIPE_MS_CANCEL;
+        let endOffset = 0;
         const d  = swipeDim();
         d.style.transition = 'opacity ' + ms + 'ms ' + SWIPE_EASE;
         d.style.opacity = go ? '0' : String(SWIPE_DIM_MAX);
         if (g.under) {
-          const endShift = go ? 'translateX(0px)'
-                              : 'translateX(' + (-SWIPE_PARALLAX * w) + 'px)';
+          const endS = go ? 0 : -SWIPE_PARALLAX * w;
           for (const u of g.under) {
             u.style.transition = 'transform ' + ms + 'ms ' + SWIPE_EASE;
-            u.style.transform = (endShift + ' ' + (u._swBase || '')).trim();
+            u.style.transform = ('translateX(' + endS + 'px) ' + (u._swBase || '')).trim();
           }
+          endOffset = endS;
         }
-        animateTo(g.el, go ? 'translateX(100%)' : 'translateX(0px)', ms, () => {
+        animateTo(g.el, go ? 'translateX(' + (w - endOffset) + 'px)'
+                           : 'translateX(' + (-endOffset) + 'px)', ms, () => {
           if (!go) { swipeReset(g); return; }
           // ⚠️ JÄRJESTYS ON TÄRKEÄ, muuten syntyy "bounce back".
           // Näkymä on nyt inline-tyylillä kohdassa translateX(100%). Jos
@@ -16579,6 +16593,24 @@
           g.el.style.transition = 'none';
           g.btn.click();
           requestAnimationFrame(() => requestAnimationFrame(() => swipeReset(g)));
+        });
+      } else if (g.mode === 'drawer') {
+        const dx = Math.min(0, t.clientX - g.x);
+        const dw = g.el.getBoundingClientRect().width || 300;
+        const go = -dx > dw * 0.5 || (-dx / dt > SWIPE_FLICK_V && -dx > SWIPE_FLICK_MIN);
+        const ms3 = go ? SWIPE_MS_DONE : SWIPE_MS_CANCEL;
+        if (g.dim) {
+          g.dim.style.transition = 'opacity ' + ms3 + 'ms ' + SWIPE_EASE;
+          g.dim.style.opacity = go ? '0' : '1';
+        }
+        animateTo(g.el, go ? 'translateX(-100%)' : 'translateX(0px)', ms3, () => {
+          if (!go) { swipeResetDrawer(g); return; }
+          g.el.style.transition = 'none';
+          // Käytetään sovelluksen omaa sulkufunktiota, jotta se hoitaa myös
+          // luokat ja mahdollisen muun siivouksen. Luokan nimi on 'visible',
+          // ei 'open' — siksi tätä ei tehdä käsin.
+          if (typeof closeProfileOverlay === 'function') closeProfileOverlay();
+          requestAnimationFrame(() => requestAnimationFrame(() => swipeResetDrawer(g)));
         });
       } else {
         const dy = Math.max(0, t.clientY - g.y);
