@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-s -->
+<head><!-- TP_BUILD 2026-08-25-u -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -286,14 +286,23 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: background 0.2s ease, border-radius 0.2s ease;
+      /* HUOM: border-radius EI ole siirtymässä. Painallusvälähdys kestää vain
+         ~180 ms, joten animoitu pyöristys ei ehtinyt koskaan saavuttaa 50 %:a
+         ja indikaattori näytti neliöltä. */
+      transition: background 0.2s ease;
     }
     
     .pill-btn svg { width: 18px; height: 18px; transition: stroke 0.2s ease; }
     .pill-btn#profile-btn svg { width: 20px; height: 20px; }
     
     /* Quick light-gray flash when a pill button is pressed */
-    .pill-btn.pill-flash { background: #e8e8e8; border-radius: 50%; }
+    /* Painallusindikaattori: 36 px ympyrä 48 px napin keskellä. Piirretään
+       radiaaligradientilla, jolloin nappi säilyttää mittansa eikä indikaattori
+       kosketa pillin reunoja. */
+    .pill-btn.pill-flash {
+      background: radial-gradient(circle at 50% 50%, #e8e8e8 0 18px, transparent 18px);
+      border-radius: 50%;
+    }
     
     #menu-btn svg { width: 16px; height: 16px; }
     #menu-btn.active { background: #0C0243; border-radius: 50%; }
@@ -3804,7 +3813,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-s';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-u';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -6718,8 +6727,13 @@
       disarmMenuAutoClose();
       const onClick = (e) => {
         if (!menuExpanded) { disarmMenuAutoClose(); return; }
+        // ⚠️ [onclick] ON MUKANA TARKOITUKSELLA.
+        // Valikon rivit eivät ole nappeja vaan klikattavia divejä
+        // (esim. <div class="settings-item" onclick="openAccountSettings()">),
+        // joten pelkkä button/a/role=button ei osunut niihin ja valikko jäi
+        // auki vaikka käyttäjä oli porautunut eteenpäin.
         const t = (e.target && e.target.closest)
-          ? e.target.closest('button,a,[role="button"],label,li') : null;
+          ? e.target.closest('button,a,[role="button"],label,li,[onclick],.settings-item') : null;
         if (!t) return;
         if (t.closest('#left-menu-pill')) return;   // valikko hoitaa oman tilansa
         const tag = [t.id, t.getAttribute('aria-label'), String(t.className || '')].join(' ');
@@ -16304,8 +16318,12 @@
     // vieterinä takaisin — kynnys on puoli ruutua TAI riittävän nopea heitto.
     const SWIPE_BACK_SELECTORS =
       '.overlay-back-btn, #back-btn, #summary-back-btn, #c-back-btn, #cp-back-btn';
+    // ⚠️ VAIN ITSE KYTKIN, EI KOKO RIVI. Aiemmin listalla oli
+    // .settings-row-toggle, joka on asetusrivin SÄILIÖ — se kattaa myös
+    // rivin tekstin, joten swipe ei toiminut esim. "Salli kartan rotaatio"
+    // -tekstin päältä. Kytkin itse on .ios-switch (ja sen input).
     const SWIPE_BLOCK_SELECTORS =
-      'input, select, textarea, [contenteditable], .ios-switch, .settings-row-toggle,' +
+      'input, select, textarea, [contenteditable], .ios-switch,' +
       ' .maplibregl-map, .maplibregl-canvas, canvas, [data-noswipe]';
     const SWIPE_START_DX   = 12;    // tästä lähtien ele tulkitaan vaakaeleeksi
     const SWIPE_FLICK_V    = 0.45;  // px/ms — tätä nopeampi heitto riittää yksin
