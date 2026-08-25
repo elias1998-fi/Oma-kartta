@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-j -->
+<head><!-- TP_BUILD 2026-08-25-k -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3804,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-j';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-k';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -16434,6 +16434,7 @@
         u.style.transition = ''; u.style.transform = ''; u.style.willChange = '';
         delete u._swBase;
       }
+      if (g.zfixed) for (const [u, z] of g.zfixed) u.style.zIndex = z || '';
       if (g.backdrop) { g.backdrop.style.transition = ''; g.backdrop.style.opacity = ''; }
       const d = swipeDim();
       d.style.transition = ''; d.style.opacity = '0'; d.style.display = 'none';
@@ -16531,10 +16532,23 @@
           // palautetaan jos ele peruuntuu; jos ele viedään loppuun, näkymän
           // oma sulkulogiikka hoitaa lopputilan.
           _g.unhidden = [];
+          _g.zfixed = [];
+          const _hostZ = parseInt(getComputedStyle(_g.el).zIndex, 10) || 100;
           if (_g.under) for (const u of _g.under) {
             if (u.classList && u.classList.contains('hidden')) {
               u.classList.remove('hidden');
               _g.unhidden.push(u);
+            }
+            // ⚠️ Z-INDEKSI ALAS ELEEN AJAKSI.
+            // Osa alla olevan näkymän elementeistä kelluu korkealla
+            // (esim. #btn-container on 9990, kun näkymä on 100). Ne eivät
+            // normaalisti häiritse koska ne ovat piilotettuja, mutta heti kun
+            // ele paljastaa ne, ne nousisivat LIIKKUVAN NÄKYMÄN PÄÄLLE.
+            // Pudotetaan ne eleen ajaksi näkymän alle ja palautetaan lopuksi.
+            const uz = parseInt(getComputedStyle(u).zIndex, 10);
+            if (!isNaN(uz) && uz >= _hostZ) {
+              _g.zfixed.push([u, u.style.zIndex]);
+              u.style.zIndex = String(_hostZ - 2);
             }
           }
           const d = swipeDim();
