@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-25-r -->
+<head><!-- TP_BUILD 2026-08-25-s -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3804,7 +3804,7 @@
       };
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
-    const APP_BUILD   = readBuildComment() || '2026-08-25-r';
+    const APP_BUILD   = readBuildComment() || '2026-08-25-s';
     const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
@@ -16444,6 +16444,13 @@
     // Alla olevien elementtien tyylit takaisin. Erillinen funktio, koska tämä
     // pitää ajaa ENNEN näkymän sulkemista — ks. kutsukohta.
     function swipeResetUnder(g){
+      if (g.unfaded) {
+        for (const [el, val, pri] of g.unfaded) {
+          el.style.removeProperty('opacity');
+          if (val) el.style.setProperty('opacity', val, pri || '');
+        }
+        g.unfaded = null;
+      }
       if (!g.under) return;
       for (const u of g.under) {
         // Palautetaan TÄSMÄLLEEN se inline-tyyli joka elementillä oli ennen
@@ -16456,7 +16463,15 @@
       g.under = null;
     }
     function swipeRehide(g){
-      if (g && g.unhidden) for (const u of g.unhidden) u.classList.add('hidden');
+      if (!g) return;
+      if (g.unhidden) for (const u of g.unhidden) u.classList.add('hidden');
+      if (g.unfaded) {
+        for (const [el, val, pri] of g.unfaded) {
+          el.style.removeProperty('opacity');
+          if (val) el.style.setProperty('opacity', val, pri || '');
+        }
+        g.unfaded = null;
+      }
     }
     function swipeReset(g){
       if (g.zHost !== undefined) g.el.style.zIndex = g.zHost || '';
@@ -16578,7 +16593,24 @@
           // palautetaan jos ele peruuntuu; jos ele viedään loppuun, näkymän
           // oma sulkulogiikka hoitaa lopputilan.
           _g.unhidden = [];
+          _g.unfaded = [];
           _g.zfixed = [];
+          // ⚠️ Toimintonappi voi olla piilotettu KAHDELLA eri tavalla:
+          //   1. luokalla 'hidden'  (esim. pysäköintinäkymä)
+          //   2. CSS-säännöllä body.search-mode / body.plus-mode
+          //      #btn-container { opacity: 0 !important }
+          // Luokan poisto ei auta tapauksessa 2, joten peitto pakotetaan
+          // inline-tyylillä ja !important-prioriteetilla — muuten sääntö voittaa.
+          // Rajattu tähän yhteen elementtiin tarkoituksella: mielivaltaisten
+          // läpinäkyvien elementtien (esim. piilossa olevat ilmoitukset)
+          // pakottaminen näkyviin olisi väärin.
+          const _bc = document.getElementById('btn-container');
+          if (_bc && _g.under.indexOf(_bc) !== -1 &&
+              getComputedStyle(_bc).opacity === '0') {
+            _g.unfaded.push([_bc, _bc.style.opacity,
+                             _bc.style.getPropertyPriority('opacity')]);
+            _bc.style.setProperty('opacity', '1', 'important');
+          }
           const _hostZ = SWIPE_Z_TOP;
           if (_g.under) for (const u of _g.under) {
             if (u.classList && u.classList.contains('hidden')) {
