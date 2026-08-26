@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-o -->
+<head><!-- TP_BUILD 2026-08-26-p -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3269,11 +3269,15 @@
        sukuun). Teksti ja napit brändin tummansinisellä #0C0243. */
     #park-success {
       position: fixed; inset: 0;
-      z-index: 150;
+      /* ⚠️ Korkeampi kuin #btn-container (9990). 150 ei riittänyt: iso
+         "Pysäköi tähän" -nappi jäi näkymän päälle. 10030 on korkeampi kuin
+         mikään muu sovelluksen kerros (suurin muu on 10020), mutta selvästi
+         alle avausruudun. */
+      z-index: 10030;
       background: #a7c9ec;
       display: flex; flex-direction: column;
       transform: translateX(var(--tp-offscreen-x));
-      transition: transform .42s cubic-bezier(.32,.72,0,1);
+      transition: transform 1.05s cubic-bezier(.32,.72,0,1);
       font-family: Arial, sans-serif;
       will-change: transform;
     }
@@ -3286,22 +3290,11 @@
     }
     #park-success.closing .ps-inner { opacity: 0; }
 
-    /* Sulje-pilleri oikeassa yläkulmassa, ohut ääriviiva kuten referenssissä. */
-    #ps-close {
-      align-self: flex-end;
-      margin-top: 46px;
-      padding: 11px 26px;
-      background: none;
-      border: 1.5px solid #0C0243;
-      border-radius: 999px;
-      font-family: Arial, sans-serif; font-size: 16px; font-weight: bold;
-      color: #0C0243; cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    #ps-close:active { background: rgba(12,2,67,.07); }
-
+    /* Sulje-pilleri poistettu; näkymästä poistutaan "Palaa karttanäkymään"
+       -napilla. margin-top vastaa entistä otsikon paikkaa (Sulje-napin 46 px
+       marginaali + 44 px korkeus + 26 px väli), jottei otsikko hyppää ylös. */
     #ps-title {
-      margin-top: 26px;
+      margin-top: 116px;
       font-size: 34px; line-height: 1.15; font-weight: bold;
       color: #0C0243; text-align: center; letter-spacing: -.2px;
     }
@@ -3336,51 +3329,62 @@
     .ps-btn-ghost:active { background: rgba(12,2,67,.07); }
 
     /* ── Ajoitus ────────────────────────────────────────────────────────
-       Jokainen osa nousee OMAN paikkansa yläpuolelta (translateY −16px),
-       ei ruudun yläreunasta — siksi keskellä olevat osat ilmestyvät
-       keskeltä. Porrastus antaa saman rauhallisen järjestyksen kuin
-       referenssissä. */
+       Koko jono on 2,5× hitaampi kuin ensimmäisessä versiossa.
+       ⚠️ TAUSTAN LIUKU AJETAAN LOPPUUN ENSIN. Liuku kestää 1,05 s, ja vasta
+       0,5 s sen jälkeen (1,55 s) alkaa sisällön valuminen — mikään ei siis
+       liiku samaan aikaan taustan kanssa.
+       Jokainen osa valuu OMAN paikkansa yläpuolelta (translateY −34px, ennen
+       −16px), ei ruudun yläreunasta — siksi keskellä olevat osat ilmestyvät
+       keskeltä. Matka on pidempi ja kesto 1,25 s, joten valuminen on
+       selvästi rauhallisempi. */
     .ps-rise { opacity: 0; }
-    @keyframes ps-rise { from { opacity: 0; transform: translateY(-16px); }
+    @keyframes ps-rise { from { opacity: 0; transform: translateY(-34px); }
                          to   { opacity: 1; transform: translateY(0); } }
-    #park-success.play .ps-rise { animation: ps-rise .5s cubic-bezier(.22,1,.36,1) both; }
-    #park-success.play #ps-close  { animation-delay: .16s; }
-    #park-success.play #ps-title  { animation-delay: .22s; }
-    #park-success.play #ps-sub    { animation-delay: .30s; }
-    #park-success.play #ps-back   { animation-delay: .40s; }
-    #park-success.play #ps-extend { animation-delay: .46s; }
+    #park-success.play .ps-rise { animation: ps-rise 1.25s cubic-bezier(.22,1,.36,1) both; }
+    #park-success.play #ps-title  { animation-delay: 1.55s; }
+    #park-success.play #ps-sub    { animation-delay: 1.70s; }
+    #park-success.play #ps-back   { animation-delay: 1.90s; }
+    #park-success.play #ps-extend { animation-delay: 2.05s; }
 
     @keyframes ps-grow { from { transform: scale(.14); opacity: 0; }
                          60%  { opacity: 1; }
                          to   { transform: scale(1);   opacity: 1; } }
-    #park-success.play #ps-stage { animation: ps-grow .72s cubic-bezier(.22,1,.36,1) .72s both; }
+    #park-success.play #ps-stage { animation: ps-grow 1.80s cubic-bezier(.22,1,.36,1) 2.70s both; }
 
-    /* Kyltti hiipuu esiin kun suorakulmio on jo lähes täydessä koossa. */
+    /* Kyltti hiipuu esiin kun suorakulmio on jo lähes täydessä koossa — ja
+       ehtii kokonaan näkyviin (3,90…4,95 s) ennen kuin auto lähtee 4,60 s
+       kohdalla ja pysähtyy sen eteen. */
     @keyframes ps-sign { from { opacity: 0; transform: translateY(7px); }
                          to   { opacity: 1; transform: translateY(0); } }
-    #ps-sign { opacity: 0; transform-box: view-box; transform-origin: 191px 105px; }
-    #park-success.play #ps-sign { animation: ps-sign .42s cubic-bezier(.22,1,.36,1) 1.20s both; }
+    #ps-sign { opacity: 0; transform-box: view-box; transform-origin: 49px 105px; }
+    #park-success.play #ps-sign { animation: ps-sign 1.05s cubic-bezier(.22,1,.36,1) 3.90s both; }
 
-    /* Auto ajaa vasemmalta ja hidastuu paikalleen. */
-    @keyframes ps-drive { from { transform: translateX(-215px); } to { transform: translateX(0); } }
-    #ps-car { transform: translateX(-215px); }
-    #park-success.play #ps-car { animation: ps-drive 1.15s cubic-bezier(.16,.85,.3,1) 1.30s both; }
-    /* Jarrutus: nokka nyökkää alas ja tasaantuu. Kiertokeskiö on etupyörän
-       kohdalla auton LOPULLISESSA paikassa (view-box-koordinaatit), koska
-       nyökkäys tapahtuu vasta pysähdyksessä. */
+    /* Auto ajaa OIKEALTA ja hidastuu kyltin eteen. */
+    @keyframes ps-drive { from { transform: translateX(215px); } to { transform: translateX(0); } }
+    #ps-car { transform: translateX(215px); }
+    #park-success.play #ps-car { animation: ps-drive 2.88s cubic-bezier(.16,.85,.3,1) 4.60s both; }
+    /* Jarrutus. ⚠️ KIERTOKESKIÖ ON ETUPYÖRÄSSÄ. Auto katsoo vasemmalle, joten
+       etupyörä on vasemmanpuoleinen: peilatussa piirroksessa paikallinen x 92
+       osuu kohtaan 194 − 92 = 102, y = 78 + 45 = 123. Kierto on NEGATIIVINEN
+       eli vastapäivään, jolloin nokka painuu alas ja perä nousee — aiemmin
+       merkki oli väärinpäin ja perä painui, mikä näytti takapyörien
+       jarrutukselta. Kulma on maltillinen (−2,4°), koska vipuvarsi keskiöstä
+       perään on pitkä. */
     @keyframes ps-brake { 0%, 62% { transform: rotate(0deg); }
-                          78% { transform: rotate(-3.2deg); }
-                          90% { transform: rotate(1.1deg); }
+                          78% { transform: rotate(-2.4deg); }
+                          90% { transform: rotate(0.8deg); }
                           100% { transform: rotate(0deg); } }
-    #ps-car-tilt { transform-box: view-box; transform-origin: 138px 123px; }
-    #park-success.play #ps-car-tilt { animation: ps-brake 1.35s cubic-bezier(.33,1,.68,1) 1.30s both; }
+    #ps-car-tilt { transform-box: view-box; transform-origin: 102px 123px; }
+    #park-success.play #ps-car-tilt { animation: ps-brake 3.38s cubic-bezier(.33,1,.68,1) 4.60s both; }
     /* Pyörät pyörivät samalla hidastuvalla käyrällä kuin ajo, jotta ne
        pysähtyvät täsmälleen auton mukana. */
     /* 3,11 kierrosta = ajomatka 215 yksikköä jaettuna pyörän kehällä 2π·11,
-       jotta pyörät eivät luista suhteessa maahan. */
+       jotta pyörät eivät luista suhteessa maahan. ⚠️ Pyörät ovat peilatun
+       ryhmän sisällä, joten piirretty kierto kääntyy ruudulla vastapäivään —
+       juuri niin kuin vasemmalle ajettaessa kuuluukin. */
     @keyframes ps-wheel { from { transform: rotate(0deg); } to { transform: rotate(1120deg); } }
     .ps-wheel { transform-box: fill-box; transform-origin: 50% 50%; }
-    #park-success.play .ps-wheel { animation: ps-wheel 1.15s cubic-bezier(.16,.85,.3,1) 1.30s both; }
+    #park-success.play .ps-wheel { animation: ps-wheel 2.88s cubic-bezier(.16,.85,.3,1) 4.60s both; }
 
     @media (prefers-reduced-motion: reduce) {
       #park-success, #park-success.play .ps-rise, #park-success.play #ps-stage,
@@ -5339,7 +5343,6 @@
        activeParkingSessionista openParkSuccess()-funktiossa. -->
   <div id="park-success" role="dialog" aria-modal="true" aria-label="Pysäköinti alkoi">
     <div class="ps-inner">
-      <button id="ps-close" class="ps-rise" onclick="closeParkSuccess()">Sulje</button>
       <div id="ps-title" class="ps-rise">Pysäköinti alkoi</div>
       <div id="ps-sub" class="ps-rise">—</div>
 
@@ -5352,18 +5355,24 @@
           <svg viewBox="0 0 240 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <!-- maanpinta -->
             <line x1="18" y1="134" x2="222" y2="134" stroke="rgba(12,2,67,.18)" stroke-width="3" stroke-linecap="round"/>
-            <!-- P-kyltti: hiipuu esiin siihen kohtaan johon auto pysähtyy -->
+            <!-- P-kyltti VASEMMALLA. Se on kokonaan näkyvissä ennen kuin auto
+                 lähtee liikkeelle, ja auto pysähtyy sen eteen oikealta. -->
             <g id="ps-sign">
-              <rect x="188.5" y="76" width="5" height="58" rx="2.5" fill="rgba(12,2,67,.35)"/>
-              <rect x="170" y="34" width="42" height="42" rx="11" fill="#1266f1"/>
-              <text x="191" y="65" text-anchor="middle" font-family="Arial, sans-serif"
+              <rect x="46.5" y="76" width="5" height="58" rx="2.5" fill="rgba(12,2,67,.35)"/>
+              <rect x="28" y="34" width="42" height="42" rx="11" fill="#1266f1"/>
+              <text x="49" y="65" text-anchor="middle" font-family="Arial, sans-serif"
                     font-size="27" font-weight="bold" fill="#fff">P</text>
             </g>
 
-            <!-- Auto. Ulompi ryhmä hoitaa ajon, sisempi jarrutuksen nyökkäyksen. -->
+            <!-- Auto. Ulompi ryhmä hoitaa ajon, sisempi jarrutuksen nyökkäyksen.
+                 ⚠️ Piirros on tehty nokka oikealle; scale(-1 1) kääntää sen
+                 vasemmalle ja translate 194 siirtää peilauksen origon niin että
+                 auto asettuu välille x = 76…194. Peilaus on tilt-ryhmän SISÄLLÄ,
+                 joten jarrutuksen kierto tapahtuu normaalissa ruutuavaruudessa
+                 eikä peilaudu. -->
             <g id="ps-car">
               <g id="ps-car-tilt">
-                <g transform="translate(46 78)">
+                <g transform="translate(194 78) scale(-1 1)">
                   <!-- kori -->
                   <path d="M2 34 Q2 26 10 25 L26 24 L38 9 Q41 5 47 5 L84 5 Q90 5 93 9 L104 24 L110 25
                            Q118 26 118 34 L118 41 Q118 45 114 45 L6 45 Q2 45 2 41 Z" fill="#0C0243"/>
@@ -5392,7 +5401,7 @@
 
       <div class="ps-actions">
         <button id="ps-back"   class="ps-btn ps-btn-primary ps-rise" onclick="closeParkSuccess()">Palaa karttanäkymään</button>
-        <button id="ps-extend" class="ps-btn ps-btn-ghost ps-rise"   onclick="closeParkSuccess(true)">Muuta pysäköinnin kestoa</button>
+        <button id="ps-extend" class="ps-btn ps-btn-ghost ps-rise"   onclick="closeParkSuccess(true)">Peru tai muuta pysäköintiä</button>
       </div>
     </div>
   </div>
