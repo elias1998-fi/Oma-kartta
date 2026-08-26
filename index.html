@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-l -->
+<head><!-- TP_BUILD 2026-08-26-m -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3862,7 +3862,14 @@
       return scan(document.head) || scan(document.documentElement) || scan(document);
     }
     const APP_BUILD   = readBuildComment() || '2026-08-25-u';
-    const SPLASH_MS   = 1500;          // näkyvissä 1,5 s, sitten 0,3 s häivytys
+    // Avausruudun kesto. SPLASH_MS on VÄHIMMÄISAIKA (ettei valkoinen vain
+    // välähdä nopealla yhteydellä) ja SPLASH_MAX_MS on ENIMMÄISAIKA. Siltä
+    // väliltä keston ratkaisee sovelluksen valmius: kartan tyyli ladattu JA
+    // pysäköintialueet piirretty. Näin käyttäjä ei näe tyhjää karttaa jolle
+    // alueet ilmestyvät vasta jälkikäteen — ja huonolla yhteydellä valkoinen
+    // pysyy pidempään sen sijaan että kartta paljastuisi keskeneräisenä.
+    const SPLASH_MS     = 1500;
+    const SPLASH_MAX_MS = 9000;   // varmistus: ei jää koskaan roikkumaan
     (function () {
       // Versionumero EI näy enää avausruudussa (poistettu 19.8.). Vakiot ovat
       // yhä käytössä: Tietoja sovelluksesta -näkymän versiorivi lukee ne.
@@ -3870,12 +3877,24 @@
       if (!el) return;
       // Luokka heti, jo ennen kuin iso sovellusskripti alkaa suorittua.
       document.body.classList.add('splash-active');
-      setTimeout(function () {
+      const t0 = Date.now();
+      let hidden = false;
+      function hideSplash() {
+        if (hidden) return;
+        hidden = true;
         el.classList.add('gone');
         // Käyttöliittymä esiin samaan aikaan kun valkoinen häipyy.
         document.body.classList.remove('splash-active');
         setTimeout(function () { el.style.display = 'none'; }, 320);
-      }, SPLASH_MS);
+      }
+      // Sovellusskripti kutsuu tätä kun alueet ovat kartalla. Vähimmäisaika
+      // täytetään loppuun, jottei ruutu vilahda.
+      window.__tpAppReady = function () {
+        setTimeout(hideSplash, Math.max(0, SPLASH_MS - (Date.now() - t0)));
+      };
+      // Varmistus: jos valmiusilmoitusta ei tule (verkko poikki, virhe
+      // latauksessa), avausruutu väistyy silti eikä sovellus jää jumiin.
+      setTimeout(hideSplash, SPLASH_MAX_MS);
     })();
   </script>
   <div id="map"></div>
@@ -6555,16 +6574,11 @@
 
     map.on('load', () => {
       map.touchZoomRotate.disableRotation(); map.dragRotate.disable();
-      // Trigger initial viewport load once map is stable
-      setTimeout(() => {
-        checkParking();
-        // Load hallis always — they're just 113 points, lightweight
-        if (!halliLoaded) { halliLoaded = true; loadHalliMarkers(); }
-        // Load master polygons if zoomed in, else wait for onMapIdle
-        if (map.getZoom() >= AREA_MINZOOM) {
-          loadViewportTiles(null);
-        }
-      }, 800);
+      // Alueiden haku on jo käynnissä (loadViewportTiles kutsutaan heti sen
+      // määrittelyn jälkeen), joten tässä ei enää odoteta 800 ms:ää sen takia.
+      // Hallit ovat kevyet 113 pistettä — ne haetaan heti tyylin valmistuttua.
+      checkParking();
+      if (!halliLoaded) { halliLoaded = true; loadHalliMarkers(); }
     });
 
     // Geolocate control — manual only.
@@ -9526,6 +9540,19 @@
       return out;
     }
 
+    // ⚠️ Verkkohaku ja piirto on eriytetty toisistaan. Haku voi alkaa heti
+    // sivun latautuessa (avausruudun takana), mutta renderMasterRows lisää
+    // kartalle lähteitä ja tasoja, mikä vaatii että tyyli on latautunut.
+    // Siksi rivit haetaan ensin ja piirto odottaa tätä lupausta. Kumpikin
+    // etenee omaan tahtiinsa, joten hidas verkko ei estä kartan latautumista
+    // eikä hidas tyyli estä hakua.
+    const _styleReady = new Promise(resolve => {
+      if (map.isStyleLoaded && map.isStyleLoaded()) resolve();
+      else map.once('load', resolve);
+    });
+    function _signalAppReady(){
+      if (typeof window.__tpAppReady === 'function') { window.__tpAppReady(); window.__tpAppReady = null; }
+    }
     async function loadViewportTiles(signal) {
       loadParkingPrices();          // load city/zone prices once (fire-and-forget)
       if (masterDataLoaded) return;
@@ -9556,13 +9583,34 @@
         const rows = paidRows.concat(freeRows);
         console.log('Master rows fetched: maksulliset', paidRows.length, '+ ilmaiset', freeRows.length);
         masterRows = rows;
-        renderMasterRows(rows);
+        await _styleReady;          // tasot voi lisätä vasta kun tyyli on valmis
+        await renderMasterRows(rows);
+        // ⚠️ Odota vielä että kartta on TODELLA piirtänyt uudet tasot.
+        // renderMasterRows palaa heti kun lähteet ja tasot on lisätty, mutta
+        // piirto tapahtuu vasta seuraavilla ruuduilla — ilman tätä avausruutu
+        // olisi voinut väistyä tyhjän kartan päältä. 'idle' odottaa myös
+        // pohjakartan tiilet. Varmistusajastin sen varalta ettei idle tule.
+        (function(){
+          let done = false;
+          const fin = () => { if (done) return; done = true; _signalAppReady(); };
+          map.once('idle', fin);
+          setTimeout(fin, 2000);
+        })();
         setTimeout(updateButtonText, 500);
       } catch(e) {
         masterDataLoaded = false;  // allow retry on error
         console.error('loadViewportTiles error:', e);
+        _signalAppReady();          // virhekään ei saa jättää avausruutua päälle
       }
     }
+    // ⚠️ HAKU KÄYNNISTYY HETI, ei kartan 'load'-tapahtumasta eikä ajastimella.
+    // Aiemmin ensimmäinen lataus lähti map.on('load') + 800 ms (ja onMapIdlen
+    // 600 ms varalta), eli vasta sen jälkeen kun kartta oli jo näkyvissä —
+    // siksi alueet ilmestyivät viiveellä. Nyt haku lähtee tässä, samalla
+    // hetkellä kun avausruutu on ruudulla, ja piirto odottaa vain tyyliä.
+    // Kutsu on turvallinen tässä kohtaa: SUPABASE_URL, fetchAllParkingRows ja
+    // renderMasterRows ovat kaikki jo määriteltyinä.
+    loadViewportTiles(null);
 
 
     // ── Master feature info in bottom sheet ─────────────────────────
@@ -16438,8 +16486,9 @@
       // Load hallis once we hit zoom 13+
       if (!halliLoaded) { halliLoaded = true; setTimeout(loadHalliMarkers, 200); }
 
-      // Load master polygons — only once, then cache in memory
-      // Layers have minzoom:AREA_MINZOOM so they auto-hide when zoomed out
+      // Alueiden lataus käynnistyy nyt heti sivun latautuessa, joten tämä on
+      // vain uusintayritys sen varalta että ensimmäinen haku epäonnistui
+      // (loadViewportTiles nollaa masterDataLoadedin virhetilanteessa).
       if (!masterDataLoaded) {
         clearTimeout(tileLoadTimer);
         tileLoadTimer = setTimeout(() => {
