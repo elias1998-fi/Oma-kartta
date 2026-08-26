@@ -6191,7 +6191,7 @@
         "text-halo-color": "rgb(25,28,34)",
         "text-halo-width": 0.5
       },
-      "minzoom": 13
+      "minzoom": 14
     },
     {
       "id": "label_place_other",
