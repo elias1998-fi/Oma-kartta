@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-s -->
+<head><!-- TP_BUILD 2026-08-26-t -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3357,14 +3357,17 @@
     #park-success.play #ps-stage { animation: ps-grow 1.75s cubic-bezier(.22,1,.36,1) 1.05s both; }
 
     /* Kyltti ei enää hiivu erikseen: se on osa laatikkoa ja kasvaa sen
-       mukana (1,05…2,80 s). Auto lähtee jo 2,45 s kohdalla eli kun laatikko
-       ja kyltti ovat lähes täydessä koossa — kyltti on paikallaan hyvissä
-       ajoin ennen kuin auto pysähtyy sen eteen. */
+       mukana (1,05…2,80 s). ⚠️ Auto lähtee 1,55 s kohdalla, jolloin laatikko
+       on 80 % lopullisesta KOOSTAAN — ei 80 % kestostaan. Ero on iso, koska
+       ps-grow'n käyrä cubic-bezier(.22,1,.36,1) on hyvin etupainoinen:
+       kestosta 80 % kohdalla laatikko on jo 99,9 % koossaan eikä näyttäisi
+       enää kasvavan. 80 % kokoa vastaa aikaosuus 0,274 eli 1,05 + 0,48 s.
+       Loput 20 % kasvusta tapahtuu auton ajaessa sisään. */
 
     /* Auto ajaa OIKEALTA ja hidastuu kyltin eteen. */
     @keyframes ps-drive { from { transform: translateX(215px); } to { transform: translateX(0); } }
     #ps-car { transform: translateX(215px); }
-    #park-success.play #ps-car { animation: ps-drive 1.35s cubic-bezier(.16,.85,.3,1) 2.45s both; }
+    #park-success.play #ps-car { animation: ps-drive 1.05s cubic-bezier(.16,.85,.3,1) 1.55s both; }
     /* Jarrutus: etupää niiaa kevyesti alas ja palaa suoraan.
        ⚠️ KIERTOKESKIÖ ON TAKAPYÖRÄSSÄ, ei etupyörässä. Se kuulostaa
        nurinkuriselta, mutta juuri siten LIIKE näkyy etupäässä: perä pysyy
@@ -3377,19 +3380,20 @@
        y 5…45), jossa takapyörän keskiö (30, 45) on 24,1 % / 100 %.
        Kierto on POSITIIVINEN paikallisessa avaruudessa; peilaus kääntää sen
        ruudulla, jolloin vasemmalla oleva nokka painuu alas. */
-    /* ⚠️ NIIAUS ALKAA JO ENNEN KUIN AUTO PYSÄHTYY. Ajo kestää 1,35 s
-       (2,45…3,80 s) ja niiaus 2,05 s (2,45…4,50 s). Keula alkaa painua 32 %
-       kohdalla eli 3,11 s, jolloin ajokäyrä on kuljettanut jo n. 88 %
-       matkasta ja auto vain liukuu loppumatkan — juuri niin kuin oikea auto
-       jarruttaessa. Syvin kohta 2,6° osuu 3,48 s kohdalle, auto on yhä
-       liikkeessä. Palautuminen suoraan on loivempi kuin painuminen. */
-    @keyframes ps-brake { 0%, 32% { transform: rotate(0deg); }
-                          50%  { transform: rotate(2.6deg); }
-                          66%  { transform: rotate(2.2deg); }
-                          82%  { transform: rotate(-0.8deg); }
+    /* ⚠️ NIIAUS ALKAA JO ENNEN KUIN AUTO PYSÄHTYY. Ajo kestää 1,05 s
+       (1,55…2,60 s) ja niiaus 1,55 s (1,55…3,10 s). Keula alkaa painua 26 %
+       kohdalla eli 1,95 s, jolloin ajokäyrä on kuljettanut n. 89 % matkasta
+       ja auto vain liukuu loppumatkan — juuri niin kuin oikea auto
+       jarruttaessa. Syvin kohta 2,6° osuu 2,14 s kohdalle, jolloin matkasta
+       on kuljettu 96 % eli auto on yhä liikkeessä. Palautuminen suoraan on
+       loivempi kuin painuminen ja jatkuu vielä pysähdyksen jälkeen. */
+    @keyframes ps-brake { 0%, 26% { transform: rotate(0deg); }
+                          38%  { transform: rotate(2.6deg); }
+                          48%  { transform: rotate(2.2deg); }
+                          64%  { transform: rotate(-0.8deg); }
                           100% { transform: rotate(0deg); } }
     #ps-car-tilt { transform-box: fill-box; transform-origin: 24.1% 100%; }
-    #park-success.play #ps-car-tilt { animation: ps-brake 2.05s cubic-bezier(.4,0,.3,1) 2.45s both; }
+    #park-success.play #ps-car-tilt { animation: ps-brake 1.55s cubic-bezier(.4,0,.3,1) 1.55s both; }
     /* Pyörät pyörivät samalla hidastuvalla käyrällä kuin ajo, jotta ne
        pysähtyvät täsmälleen auton mukana. */
     /* 3,11 kierrosta = ajomatka 215 yksikköä jaettuna pyörän kehällä 2π·11,
@@ -3398,7 +3402,7 @@
        juuri niin kuin vasemmalle ajettaessa kuuluukin. */
     @keyframes ps-wheel { from { transform: rotate(0deg); } to { transform: rotate(1120deg); } }
     .ps-wheel { transform-box: fill-box; transform-origin: 50% 50%; }
-    #park-success.play .ps-wheel { animation: ps-wheel 1.35s cubic-bezier(.16,.85,.3,1) 2.45s both; }
+    #park-success.play .ps-wheel { animation: ps-wheel 1.05s cubic-bezier(.16,.85,.3,1) 1.55s both; }
 
     @media (prefers-reduced-motion: reduce) {
       #park-success, #park-success.play .ps-rise, #park-success.play #ps-stage,
