@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-q -->
+<head><!-- TP_BUILD 2026-08-26-r -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3350,16 +3350,20 @@
     @keyframes ps-grow { from { transform: scale(.14); opacity: 0; }
                          60%  { opacity: 1; }
                          to   { transform: scale(1);   opacity: 1; } }
-    #park-success.play #ps-stage { animation: ps-grow 1.80s cubic-bezier(.22,1,.36,1) 2.70s both; }
+    /* Laatikko kasvaa SAMAAN AIKAAN tekstien kanssa: alkaa otsikon kanssa
+       1,55 s ja päättyy 3,30 s, eli täsmälleen kun alempi nappi on paikallaan.
+       Aiemmin se odotti tekstien loppumista, mikä teki jonosta tarpeettoman
+       pitkän. */
+    #park-success.play #ps-stage { animation: ps-grow 1.75s cubic-bezier(.22,1,.36,1) 1.55s both; }
 
     /* Kyltti ei enää hiivu erikseen: se on osa laatikkoa ja kasvaa sen
-       mukana (2,70…4,50 s). Auto lähtee vasta 4,60 s kohdalla, joten kyltti
-       on paikallaan ennen kuin auto pysähtyy sen eteen. */
+       mukana (1,55…3,30 s). Auto lähtee 3,55 s kohdalla, joten kyltti on
+       paikallaan ennen kuin auto pysähtyy sen eteen. */
 
     /* Auto ajaa OIKEALTA ja hidastuu kyltin eteen. */
     @keyframes ps-drive { from { transform: translateX(215px); } to { transform: translateX(0); } }
     #ps-car { transform: translateX(215px); }
-    #park-success.play #ps-car { animation: ps-drive 2.88s cubic-bezier(.16,.85,.3,1) 4.60s both; }
+    #park-success.play #ps-car { animation: ps-drive 1.90s cubic-bezier(.16,.85,.3,1) 3.55s both; }
     /* Jarrutus: etupää niiaa kevyesti alas ja palaa suoraan.
        ⚠️ KIERTOKESKIÖ ON TAKAPYÖRÄSSÄ, ei etupyörässä. Se kuulostaa
        nurinkuriselta, mutta juuri siten LIIKE näkyy etupäässä: perä pysyy
@@ -3377,7 +3381,7 @@
                           90% { transform: rotate(-0.7deg); }
                           100% { transform: rotate(0deg); } }
     #ps-car-tilt { transform-box: fill-box; transform-origin: 24.1% 100%; }
-    #park-success.play #ps-car-tilt { animation: ps-brake 3.38s cubic-bezier(.33,1,.68,1) 4.60s both; }
+    #park-success.play #ps-car-tilt { animation: ps-brake 2.30s cubic-bezier(.33,1,.68,1) 3.55s both; }
     /* Pyörät pyörivät samalla hidastuvalla käyrällä kuin ajo, jotta ne
        pysähtyvät täsmälleen auton mukana. */
     /* 3,11 kierrosta = ajomatka 215 yksikköä jaettuna pyörän kehällä 2π·11,
@@ -3386,7 +3390,7 @@
        juuri niin kuin vasemmalle ajettaessa kuuluukin. */
     @keyframes ps-wheel { from { transform: rotate(0deg); } to { transform: rotate(1120deg); } }
     .ps-wheel { transform-box: fill-box; transform-origin: 50% 50%; }
-    #park-success.play .ps-wheel { animation: ps-wheel 2.88s cubic-bezier(.16,.85,.3,1) 4.60s both; }
+    #park-success.play .ps-wheel { animation: ps-wheel 1.90s cubic-bezier(.16,.85,.3,1) 3.55s both; }
 
     @media (prefers-reduced-motion: reduce) {
       #park-success, #park-success.play .ps-rise, #park-success.play #ps-stage,
@@ -18974,6 +18978,7 @@
       if (!ov || _psClosing) return;
       _psClosing = true;
       showActiveParkingBanner();
+      banner.style.transition = 'none';
       banner.style.opacity = '0';
       const b  = banner.getBoundingClientRect();
       const w  = window.innerWidth, h = window.innerHeight;
@@ -18984,15 +18989,24 @@
       ov.classList.remove('play');
       ov.classList.add('closing');
       ov.style.transformOrigin = '50% 50%';
-      // Rauhallinen kutistus: 0,85 s. Läpinäkyvyys häviää vasta lopussa,
-      // jotta liike on se mikä näkyy — ei häivytys.
+      // ⚠️ NÄKYMÄSTÄ TULEE BANNERI — ne eivät vuorottele.
+      // Aiemmin banneri pidettiin näkymättömänä koko kutistuksen ajan ja
+      // paljastettiin vasta lopussa, jolloin katsoja näki kaksi vaihetta:
+      // sininen laatikko kutistui ja katosi, ja vasta sitten banneri
+      // ilmestyi. Nyt kutistus (0,85 s) ja ristihäivytys menevät limittäin:
+      // sininen laatikko on läpinäkymätön 65 % matkasta ja häipyy vasta
+      // viimeisen 0,3 s aikana, ja banneri kirkastuu tasan saman ikkunan
+      // aikana sen alta. Laatikko on silloin jo bannerin kokoinen ja
+      // muotoinen, joten vaihdos ei näy erillisenä tapahtumana.
       ov.style.transition = 'transform .85s cubic-bezier(.22,1,.36,1),' +
-                            ' opacity .85s cubic-bezier(.7,0,.9,1),' +
-                            ' border-radius .85s cubic-bezier(.22,1,.36,1)';
+                            ' border-radius .85s cubic-bezier(.22,1,.36,1),' +
+                            ' opacity .3s ease .55s';
       requestAnimationFrame(() => {
         ov.style.borderRadius = '16px';
         ov.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
         ov.style.opacity = '0';
+        banner.style.transition = 'opacity .3s ease .55s';
+        banner.style.opacity = '1';
       });
       setTimeout(() => {
         // ⚠️ SIIRTYMÄ POIS ENNEN NOLLAUSTA. Aiemmin inline-tyylit tyhjättiin
@@ -19009,6 +19023,7 @@
         ov.style.transformOrigin = '';
         void ov.offsetWidth;
         ov.style.transition = '';
+        banner.style.transition = '';
         banner.style.opacity = '';
         _psClosing = false;
         // "Muuta pysäköinnin kestoa" jatkaa suoraan keston muokkaukseen.
