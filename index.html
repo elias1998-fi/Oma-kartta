@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-d -->
+<head><!-- TP_BUILD 2026-08-26-e -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3333,14 +3333,14 @@
       flex-shrink: 0;
       width: 1px; height: 19px;
       background: #e3e3e8;
-      margin: 0 8px 0 6px;
+      margin: 0 9px 0 7px;
     }
     /* flex:1 venyttää painikkeen koko vapaaseen tilaan, jolloin erotin ja
        pienoisrulla työntyvät pillerin oikeaan reunaan JA koko vasen puoli on
        napautettavissa. Pelkkä margin-right:auto olisi työntänyt rullan oikein,
        mutta jättänyt tekstin ja rullan väliin kuolleen alueen. */
     #ajanhetki-pill-main {
-      display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0;
+      display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
       height: 100%; padding: 0;
       background: none; border: none;
       font-family: Arial, sans-serif; font-size: 13px; font-weight: 700;
@@ -3350,12 +3350,13 @@
        Kapealla näytöllä (esim. 320 px) teksti + kello + rulla eivät mahdu, ja
        koska pillerillä on white-space:nowrap, ylivuoto työntäisi rullan ulos
        pilleristä. Katkaisu kolmella pisteellä pitää rullan aina paikallaan. */
+    #ajanhetki-pill-main svg { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--tp-accent); }
     #ajanhetki-pill-main .ajanhetki-pill-label { color: #0C0243; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     /* Kiinteä vähimmäisleveys, jottei kellonaika hyppisi sormen alla kun 9:05
-       vaihtuu 11:30:ksi. 34 px riittää: "11:30" on Arial 13 px lihavoituna
-       33,2 px. Aiempi 38 px oli tarpeettoman väljä nyt kun samalle riville
-       tuli myös päivämerkintä. */
-    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); display: inline-block; min-width: 34px; text-align: right; flex-shrink: 0; }
+       vaihtuu 11:30:ksi. Takaisin 38 px:ssä (-d:ssä kokeiltu 34 px palautettu):
+       pilleri on kortin levyinen, joten rivillä on tilaa eikä tiukennukselle
+       ole tarvetta. */
+    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); display: inline-block; min-width: 38px; text-align: right; flex-shrink: 0; }
     /* Päivämerkintä ("nykyhetki" / "tänään" / "to 27.8.") — samat arvot kuin
        auki olevan kortin #ref-time-day-2:lla: Arial 13 px, #888. font-weight
        on pakko nollata, koska #ajanhetki-pill-main on kokonaisuudessaan 700. */
@@ -5355,6 +5356,9 @@
              vetäminen ei kasvata korttia. -->
         <div id="ajanhetki-pill">
           <button id="ajanhetki-pill-main" aria-label="Muokkaa ajanhetkeä">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L15.5 14"/>
+            </svg>
             <span class="ajanhetki-pill-label">Tarkasteltava ajanhetki:</span>
             <span id="ajanhetki-pill-time">–</span>
             <span id="ajanhetki-pill-day">nykyhetki</span>
@@ -6736,7 +6740,14 @@
       PILL_BTNS.forEach(b => b.classList.remove('ball-here'));
     }
 
-    map.on('movestart', () => { if (menuExpanded) closeMenu(); });
+    // ⚠️ VAIN KÄYTTÄJÄN OMA KARTAN LIIKUTUS SULKEE VALIKON (e.originalEvent).
+    // Ilman tätä ehtoa myös OHJELMALLINEN liike sulki valikon, ja sovelluksen
+    // ensimmäisellä avauksella se näytti itsestään tapahtuvalta bugilta:
+    // geolocate-tapahtuma saapuu parin sekunnin viiveellä ja ajaa
+    // map.flyTo(:n käyttäjän sijaintiin (ks. geolocate.on('geolocate')), joka
+    // laukaisee movestartin ilman että näyttöön on koskettu. Sama koski kaikkia
+    // muitakin flyTo-kutsuja (haku, alueen valinta).
+    map.on('movestart', (e) => { if (menuExpanded && e && e.originalEvent) closeMenu(); });
 
     menuBtn.addEventListener('click', () => {
       if (menuExpanded) closeMenu(); else openMenu();
@@ -6804,6 +6815,13 @@
     // running a parallel CSS fade, which used its own curve and got ahead of
     // the slide (the grey looked like it appeared at once).
     let _profileDimRAF = null, _profileDimStop = null;
+    // ⚠️ Tosi kun swipe-ele ohjaa himmennystä itse. Silloin settleProfileDim()
+    // EI saa koskea siihen: ele sulkee laatikon, mutta poistaa .open-luokan
+    // vasta animaation lopuksi, joten settle näkisi valikon vielä auki ja
+    // asettaisi opacityn takaisin ykköseen kesken uloslipumisen. Inline-
+    // transitionin (340 ms) kanssa se näkyi juuri raportoituna vikana:
+    // laatikko lähti ensin pois ja himmennys häipyi vasta sen jälkeen.
+    let _profileDimOwned = false;
     function profileDimFrame() {
       const ov  = document.getElementById('profile-overlay');
       const dim = document.getElementById('profile-dim');
@@ -6814,6 +6832,7 @@
       _profileDimRAF = requestAnimationFrame(profileDimFrame);
     }
     function startProfileDim() {
+      if (_profileDimOwned) return;   // ele ohjaa himmennystä
       if (_profileDimRAF == null) profileDimFrame();
       // Safety net: if the slide is interrupted (or never starts) transitionend
       // won't fire, so make sure the loop always winds down.
@@ -6826,6 +6845,7 @@
     // Lifting it at close-time popped the button from under the still-dark
     // dim to full brightness in one frame — a visible white flash.
     function settleProfileDim(){
+      if (_profileDimOwned) return;   // ele ohjaa himmennystä
       stopProfileDim();
       const ov  = document.getElementById('profile-overlay');
       const dim = document.getElementById('profile-dim');
@@ -6837,8 +6857,12 @@
       const ov = document.getElementById('profile-overlay');
       // Settle once the slide has finished (state-driven, so an interrupted
       // close followed by a reopen resolves correctly too).
+      // ⚠️ e.target === ov ON PAKOLLINEN. transitionend KUPLII, ja paneelin
+      // sisällä on lukuisia elementtejä joilla on oma transform-siirtymä
+      // (kytkimet, nuolet). Ilman tarkistusta mikä tahansa niistä kutsui
+      // settleProfileDimin satunnaisella hetkellä — myös kesken swipe-eleen.
       if (ov) ov.addEventListener('transitionend', (e) => {
-        if (e.propertyName !== 'transform') return;
+        if (e.target !== ov || e.propertyName !== 'transform') return;
         settleProfileDim();
       });
     })();
@@ -16485,15 +16509,27 @@
       el.style.transition = 'transform ' + ms + 'ms ' + SWIPE_EASE;
       el.style.transform  = transform;
       let fired = false;
+      // ⚠️ transitionend KUPLII: ilman target-tarkistusta minkä tahansa lapsen
+      // siirtymä (kytkin, nuoli) päätti eleen etuajassa. Kuuntelija on oma
+      // nimetty funktionsa, jotta se saadaan myös irrotettua.
+      const onEnd = (e) => { if (e.target === el) fin(); };
       const fin = () => { if (fired) return; fired = true;
-        el.removeEventListener('transitionend', fin); done && done(); };
-      el.addEventListener('transitionend', fin);
+        el.removeEventListener('transitionend', onEnd); done && done(); };
+      el.addEventListener('transitionend', onEnd);
       setTimeout(fin, ms + 80);   // varmistus jos transitionend jää tulematta
     }
 
     function swipeResetDrawer(g){
       g.el.style.transition = ''; g.el.style.transform = ''; g.el.style.willChange = '';
       if (g.dim) { g.dim.style.transition = ''; g.dim.style.opacity = ''; }
+      // Himmennys takaisin sovelluksen omaan ohjaukseen. settleProfileDim
+      // asettaa lopullisen arvon (0 kun laatikko sulkeutui, 1 kun ele
+      // peruuntui) ja poistaa body.profile-moden — se jäi eleen ajaksi
+      // tekemättä, koska settle oli lukittu.
+      if (g.dim) {
+        _profileDimOwned = false;
+        if (typeof settleProfileDim === 'function') settleProfileDim();
+      }
     }
     // Alla olevien elementtien tyylit takaisin. Erillinen funktio, koska tämä
     // pitää ajaa ENNEN näkymän sulkemista — ks. kutsukohta.
@@ -16612,6 +16648,12 @@
           // häivytetään eleen mukana.
           _g.dim = document.getElementById('profile-dim');
           if (_g.dim) _g.dim.style.transition = 'none';
+          // Ele ohjaa himmennystä tästä eteenpäin: pysäytetään profileDimin
+          // oma rAF-silmukka ja sen varmistusajastin, ettei kaksi lähdettä
+          // kirjoita samaa opacityä.
+          _profileDimOwned = true;
+          if (typeof stopProfileDim === 'function') stopProfileDim();
+          clearTimeout(_profileDimStop);
         } else if (_g.mode === 'back') {
           // Vasen reuna on nyt ruudun sisällä, joten se pyöristetään laitteen
           // kulmien tapaan ja siihen tulee varjo. overflow:hidden on pakko,
