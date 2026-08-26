@@ -6437,7 +6437,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "poi",
-      "minzoom": 13,
+      "minzoom": 14,
       "filter": [
         "all",
         [
@@ -6706,7 +6706,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "transportation_name",
-      "minzoom": 10,
+      "minzoom": 14,
       "filter": [
         "all",
         [
@@ -6766,6 +6766,7 @@
       "type": "symbol",
       "source": "vector",
       "source-layer": "transportation_name",
+      "minzoom": 14,
       "filter": [
         "all",
         [
