@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-c -->
+<head><!-- TP_BUILD 2026-08-26-d -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3305,7 +3305,9 @@
     #ajanhetki-pill {
       position: absolute; bottom: 0; left: 0; right: 0;
       display: flex; align-items: center;
-      height: 38px; padding: 0 7px 0 14px;
+      /* Vasen pehmuste 14 → 10 px, kun kello-ikoni poistettiin: teksti alkaa
+         lähempää pillerin reunaa ja pidemmälle otsikolle jää tilaa. */
+      height: 38px; padding: 0 7px 0 10px;
       white-space: nowrap;
       opacity: 1;
       transition: opacity .16s ease .14s;   /* fades back IN, after the shrink starts */
@@ -3331,29 +3333,33 @@
       flex-shrink: 0;
       width: 1px; height: 19px;
       background: #e3e3e8;
-      margin: 0 9px 0 7px;
+      margin: 0 8px 0 6px;
     }
     /* flex:1 venyttää painikkeen koko vapaaseen tilaan, jolloin erotin ja
        pienoisrulla työntyvät pillerin oikeaan reunaan JA koko vasen puoli on
        napautettavissa. Pelkkä margin-right:auto olisi työntänyt rullan oikein,
        mutta jättänyt tekstin ja rullan väliin kuolleen alueen. */
     #ajanhetki-pill-main {
-      display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
+      display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0;
       height: 100%; padding: 0;
       background: none; border: none;
       font-family: Arial, sans-serif; font-size: 13px; font-weight: 700;
       white-space: nowrap; cursor: pointer;
     }
-    #ajanhetki-pill-main svg { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--tp-accent); }
     /* "Tarkasteltava ajanhetki" on selvästi pidempi kuin entinen "Ajanhetki".
        Kapealla näytöllä (esim. 320 px) teksti + kello + rulla eivät mahdu, ja
        koska pillerillä on white-space:nowrap, ylivuoto työntäisi rullan ulos
        pilleristä. Katkaisu kolmella pisteellä pitää rullan aina paikallaan. */
     #ajanhetki-pill-main .ajanhetki-pill-label { color: #0C0243; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-    /* Kiinteä leveys: pilleri kutistuu sisältöönsä, joten ilman tätä pillerin
-       leveys — ja sen mukana rulla — hyppisi sormen alla kun 9:05 vaihtuu
-       11:30:ksi. */
-    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); display: inline-block; min-width: 38px; text-align: right; flex-shrink: 0; }
+    /* Kiinteä vähimmäisleveys, jottei kellonaika hyppisi sormen alla kun 9:05
+       vaihtuu 11:30:ksi. 34 px riittää: "11:30" on Arial 13 px lihavoituna
+       33,2 px. Aiempi 38 px oli tarpeettoman väljä nyt kun samalle riville
+       tuli myös päivämerkintä. */
+    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); display: inline-block; min-width: 34px; text-align: right; flex-shrink: 0; }
+    /* Päivämerkintä ("nykyhetki" / "tänään" / "to 27.8.") — samat arvot kuin
+       auki olevan kortin #ref-time-day-2:lla: Arial 13 px, #888. font-weight
+       on pakko nollata, koska #ajanhetki-pill-main on kokonaisuudessaan 700. */
+    #ajanhetki-pill-main #ajanhetki-pill-day { color: #888; font-size: 13px; font-weight: 400; font-family: Arial, sans-serif; flex-shrink: 0; }
 
     /* Window face — pinned top-left and held at the FULL expanded width in px
        (set from JS) so its layout never reflows while the card animates; the
@@ -5349,11 +5355,9 @@
              vetäminen ei kasvata korttia. -->
         <div id="ajanhetki-pill">
           <button id="ajanhetki-pill-main" aria-label="Muokkaa ajanhetkeä">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L15.5 14"/>
-            </svg>
-            <span class="ajanhetki-pill-label">Tarkasteltava ajanhetki</span>
+            <span class="ajanhetki-pill-label">Tarkasteltava ajanhetki:</span>
             <span id="ajanhetki-pill-time">–</span>
+            <span id="ajanhetki-pill-day">nykyhetki</span>
           </button>
           <!-- Pienoisrulla +/− nappien tilalla. Sama jaettu tila kuin kortin ja
                suodatinsheetin rullilla (refMinutes / refDrumPhase), joten kaikki
@@ -17602,28 +17606,36 @@
       const hhmm = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
       const pillT = document.getElementById('ajanhetki-pill-time');
       if (pillT) pillT.textContent = hhmm;
-      const pillL = document.querySelector('#ajanhetki-pill .ajanhetki-pill-label');
-      if (pillL) pillL.textContent = refTimeManual ? 'Ajanhetki' : 'Nykyhetki';
+      // ⚠️ Pillerin otsikko on KIINTEÄ ("Tarkasteltava ajanhetki:") ja tulee
+      // HTML:stä. Tässä oli aiemmin rivi joka kirjoitti sen joka päivityksellä
+      // muotoon 'Ajanhetki' / 'Nykyhetki' — siksi HTML:ään tehty tekstimuutos
+      // ei näkynyt sovelluksessa lainkaan. Tila kerrotaan nyt erillisellä
+      // harmaalla päivämerkinnällä otsikon ja kellonajan jälkeen.
       const v2 = document.getElementById('ref-time-value-2');
       if (v2) { v2.textContent = hhmm; v2.classList.toggle('manual', refTimeManual); }
       const r2 = document.getElementById('ref-time-reset-2');
       if (r2) r2.classList.toggle('visible', refTimeManual);
-      const day2 = document.getElementById('ref-time-day-2');
-      if (day2) {
-        if (!refTimeManual) { day2.textContent = 'nykyhetki'; }
+      // Sama teksti kortin päivämerkintään ja pillerin harmaaseen osaan, jotta
+      // ne eivät voi ajautua erilleen.
+      let dayTxt;
+      if (!refTimeManual) dayTxt = 'nykyhetki';
+      else {
+        const diffDays = Math.floor(refEffectiveMinutes() / 1440);
+        if      (diffDays === 0) dayTxt = 'tänään';
+        else if (diffDays === 1) dayTxt = 'huomenna';
         else {
-          const diffDays = Math.floor(refEffectiveMinutes() / 1440);
-          if      (diffDays === 0) day2.textContent = 'tänään';
-          else if (diffDays === 1) day2.textContent = 'huomenna';
-          else {
-            const dn = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'];
-            day2.textContent = dn[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.';
-          }
+          const dn = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'];
+          dayTxt = dn[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.';
         }
       }
+      const day2 = document.getElementById('ref-time-day-2');
+      if (day2) day2.textContent = dayTxt;
+      const pillD = document.getElementById('ajanhetki-pill-day');
+      if (pillD) pillD.textContent = dayTxt;
       updateAjanhetkiPillVisibility();
-      // The pill's text ("Ajanhetki 11:30" vs "Nykyhetki 9:05") changes width,
-      // and the collapsed card is sized to fit it exactly — so re-measure.
+      // Pilleri on -c:stä alkaen kortin levyinen, joten sen leveys ei enää
+      // riipu tekstistä. Uudelleenmittaus jää silti: se pitää korkeuden ja
+      // OSM-maininnan siirtymän ajan tasalla.
       applyAjanhetkiGeometry();
     }
     // ── Sheet-linked fade ────────────────────────────────────────────────
