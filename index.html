@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-n -->
+<head><!-- TP_BUILD 2026-08-26-o -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3260,6 +3260,139 @@
     .drum-scroll-zone:active { cursor: grabbing; }
     #drum-canvas { display: block; width: 52px; height: 80px; }
 
+
+    /* ── Pysäköinnin aloituksen onnistumisnäkymä ────────────────────────
+       Koko ruudun näkymä, joka liukuu oikealta pysäköinnin alkaessa ja
+       kutistuu lopuksi "Pysäköinti käynnissä" -banneriin. Väripari on sama
+       suhde kuin VR:n vihreässä referenssissä (#aee4c6 / #cff1da): sama
+       kylläisyys ja vaaleus, sävy siirretty sähkönsiniseen (#1266f1:n
+       sukuun). Teksti ja napit brändin tummansinisellä #0C0243. */
+    #park-success {
+      position: fixed; inset: 0;
+      z-index: 150;
+      background: #a7c9ec;
+      display: flex; flex-direction: column;
+      transform: translateX(var(--tp-offscreen-x));
+      transition: transform .42s cubic-bezier(.32,.72,0,1);
+      font-family: Arial, sans-serif;
+      will-change: transform;
+    }
+    #park-success.open { transform: translateX(0); }
+    .ps-inner {
+      flex: 1; display: flex; flex-direction: column;
+      padding: max(14px, env(safe-area-inset-top, 0px)) 22px
+               max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px));
+      transition: opacity .18s ease;
+    }
+    #park-success.closing .ps-inner { opacity: 0; }
+
+    /* Sulje-pilleri oikeassa yläkulmassa, ohut ääriviiva kuten referenssissä. */
+    #ps-close {
+      align-self: flex-end;
+      margin-top: 46px;
+      padding: 11px 26px;
+      background: none;
+      border: 1.5px solid #0C0243;
+      border-radius: 999px;
+      font-family: Arial, sans-serif; font-size: 16px; font-weight: bold;
+      color: #0C0243; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #ps-close:active { background: rgba(12,2,67,.07); }
+
+    #ps-title {
+      margin-top: 26px;
+      font-size: 34px; line-height: 1.15; font-weight: bold;
+      color: #0C0243; text-align: center; letter-spacing: -.2px;
+    }
+    #ps-sub {
+      margin-top: 10px;
+      font-size: 15px; color: rgba(12,2,67,.62); text-align: center;
+    }
+
+    /* Näyttämö: suorakulmio joka kasvaa paikalleen. Vastaa referenssin
+       ympyrää, mutta pysäköintiin sopivammassa muodossa. */
+    #ps-stage-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+    #ps-stage {
+      width: min(280px, 78vw); aspect-ratio: 240 / 170;
+      background: #cde2f6; border-radius: 26px;
+      overflow: hidden;
+      transform: scale(.14); opacity: 0;
+      will-change: transform, opacity;
+    }
+    #ps-stage svg { display: block; width: 100%; height: 100%; }
+
+    .ps-actions { display: flex; flex-direction: column; gap: 12px; }
+    .ps-btn {
+      width: 100%; padding: 18px 16px;
+      border-radius: 999px;
+      font-family: Arial, sans-serif; font-size: 17px; font-weight: bold;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .ps-btn-primary { background: #0C0243; border: none; color: #fff; }
+    .ps-btn-primary:active { background: #1a0f5c; }
+    /* Sama viivanpaksuus kuin referenssin ääriviivanapissa, brändin värillä. */
+    .ps-btn-ghost { background: none; border: 1.5px solid #0C0243; color: #0C0243; }
+    .ps-btn-ghost:active { background: rgba(12,2,67,.07); }
+
+    /* ── Ajoitus ────────────────────────────────────────────────────────
+       Jokainen osa nousee OMAN paikkansa yläpuolelta (translateY −16px),
+       ei ruudun yläreunasta — siksi keskellä olevat osat ilmestyvät
+       keskeltä. Porrastus antaa saman rauhallisen järjestyksen kuin
+       referenssissä. */
+    .ps-rise { opacity: 0; }
+    @keyframes ps-rise { from { opacity: 0; transform: translateY(-16px); }
+                         to   { opacity: 1; transform: translateY(0); } }
+    #park-success.play .ps-rise { animation: ps-rise .5s cubic-bezier(.22,1,.36,1) both; }
+    #park-success.play #ps-close  { animation-delay: .16s; }
+    #park-success.play #ps-title  { animation-delay: .22s; }
+    #park-success.play #ps-sub    { animation-delay: .30s; }
+    #park-success.play #ps-back   { animation-delay: .40s; }
+    #park-success.play #ps-extend { animation-delay: .46s; }
+
+    @keyframes ps-grow { from { transform: scale(.14); opacity: 0; }
+                         60%  { opacity: 1; }
+                         to   { transform: scale(1);   opacity: 1; } }
+    #park-success.play #ps-stage { animation: ps-grow .72s cubic-bezier(.22,1,.36,1) .72s both; }
+
+    /* Kyltti hiipuu esiin kun suorakulmio on jo lähes täydessä koossa. */
+    @keyframes ps-sign { from { opacity: 0; transform: translateY(7px); }
+                         to   { opacity: 1; transform: translateY(0); } }
+    #ps-sign { opacity: 0; transform-box: view-box; transform-origin: 191px 105px; }
+    #park-success.play #ps-sign { animation: ps-sign .42s cubic-bezier(.22,1,.36,1) 1.20s both; }
+
+    /* Auto ajaa vasemmalta ja hidastuu paikalleen. */
+    @keyframes ps-drive { from { transform: translateX(-215px); } to { transform: translateX(0); } }
+    #ps-car { transform: translateX(-215px); }
+    #park-success.play #ps-car { animation: ps-drive 1.15s cubic-bezier(.16,.85,.3,1) 1.30s both; }
+    /* Jarrutus: nokka nyökkää alas ja tasaantuu. Kiertokeskiö on etupyörän
+       kohdalla auton LOPULLISESSA paikassa (view-box-koordinaatit), koska
+       nyökkäys tapahtuu vasta pysähdyksessä. */
+    @keyframes ps-brake { 0%, 62% { transform: rotate(0deg); }
+                          78% { transform: rotate(-3.2deg); }
+                          90% { transform: rotate(1.1deg); }
+                          100% { transform: rotate(0deg); } }
+    #ps-car-tilt { transform-box: view-box; transform-origin: 138px 123px; }
+    #park-success.play #ps-car-tilt { animation: ps-brake 1.35s cubic-bezier(.33,1,.68,1) 1.30s both; }
+    /* Pyörät pyörivät samalla hidastuvalla käyrällä kuin ajo, jotta ne
+       pysähtyvät täsmälleen auton mukana. */
+    /* 3,11 kierrosta = ajomatka 215 yksikköä jaettuna pyörän kehällä 2π·11,
+       jotta pyörät eivät luista suhteessa maahan. */
+    @keyframes ps-wheel { from { transform: rotate(0deg); } to { transform: rotate(1120deg); } }
+    .ps-wheel { transform-box: fill-box; transform-origin: 50% 50%; }
+    #park-success.play .ps-wheel { animation: ps-wheel 1.15s cubic-bezier(.16,.85,.3,1) 1.30s both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      #park-success, #park-success.play .ps-rise, #park-success.play #ps-stage,
+      #park-success.play #ps-sign, #park-success.play #ps-car,
+      #park-success.play #ps-car-tilt, #park-success.play .ps-wheel {
+        animation: none !important; transition: none !important;
+      }
+      .ps-rise, #ps-sign { opacity: 1 !important; }
+      #ps-stage { transform: none !important; opacity: 1 !important; }
+      #ps-car { transform: none !important; }
+    }
+
     /* ── Ajanhetki pill + floating window ─────────────────────────────── */
     /* Anchor line sitting just above the sheet's top edge. It's a child of
        #bottom-sheet, so it rides with the sheet exactly like the
@@ -5200,6 +5333,70 @@
   </div>
 
   <!-- Active parking banner — shown on the map view while a session is running -->
+  <!-- ── Pysäköinnin aloituksen onnistumisnäkymä ──────────────────────────
+       Avautuu heti kun pysäköinti on aloitettu, ja sulkeutuu kutistumalla
+       "Pysäköinti käynnissä" -banneriin. Ei omaa dataa: teksti täytetään
+       activeParkingSessionista openParkSuccess()-funktiossa. -->
+  <div id="park-success" role="dialog" aria-modal="true" aria-label="Pysäköinti alkoi">
+    <div class="ps-inner">
+      <button id="ps-close" class="ps-rise" onclick="closeParkSuccess()">Sulje</button>
+      <div id="ps-title" class="ps-rise">Pysäköinti alkoi</div>
+      <div id="ps-sub" class="ps-rise">—</div>
+
+      <div id="ps-stage-wrap">
+        <div id="ps-stage">
+          <!-- Näyttämö sivukuvana: maanpinta, P-kyltti ja auto joka ajaa
+               vasemmalta paikalleen. Kaikki mitat ovat viewBoxin yksiköitä,
+               joten suorakulmion koko voi muuttua ilman että animaatio
+               menee epätahtiin. -->
+          <svg viewBox="0 0 240 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- maanpinta -->
+            <line x1="18" y1="134" x2="222" y2="134" stroke="rgba(12,2,67,.18)" stroke-width="3" stroke-linecap="round"/>
+            <!-- P-kyltti: hiipuu esiin siihen kohtaan johon auto pysähtyy -->
+            <g id="ps-sign">
+              <rect x="188.5" y="76" width="5" height="58" rx="2.5" fill="rgba(12,2,67,.35)"/>
+              <rect x="170" y="34" width="42" height="42" rx="11" fill="#1266f1"/>
+              <text x="191" y="65" text-anchor="middle" font-family="Arial, sans-serif"
+                    font-size="27" font-weight="bold" fill="#fff">P</text>
+            </g>
+
+            <!-- Auto. Ulompi ryhmä hoitaa ajon, sisempi jarrutuksen nyökkäyksen. -->
+            <g id="ps-car">
+              <g id="ps-car-tilt">
+                <g transform="translate(46 78)">
+                  <!-- kori -->
+                  <path d="M2 34 Q2 26 10 25 L26 24 L38 9 Q41 5 47 5 L84 5 Q90 5 93 9 L104 24 L110 25
+                           Q118 26 118 34 L118 41 Q118 45 114 45 L6 45 Q2 45 2 41 Z" fill="#0C0243"/>
+                  <!-- ikkunat -->
+                  <path d="M42 11 L58 11 L58 24 L32 24 Z" fill="#cde2f6"/>
+                  <path d="M64 11 L82 11 L92 24 L64 24 Z" fill="#cde2f6"/>
+                  <!-- etuvalo -->
+                  <rect x="110" y="30" width="8" height="5" rx="2.5" fill="#ffd166"/>
+                  <!-- pyörät -->
+                  <g class="ps-wheel">
+                    <circle cx="30" cy="45" r="11" fill="#0C0243"/>
+                    <circle cx="30" cy="45" r="4.5" fill="#cde2f6"/>
+                    <rect x="28.6" y="34.6" width="2.8" height="20.8" rx="1.4" fill="#cde2f6" opacity=".55"/>
+                  </g>
+                  <g class="ps-wheel">
+                    <circle cx="92" cy="45" r="11" fill="#0C0243"/>
+                    <circle cx="92" cy="45" r="4.5" fill="#cde2f6"/>
+                    <rect x="90.6" y="34.6" width="2.8" height="20.8" rx="1.4" fill="#cde2f6" opacity=".55"/>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="ps-actions">
+        <button id="ps-back"   class="ps-btn ps-btn-primary ps-rise" onclick="closeParkSuccess()">Palaa karttanäkymään</button>
+        <button id="ps-extend" class="ps-btn ps-btn-ghost ps-rise"   onclick="closeParkSuccess(true)">Muuta pysäköinnin kestoa</button>
+      </div>
+    </div>
+  </div>
+
   <div id="active-parking-banner">
     <div class="apb-row">
       <div class="apb-badge" id="apb-badge">—</div>
@@ -18720,6 +18917,80 @@
       setTimeout(() => { t.style.display = 'none'; }, 350);
     }
 
+    // ── Pysäköinnin aloituksen onnistumisnäkymä ────────────────────────
+    // Avautuu liukumalla oikealta ja soittaa animaatiojonon: tekstit nousevat
+    // omilta paikoiltaan, suorakulmio kasvaa, P-kyltti hiipuu esiin ja auto
+    // ajaa paikalleen jarruttaen. Kaikki ajoitus on CSS:ssä; täällä vain
+    // käynnistetään ja pysäytetään.
+    let _psClosing = false;
+    function openParkSuccess() {
+      const ov = document.getElementById('park-success');
+      if (!ov) { showActiveParkingBanner(); return; }
+      // Alaotsikko kertoo saman kuin banneri: rekisteritunnus ja päättymisaika.
+      const sub = document.getElementById('ps-sub');
+      if (sub && activeParkingSession) {
+        const ed = new Date(activeParkingSession.endTime);
+        sub.textContent = `${activeParkingSession.plate} · Päättyy ` +
+                          `${ed.getHours()}:${String(ed.getMinutes()).padStart(2,'0')}`;
+      }
+      _psClosing = false;
+      // ⚠️ Animaatiot on nollattava ennen uutta soittoa. Pelkkä luokan
+      // lisääminen ei käynnistä niitä uudelleen jos luokka on jo ollut
+      // päällä, joten luokka poistetaan, pakotetaan asettelu (offsetWidth) ja
+      // lisätään uudelleen.
+      ov.classList.remove('open', 'play', 'closing');
+      ov.style.transition = '';
+      ov.style.transform = '';
+      ov.style.opacity = '';
+      ov.style.borderRadius = '';
+      void ov.offsetWidth;
+      ov.classList.add('open');
+      requestAnimationFrame(() => ov.classList.add('play'));
+    }
+    // Sulkeminen: näkymä kutistuu bannerin kokoon ja paikkaan, ja banneri
+    // paljastuu sen alta. ⚠️ Banneri näytetään ENNEN mittausta — sen sijainti
+    // ja koko luetaan todellisesta elementistä, joten mitään kovakoodattuja
+    // lukuja ei tarvita ja kutistus osuu oikeaan paikkaan myös eri
+    // näyttökoolla ja turva-alueilla.
+    function closeParkSuccess(thenExtend) {
+      const ov = document.getElementById('park-success');
+      const banner = document.getElementById('active-parking-banner');
+      if (!ov || _psClosing) return;
+      _psClosing = true;
+      showActiveParkingBanner();
+      banner.style.opacity = '0';
+      const b  = banner.getBoundingClientRect();
+      const w  = window.innerWidth, h = window.innerHeight;
+      const sx = Math.max(.05, b.width  / w);
+      const sy = Math.max(.05, b.height / h);
+      const dx = b.left + b.width  / 2 - w / 2;
+      const dy = b.top  + b.height / 2 - h / 2;
+      ov.classList.remove('play');
+      ov.classList.add('closing');
+      ov.style.transformOrigin = '50% 50%';
+      ov.style.transition = 'transform .42s cubic-bezier(.22,1,.36,1),' +
+                            ' opacity .42s ease, border-radius .42s ease';
+      requestAnimationFrame(() => {
+        ov.style.borderRadius = '16px';
+        ov.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+        ov.style.opacity = '0';
+      });
+      setTimeout(() => {
+        ov.classList.remove('open', 'closing');
+        ov.style.transition = '';
+        ov.style.transform = '';
+        ov.style.opacity = '';
+        ov.style.borderRadius = '';
+        ov.style.transformOrigin = '';
+        banner.style.opacity = '';
+        _psClosing = false;
+        // "Muuta pysäköinnin kestoa" jatkaa suoraan keston muokkaukseen.
+        // Kutsutaan vasta kutistuksen jälkeen, koska extendActiveParking
+        // piilottaa bannerin ja avaa pysäköintinäkymän.
+        if (thenExtend && typeof extendActiveParking === 'function') extendActiveParking();
+      }, 440);
+    }
+
     // ── Active parking banner UI ───────────────────────────────────────
     function showActiveParkingBanner() {
       document.getElementById('active-parking-banner').classList.add('visible');
@@ -18914,17 +19185,16 @@
         location:      { lat: center.lat, lng: center.lng }
       };
 
-      // Show 4-second toast, then return to map with active banner visible
-      showCustomToast('Pysäköinti aloitettu!', 4000);
-      setTimeout(() => {
-        const overlay = document.getElementById('parking-overlay');
-        overlay.classList.remove('open');
-        btnContainer.classList.remove('hidden');
-        sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
-        sheet.style.transform  = 'translateY(calc(100% - 60px))';
-        currentY = sheet.offsetHeight - 60;
-        showActiveParkingBanner();
-      }, 4000);
+      // Perusnäkymä palautetaan HETI onnistumisnäkymän alle, jotta lopussa
+      // on valmis näkymä johon kutistua. Banneri tulee näkyviin vasta kun
+      // onnistumisnäkymä suljetaan — se on kutistumisen kohde.
+      // (Aiempi 4 s toast + ajastin on korvattu tällä näkymällä.)
+      document.getElementById('parking-overlay').classList.remove('open');
+      btnContainer.classList.remove('hidden');
+      sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
+      sheet.style.transform  = 'translateY(calc(100% - 60px))';
+      currentY = sheet.offsetHeight - 60;
+      openParkSuccess();
     }
 
     // Confirm a new total parking duration: new end_time = now + parkingMinutes.
