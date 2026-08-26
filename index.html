@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-i -->
+<head><!-- TP_BUILD 2026-08-26-l -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -56,6 +56,19 @@
     /* Digitransit/HSL-tiilet: kirjaston oma attribuutiokontrolli piilotetaan, ja
        vaadittu "© OpenStreetMap" -maininta piirretään omana elementtinään
        sheetin yläreunaan (#osm-attribution). ÄLÄ poista sitä. */
+    /* ⚠️ RUUDUN ULKOPUOLELLE PYSÄKÖITYJEN NÄKYMIEN LEPOASENTO.
+       Pelkkä translateX(100%) jättää näkymän vasemman reunan TASAN ruudun
+       oikeaan laitaan. Näkymien sisällä on täysleveitä sheettejä joilla on
+       ylöspäin osoittava varjo (esim. #area-sheet, #admin-detail-sheet,
+       #editor-sheet: box-shadow 0 -2px 24px). Varjon sumennus on isotrooppinen,
+       joten se ulottuu myös SIVUSUUNNASSA 24 px sheetin reunan yli — eli
+       pysäköidystä näkymästä ruudun sisään. Se näkyi haaleana tummenemana
+       ruudun oikeassa reunassa: mitattuna 222/255 aivan reunassa, häviten
+       27 CSS px:n matkalla. Vasemmalla vastaavaa ei ole, koska sieltä tuleva
+       profiilivalikko on ainoa vasemmalle pysäköity eikä sillä ole varjoa.
+       40 px riittää kattamaan leveimmän varjon (24 px sumennus + 2 px siirto).
+       Sama ratkaisu kuin paluueleen SWIPE_SHADOW_PADissa. */
+    :root { --tp-offscreen-x: calc(100% + 40px); }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
     /* ── Unified center marker ────────────────────────────────────────
@@ -488,7 +501,7 @@
       background: #f2f3f5;
       z-index: 100;
       display: flex; flex-direction: column;
-      transform: translateX(100%);
+      transform: translateX(var(--tp-offscreen-x));
       transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     #search-overlay.open, #plus-overlay.open { transform: translateX(0); }
@@ -1501,7 +1514,7 @@
       z-index: 101;
       display: flex;
       flex-direction: column;
-      transform: translateX(100%);
+      transform: translateX(var(--tp-offscreen-x));
       transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     .settings-detail-overlay.open {
@@ -2144,14 +2157,14 @@
       margin-bottom: 0;
     }
     
-    #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); }
+    #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(var(--tp-offscreen-x)); transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); }
     #parking-overlay.open { transform: translateX(0); }
     #parking-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
     #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
     /* Yrityslaskutus chain — same slide-in pattern as #parking-overlay, but
        stacked above it (110/111) since it opens from the payment picker. */
-    #costcenter-overlay, #workcomment-overlay { position: fixed; inset: 0; background: #f2f3f5; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); }
+    #costcenter-overlay, #workcomment-overlay { position: fixed; inset: 0; background: #f2f3f5; display: flex; flex-direction: column; transform: translateX(var(--tp-offscreen-x)); transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); }
     #costcenter-overlay { z-index: 110; }
     #workcomment-overlay { z-index: 111; }
     #costcenter-overlay.open, #workcomment-overlay.open { transform: translateX(0); }
@@ -2312,7 +2325,7 @@
       background: #f2f3f5;
       display: none;
       flex-direction: column;
-      transform: translateX(100%);
+      transform: translateX(var(--tp-offscreen-x));
       transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
     }
     #parking-summary-overlay.open {
@@ -4947,7 +4960,7 @@
   </div>
 
   <!-- Sub-overlay: Lisää uusi ilmainen pysäköintialue -->
-  <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
+  <div id="add-parking-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(var(--tp-offscreen-x));transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
     <div style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;">
       <div id="area-map" style="flex:1;"></div>
       <!-- Takaisin-pallura (VAIN tässä näkymässä): sama paikka ja ulkoasu kuin
@@ -5045,7 +5058,7 @@
   </div>
 
   <!-- Area details overlay -->
-  <div id="area-details-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:120;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
+  <div id="area-details-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:120;display:flex;flex-direction:column;transform:translateX(var(--tp-offscreen-x));transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAreaDetails()">←</button>
       <div class="overlay-title">Lisää pysäköintialueen tiedot</div>
@@ -5299,7 +5312,7 @@
     </div>
   </div>
 
-  <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
+  <div id="comment-areas-overlay" style="position:fixed;inset:0;background:#f2f3f5;z-index:110;display:flex;flex-direction:column;transform:translateX(var(--tp-offscreen-x));transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeCommentAreas()">←</button>
       <div class="overlay-title">Kommentoi alueita</div>
@@ -6620,30 +6633,12 @@
       const prog = Math.max(0, Math.min(1, (maxY - y) / span));
       sheetBackdrop.style.opacity = String(prog * SHEET_DIM_MAX);
     }
-    // ⚠️ HIMMENNYS LUETAAN SHEETIN TODELLISESTA RUUTUSIJAINNISTA, EI currentY:STÄ.
-    // Aiemmin himmennys päivitettiin vain vetokäsittelijästä ja snapTo:sta
-    // kohdearvolla, mutta sheetiä siirretään myös monesta muusta kohdasta
-    // (closeFilter, checkParkingin haarat, collapseCenterSheet, goBackToMap…)
-    // asettamalla transform suoraan.
-    // Ne eivät päivittäneet verhoa lainkaan, joten se jäi edellisen tilanteen
-    // arvoon: suodatinsheetin vetäminen isoksi ja sulkeminen jätti kartan
-    // pysyvästi tummaksi, eikä mikään nollannut sitä ennen kuin perusnäkymän
-    // sheetiä veti käsin. Sama ratkaisu kuin ajanhetki-pillerin häivytyksessä
-    // (applyAjanhetkiFade), jonka kommentti toteaa saman: closeFilter siirtää
-    // sheetiä päivittämättä currentY:tä. Silmukka vertaa yläreunaa edelliseen
-    // ruutuun eikä tee mitään kun sheet ei liiku, joten se on käytännössä
-    // ilmainen — ja se seuraa myös CSS-siirtymää, jolloin himmennys animoituu
-    // sheetin mukana eikä hyppää.
-    let _sheetDimLastTop = null;
-    function sheetDimLoop(){
-      const top = sheet.getBoundingClientRect().top;
-      if (top !== _sheetDimLastTop) {
-        _sheetDimLastTop = top;
-        applySheetDim(sheet.clientHeight - (window.innerHeight - top));
-      }
-      requestAnimationFrame(sheetDimLoop);
-    }
-    requestAnimationFrame(sheetDimLoop);
+    // HUOM: buildissa -i tätä ajettiin rAF-silmukassa, joka luki sheetin
+    // todellisen ruutusijainnin joka ruudussa. Se PERUTTIIN käyttäjän pyynnöstä
+    // (-j): himmennys seurasi silloin myös CSS-siirtymää, eikä lopputulos ollut
+    // hyvä. Kutsut tulevat taas suoraan niistä kohdista jotka siirtävät sheetiä
+    // kohdearvolla — jos joku uusi siirtoreitti unohtaa kutsun, verho jää
+    // edellisen tilanteen arvoon.
     
     locationBtn.addEventListener('click', () => {
       geolocate.trigger();
@@ -7074,7 +7069,7 @@
       handle.addEventListener('pointercancel', () => { _asDrag = null; });
     }
     function closeAddParkingArea() {
-      document.getElementById('add-parking-overlay').style.transform = 'translateX(100%)';
+      document.getElementById('add-parking-overlay').style.transform = 'translateX(calc(100% + 40px))';
       _adminEditSub = null; _adminEditPreloadCoords = null;
       const _sb=document.getElementById('submit-parking-btn'); if(_sb) _sb.textContent='Lähetä pysäköintipaikka';
     }
@@ -7082,7 +7077,7 @@
       document.getElementById('area-details-overlay').style.transform = 'translateX(0)';
     }
     function closeAreaDetails() {
-      document.getElementById('area-details-overlay').style.transform = 'translateX(100%)';
+      document.getElementById('area-details-overlay').style.transform = 'translateX(calc(100% + 40px))';
     }
 
     // ======== AREA SELECTION MAP ========
@@ -8412,7 +8407,7 @@
       Object.keys(patch).forEach(k=>{ sub[k]=patch[k]; });
       if (currentSubmission && String(currentSubmission.id)===String(sub.id)) Object.keys(patch).forEach(k=>{ currentSubmission[k]=patch[k]; });
       const i=_allPendingRows.findIndex(r=>String(r.id)===String(sub.id)); if(i>=0) Object.keys(patch).forEach(k=>{ _allPendingRows[i][k]=patch[k]; });
-      document.getElementById('area-details-overlay').style.transform='translateX(100%)';
+      document.getElementById('area-details-overlay').style.transform='translateX(calc(100% + 40px))';
       closeAddParkingArea();
       resetAreaDetailsForm();
       if (adminPreviewMap) {
@@ -12521,7 +12516,7 @@
     // ════════════════════════════════════════════════════════════════
 
     function openCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(0)'; }
-    function closeCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(100%)'; }
+    function closeCommentAreas() { document.getElementById('comment-areas-overlay').style.transform = 'translateX(calc(100% + 40px))'; }
 
     function openGpsInfo() {
       document.getElementById('gps-info-overlay').classList.add('open');
@@ -15666,7 +15661,7 @@
     // "Lataus" view — slides in when the user taps the "Lataa täällä" button.
     function closeChargingOverlay(){
       const ov = document.getElementById('charging-overlay');
-      if(ov) ov.style.transform = 'translateX(100%)';
+      if(ov) ov.style.transform = 'translateX(calc(100% + 40px))';
       const bc = document.getElementById('btn-container');
       if(bc && !_connectorPickerOpen) bc.classList.remove('hidden');
     }
@@ -15675,7 +15670,7 @@
       if(!ov){
         ov = document.createElement('div');
         ov.id = 'charging-overlay';
-        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:130;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);';
+        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:130;display:flex;flex-direction:column;transform:translateX(var(--tp-offscreen-x));transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);';
         document.body.appendChild(ov);
       }
       const headerHtml =
@@ -15771,7 +15766,7 @@
     function closeConnectorPicker(){
       _connectorPickerOpen = false;
       const ov = document.getElementById('connector-picker-overlay');
-      if(ov) ov.style.transform = 'translateX(100%)';
+      if(ov) ov.style.transform = 'translateX(calc(100% + 40px))';
       const bc = document.getElementById('btn-container');
       if(bc) bc.classList.remove('hidden');
     }
@@ -15790,7 +15785,7 @@
       if(!ov){
         ov = document.createElement('div');
         ov.id = 'connector-picker-overlay';
-        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:129;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);';
+        ov.style.cssText = 'position:fixed;inset:0;background:#f2f3f5;z-index:129;display:flex;flex-direction:column;transform:translateX(var(--tp-offscreen-x));transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);';
         document.body.appendChild(ov);
       }
       _connectorPickerOpen = true;
@@ -16126,11 +16121,24 @@
         const top = sf.getBoundingClientRect().top;
         if(top !== _lastTop){
           _lastTop = top;
-          // Shrink the content box to the visible on-screen height so the whole
-          // content stays reachable even when the sheet is only partway up the
-          // screen (otherwise the bottom of the content sits below the screen).
+          // Sisältölaatikko kutistetaan näkyvän osan korkeuteen, jotta koko
+          // sisältö on saavutettavissa silloinkin kun sheet on vain osittain
+          // ylhäällä (muuten sisällön alaosa jäisi ruudun alapuolelle).
           const visH = Math.max(40, Math.min(window.innerHeight, window.innerHeight - top));
-          sf.style.maxHeight = visH + 'px';
+          const cur  = parseFloat(sf.style.maxHeight) || 0;
+          // ⚠️ KUTISTUS VAIN SORMEN ALLA, KASVATUS AINA HETI.
+          // Vieteriefektissä (sheet nousee takaisin ylös CSS-siirtymällä) laatikko
+          // kasvoi ruutu kerrallaan sheetin mukana. Laatikko on flex-lapsi, jonka
+          // max-height rajoittaa sitä, joten jokaisella ruudulla sen alapuolelle
+          // jäi sheetin valkoista taustaa — se näkyi valkoisena raitana ruudun
+          // alareunassa koko animaation ajan. Nyt laatikko kasvaa heti täyteen
+          // mittaan ja sheet vain paljastaa sitä noustessaan; liian iso laatikko
+          // ei näy mitenkään, koska ruudun reuna leikkaa sen. Kutistus tehdään
+          // vain kun käyttäjä vetää (silloin sisällön on seurattava sormea) ja
+          // animaation päätyttyä snapTo:n ajastimella.
+          const _dragging = (typeof isDragging !== 'undefined' && isDragging) ||
+                            (typeof fcDragging !== 'undefined' && fcDragging);
+          if (visH > cur || _dragging) sf.style.maxHeight = visH + 'px';
           update();
         }
         trackingRAF = requestAnimationFrame(trackLoop);
@@ -16310,6 +16318,10 @@
         sheet.style.transform = `translateY(${currentY}px)`;
       }
       _sheetYBeforeFilter = null;
+      // ⚠️ Verho on nollattava tässä. Suodatinsheetin vetäminen isoksi nostaa
+      // sen arvoon 0,57, eikä mikään sulkemispolku päivittänyt sitä — kartta
+      // jäi pysyvästi tummaksi kunnes perusnäkymän sheetiä veti käsin.
+      applySheetDim(currentY);
     }
     // filterBtn click handled in menuItemClick above
     filterCloseBtn.addEventListener('click',closeFilter);
@@ -18508,6 +18520,7 @@
         sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = `translateY(${targetY}px)`;
         currentY = targetY;
+        applySheetDim(currentY);
         if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
         if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       }, 50);
@@ -20224,21 +20237,35 @@
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
 
+      applySheetDim(t);
       updateNavBtnVisibility();
       updateOsmOpacity(t);
 
-      // When the filter sheet settles at the top, measure its real on-screen
-      // position after the animation and size the content so it fills exactly
-      // to the screen bottom (no leftover white strip).
-      if(filterMode){
-        const topY = sheet.clientHeight - window.innerHeight * 0.8;
-        if(Math.abs(t - topY) < 2){
-          setTimeout(() => {
-            const rectTop = sheetFilter.getBoundingClientRect().top;
-            const h = window.innerHeight - rectTop;
-            if(h > 120) sheetFilter.style.maxHeight = h + 'px';
-          }, 370);
-        }
+      if(filterMode && sheetFilter){
+        // ⚠️ KOHDEKORKEUS LASKETAAN, EI MITATA — ja se asetetaan HETI.
+        // transform-siirtymä ajetaan kompositorissa, joten pääsäikeen
+        // getBoundingClientRect laahaa siirtymän todellista sijaintia jäljessä.
+        // trackLoopin mittaukseen nojaava kasvatus jäi siksi ruudun tai parin
+        // verran jälkeen, ja sisältölaatikon alapuolelle jäi joka ruudulla
+        // sheetin valkoista taustaa — se oli se vieteriefektissä vilahtava
+        // valkoinen raita. Kohdekorkeus tiedetään etukäteen: sheetin oma
+        // korkeus miinus kohde-translateY miinus laatikon sijainti sheetin
+        // sisällä (sama laskutapa kuin sizeFilterSheetissä).
+        // Vain KASVATUS tehdään heti. Alaspäin napsahdettaessa välitön kutistus
+        // aiheuttaisi saman raidan toiseen suuntaan, joten kutistus jää
+        // animaation jälkeiselle mittaukselle.
+        const hTarget = sheet.offsetHeight - t - sheetFilter.offsetTop;
+        const cur = parseFloat(sheetFilter.style.maxHeight) || 0;
+        if (hTarget > cur) sheetFilter.style.maxHeight = hTarget + 'px';
+        // Animaation päätyttyä tarkka mittaus. ⚠️ KAIKILLE PORTAILLE, ei vain
+        // yläasennolle: trackLoop ei enää kutista animaation aikana, joten
+        // alempiin portaisiin napsahtaessa laatikko jäisi liian isoksi ja
+        // sisällön alaosa ruudun alapuolelle.
+        setTimeout(() => {
+          if(!filterMode) return;
+          const h = window.innerHeight - sheetFilter.getBoundingClientRect().top;
+          if(h > 40) sheetFilter.style.maxHeight = h + 'px';
+        }, 400);
       }
     }
     // Called from every sheet-position code path with the sheet's target
@@ -20417,6 +20444,7 @@
         const maxY = SH - 70;
         currentY = Math.max(minY, Math.min(maxY, startTranslate + (touch - startY)));
         sheet.style.transform = `translateY(${currentY}px)`;
+        applySheetDim(currentY);
         updateNavBtnVisibility();
         updateOsmOpacity(currentY);
         return;
@@ -20446,6 +20474,7 @@
       currentY=Math.max(minY,Math.min(maxY,startTranslate+(touch-startY)));
       sheet.style.transform=`translateY(${currentY}px)`;
       
+      applySheetDim(currentY);
       updateNavBtnVisibility();
       updateOsmOpacity(currentY);
     },{passive:true});
