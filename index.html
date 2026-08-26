@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-m -->
+<head><!-- TP_BUILD 2026-08-26-n -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -9524,7 +9524,9 @@
     // Fetch every row of a parking table in pages. PostgREST caps a single
     // response (db-max-rows), so we page with offset/limit until a short page
     // comes back — this guarantees all rows load even past 1000.
-    async function fetchAllParkingRows(table, select) {
+    // onPage(batch) kutsutaan heti jokaisen sivun saavuttua, jotta kartalle
+    // voidaan piirtää ensimmäinen erä odottamatta koko taulun latautumista.
+    async function fetchAllParkingRows(table, select, onPage) {
       const out = [];
       const PAGE = 1000;
       for (let offset = 0; ; offset += PAGE) {
@@ -9535,6 +9537,7 @@
         if (!res.ok) throw new Error(`${table} HTTP ${res.status}`);
         const batch = await res.json();
         out.push(...batch);
+        if (typeof onPage === 'function') { try { onPage(batch); } catch(e) { console.warn('onPage', e); } }
         if (batch.length < PAGE) break;
       }
       return out;
@@ -9553,6 +9556,28 @@
     function _signalAppReady(){
       if (typeof window.__tpAppReady === 'function') { window.__tpAppReady(); window.__tpAppReady = null; }
     }
+    // Onko ladatussa erässä yhtään aluetta nykyisessä karttanäkymässä?
+    // Rivit haetaan id-järjestyksessä, ei sijainnin mukaan (jsonb-sarakkeelle
+    // ei ole paikkatietoindeksiä), joten ensimmäinen sivu voi osua kokonaan
+    // muualle Suomeen. Avausruutu ei siis saa väistyä pelkästään siksi että
+    // JOKIN sivu on piirretty, vaan vasta kun avausnäkymässä on oikeasti
+    // alueita. Tarkistus katsoo kunkin alueen ensimmäisen kulmapisteen —
+    // alueet ovat kymmenien metrien kokoisia, joten se riittää.
+    function _rowsInView(rows){
+      try {
+        const b = map.getBounds();
+        const w = b.getWest(), e = b.getEast(), so = b.getSouth(), no = b.getNorth();
+        for (const r of rows) {
+          const g = r && r.polygon_coordinates;
+          if (!g || !g.coordinates) continue;
+          const ring = (g.type === 'MultiPolygon') ? g.coordinates[0][0] : g.coordinates[0];
+          if (!ring || !ring.length) continue;
+          const x = ring[0][0], y = ring[0][1];
+          if (x >= w && x <= e && y >= so && y <= no) return true;
+        }
+      } catch(e) {}
+      return false;
+    }
     async function loadViewportTiles(signal) {
       loadParkingPrices();          // load city/zone prices once (fire-and-forget)
       if (masterDataLoaded) return;
@@ -9569,33 +9594,64 @@
         // Maksullisilla on lisäksi large_area-lippu (Iso aluekokonaisuus). Jos
         // saraketta ei vielä ole tietokannassa, ladataan ilman sitä, jotta
         // alueet eivät katoa kartalta. Ilmaisilla lippua ei ole.
+        // ⚠️ ENSIMMÄINEN ERÄ PIIRRETÄÄN HETI, loput virtaavat perässä.
+        // Aiemmin odotettiin että KAIKKI sivut molemmista tauluista ovat
+        // latautuneet, ja vasta sitten piirrettiin — avausruutu jäi odottamaan
+        // koko aineistoa, vaikka avausnäkymässä näkyy vain murto-osa siitä.
+        // Nyt jokainen 1000 rivin sivu piirretään sitä mukaa kun se saapuu, ja
+        // avausruutu väistyy heti ensimmäisen piirron jälkeen.
+        const partial = { paid: [], free: [] };
+        let paintQueued = false, firstPainted = false, painting = false;
+        async function paintPartial(){
+          if (painting) { paintQueued = true; return; }
+          painting = true;
+          try {
+            await _styleReady;      // tasot voi lisätä vasta kun tyyli on valmis
+            masterRows = partial.paid.concat(partial.free);
+            await renderMasterRows(masterRows);
+            if (!firstPainted && _rowsInView(masterRows)) {
+              firstPainted = true;
+              // Odota että kartta on TODELLA piirtänyt uudet tasot.
+              // renderMasterRows palaa heti kun lähteet ja tasot on lisätty,
+              // mutta piirto tapahtuu vasta seuraavilla ruuduilla — ilman tätä
+              // avausruutu voisi väistyä tyhjän kartan päältä. 'idle' odottaa
+              // myös pohjakartan tiilet. Varmistusajastin sen varalta ettei
+              // idle tule (hidas tiililataus).
+              let done = false;
+              const fin = () => { if (done) return; done = true; _signalAppReady(); };
+              map.once('idle', fin);
+              setTimeout(fin, 1200);
+              setTimeout(updateButtonText, 500);
+            }
+          } finally {
+            painting = false;
+            if (paintQueued) { paintQueued = false; paintPartial(); }
+          }
+        }
         const [paidRows, freeRows] = await Promise.all([
-          fetchAllParkingRows('parking_master', MASTER_SELECT + ',large_area').catch(e => {
+          fetchAllParkingRows('parking_master', MASTER_SELECT + ',large_area',
+            b => { partial.paid.push(...b); paintPartial(); }
+          ).catch(e => {
             console.warn('large_area puuttuu tai lataus epäonnistui — ladataan ilman large_area-saraketta', e);
-            return fetchAllParkingRows('parking_master', MASTER_SELECT);
+            partial.paid.length = 0;   // varahaku aloittaa alusta → ei kaksoisrivejä
+            return fetchAllParkingRows('parking_master', MASTER_SELECT,
+              b => { partial.paid.push(...b); paintPartial(); });
           }),
-          fetchAllParkingRows('parking_master_ilmaiset', MASTER_SELECT).catch(e => {
+          fetchAllParkingRows('parking_master_ilmaiset', MASTER_SELECT,
+            // Ilmaisten id:t etuliitetään jo tässä, koska sivu piirretään heti.
+            b => { b.forEach(r => { r.id = 'ilm_' + r.id; }); partial.free.push(...b); paintPartial(); }
+          ).catch(e => {
             console.error('parking_master_ilmaiset fetch error:', e);
             return [];   // ilmaisten epäonnistuminen ei kaada maksullisten latausta
           })
         ]);
-        freeRows.forEach(r => { r.id = 'ilm_' + r.id; });
+        freeRows.forEach(r => { if (String(r.id).indexOf('ilm_') !== 0) r.id = 'ilm_' + r.id; });
         const rows = paidRows.concat(freeRows);
         console.log('Master rows fetched: maksulliset', paidRows.length, '+ ilmaiset', freeRows.length);
         masterRows = rows;
-        await _styleReady;          // tasot voi lisätä vasta kun tyyli on valmis
-        await renderMasterRows(rows);
-        // ⚠️ Odota vielä että kartta on TODELLA piirtänyt uudet tasot.
-        // renderMasterRows palaa heti kun lähteet ja tasot on lisätty, mutta
-        // piirto tapahtuu vasta seuraavilla ruuduilla — ilman tätä avausruutu
-        // olisi voinut väistyä tyhjän kartan päältä. 'idle' odottaa myös
-        // pohjakartan tiilet. Varmistusajastin sen varalta ettei idle tule.
-        (function(){
-          let done = false;
-          const fin = () => { if (done) return; done = true; _signalAppReady(); };
-          map.once('idle', fin);
-          setTimeout(fin, 2000);
-        })();
+        await _styleReady;
+        await renderMasterRows(rows);   // lopullinen, täydellinen aineisto
+        _signalAppReady();              // varmistus jos yksikään sivu ei ehtinyt piirtyä
         setTimeout(updateButtonText, 500);
       } catch(e) {
         masterDataLoaded = false;  // allow retry on error
