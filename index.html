@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-e -->
+<head><!-- TP_BUILD 2026-08-26-i -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3352,11 +3352,12 @@
        pilleristä. Katkaisu kolmella pisteellä pitää rullan aina paikallaan. */
     #ajanhetki-pill-main svg { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--tp-accent); }
     #ajanhetki-pill-main .ajanhetki-pill-label { color: #0C0243; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-    /* Kiinteä vähimmäisleveys, jottei kellonaika hyppisi sormen alla kun 9:05
-       vaihtuu 11:30:ksi. Takaisin 38 px:ssä (-d:ssä kokeiltu 34 px palautettu):
-       pilleri on kortin levyinen, joten rivillä on tilaa eikä tiukennukselle
-       ole tarvetta. */
-    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); display: inline-block; min-width: 38px; text-align: right; flex-shrink: 0; }
+    /* min-width ja text-align:right POISTETTU. Ne olivat olemassa vain siksi,
+       ettei kellonaika hyppisi sormen alla kun 9:05 vaihtuu 11:30:ksi — nyt
+       tunti nollatäytetään ("01:30"), joten leveys on aina sama ja kiinteä
+       varaus on tarpeeton. Samalla kellonaika ja sen perässä oleva
+       päivämerkintä siirtyvät n. 5 px vasemmalle, lähemmäs otsikkoa. */
+    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); flex-shrink: 0; }
     /* Päivämerkintä ("nykyhetki" / "tänään" / "to 27.8.") — samat arvot kuin
        auki olevan kortin #ref-time-day-2:lla: Arial 13 px, #888. font-weight
        on pakko nollata, koska #ajanhetki-pill-main on kokonaisuudessaan 700. */
@@ -6583,6 +6584,66 @@
     const locationBtn = document.getElementById('location-btn');
     const sheet = document.getElementById('bottom-sheet');
     const sheetBackdrop = document.getElementById('sheet-backdrop');
+    // ── Kartan himmennys sheetin asennon mukaan ──────────────────────────
+    // ⚠️ YKSI FUNKTIO, jota kaikki kutsupaikat käyttävät. Kaava oli aiemmin
+    // kopioituna neljään paikkaan muodossa
+    //     op = 1 - y / (SH - 60);  opacity = (op - 0.5) * 2
+    // jossa edistymä mitattiin KOKO sheetin korkeudesta ja alle 50 % leikattiin
+    // nollaan. Käytännössä alueen tiedot näyttävä sheet lepää n. 150 px:ssä,
+    // jolloin op on vain ~0,02 — himmennys pysyi täsmälleen nollassa kunnes
+    // sheet oli jo yli puolivälissä ruutua, ja ehti nousta vain 0,57:ään
+    // ennen yläasentoa. Siltä se näytti: tummennus "iskee" vasta lopussa.
+    // Nyt edistymä lasketaan sheetin OMASTA liikeradasta (lepoasento →
+    // yläasento), joten himmennys kasvaa tasaisesti heti ensimmäisestä
+    // pikselistä. Rajat ovat samat kuin vetokäsittelijän minY/maxY.
+    const SHEET_DIM_MAX = 0.57;   // sama loppuarvo kuin vanhalla kaavalla
+    function applySheetDim(y){
+      if (!sheetBackdrop) return;
+      const SH = sheet.clientHeight, WH = window.innerHeight;
+      const onArea = !!(currentParkingProps || hoveredPolyId || hoveredChargingId ||
+                        (typeof hoveredHalliId !== 'undefined' && hoveredHalliId));
+      // ⚠️ NOLLAKOHTA ON LEPOASENTO, ei vedon alaraja. Jos nollakohtana olisi
+      // alaraja (75 px), himmennys olisi jo lepotilassa 0,07 — kartta olisi
+      // hitusen tumma aina kun alue on valittuna, mitä se ei ennen ollut.
+      // Lepokorkeudet: alue 150 px, tyhjä EMPTY_SHEET_PX, suodatin 70 px.
+      // Lepoasennon ALApuolella (esim. 60 px zoomattaessa ulos) edistymä menee
+      // negatiiviseksi ja leikkautuu nollaan — juuri niin kuin pitääkin.
+      let minY, maxY;
+      if (filterMode)      { minY = SH - WH * 0.8; maxY = SH - 70; }
+      else if (onArea)     { minY = SH - WH * 0.8; maxY = SH - 150; }
+      else {
+        maxY = SH - EMPTY_SHEET_PX;
+        const btnH = (typeof btnContainer !== 'undefined' && btnContainer) ? (btnContainer.offsetHeight || 90) : 90;
+        minY = Math.max(-btnH, -(SH - WH * 0.8));
+      }
+      const span = Math.max(1, maxY - minY);
+      const prog = Math.max(0, Math.min(1, (maxY - y) / span));
+      sheetBackdrop.style.opacity = String(prog * SHEET_DIM_MAX);
+    }
+    // ⚠️ HIMMENNYS LUETAAN SHEETIN TODELLISESTA RUUTUSIJAINNISTA, EI currentY:STÄ.
+    // Aiemmin himmennys päivitettiin vain vetokäsittelijästä ja snapTo:sta
+    // kohdearvolla, mutta sheetiä siirretään myös monesta muusta kohdasta
+    // (closeFilter, checkParkingin haarat, collapseCenterSheet, goBackToMap…)
+    // asettamalla transform suoraan.
+    // Ne eivät päivittäneet verhoa lainkaan, joten se jäi edellisen tilanteen
+    // arvoon: suodatinsheetin vetäminen isoksi ja sulkeminen jätti kartan
+    // pysyvästi tummaksi, eikä mikään nollannut sitä ennen kuin perusnäkymän
+    // sheetiä veti käsin. Sama ratkaisu kuin ajanhetki-pillerin häivytyksessä
+    // (applyAjanhetkiFade), jonka kommentti toteaa saman: closeFilter siirtää
+    // sheetiä päivittämättä currentY:tä. Silmukka vertaa yläreunaa edelliseen
+    // ruutuun eikä tee mitään kun sheet ei liiku, joten se on käytännössä
+    // ilmainen — ja se seuraa myös CSS-siirtymää, jolloin himmennys animoituu
+    // sheetin mukana eikä hyppää.
+    let _sheetDimLastTop = null;
+    function sheetDimLoop(){
+      const top = sheet.getBoundingClientRect().top;
+      if (top !== _sheetDimLastTop) {
+        _sheetDimLastTop = top;
+        applySheetDim(sheet.clientHeight - (window.innerHeight - top));
+      }
+      requestAnimationFrame(sheetDimLoop);
+    }
+    requestAnimationFrame(sheetDimLoop);
     
     locationBtn.addEventListener('click', () => {
       geolocate.trigger();
@@ -14637,7 +14698,8 @@
       const valEl = document.getElementById('ref-time-value');
       if (!valEl) return;
       const d = getRefDate();
-      valEl.textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+      // Sama nollatäytetty muoto kuin pillerissä ja kortissa.
+      valEl.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
       valEl.classList.toggle('manual', refTimeManual);
       const resetB = document.getElementById('ref-time-reset');
       if (resetB) resetB.classList.toggle('visible', refTimeManual);
@@ -16197,13 +16259,6 @@
       centerPointerEl.classList.remove('hidden');
       sheetNormal.style.display='flex';
       sheetFilter.classList.remove('visible');
-      // Palauta sheetin asento siihen mihin se jäi ennen suodatinnäkymää.
-      if (_sheetYBeforeFilter !== null) {
-        currentY = _sheetYBeforeFilter;
-        _sheetYBeforeFilter = null;
-        sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
-        sheet.style.transform = `translateY(${currentY}px)`;
-      }
       // NOTE: deliberately no filter-state reset here. Closing with ✕ only
       // hides the sheet — the chosen filters (e.g. the max-time range) stay
       // applied. "Palauta" is the only thing that resets them.
@@ -16231,7 +16286,30 @@
           openAjanhetkiFloat();
         }
       }
+      // ⚠️ SHEETIN ASENTO PÄÄTETÄÄN VASTA TÄSSÄ, checkParkingin JÄLKEEN.
+      // Aiemmin muistettu asento (_sheetYBeforeFilter) palautettiin ennen
+      // checkParkingia, jolloin kaksi kohtaa kirjoitti saman transformin
+      // samassa tikissä ja lopputulos riippui siitä kumpaan haaraan
+      // checkParking sattui menemään. Vedettäessä perusnäkymän sheet
+      // kahvasta se jää mihin tahansa korkeuteen (ks. touchendin
+      // dragFromHandle-haara: snapTo(clamp(currentY)) ilman porrasta), joten
+      // muistettu arvo saattoi olla mikä tahansa luku — ja juuri se jäi
+      // voimaan: sheet oli suodattimen sulkemisen jälkeen korkeudessa joka ei
+      // vastannut mitään tilaa, eikä korjautunut ennen kuin p-merkkiä
+      // siirrettiin.
+      // Nyt checkParking saa päättää: jos se tunnistaa p-merkin alta alueen,
+      // hallin tai latauspisteen, se asettaa oman lepokorkeutensa ja se jää
+      // voimaan. Muistettu asento palautetaan VAIN jos checkParking ei
+      // koskenut asentoon — muuten sheet jäisi suodattimen alempaan asentoon,
+      // mikä oli alkuperäinen syy muistamiselle.
+      const _yBeforeCheck = currentY;
       checkParking();
+      if (currentY === _yBeforeCheck && _sheetYBeforeFilter !== null) {
+        currentY = _sheetYBeforeFilter;
+        sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transform = `translateY(${currentY}px)`;
+      }
+      _sheetYBeforeFilter = null;
     }
     // filterBtn click handled in menuItemClick above
     filterCloseBtn.addEventListener('click',closeFilter);
@@ -16552,8 +16630,20 @@
       }
       g.under = null;
     }
+    // CSS:n display:none -säännöllä piilotetut (P-merkki) takaisin piiloon.
+    // Inline-tyyli poistetaan kokonaan, jolloin moodisääntö ja .hidden
+    // pääsevät taas voimaan.
+    function swipeRestoreCssHidden(g){
+      if (!g || !g.unhiddenCss) return;
+      for (const [el, val, pri] of g.unhiddenCss) {
+        el.style.removeProperty('display');
+        if (val) el.style.setProperty('display', val, pri || '');
+      }
+      g.unhiddenCss = null;
+    }
     function swipeRehide(g){
       if (!g) return;
+      swipeRestoreCssHidden(g);
       if (g.unhidden) for (const u of g.unhidden) u.classList.add('hidden');
       if (g.unfaded) {
         for (const [el, val, pri] of g.unfaded) {
@@ -16564,6 +16654,14 @@
       }
     }
     function swipeReset(g){
+      // ⚠️ P-merkin display-palautus tehdään TÄSSÄ eikä swipeResetUnderissa.
+      // swipeResetUnder ajetaan tarkoituksella ENNEN btn.click()ia, jolloin
+      // body.search-mode / plus-mode on vielä päällä — palautus siinä kohtaa
+      // piilottaisi merkin yhdeksi ruuduksi ennen kuin näkymän sulkeminen
+      // poistaa moodiluokan, eli se välähtäisi. swipeReset ajetaan kahden
+      // requestAnimationFramen päästä klikkauksesta, jolloin luokka on jo
+      // poissa ja merkki jää näkyviin saumattomasti.
+      swipeRestoreCssHidden(g);
       if (g.zHost !== undefined) g.el.style.zIndex = g.zHost || '';
       g.el.style.transition = ''; g.el.style.transform = '';
       g.el.style.borderTopLeftRadius = ''; g.el.style.borderBottomLeftRadius = '';
@@ -16662,6 +16760,34 @@
           _g.el.style.borderTopLeftRadius = SWIPE_RADIUS + 'px';
           _g.el.style.borderBottomLeftRadius = SWIPE_RADIUS + 'px';
           _g.el.style.boxShadow = '-10px 0 28px rgba(0,0,0,0.22)';
+          // ⚠️ P-MERKKI ON PIILOTETTU KOLMANNELLA TAVALLA: display:none.
+          //   body.search-mode #center-marker,
+          //   body.plus-mode   #center-marker { display: none !important; }
+          // Tämä on eri asia kuin luokka 'hidden' tai opacity:0. display:none
+          // -elementillä getBoundingClientRect on nolla, joten swipeOnScreen
+          // hylkää sen eikä merkki päädy _g.under-listaan lainkaan — se ei
+          // liikkunut muiden mukana vaan ilmestyi vasta kun näkymä oli kiinni
+          // ja moodiluokka poistui. Pakotetaan näkyviin eleen ajaksi ja
+          // lisätään listaan, jolloin se saa saman parallaksin ja
+          // z-indeksikäsittelyn kuin muut alla olevat kerrokset.
+          // ⚠️ VAIN JOS MERKKI KUULUU ALLA OLEVAAN NÄKYMÄÄN. Jos se on
+          // piilotettu jostain muusta syystä — luokka 'hidden' (zoom alle
+          // POINTER_MINZOOM), suodatinnäkymä tai käynnissä oleva reititys —
+          // sitä ei paljasteta. Palautus tehdään sekä peruuntuvassa
+          // (swipeRehide) että loppuun viedyssä (swipeResetUnder) eleessä;
+          // ilman palautusta inline-'!important' jäisi voimaan ja voittaisi
+          // myöhemmin myös .hidden-säännön.
+          const _cm = document.getElementById('center-marker');
+          if (_cm && _g.under && _g.under.indexOf(_cm) === -1 &&
+              !_cm.classList.contains('hidden') &&
+              !document.body.classList.contains('filter-mode') &&
+              !window._navigationInProgress &&
+              getComputedStyle(_cm).display === 'none') {
+            _g.unhiddenCss = [[_cm, _cm.style.display,
+                               _cm.style.getPropertyPriority('display')]];
+            _cm.style.setProperty('display', 'flex', 'important');
+            _g.under.push(_cm);
+          }
           // ⚠️ ALKUPERÄINEN TRANSFORM TALTEEN, ja parallaksi lisätään sen
           // PÄÄLLE. Jos transform ylikirjoitettaisiin, ruudun ulkopuolella
           // oleva suljettu näkymä (esim. profiilivalikko translateX(-100%))
@@ -16996,6 +17122,35 @@
             // Ilman tätä esim. suodatinnäkymän sulkeminen p-merkin ollessa
             // alueella jätti nappiin alueen nimen.
             setActionBtnText(isDiscOrFreeArea(p) ? 'Aseta elektroninen pysäköintikiekko' : 'Pysäköi tähän');
+            // ⚠️ showMasterFeatureInSheet ON KARTAN NAPAUTUKSEN funktio, ja se
+            // jättää tähän haaraan neljä väärää sivuvaikutusta. Ne kumotaan
+            // tässä. (Napin teksti oli jo aiemmin korjattu samalla tavalla —
+            // sama juurisyy.) Vika näkyi juuri suodatinnäkymää suljettaessa:
+            // openFilter nollaa hoveredPolyId:n, joten sulkemisen jälkeinen
+            // checkParking tulee AINA tähän haaraan eikä alempaan, oikeaan
+            // p-merkkihaaraan.
+            //  1. masterFeatureLocked = true 4 sekunniksi → checkParking
+            //     palaa heti alussa, joten mikään alla olevista ei ehdi
+            //     korjaantua itsestään eikä kartan panorointi päivitä sheetiä.
+            //  2. currentParkingProps jäi asettamatta → sheetin tila ja
+            //     toimintonappi eivät tienneet valitusta alueesta.
+            //  3. GPS-huomautus jäi näkyviin, koska vain alempi haara poistaa
+            //     sen .visible-luokan → tyhjä kaista kahvan ja alueen nimen
+            //     välissä.
+            //  4. "Virhe tai kehitystoive?" -nappi paljastui; se kuuluu
+            //     napautusnäkymään, ei p-merkin tietoihin.
+            releaseMasterLock();
+            currentParkingProps = p;
+            gpsWarning.classList.remove('visible');
+            const _rb2 = document.getElementById('sheet-report-btn');
+            if (_rb2) _rb2.style.display = 'none';
+            // Lepokorkeus 153 → 150 px, sama kuin alemmassa p-merkkihaarassa.
+            if (!_navigationInProgress) {
+              sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
+              sheet.style.transform = 'translateY(calc(100% - 150px))';
+              currentY = sheet.offsetHeight - 150;
+            }
+            updateNavBtnVisibility();
             return; // skip rest of checkParking
           } else {
             return; // same area, already shown
@@ -17568,7 +17723,35 @@
     // Snap the internal value onto the 30-min grid once the gesture settles,
     // so successive drags don't accumulate sub-step drift.
     function refSnap(){ refMinutes = refRoundedMinutes(); }
+    // ── Ajanhetken säätö vapauttaa alueen korostuksen ────────────────────
+    // Kun p-merkki on alueen päällä, se alue piirtyy punaisena ja samat
+    // ominaisuudet jakavat alueet tummansinisinä. Rullaa pyöritettäessä juuri
+    // se korostus peittää sen mitä katsotaan: mitkä alueet ovat kyseisenä
+    // ajanhetkenä ilmaisia ja mitkä maksullisia. Siksi korostus poistetaan
+    // heti ensimmäisestä vedosta.
+    // ⚠️ VALINTAA EI PURETA. Sheet näyttää alueen tiedot edelleen ja
+    // hoveredPolyId jää paikalleen — juuri siksi checkParking (jonka
+    // refreshRefFilter ajaa joka muutoksella) osuu haaraan "same area, already
+    // shown" ja palaa piirtämättä korostusta takaisin.
+    // ⚠️ hoveredPolyId NOLLATAAN VASTA KARTAN ENSIMMÄISESSÄ LIIKKEESSÄ.
+    // checkCenterHighlight korostaa uudelleen vain kun alue VAIHTUU, joten
+    // ilman nollausta merkin siirtäminen saman alueen sisällä ei palauttaisi
+    // korostusta lainkaan. Nollaus tapahtuu movestartissa, ja seuraava
+    // 'move'-ruutu tunnistaa alueen uudelleen ja korostaa sen.
+    let refTimeHighlightMuted = false;
+    function muteHighlightForRefTime(){
+      if (refTimeHighlightMuted || !hoveredPolyId) return;
+      refTimeHighlightMuted = true;
+      clearHoverHighlight();
+    }
+    map.on('movestart', () => {
+      if (!refTimeHighlightMuted) return;
+      refTimeHighlightMuted = false;
+      hoveredPolyId = null;
+    });
+
     function refApplyDrag(deltaPx){
+      muteHighlightForRefTime();
       refMinutes = Math.max(0, Math.min(rStartMin + deltaPx / REF_PX_PER_MIN, REF_MAX_MIN));
       refDrumPhase = rStartPhase + deltaPx * RADIANS_PER_PX;
       refTimeManual = true;
@@ -17645,7 +17828,10 @@
     // window's value / day / reset. Called from updateRefTimeUI on every change.
     function syncAjanhetkiMirror(){
       const d = getRefDate();
-      const hhmm = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+      // Tunti nollatäytetään ("01:30"), jotta merkkimäärä on aina sama eivätkä
+      // numerot siirry kun 9:05 vaihtuu 11:30:ksi. Arialin numerot ovat
+      // tasalevyisiä, joten kiinteää leveyttä ei enää tarvita.
+      const hhmm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
       const pillT = document.getElementById('ajanhetki-pill-time');
       if (pillT) pillT.textContent = hhmm;
       // ⚠️ Pillerin otsikko on KIINTEÄ ("Tarkasteltava ajanhetki:") ja tulee
@@ -18322,12 +18508,6 @@
         sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = `translateY(${targetY}px)`;
         currentY = targetY;
-        // Sync the map-dimming backdrop to the restored sheet position (same
-        // formula as the drag handler) so the map brightness matches.
-        if (typeof sheetBackdrop !== 'undefined' && sheetBackdrop) {
-          const op = 1 - (currentY / (sheet.clientHeight - 60));
-          sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (op - 0.5) * 2));
-        }
         if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
         if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       }, 50);
@@ -20044,10 +20224,6 @@
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
 
-      // Update backdrop (fade starts at 50% open)
-      const maxY = sheet.clientHeight - 60;
-      const openProgress = 1 - (t / maxY);
-      sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
       updateNavBtnVisibility();
       updateOsmOpacity(t);
 
@@ -20241,8 +20417,6 @@
         const maxY = SH - 70;
         currentY = Math.max(minY, Math.min(maxY, startTranslate + (touch - startY)));
         sheet.style.transform = `translateY(${currentY}px)`;
-        const op = 1 - (currentY / (SH - 60));
-        sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (op - 0.5) * 2));
         updateNavBtnVisibility();
         updateOsmOpacity(currentY);
         return;
@@ -20272,9 +20446,6 @@
       currentY=Math.max(minY,Math.min(maxY,startTranslate+(touch-startY)));
       sheet.style.transform=`translateY(${currentY}px)`;
       
-      // Update backdrop opacity based on sheet position (fade starts at 50% open)
-      const openProgress = 1 - (currentY / (SH - 60)); // 0 = closed, 1 = fully open
-      sheetBackdrop.style.opacity = Math.max(0, Math.min(1, (openProgress - 0.5) * 2));
       updateNavBtnVisibility();
       updateOsmOpacity(currentY);
     },{passive:true});
