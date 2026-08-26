@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-a -->
+<head><!-- TP_BUILD 2026-08-26-b -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3255,11 +3255,11 @@
     #ajanhetki-anchor {
       position: absolute;
       /* 2026-08-26-a: pilleriä laskettu 8 → 4 px sheetin yläpuolella ja
-         siirretty 12 → 8 px vasemmalle. Rako sheetiin ja näytön reunaan
-         jää tarkoituksella: kumpaankaan ei mennä kiinni. Oikea reuna
-         pidetään 12 px:ssä, joten auki oleva kortti levenee vain 4 px. */
+         siirretty 12 → 8 → 4 px vasemmalle (-b). Rako sheetiin ja näytön
+         reunaan jää tarkoituksella: kumpaankaan ei mennä kiinni. Oikea reuna
+         pidetään 12 px:ssä, joten kortti levenee vain vasemmalle. */
       bottom: calc(100% + 4px);
-      left: 8px; right: 12px;
+      left: 4px; right: 12px;
       height: 0;
       z-index: 6;
       pointer-events: none;
@@ -3352,7 +3352,7 @@
     #ajanhetki-float {
       position: absolute; top: 0; left: 0;
       box-sizing: border-box;
-      padding: 7px 14px 12px;
+      padding: 0 16px 12px;
       font-family: Arial, sans-serif;
       opacity: 0; pointer-events: none;
       transition: opacity .12s ease;
@@ -3365,39 +3365,45 @@
     /* × ison kortin oikeassa yläkulmassa: poistaa pillerin kokonaan ja
        palauttaa ajanhetken nykyhetkeen. Sama toiminto kuin aiemmin pillerin
        vasemmassa reunassa olleella ×:llä. */
-    /* Nappi 28×28 ja risti 11 px — sama koko kuin suodatinsheetin
-       #filter-close-btn (28 px nappi, ✕-merkki 16 px Arialilla ≈ 11 px).
-       SVG:n viivat kulkevat 6…18 eli puolet 24-ruudukosta, joten 22 px
-       piirtoalue antaa täsmälleen 11 px ristin. */
+    /* TÄSMÄLLEEN sama kuin suodatinsheetin #filter-close-btn: sama koko,
+       sama harmaa ympyrä, sama ✕-merkki 16 px Arialilla, sama väri ja sama
+       right/top. SVG-risti korvattiin merkillä, koska pelkkä koon kopiointi
+       ei olisi tehnyt siitä samanlaista. */
     #ajanhetki-close {
-      position: absolute; top: 8px; right: 10px; z-index: 2;
+      position: absolute; right: 16px; top: 14px; z-index: 2;
       width: 28px; height: 28px; padding: 0;
-      border: none; border-radius: 50%;
-      background: #eeeef1;
+      background: #f0f0f0; border: none; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
+      font-family: Arial, sans-serif; font-size: 16px; color: #555;
       cursor: pointer;
     }
-    #ajanhetki-close:active { background: #dededf; }
-    #ajanhetki-close svg { width: 22px; height: 22px; }
 
-    /* Drag handle — purely a visual affordance (the whole card is the drag
-       surface). Always a shallow "pull me down" chevron, in both sizes. */
-    #ajanhetki-handle-area { display: flex; justify-content: center; padding: 0 0 6px; touch-action: none; }
-    #ajanhetki-handle { position: relative; width: 44px; height: 7px; }
-    #ajanhetki-handle span {
-      position: absolute; top: 0; width: 24px; height: 4px;
-      border-radius: 2px; background: #ddd;
-    }
-    #ajanhetki-handle span:first-child { left: 0;  transform-origin: left center;  transform: rotate(13deg); }
-    #ajanhetki-handle span:last-child  { right: 0; transform-origin: right center; transform: rotate(-13deg); }
+    /* Kahva, otsikko ja × asettuvat toisiinsa nähden kuten suodatinsheetissä:
+       kahva 40×4 px keskellä, pehmusteet 8 px / 6 px (#drag-handle-area), ja
+       otsikko + × samalla keskilinjalla 28 px kortin yläreunasta. Chevron
+       vaihdettiin suoraksi palkiksi. */
+    #ajanhetki-handle-area { display: flex; justify-content: center; padding: 8px 0 6px; touch-action: none; }
+    #ajanhetki-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
 
-    /* One tight row: clock column | drum | ×. */
-    /* margin-top: rivi lasketaan alemmas, jotta oikeaan yläkulmaan mahtuu ×.
-       Marginaali vaikuttaa asetteluun, joten ajanhetkiMetrics mittaa kortin
-       uuden korkeuden automaattisesti — kovakoodattuja lukuja ei tarvita. */
-    .ajanhetki-float-body { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+    /* Sisältörivi: kello vasemmalla, rulla oikealla. Otsikko ei ole enää tässä
+       sarakkeessa vaan absoluuttisena kahvarivillä, kuten suodatinsheetissä.
+       × ulottuu 42 px:ään kortin yläreunasta (top 14 + korkeus 28), joten rivi
+       alkaa vasta sen alta: 18 px (kahva-alue) + 30 px = 48 px. Marginaali
+       vaikuttaa asetteluun, joten ajanhetkiMetrics mittaa kortin korkeuden
+       automaattisesti — kovakoodattuja lukuja ei tarvita. */
+    .ajanhetki-float-body { display: flex; align-items: center; gap: 10px; margin-top: 30px; }
     .ajanhetki-float-left { flex: 1; min-width: 0; }
-    .ajanhetki-float-title { display: block; font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    /* Teksti on pillerin #ajanhetki-pill-main .ajanhetki-pill-label -tyylinen
+       (Arial 13 px lihavoitu, #0C0243) — ei enää harmaa versaali. Sijainti on
+       suodatinsheetin #filter-titlen: vasen reuna 16 px ja keskilinja 28 px
+       yläreunasta, absoluuttisesti. pointer-events:none jotta kahvan veto
+       menee tekstin läpi. */
+    .ajanhetki-float-title {
+      position: absolute; left: 16px; top: 28px; transform: translateY(-50%);
+      z-index: 2; font-family: Arial, sans-serif; font-size: 13px;
+      font-weight: 700; color: #0C0243; white-space: nowrap;
+      pointer-events: none;
+    }
     #ref-time-value-2 { font-size: 26px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color .2s ease; }
     #ref-time-value-2.manual { color: var(--tp-accent); }
     #ref-time-day-2 { font-size: 13px; color: #888; margin-top: 4px; font-family: Arial, sans-serif; }
@@ -3411,10 +3417,10 @@
        rulla laskeutuu riviin muiden kanssa. Suodatinsheetin ja pysäköintiajan
        rullat pysyvät ennallaan. */
     /* top: kumoaa .drum-scroll-zonen -10.5px noston ja laskee rullan vielä
-       10 px alemmas. Vain visuaalinen siirto (position:relative), joten rivin
+       6 px alemmas. Vain visuaalinen siirto (position:relative), joten rivin
        korkeus ei muutu — .ajanhetki-float-hintin marginaali pitää välin.
        Suodatinsheetin ja pysäköintiajan rullat pysyvät ennallaan. */
-    #ref-drum-zone-2 { margin-right: -2px; top: 12px; }
+    #ref-drum-zone-2 { margin-right: -2px; top: 6px; }
 
     /* Hint rows: always laid out, so the card's measured heights are stable.
        At the medium size the card is simply short enough to clip them away. */
@@ -3424,6 +3430,8 @@
     .ah-hint-row { display: flex; align-items: flex-start; gap: 7px; }
     .ah-hint-row + .ah-hint-row { margin-top: 6px; }
     .ah-bullet { flex-shrink: 0; width: 4px; height: 4px; border-radius: 50%; background: #333; margin-top: 5px; }
+    /* Canvas 2× (104×160 → 52×80 CSS px) kuten pillerin pienoisrullassa.
+       Ilman tätä pillerin ohuet viivat jäisivät alle yhden laitepikselin. */
     #ref-drum-canvas-2 { display: block; width: 52px; height: 80px; }
 
     .vehicle-display {
@@ -5350,23 +5358,18 @@
           </div>
         </div>
         <div id="ajanhetki-float" role="dialog" aria-label="Ajanhetki">
-          <button id="ajanhetki-close" aria-label="Poista ajanhetki näkyvistä">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#8a8a90" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>
-            </svg>
-          </button>
-          <div id="ajanhetki-handle-area"><div id="ajanhetki-handle"><span></span><span></span></div></div>
-          <!-- One tight row: clock column | drum | ×. Merging the old header row
-               into this one keeps the window short so more map stays visible. -->
+          <div id="ajanhetki-handle-area"><div id="ajanhetki-handle"></div></div>
+          <div class="ajanhetki-float-title">Tarkasteltava ajanhetki</div>
+          <button id="ajanhetki-close" aria-label="Poista ajanhetki näkyvistä">✕</button>
+          <!-- Kello vasemmalla, rulla oikealla. -->
           <div class="ajanhetki-float-body">
             <div class="ajanhetki-float-left">
-              <div class="ajanhetki-float-title">Tarkasteltava ajanhetki</div>
               <div id="ref-time-value-2">–</div>
               <div id="ref-time-day-2">nykyhetki</div>
               <button id="ref-time-reset-2">Palauta nykyhetkeen</button>
             </div>
             <div class="drum-scroll-zone" id="ref-drum-zone-2">
-              <canvas id="ref-drum-canvas-2" width="52" height="80"></canvas>
+              <canvas id="ref-drum-canvas-2" width="104" height="160"></canvas>
             </div>
           </div>
           <div class="ajanhetki-float-hint">
@@ -17111,6 +17114,13 @@
     // ajanhetki-kortin rullassa; suodatinsheetin ja pysäköintiajan rullat
     // pysyvät 12:ssa.
     const N_LINES_CARD=35;
+    // Viivanpaksuus. drawDrumOn skaalaa sen canvasin korkeudella (s = H/80),
+    // mutta pillerin rulla piirretään 2× tarkkuudella, joten sen viivat ovat
+    // CSS-pikseleissä paljon ohuemmat: (0,8…3,0) * (52/80) * 0,5 = 0,26…0,98
+    // px, kun kortin rullassa ne olivat 0,8…3,0 px. Kortin canvas on nyt
+    // myös 2× (104×160), joten s = 2 ja kerroin 0,325 antaa täsmälleen saman
+    // 0,26…0,98 px kuin pillerissä.
+    const DRUM_LINE_SCALE_CARD=0.325;
     let drumPhase=0;
     const drumCanvas=document.getElementById('drum-canvas');
     const dctx=drumCanvas.getContext('2d');
@@ -17119,8 +17129,9 @@
     // sama koodi piirtää isot 52×80 rullat ja pillerin pienen rullan. 52×80
     // tuottaa täsmälleen entiset arvot (r=33, häivytyskaista 24, sisennys 6,
     // viivanpaksuuden kerroin 1), joten vanhat rullat näyttävät ennallaan.
-    function drawDrumOn(ctx, phase, nLines){
+    function drawDrumOn(ctx, phase, nLines, lineScale){
       const NL = nLines || N_LINES;
+      const LS = lineScale || 1;
       const W = ctx.canvas.width, H = ctx.canvas.height;
       const cy = H/2, r = H*0.4125, fade = H*0.30, inset = Math.max(2, W*(6/52));
       const s = Math.max(0.5, H/80);                 // viivanpaksuuden skaalaus
@@ -17143,7 +17154,7 @@
         ctx.save();
         ctx.globalAlpha=cosA*0.8;
         ctx.strokeStyle=`rgb(${colorVal},${colorVal-5},${colorVal+20})`;
-        ctx.lineWidth=(0.8+cosA*2.2)*s;
+        ctx.lineWidth=(0.8+cosA*2.2)*s*LS;
         ctx.lineCap='round';
         ctx.beginPath();ctx.moveTo(inset,y);ctx.lineTo(W-inset,y);ctx.stroke();
         ctx.restore();
@@ -17484,7 +17495,7 @@
     const refDctx3 = refDrumCanvas3 ? refDrumCanvas3.getContext('2d') : null;
     function drawRefDrum(){
       if (refDctx)  drawDrumOn(refDctx,  refDrumPhase);
-      if (refDctx2) drawDrumOn(refDctx2, refDrumPhase, N_LINES_CARD);
+      if (refDctx2) drawDrumOn(refDctx2, refDrumPhase, N_LINES_CARD, DRUM_LINE_SCALE_CARD);
       if (refDctx3) drawDrumOn(refDctx3, refDrumPhase);
     }
     let refDrumTouching = false;
