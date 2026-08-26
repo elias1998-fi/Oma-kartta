@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-r -->
+<head><!-- TP_BUILD 2026-08-26-s -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3329,10 +3329,10 @@
     .ps-btn-ghost:active { background: rgba(12,2,67,.07); }
 
     /* ── Ajoitus ────────────────────────────────────────────────────────
-       Koko jono on 2,5× hitaampi kuin ensimmäisessä versiossa.
-       ⚠️ TAUSTAN LIUKU AJETAAN LOPPUUN ENSIN. Liuku kestää 1,05 s, ja vasta
-       0,5 s sen jälkeen (1,55 s) alkaa sisällön valuminen — mikään ei siis
-       liiku samaan aikaan taustan kanssa.
+       ⚠️ TAUSTAN LIUKU AJETAAN LOPPUUN ENSIN, mutta ilman taukoa: liuku
+       kestää 1,05 s ja sisällön valuminen alkaa täsmälleen silloin. Mikään ei
+       siis liiku taustan kanssa samaan aikaan, mutta väliin ei jää tyhjää
+       hetkeä (aiemmin tauko oli 0,5 s).
        Jokainen osa valuu OMAN paikkansa yläpuolelta (translateY −34px, ennen
        −16px), ei ruudun yläreunasta — siksi keskellä olevat osat ilmestyvät
        keskeltä. Matka on pidempi ja kesto 1,25 s, joten valuminen on
@@ -3341,29 +3341,30 @@
     @keyframes ps-rise { from { opacity: 0; transform: translateY(-34px); }
                          to   { opacity: 1; transform: translateY(0); } }
     #park-success.play .ps-rise { animation: ps-rise 1.25s cubic-bezier(.22,1,.36,1) both; }
-    #park-success.play #ps-title  { animation-delay: 1.55s; }
-    #park-success.play #ps-sub    { animation-delay: 1.70s; }
+    #park-success.play #ps-title  { animation-delay: 1.05s; }
+    #park-success.play #ps-sub    { animation-delay: 1.20s; }
     /* Porrastus seuraa ruudulla näkyvää järjestystä: ylempi ensin. */
-    #park-success.play #ps-extend { animation-delay: 1.90s; }
-    #park-success.play #ps-back   { animation-delay: 2.05s; }
+    #park-success.play #ps-extend { animation-delay: 1.40s; }
+    #park-success.play #ps-back   { animation-delay: 1.55s; }
 
     @keyframes ps-grow { from { transform: scale(.14); opacity: 0; }
                          60%  { opacity: 1; }
                          to   { transform: scale(1);   opacity: 1; } }
     /* Laatikko kasvaa SAMAAN AIKAAN tekstien kanssa: alkaa otsikon kanssa
-       1,55 s ja päättyy 3,30 s, eli täsmälleen kun alempi nappi on paikallaan.
+       1,05 s ja päättyy 2,80 s, eli täsmälleen kun alempi nappi on paikallaan.
        Aiemmin se odotti tekstien loppumista, mikä teki jonosta tarpeettoman
        pitkän. */
-    #park-success.play #ps-stage { animation: ps-grow 1.75s cubic-bezier(.22,1,.36,1) 1.55s both; }
+    #park-success.play #ps-stage { animation: ps-grow 1.75s cubic-bezier(.22,1,.36,1) 1.05s both; }
 
     /* Kyltti ei enää hiivu erikseen: se on osa laatikkoa ja kasvaa sen
-       mukana (1,55…3,30 s). Auto lähtee 3,55 s kohdalla, joten kyltti on
-       paikallaan ennen kuin auto pysähtyy sen eteen. */
+       mukana (1,05…2,80 s). Auto lähtee jo 2,45 s kohdalla eli kun laatikko
+       ja kyltti ovat lähes täydessä koossa — kyltti on paikallaan hyvissä
+       ajoin ennen kuin auto pysähtyy sen eteen. */
 
     /* Auto ajaa OIKEALTA ja hidastuu kyltin eteen. */
     @keyframes ps-drive { from { transform: translateX(215px); } to { transform: translateX(0); } }
     #ps-car { transform: translateX(215px); }
-    #park-success.play #ps-car { animation: ps-drive 1.90s cubic-bezier(.16,.85,.3,1) 3.55s both; }
+    #park-success.play #ps-car { animation: ps-drive 1.35s cubic-bezier(.16,.85,.3,1) 2.45s both; }
     /* Jarrutus: etupää niiaa kevyesti alas ja palaa suoraan.
        ⚠️ KIERTOKESKIÖ ON TAKAPYÖRÄSSÄ, ei etupyörässä. Se kuulostaa
        nurinkuriselta, mutta juuri siten LIIKE näkyy etupäässä: perä pysyy
@@ -3376,12 +3377,19 @@
        y 5…45), jossa takapyörän keskiö (30, 45) on 24,1 % / 100 %.
        Kierto on POSITIIVINEN paikallisessa avaruudessa; peilaus kääntää sen
        ruudulla, jolloin vasemmalla oleva nokka painuu alas. */
-    @keyframes ps-brake { 0%, 62% { transform: rotate(0deg); }
-                          78% { transform: rotate(2.2deg); }
-                          90% { transform: rotate(-0.7deg); }
+    /* ⚠️ NIIAUS ALKAA JO ENNEN KUIN AUTO PYSÄHTYY. Ajo kestää 1,35 s
+       (2,45…3,80 s) ja niiaus 2,05 s (2,45…4,50 s). Keula alkaa painua 32 %
+       kohdalla eli 3,11 s, jolloin ajokäyrä on kuljettanut jo n. 88 %
+       matkasta ja auto vain liukuu loppumatkan — juuri niin kuin oikea auto
+       jarruttaessa. Syvin kohta 2,6° osuu 3,48 s kohdalle, auto on yhä
+       liikkeessä. Palautuminen suoraan on loivempi kuin painuminen. */
+    @keyframes ps-brake { 0%, 32% { transform: rotate(0deg); }
+                          50%  { transform: rotate(2.6deg); }
+                          66%  { transform: rotate(2.2deg); }
+                          82%  { transform: rotate(-0.8deg); }
                           100% { transform: rotate(0deg); } }
     #ps-car-tilt { transform-box: fill-box; transform-origin: 24.1% 100%; }
-    #park-success.play #ps-car-tilt { animation: ps-brake 2.30s cubic-bezier(.33,1,.68,1) 3.55s both; }
+    #park-success.play #ps-car-tilt { animation: ps-brake 2.05s cubic-bezier(.4,0,.3,1) 2.45s both; }
     /* Pyörät pyörivät samalla hidastuvalla käyrällä kuin ajo, jotta ne
        pysähtyvät täsmälleen auton mukana. */
     /* 3,11 kierrosta = ajomatka 215 yksikköä jaettuna pyörän kehällä 2π·11,
@@ -3390,7 +3398,7 @@
        juuri niin kuin vasemmalle ajettaessa kuuluukin. */
     @keyframes ps-wheel { from { transform: rotate(0deg); } to { transform: rotate(1120deg); } }
     .ps-wheel { transform-box: fill-box; transform-origin: 50% 50%; }
-    #park-success.play .ps-wheel { animation: ps-wheel 1.90s cubic-bezier(.16,.85,.3,1) 3.55s both; }
+    #park-success.play .ps-wheel { animation: ps-wheel 1.35s cubic-bezier(.16,.85,.3,1) 2.45s both; }
 
     @media (prefers-reduced-motion: reduce) {
       #park-success, #park-success.play .ps-rise, #park-success.play #ps-stage,
@@ -18977,9 +18985,13 @@
       const banner = document.getElementById('active-parking-banner');
       if (!ov || _psClosing) return;
       _psClosing = true;
+      // Banneri näytetään heti täydessä näkyvyydessä ja se jää kutistuvan
+      // näkymän ALLE. Näkymä muuttuu matkan varrella bannerin näköiseksi
+      // (valkoinen, sama koko, sama pyöristys), joten kun se lopuksi häipyy,
+      // alta paljastuu täsmälleen samannäköinen laatikko — vaihdos ei erotu.
       showActiveParkingBanner();
       banner.style.transition = 'none';
-      banner.style.opacity = '0';
+      banner.style.opacity = '1';
       const b  = banner.getBoundingClientRect();
       const w  = window.innerWidth, h = window.innerHeight;
       const sx = Math.max(.05, b.width  / w);
@@ -18989,24 +19001,28 @@
       ov.classList.remove('play');
       ov.classList.add('closing');
       ov.style.transformOrigin = '50% 50%';
-      // ⚠️ NÄKYMÄSTÄ TULEE BANNERI — ne eivät vuorottele.
-      // Aiemmin banneri pidettiin näkymättömänä koko kutistuksen ajan ja
-      // paljastettiin vasta lopussa, jolloin katsoja näki kaksi vaihetta:
-      // sininen laatikko kutistui ja katosi, ja vasta sitten banneri
-      // ilmestyi. Nyt kutistus (0,85 s) ja ristihäivytys menevät limittäin:
-      // sininen laatikko on läpinäkymätön 65 % matkasta ja häipyy vasta
-      // viimeisen 0,3 s aikana, ja banneri kirkastuu tasan saman ikkunan
-      // aikana sen alta. Laatikko on silloin jo bannerin kokoinen ja
-      // muotoinen, joten vaihdos ei näy erillisenä tapahtumana.
+      // ⚠️ PYÖRISTYS ON KOMPENSOITAVA SKAALAUKSELLA. border-radius lasketaan
+      // ENNEN transformia, joten scale(sx, sy) litistää sen: 16 px muuttuu
+      // ruudulla 16·sx px leveäksi ja 16·sy px korkeaksi. Koska sy on n. 0,13,
+      // pystysäde kutistui pariin pikseliin ja kulmat näyttivät teräviltä.
+      // border-radius tukee erillistä vaaka/pystysädettä (a / b), joten
+      // jaetaan tavoite 16 px kummallakin kertoimella — lopputulos on ruudulla
+      // tasan 16 px molempiin suuntiin, sama kuin bannerissa.
+      // ⚠️ TAUSTA VAALENEE VALKOISEKSI samassa ajassa. Näkymä ei siis vain
+      // kutistu ja katoa: se muuttuu bannerin kokoiseksi, muotoiseksi ja
+      // väriseksi. Läpinäkyvyys laskee vasta aivan lopussa (0,67 s kohdalla,
+      // 0,18 s ajan), ja koska alla oleva banneri on jo täysin peittävä ja
+      // valkoinen, häivytyksessä ei välähdä karttaa läpi — ainoa mikä muuttuu
+      // on että bannerin teksti tulee näkyviin.
       ov.style.transition = 'transform .85s cubic-bezier(.22,1,.36,1),' +
                             ' border-radius .85s cubic-bezier(.22,1,.36,1),' +
-                            ' opacity .3s ease .55s';
+                            ' background-color .85s cubic-bezier(.22,1,.36,1),' +
+                            ' opacity .18s ease .67s';
       requestAnimationFrame(() => {
-        ov.style.borderRadius = '16px';
+        ov.style.borderRadius = (16 / sx).toFixed(1) + 'px / ' + (16 / sy).toFixed(1) + 'px';
+        ov.style.background = '#ffffff';
         ov.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
         ov.style.opacity = '0';
-        banner.style.transition = 'opacity .3s ease .55s';
-        banner.style.opacity = '1';
       });
       setTimeout(() => {
         // ⚠️ SIIRTYMÄ POIS ENNEN NOLLAUSTA. Aiemmin inline-tyylit tyhjättiin
@@ -19020,6 +19036,7 @@
         ov.style.transform = '';
         ov.style.opacity = '';
         ov.style.borderRadius = '';
+        ov.style.background = '';
         ov.style.transformOrigin = '';
         void ov.offsetWidth;
         ov.style.transition = '';
@@ -19249,7 +19266,17 @@
         currentY = sheet.offsetHeight - 60;
         void sheet.offsetWidth;
         sheet.style.transition = '';
-        applySheetDim(currentY);
+        // ⚠️ SHEETIN SISÄLTÖ ON HAETTAVA UUDELLEEN. Yllä oleva rivi asettaa
+        // sheetin tyhjän näkymän lepokorkeuteen (60 px), mutta p-merkki voi
+        // olla edelleen alueen päällä — silloin sheetissä kuuluu näkyä alueen
+        // tiedot 150 px:n korkeudella. Ilman tätä sheet jäi tyhjäksi
+        // pysäköinnin aloituksen jälkeen eikä palautunut ennen kuin p-merkkiä
+        // siirrettiin. hoveredPolyId nollataan, koska checkParking ohittaa
+        // tunnistuksen jos alue on jo "näytetty" — ja lukko vapautetaan, koska
+        // checkParking palaa heti alussa jos se on päällä.
+        if (typeof releaseMasterLock === 'function') releaseMasterLock();
+        hoveredPolyId = null;
+        checkParking();
       }, 1150);
     }
 
