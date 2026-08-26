@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-b -->
+<head><!-- TP_BUILD 2026-08-26-c -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -3257,9 +3257,10 @@
       /* 2026-08-26-a: pilleriä laskettu 8 → 4 px sheetin yläpuolella ja
          siirretty 12 → 8 → 4 px vasemmalle (-b). Rako sheetiin ja näytön
          reunaan jää tarkoituksella: kumpaankaan ei mennä kiinni. Oikea reuna
-         pidetään 12 px:ssä, joten kortti levenee vain vasemmalle. */
+         on -c:stä alkaen sama 4 px, joten auki oleva kortti — ja nyt myös
+         pieni pilleri — on symmetrisesti keskellä. */
       bottom: calc(100% + 4px);
-      left: 4px; right: 12px;
+      left: 4px; right: 4px;
       height: 0;
       z-index: 6;
       pointer-events: none;
@@ -3302,7 +3303,7 @@
        Vasen padding kasvatettu 7 → 14 px, koska ×-nappi on poistettu; oikea
        kavennettu 14 → 7 px, jotta rulla ei jää kiinni pillerin reunaan. */
     #ajanhetki-pill {
-      position: absolute; bottom: 0; left: 0;
+      position: absolute; bottom: 0; left: 0; right: 0;
       display: flex; align-items: center;
       height: 38px; padding: 0 7px 0 14px;
       white-space: nowrap;
@@ -3332,19 +3333,27 @@
       background: #e3e3e8;
       margin: 0 9px 0 7px;
     }
+    /* flex:1 venyttää painikkeen koko vapaaseen tilaan, jolloin erotin ja
+       pienoisrulla työntyvät pillerin oikeaan reunaan JA koko vasen puoli on
+       napautettavissa. Pelkkä margin-right:auto olisi työntänyt rullan oikein,
+       mutta jättänyt tekstin ja rullan väliin kuolleen alueen. */
     #ajanhetki-pill-main {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
       height: 100%; padding: 0;
       background: none; border: none;
       font-family: Arial, sans-serif; font-size: 13px; font-weight: 700;
       white-space: nowrap; cursor: pointer;
     }
     #ajanhetki-pill-main svg { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--tp-accent); }
-    #ajanhetki-pill-main .ajanhetki-pill-label { color: #0C0243; }
+    /* "Tarkasteltava ajanhetki" on selvästi pidempi kuin entinen "Ajanhetki".
+       Kapealla näytöllä (esim. 320 px) teksti + kello + rulla eivät mahdu, ja
+       koska pillerillä on white-space:nowrap, ylivuoto työntäisi rullan ulos
+       pilleristä. Katkaisu kolmella pisteellä pitää rullan aina paikallaan. */
+    #ajanhetki-pill-main .ajanhetki-pill-label { color: #0C0243; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     /* Kiinteä leveys: pilleri kutistuu sisältöönsä, joten ilman tätä pillerin
        leveys — ja sen mukana rulla — hyppisi sormen alla kun 9:05 vaihtuu
        11:30:ksi. */
-    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); display: inline-block; min-width: 38px; text-align: right; }
+    #ajanhetki-pill-main #ajanhetki-pill-time { color: var(--tp-accent); display: inline-block; min-width: 38px; text-align: right; flex-shrink: 0; }
 
     /* Window face — pinned top-left and held at the FULL expanded width in px
        (set from JS) so its layout never reflows while the card animates; the
@@ -3365,17 +3374,17 @@
     /* × ison kortin oikeassa yläkulmassa: poistaa pillerin kokonaan ja
        palauttaa ajanhetken nykyhetkeen. Sama toiminto kuin aiemmin pillerin
        vasemmassa reunassa olleella ×:llä. */
-    /* TÄSMÄLLEEN sama kuin suodatinsheetin #filter-close-btn: sama koko,
-       sama harmaa ympyrä, sama ✕-merkki 16 px Arialilla, sama väri ja sama
-       right/top. SVG-risti korvattiin merkillä, koska pelkkä koon kopiointi
-       ei olisi tehnyt siitä samanlaista. */
+    /* Sama sääntöjoukko kuin #filter-close-btn:llä, arvo arvolta — ja mitään
+       sen lisäksi. ⚠️ ÄLÄ LISÄÄ font-familyä äläkä paddingia: #filter-close-btn
+       ei aseta kumpaakaan, joten sen ✕ piirtyy selaimen oman painikefontin
+       (iOS: San Francisco) mukaan ja UA:n padding on voimassa. Arial-määre
+       teki merkistä eri muotoisen, mikä oli se ero joka jäi jäljelle. */
     #ajanhetki-close {
-      position: absolute; right: 16px; top: 14px; z-index: 2;
-      width: 28px; height: 28px; padding: 0;
+      position: absolute; right: 16px; top: 14px;
+      width: 28px; height: 28px;
       background: #f0f0f0; border: none; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-family: Arial, sans-serif; font-size: 16px; color: #555;
-      cursor: pointer;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 16px; color: #555; z-index: 5;
     }
 
     /* Kahva, otsikko ja × asettuvat toisiinsa nähden kuten suodatinsheetissä:
@@ -3393,15 +3402,13 @@
        automaattisesti — kovakoodattuja lukuja ei tarvita. */
     .ajanhetki-float-body { display: flex; align-items: center; gap: 10px; margin-top: 30px; }
     .ajanhetki-float-left { flex: 1; min-width: 0; }
-    /* Teksti on pillerin #ajanhetki-pill-main .ajanhetki-pill-label -tyylinen
-       (Arial 13 px lihavoitu, #0C0243) — ei enää harmaa versaali. Sijainti on
-       suodatinsheetin #filter-titlen: vasen reuna 16 px ja keskilinja 28 px
-       yläreunasta, absoluuttisesti. pointer-events:none jotta kahvan veto
-       menee tekstin läpi. */
+    /* Sama kuin #filter-title ("Suodata karttanäkymää"): Arial 16 px
+       lihavoitu #222, vasen reuna 16 px, keskilinja 28 px yläreunasta.
+       pointer-events:none jotta kahvan veto menee tekstin läpi. */
     .ajanhetki-float-title {
       position: absolute; left: 16px; top: 28px; transform: translateY(-50%);
-      z-index: 2; font-family: Arial, sans-serif; font-size: 13px;
-      font-weight: 700; color: #0C0243; white-space: nowrap;
+      z-index: 4; font-family: Arial, sans-serif; font-size: 16px;
+      font-weight: bold; color: #222; white-space: nowrap;
       pointer-events: none;
     }
     #ref-time-value-2 { font-size: 26px; font-weight: bold; color: #0C0243; line-height: 1; font-family: Arial, sans-serif; transition: color .2s ease; }
@@ -5345,7 +5352,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L15.5 14"/>
             </svg>
-            <span class="ajanhetki-pill-label">Ajanhetki</span>
+            <span class="ajanhetki-pill-label">Tarkasteltava ajanhetki</span>
             <span id="ajanhetki-pill-time">–</span>
           </button>
           <!-- Pienoisrulla +/− nappien tilalla. Sama jaettu tila kuin kortin ja
@@ -16182,10 +16189,20 @@
       }
       if (refTimeManual) ajanhetkiDismissed = false;
       updateAjanhetkiPillVisibility();
-      // Suodattimen sulkeutuessa kortti jää AINA pieneksi pilleriksi. Aiempi
-      // kerran-per-istunto -introlaajennus (ajanhetkiIntroShown) on poistettu:
-      // se avasi kortin isona perusnäkymän sheetin päälle. Isoksi pääsee vain
-      // klikkaamalla pilleriä.
+      // Kerran per istunto: kun suodatinsheet suljetaan ja ajanhetki on käsin
+      // asetettu, kortti aukeaa isona, jotta käyttäjä näkee mitä kartta nyt
+      // näyttää. Kaikilla seuraavilla kerroilla tullaan suoraan pieneen
+      // pilleriin. Ehto tarkistaa .visible-luokan, koska pilleri voi olla
+      // piilossa (zoom < 13, latauspiste, pysäköintihalli) — silloin ei avata
+      // mitään. Muuttuja on tarkoituksella tavallinen sivun elinajan muuttuja:
+      // sovelluksen uudelleenlataus aloittaa uuden istunnon.
+      if (refTimeManual && !ajanhetkiIntroShown) {
+        const _ahCard = document.getElementById('ajanhetki-card');
+        if (_ahCard && _ahCard.classList.contains('visible')) {
+          ajanhetkiIntroShown = true;
+          openAjanhetkiFloat();
+        }
+      }
       checkParking();
     }
     // filterBtn click handled in menuItemClick above
@@ -17110,10 +17127,11 @@
     // viivaa antaa n. 5,6 px viivavälin. Ison 52×80 kortin rullan säde on 33,
     // eli sama viivaväli vaatii n. 35 viivaa (laskettu: näkyvän puolikkaan
     // viivavälin keskiarvo on pillerissä 4,00 CSS px ja 35 viivalla isossa
-    // rullassa 4,09 px — 12 viivalla se oli 12,3 px). Käytetään vain avatun
-    // ajanhetki-kortin rullassa; suodatinsheetin ja pysäköintiajan rullat
-    // pysyvät 12:ssa.
-    const N_LINES_CARD=35;
+    // rullassa olisi 4,09 px. Se osoittautui liian tiheäksi, joten arvo on
+    // nyt 22 → 6,53 px (alkuperäinen 12 viivaa antoi 12,3 px). Käytetään vain
+    // avatun ajanhetki-kortin rullassa; suodatinsheetin ja pysäköintiajan
+    // rullat pysyvät 12:ssa.
+    const N_LINES_CARD=22;
     // Viivanpaksuus. drawDrumOn skaalaa sen canvasin korkeudella (s = H/80),
     // mutta pillerin rulla piirretään 2× tarkkuudella, joten sen viivat ovat
     // CSS-pikseleissä paljon ohuemmat: (0,8…3,0) * (52/80) * 0,5 = 0,26…0,98
@@ -17645,6 +17663,20 @@
     // between the two shapes (pilleri ja iso kortti). CSS cannot transition to
     // height:auto, so the target box is measured here and written as px.
     const AH_PILL_H = 38;    // pill height, matches #ajanhetki-pill
+    const AH_ANCHOR_GAP = 4; // #ajanhetki-anchor: bottom: calc(100% + 4px)
+    // ⚠️ "© OpenStreetMap" istui samalla rivillä kuin pilleri (top:-16px,
+    // oikea reuna) — se toimi niin kauan kuin pilleri oli kapea ja vasemmalla.
+    // -c:stä alkaen pilleri on täysleveä ja peittäisi pakollisen maininnan
+    // kokonaan, joten maininta nostetaan kortin yläpuolelle aina kun kortti on
+    // näkyvissä. Korkeus vaihtelee (38 px pilleri / mitattu korkeus auki),
+    // joten offset lasketaan joka kerta kun geometria asetetaan.
+    function updateOsmAttributionOffset(cardH){
+      const osm = document.getElementById('osm-attribution');
+      if (!osm) return;
+      const card = document.getElementById('ajanhetki-card');
+      const shown = !!(card && card.classList.contains('visible'));
+      osm.style.top = shown ? (-(AH_ANCHOR_GAP + cardH + 16) + 'px') : '-16px';
+    }
     const AH_PAD_B  = 12;    // #ajanhetki-float bottom padding
     const AH_MAX_W  = 480;   // widest the expanded card ever gets
     let ajanhetkiState = 'collapsed';   // 'collapsed' | 'expanded'
@@ -17678,11 +17710,18 @@
       const m = ajanhetkiMetrics();
       if (!m) return;
       if (ajanhetkiState === 'collapsed') {
-        m.card.style.width  = m.pillW + 'px';   // shrink-to-fit: label + clock
-        m.card.style.height = AH_PILL_H + 'px';
-      } else {
+        // Pilleri on yhtä leveä kuin auki oleva kortti, eli sen oikea reuna on
+        // samalla etäisyydellä näytön reunasta kummassakin tilassa. (Ennen -c:tä
+        // leveys oli m.pillW eli sisältöön kutistuva.) Morffauksessa muuttuu
+        // silloin vain korkeus ja kulmasäde, ei enää leveys.
         m.card.style.width  = m.cardW + 'px';
-        m.card.style.height = ((ajanhetkiSize === 'large') ? m.hLarge : m.hMedium) + 'px';
+        m.card.style.height = AH_PILL_H + 'px';
+        updateOsmAttributionOffset(AH_PILL_H);
+      } else {
+        const h = (ajanhetkiSize === 'large') ? m.hLarge : m.hMedium;
+        m.card.style.width  = m.cardW + 'px';
+        m.card.style.height = h + 'px';
+        updateOsmAttributionOffset(h);
       }
     }
     function setAjanhetkiSize(sz){
@@ -17717,6 +17756,7 @@
       if (osm) osm.style.visibility = 'visible';
       if (active) { applyAjanhetkiGeometry(); startAjanhetkiFade(); }
       else {
+        updateOsmAttributionOffset(0);   // maininta takaisin sheetin reunaan
         stopAjanhetkiFade();
         if (ajanhetkiState === 'expanded') collapseAjanhetkiCard();   // reappears as a pill
       }
