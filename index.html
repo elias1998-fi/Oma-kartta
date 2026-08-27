@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-a -->
+<head><!-- TP_BUILD 2026-08-27-b -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -575,57 +575,83 @@
        ei harmailla viivoilla. Säännöt on rajattu #search-overlayhin, jottei
        "Ilmoita alueesta" -näkymä muutu samalla. */
     #search-overlay { background: #ffffff; }
+    /* Yksi rivi: takaisin-nappi ja hakukenttä vierekkäin, ei erillistä
+       otsikkopalkkia eikä alareunaviivaa. */
     #search-overlay .overlay-header {
       border-bottom: none;
-      padding-bottom: 6px;
+      padding: max(14px, env(safe-area-inset-top)) 16px 10px 16px;
+      gap: 10px;
     }
     #search-overlay .overlay-back-btn {
-      width: 36px; height: 36px;
-      background: #f1f4fa; color: #0C0243; font-size: 18px;
+      width: 40px; height: 40px; flex-shrink: 0; margin-right: 0;
+      background: #f1f4fa; color: #0C0243; font-size: 19px;
     }
-    #search-overlay .overlay-back-btn:active { background: #e4eaf6; }
-    #search-overlay .overlay-title { color: #0C0243; font-size: 17px; }
+    #search-overlay .overlay-back-btn:active { background: #e2e9f7; }
 
     #search-overlay #search-input-container {
+      flex: 1; min-width: 0;
       background: transparent;
       border-bottom: none;
-      padding: 14px 16px;          /* symmetrinen, jotta .search-icon osuu
-                                      top:50%:lla kentän keskelle */
+      padding: 0;
     }
-    #search-overlay .search-icon { left: 32px; width: 19px; height: 19px; }
+    #search-overlay .search-icon { left: 15px; width: 19px; height: 19px; }
     #search-overlay #search-input {
-      height: 50px;
-      padding: 0 16px 0 48px;
+      height: 44px;
+      padding: 0 42px 0 44px;
       background: #f1f4fa;
       border: 1.5px solid transparent;
-      border-radius: 14px;
+      border-radius: 22px;
       color: #0C0243;
+      font-size: 16px;
       transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
     }
     #search-overlay #search-input::placeholder { color: #9aa3b8; }
     #search-overlay #search-input:focus {
       background: #ffffff;
       border-color: #0C0243;
-      box-shadow: 0 0 0 3px rgba(12,2,67,.08);
+      box-shadow: 0 0 0 3px rgba(12,2,67,.07);
     }
+    /* Tyhjennysnappi ilmestyy vasta kun kentässä on tekstiä. */
+    #search-clear {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      width: 32px; height: 32px; padding: 0;
+      border: none; border-radius: 50%; background: transparent;
+      color: #9aa3b8; cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+    }
+    #search-clear svg { width: 17px; height: 17px; }
+    #search-clear:active { background: #e9eef8; }
+    #search-overlay.has-text #search-clear { display: flex; }
 
     #search-overlay .search-history-header {
-      padding: 16px 16px 6px 16px;
+      padding: 20px 18px 6px 18px;
+      font-size: 12px;
       color: #9aa3b8;
-      letter-spacing: .6px;
+      letter-spacing: .8px;
     }
+    /* Erotinviivat vain rivien VÄLIIN: listan alku ja loppu jäävät siisteiksi
+       eikä viimeisen rivin alle jää irrallista viivaa. */
     #search-overlay .search-result-item {
-      border-bottom: 1px solid #f2f4f8;
+      padding: 13px 18px;
+      border-bottom: none;
       background: transparent;
     }
-    #search-overlay .search-result-item:active { background: #f7f9fd; }
-    #search-overlay .search-result-icon { background: #f1f4fa; }
-    #search-overlay .search-result-name { color: #0C0243; font-weight: 600; }
+    #search-overlay .search-result-item + .search-result-item {
+      border-top: 1px solid #f1f3f8;
+    }
+    #search-overlay .search-result-item:active { background: #f6f9fe; }
+    #search-overlay .search-result-icon {
+      width: 38px; height: 38px; margin-top: 0;
+      background: #f1f4fa;
+    }
+    #search-overlay .search-result-icon svg { width: 19px; height: 19px; }
+    #search-overlay .search-result-name { color: #0C0243; font-weight: 600; font-size: 15px; }
     #search-overlay .search-result-address { color: #8b93a6; }
-    #search-overlay .search-result-distance { color: #1266f1; font-weight: bold; }
-    #search-overlay .search-history-delete { color: #b6bdcc; }
+    #search-overlay .search-result-distance { color: #1266f1; font-weight: bold; align-self: center; }
+    #search-overlay .search-history-delete { color: #c2c8d6; margin-top: 0; align-self: center; }
     #search-overlay .search-history-delete:active { background: #f1f4fa; }
-    #search-overlay .search-empty { color: #9aa3b8; }
+    #search-overlay .search-empty { color: #9aa3b8; padding: 48px 24px; }
+    #search-overlay #search-results { padding-bottom: 12px; }
     
     #search-results {
       flex: 1;
@@ -5146,20 +5172,27 @@
   </div>
 
   <div id="search-overlay">
+    <!-- Otsikkorivi JA hakukenttä samalla rivillä: erillinen "Hakutoiminto"
+         -otsikkopalkki jätettiin pois, koska kentän vihjeteksti kertoo saman
+         ja näkymä alkaa nyt suoraan siitä mitä sillä tehdään. -->
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeSearchOverlay()">←</button>
-      <div class="overlay-title">Hakutoiminto</div>
-    </div>
-    <div id="search-input-container">
-      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#7b8499" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      <div id="search-input-container">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#7b8499" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7.5"/><path d="M20.5 20.5l-4.2-4.2"/>
       </svg>
       <!-- enterkeyhint="search" antaa iOS:n näppäimistölle sinisen "etsi"
            -näppäimen return-näppäimen tilalle. Emoji-/maapallonäppäintä ei voi
            piilottaa verkkosovelluksesta — se on järjestelmän oma näppäin. -->
-      <input type="text" id="search-input" placeholder="Hae osoitetta, paikkaa tai aluekoodia"
+      <input type="text" id="search-input" placeholder="Hae paikkaa tai aluekoodia"
              autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
              inputmode="search" enterkeyhint="search">
+      <button id="search-clear" type="button" aria-label="Tyhjennä haku" onclick="clearSearchInput()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>
+        </svg>
+      </button>
+      </div>
     </div>
     <div id="search-results" class="no-scroll"></div>
   </div>
@@ -6771,11 +6804,12 @@
     // Kello-ikoni historialle - vastapäivään menevällä nuolella kellotaulun ulkopuolella
     function getHistoryIconSVG() {
       return `
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#0C0243" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="13" cy="13" r="8"/>
-          <polyline points="13 9 13 13 16 15"/>
-          <path d="M4.5 10.5 L3 9 L4.5 7.5" stroke="#0C0243" stroke-width="2.5"/>
-          <path d="M4 9 C4 9, 6 6, 8 5" stroke="#0C0243" stroke-width="2.5" fill="none"/>
+        <!-- Kello keskitettynä 24×24-ruudukkoon. Vanha versio oli piirretty
+             kohtaan (13,13) ja sen vieressä oli erillinen paluunuoli, joten
+             kuvake näytti vinolta ja ahtaalta 20 px koossa. -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#0C0243" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="8.5"/>
+          <path d="M12 7.2 V12.2 L15.4 14.2"/>
         </svg>
       `;
     }
@@ -6865,6 +6899,58 @@
       if (l.includes('min')) { const m = parseFloat(l); return isNaN(m) ? 9999 : m; }
       return 9999;
     }
+
+    // ── Tuplanapautus ja veto = portaaton zoom ──────────────────────────
+    // MapLibressa on vain nipistyszoom ja tuplanapautuksen porrasloikka. Tämä
+    // lisää Google Maps -tyylisen eleen: napauta kahdesti, pidä sormi alhaalla
+    // toisella napautuksella ja liu'uta ylös/alas.
+    // ⚠️ Ele AKTIVOIDAAN VASTA KUN SORMI ON LIIKKUNUT yli 8 px. Jos dragPan ja
+    // doubleClickZoom kytkettäisiin pois heti toisesta napautuksesta, tavallinen
+    // tuplanapautuksen zoom lakkaisi toimimasta — se laukeaa vasta toisen
+    // napautuksen touchendissä, jonka ehtisimme estää.
+    (function tapDragZoom(){
+      const el = map.getCanvasContainer();
+      const TAP_MS = 300, TAP_PX = 30, START_PX = 8, PX_PER_ZOOM = 120;
+      let lastT = 0, lastX = 0, lastY = 0;
+      let armed = false, active = false, startY = 0, startZoom = 0, anchor = null;
+      function end(){
+        armed = false;
+        if (!active) return;
+        active = false;
+        map.dragPan.enable();
+        setTimeout(() => map.doubleClickZoom.enable(), 0);
+      }
+      el.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1) { end(); return; }
+        const t = e.touches[0], now = Date.now();
+        if (now - lastT < TAP_MS &&
+            Math.abs(t.clientX - lastX) < TAP_PX &&
+            Math.abs(t.clientY - lastY) < TAP_PX) {
+          armed = true;
+          startY = t.clientY;
+          startZoom = map.getZoom();
+          const r = el.getBoundingClientRect();
+          anchor = map.unproject([t.clientX - r.left, t.clientY - r.top]);
+        }
+        lastT = now; lastX = t.clientX; lastY = t.clientY;
+      }, { passive: true });
+      el.addEventListener('touchmove', e => {
+        if (!armed || e.touches.length !== 1) return;
+        const dy = startY - e.touches[0].clientY;
+        if (!active) {
+          if (Math.abs(dy) < START_PX) return;
+          active = true;
+          map.dragPan.disable();
+          map.doubleClickZoom.disable();
+        }
+        e.preventDefault();
+        // around: pitää napautuskohdan paikallaan, jolloin zoom tuntuu
+        // tarttuvan siihen kohtaan jota katsotaan.
+        map.easeTo({ zoom: startZoom + dy / PX_PER_ZOOM, around: anchor, duration: 0 });
+      }, { passive: false });
+      el.addEventListener('touchend', end, { passive: true });
+      el.addEventListener('touchcancel', end, { passive: true });
+    })();
 
     map.on('load', () => {
       map.touchZoomRotate.disableRotation(); map.dragRotate.disable();
@@ -7167,7 +7253,14 @@
         btn.classList.add('pill-flash');
         setTimeout(() => btn.classList.remove('pill-flash'), 180);
       }
-      if (keepMenuOpen) armMenuAutoClose(); else closeMenu();
+      // ⚠️ VALIKKO SULKEUTUU AINA VALINNASTA. keepMenuOpen piti sen auki ja
+      // jätti sulkemisen armMenuAutoClosen ajastimelle, jolloin esimerkiksi
+      // hakutoimintoon menoa ja heti takaisin palaamista seurasi auki jäänyt
+      // valikko. Parametri on jätetty allekirjoitukseen, koska kutsupaikkoja
+      // on useita, mutta se ei enää vaikuta sulkemiseen — ajastin vain
+      // puretaan, ettei se laukea myöhemmin tyhjään.
+      disarmMenuAutoClose();
+      closeMenu();
       if (typeof action === 'function') action();
     }
 
@@ -7294,8 +7387,24 @@
       // now that overlays slide in over whatever is on screen.)
     }
     
+    // Tyhjennysnappi: näkyy vain kun kentässä on tekstiä, ja palauttaa
+    // kohdistuksen jottei näppäimistö sulkeudu tyhjennyksen jälkeen.
+    function syncSearchClearBtn() {
+      const ov = document.getElementById('search-overlay');
+      const si = document.getElementById('search-input');
+      if (ov && si) ov.classList.toggle('has-text', si.value.length > 0);
+    }
+    function clearSearchInput() {
+      const si = document.getElementById('search-input');
+      si.value = '';
+      syncSearchClearBtn();
+      si.focus();
+      showSearchHistory();
+    }
+
     function closeSearchOverlay() {
       document.getElementById('search-overlay').classList.remove('open');
+      document.getElementById('search-overlay').classList.remove('has-text');
       document.body.classList.remove('search-mode');
       document.getElementById('search-input').value = '';
       document.getElementById('search-results').innerHTML = '';
@@ -14924,6 +15033,7 @@
     }
 
     const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', syncSearchClearBtn);
     const searchResults = document.getElementById('search-results');
     let searchTimeout = null;
     
