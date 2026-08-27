@@ -5,10 +5,10 @@
   "sources": {
     "vector": {
       "type": "vector",
-      "url": "https://api.digitransit.fi/map/v3/hsl-vector-map/index.json?digitransit-subscription-key=a002614565b24559b3feddfca8d01918"
+      "url": "https://cdn.digitransit.fi/map/v3/hsl-vector-map/index.json?digitransit-subscription-key=a002614565b24559b3feddfca8d01918"
     },
     "parkandride": {
-      "url": "https://api.digitransit.fi/map/v3/hsl/fi/vehicleParking/tilejson.json",
+      "url": "https://cdn.digitransit.fi/map/v3/hsl/fi/vehicleParking/tilejson.json",
       "type": "vector"
     },
     "borders": {
@@ -48,7 +48,7 @@
       "type": "vector"
     },
     "citybike": {
-      "url": "https://api.digitransit.fi/map/v3/hsl/fi/rentalStations/tilejson.json",
+      "url": "https://cdn.digitransit.fi/map/v3/hsl/fi/rentalStations/tilejson.json",
       "type": "vector"
     },
     "terminals": {
@@ -57,7 +57,7 @@
     },
     "4y1k84tcc": {
       "type": "vector",
-      "url": "https://api.digitransit.fi/map/v3/hsl-vector-map/index.json"
+      "url": "https://cdn.digitransit.fi/map/v3/hsl-vector-map/index.json"
     }
   },
   "sprite": "https://hslstoragekarttatuotanto.z6.web.core.windows.net/sprite",
