@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-x -->
+<head><!-- TP_BUILD 2026-08-27-y -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -7071,10 +7071,10 @@
       let lastT = 0, lastX = 0, lastY = 0;
       let armed = false, active = false, startY = 0, startZoom = 0, anchor = null;
       function end(){
+        if (armed) map.dragPan.enable();
         armed = false;
         if (!active) return;
         active = false;
-        map.dragPan.enable();
         setTimeout(() => map.doubleClickZoom.enable(), 0);
       }
       el.addEventListener('touchstart', e => {
@@ -7088,6 +7088,12 @@
           startZoom = map.getZoom();
           const r = el.getBoundingClientRect();
           anchor = map.unproject([t.clientX - r.left, t.clientY - r.top]);
+          // ⚠️ dragPan POIS HETI TOISESTA NAPAUTUKSESTA, ei vasta 8 px:n
+          // jälkeen. Aiemmin MapLibre ehti aloittaa panoroinnin ennen kuin se
+          // kytkettiin pois, ja panorointi jatkui eleen loppuun asti — kartta
+          // siis liikkui zoomaamisen sijaan. doubleClickZoom jätetään päälle
+          // tässä vaiheessa, jotta pelkkä tuplanapautus zoomaa yhä normaalisti.
+          map.dragPan.disable();
         }
         lastT = now; lastX = t.clientX; lastY = t.clientY;
       }, { passive: true });
@@ -7097,8 +7103,12 @@
         if (!active) {
           if (Math.abs(dy) < START_PX) return;
           active = true;
-          map.dragPan.disable();
           map.doubleClickZoom.disable();
+          // ⚠️ Katkaise käynnissä oleva kameraliike. Ensimmäinen napautus voi
+          // valita alueen (tapToSelectArea), joka lentää kartan alueen päälle.
+          // Ilman tätä lento ja zoom-ele ohjaisivat kameraa yhtä aikaa eri
+          // suuntiin, jolloin ele näyttää siltä ettei se toimi lainkaan.
+          map.stop();
         }
         e.preventDefault();
         // around: pitää napautuskohdan paikallaan, jolloin zoom tuntuu
