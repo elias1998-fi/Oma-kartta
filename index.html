@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-q -->
+<head><!-- TP_BUILD 2026-08-27-r -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -9,15 +9,11 @@
        jotta URL-rajattu Mapbox-token toimii. Vaikuttaa vain cross-origin-
        pyyntöihin; Digitransit-tiilet käyttävät transformRequest-otsaketta. -->
   <meta name="referrer" content="origin-when-cross-origin" />
-  <!-- ⚠️ interactive-widget=resizes-content ON SE MIKÄ RATKAISEE
-       NÄPPÄIMISTÖN AIHEUTTAMAN LIIKKEEN. Oletuksena (resizes-visual) iOS ei
-       kutista ASETTELUIKKUNAA näppäimistön auetessa vaan panoroi näkyvää
-       ikkunaa sen päällä — panorointi siirtää koko piirretyn sivun, myös
-       position:fixed -elementit, eikä siihen pure overflow:hidden,
-       touch-action eikä scrollTo. Tällä arvolla asetteluikkuna kutistuu
-       näppäimistön yläpuolelle, jolloin fixed-elementit asettuvat siihen
-       itsestään: mikään ei panoroi eikä mitään tarvitse mitata JS:llä. -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+  <!-- HUOM: buildissa -q kokeiltiin interactive-widget=resizes-content.
+       Se ei auttanut asennetussa PWA-tilassa, joten arvo on palautettu
+       oletukseksi; näppäimistön aiheuttama siirtymä hoidetaan hakunäkymän
+       omalla sisäkääreellä (#search-body). -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -583,6 +579,14 @@
        ei harmailla viivoilla. Säännöt on rajattu #search-overlayhin, jottei
        "Ilmoita alueesta" -näkymä muutu samalla. */
     #search-overlay { background: #ffffff; }
+    /* Käärettä siirretään ja sen korkeutta muutetaan JS:llä näppäimistön
+       mukaan. Oletuksena se täyttää koko näkymän. */
+    #search-body {
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      height: 100%;
+      display: flex; flex-direction: column;
+    }
     /* Otsikkorivi ("Hakutoiminto") ja hakukenttä omilla riveillään, mutta
        ilman harmaita taustoja ja alareunaviivoja — koko näkymä on yhtä
        valkoista pintaa. */
@@ -5281,6 +5285,13 @@
   </div>
 
   <div id="search-overlay">
+    <!-- ⚠️ SISÄKÄÄRE. Näkymä itse pysyy AINA koko ruudun kokoisena ja
+         valkoisena, joten sen alta ei voi paistaa kartta. Sisältö asetetaan
+         tähän kääreeseen, jonka korkeus ja yläreuna sidotaan näkyvään
+         ikkunaan (visualViewport). Jos mitta osuu hieman väärin, näkyviin jää
+         valkoista — ei karttaa. Buildeissa -n ja -p mitat asetettiin suoraan
+         näkymälle, ja juuri siksi väärä mitta paljasti kartan. -->
+    <div id="search-body">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeSearchOverlay()">←</button>
       <div class="overlay-title">Hakutoiminto</div>
@@ -5315,6 +5326,7 @@
          se pysyy paikallaan ja vierityspalkki alkaa vasta sen alta. -->
     <div id="search-tabs-host"></div>
     <div id="search-results" class="no-scroll"></div>
+    </div>
   </div>
 
   <div id="plus-overlay">
@@ -15324,23 +15336,44 @@
       }, { passive: true });
     })();
 
-    // ── Näppäimistö ja näkymän korkeus ──────────────────────────────────
-    // ⚠️ NÄKYMÄN KORKEUTTA EI ASETETA JS:LLÄ LAINKAAN.
-    // Buildeissa -n ja -p korkeus sidottiin visualViewportiin. Idea oli
-    // oikea (iOS panoroi näkyvää ikkunaa näppäimistön auetessa, mikä siirtää
-    // myös position:fixed -elementtejä), mutta mitta osui toistuvasti hieman
-    // väärin: näkymä jäi näppäimistön yläreunaa lyhyemmäksi ja väliin jäi
-    // kaistale, jossa kartta paistoi läpi.
-    // Sama asia hoituu ilman mittaamista viewport-metan
-    // interactive-widget=resizes-content -arvolla: asetteluikkuna kutistuu
-    // näppäimistön yläpuolelle, jolloin inset:0 kattaa tasan näkyvän alueen.
-    // Tämä funktio vain siivoaa mahdolliset vanhat inline-mitat pois.
-    (function clearSearchInlineSize(){
-      const ov = document.getElementById('search-overlay');
-      if (!ov) return;
-      function clear(){ ov.style.top = ''; ov.style.height = ''; ov.style.bottom = ''; }
-      clear();
-      window.__tpSearchKeyboardInset = clear;
+    // ── Sisältö näppäimistön yläpuolelle ────────────────────────────────
+    // ⚠️ MITAT ANNETAAN SISÄKÄÄREELLE (#search-body), EI NÄKYMÄLLE.
+    // Näkymä on aina koko ruudun kokoinen valkoinen pinta, joten mitan
+    // heitto näkyy korkeintaan valkoisena kaistana — ei karttana, kuten
+    // buildeissa -n ja -p joissa mitat asetettiin näkymälle itselleen.
+    // Syy mittaamiselle: iOS ei kutista asetteluikkunaa näppäimistön
+    // auetessa vaan panoroi näkyvää ikkunaa sen päällä, ja panorointi
+    // siirtää myös position:fixed -elementit. Kun kääre kattaa tasan
+    // näppäimistön yläpuolisen alueen, kursori on jo näkyvissä eikä
+    // panoroinnille ole syytä.
+    // top = vv.offsetTop kumoaa panoroinnin: kääre on absoluuttinen
+    // näkymään nähden, ja näkymä on ankkuroitu asetteluikkunaan, joten
+    // sama luku siirtää kääreen takaisin näkyvän ikkunan yläreunaan.
+    (function fitSearchBody(){
+      const vv   = window.visualViewport;
+      const ov   = document.getElementById('search-overlay');
+      const body = document.getElementById('search-body');
+      if (!ov || !body) return;
+      function clear(){ body.style.top = ''; body.style.height = ''; }
+      if (!vv) { window.__tpSearchViewportClear = clear; return; }
+      let raf = null;
+      function apply(){
+        raf = null;
+        if (!ov.classList.contains('open')) { clear(); return; }
+        const gap = Math.round(window.innerHeight - vv.height - vv.offsetTop);
+        if (gap < 80) { clear(); return; }   // ei näppäimistöä → koko näkymä
+        body.style.top    = Math.round(vv.offsetTop) + 'px';
+        body.style.height = Math.round(vv.height) + 'px';
+      }
+      function schedule(){
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(apply);
+      }
+      vv.addEventListener('resize', schedule);
+      vv.addEventListener('scroll', schedule);
+      searchInput.addEventListener('focus', () => [80, 250, 500].forEach(t => setTimeout(schedule, t)));
+      searchInput.addEventListener('blur',  () => { clear(); [80, 250, 500].forEach(t => setTimeout(schedule, t)); });
+      window.__tpSearchKeyboardInset = schedule;
       window.__tpSearchViewportClear = clear;
     })();
 
