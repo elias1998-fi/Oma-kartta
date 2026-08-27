@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-n -->
+<head><!-- TP_BUILD 2026-08-27-o -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -729,13 +729,28 @@
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       touch-action: pan-y;
-      padding-bottom: 12px;   /* näkymä on jo rajattu näppäimistön yläpuolelle */
+      padding-bottom: 12px;   /* JS kasvattaa tätä näppäimistön korkeudella */
     }
     #search-overlay .overlay-header,
     #search-overlay #search-tabs-host,
     #search-overlay #search-input-container { flex-shrink: 0; }
-    /* Dokumentti ei saa vierittyä hakunäkymän ollessa auki. */
-    body.search-mode { overflow: hidden; }
+    /* ⚠️ LUKITUS TARVITAAN SEKÄ <html>- ETTÄ <body>-ELEMENTTIIN.
+       iOS Safarilla vierittyvä elementti on documentElement, joten pelkkä
+       body{overflow:hidden} ei estä sivun vieritystä. Sivu ON vieritettävissä,
+       koska #bottom-sheet on absoluuttinen 100vh-elementti joka on siirretty
+       transformilla ruudun alapuolelle — se kasvattaa dokumentin
+       vierityskorkeutta. Luokka lisätään molempiin avattaessa. */
+    html.search-mode, body.search-mode { overflow: hidden; height: 100%; }
+
+    /* ⚠️ VAIN LISTA ON PANOROITAVISSA. touch-action:none kertoo selaimelle jo
+       ennen ensimmäistä liikettä, ettei näiden päältä alkava veto saa vierittää
+       mitään. Se on luotettavampi kuin pelkkä preventDefault, koska selain
+       päättää vierityskohteen heti kosketuksen alussa. Listalla on oma
+       touch-action:pan-y, ja koska nämä ovat sen SISARUKSIA (eivät esi-isiä),
+       listan vieritys ei kärsi. */
+    #search-overlay .overlay-header,
+    #search-overlay #search-input-container,
+    #search-overlay #search-tabs-host { touch-action: none; }
     
     #search-results {
       flex: 1;
@@ -7477,6 +7492,8 @@
       menuItemClick(4, () => {
         document.getElementById('search-overlay').classList.add('open');
         document.body.classList.add('search-mode');
+        document.documentElement.classList.add('search-mode');
+        window.scrollTo(0, 0);
         // The search view covers the map — hide the floating action button
         // so it doesn't show through behind the keyboard.
         btnContainer.classList.add('hidden');
@@ -7534,11 +7551,11 @@
       document.getElementById('search-overlay').classList.remove('open');
       document.getElementById('search-overlay').classList.remove('has-text');
       document.body.classList.remove('search-mode');
+      document.documentElement.classList.remove('search-mode');
       document.getElementById('search-input').value = '';
       document.getElementById('search-results').innerHTML = '';
       setSearchTabsHost('');
-      const _ovEl = document.getElementById('search-overlay');
-      _ovEl.style.top = ''; _ovEl.style.height = ''; _ovEl.style.bottom = '';
+      document.getElementById('search-results').style.paddingBottom = '';
       // Restore the floating action button now that the search view is gone.
       btnContainer.classList.remove('hidden');
       if (filterMode) closeFilter();
@@ -15297,38 +15314,25 @@
       }, { passive: true });
     })();
 
-    // ── Näkymä sovitetaan NÄKYVÄÄN ikkunaan ─────────────────────────────
-    // ⚠️ TÄMÄ ON SE SYY MIKSI KAIKKI LIIKKUI, MYÖS position:fixed -ELEMENTIT.
-    // Kun näppäimistö avautuu, iOS EI kutista asetteluikkunaa (layout
-    // viewport) — se pysyy koko ruudun korkuisena ja näppäimistö vain peittää
-    // alaosan. Saadakseen kursorin näkyviin iOS panoroi NÄKYVÄÄ ikkunaa
-    // (visual viewport) asetteluikkunan päällä. Panorointi siirtää koko
-    // piirretyn sivun, myös fixed-elementit — siksi takaisin-nuoli,
-    // otsikko, hakukenttä, kursori ja välilehdet liikkuivat, vaikka mikään
-    // niistä ei ollut vierittyvässä säiliössä. window.scrollTo(0,0) ei auta,
-    // koska kyse ei ole dokumentin vierityksestä.
-    // Ratkaisu: sidotaan näkymän korkeus ja yläreuna visualViewportiin, eli
-    // näkymä kattaa tasan sen alueen joka on näppäimistön yläpuolella.
-    // Silloin kursori on jo valmiiksi näkyvissä eikä iOS:llä ole mitään
-    // syytä panoroida. Samalla listan flex:1 saa oikean korkeuden, joten
-    // erillistä alapehmustetta ei enää tarvita.
-    (function fitSearchToViewport(){
+    // ⚠️ NÄKYMÄ PYSYY KOKO RUUDUN KOKOISENA (inset:0). Buildissa -n kokeiltiin
+    // korkeuden sitomista visualViewportiin — se rikkoi näkymän: kartta paistoi
+    // näppäimistön alta ja listan korkeus meni väärin. Sen sijaan listalle
+    // annetaan alapehmusteeksi näppäimistön viemä tila, jolloin koko lista on
+    // saavutettavissa vaikka näkymä ulottuu näppäimistön alle.
+    (function keyboardInset(){
       const vv = window.visualViewport;
-      const ov = document.getElementById('search-overlay');
-      if (!ov) return;
+      if (!vv) return;
       function apply(){
-        if (!ov.classList.contains('open') || !vv) {
-          ov.style.top = ''; ov.style.height = ''; ov.style.bottom = '';
+        const ov = document.getElementById('search-overlay');
+        if (!ov || !ov.classList.contains('open')) {
+          searchResults.style.paddingBottom = '';
           return;
         }
-        ov.style.top    = Math.round(vv.offsetTop) + 'px';
-        ov.style.height = Math.round(vv.height) + 'px';
-        ov.style.bottom = 'auto';
+        const gap = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        searchResults.style.paddingBottom = (gap + 12) + 'px';
       }
-      if (vv) {
-        vv.addEventListener('resize', apply);
-        vv.addEventListener('scroll', apply);
-      }
+      vv.addEventListener('resize', apply);
+      vv.addEventListener('scroll', apply);
       searchInput.addEventListener('focus', () => setTimeout(apply, 60));
       searchInput.addEventListener('blur',  () => setTimeout(apply, 60));
       window.__tpSearchKeyboardInset = apply;
