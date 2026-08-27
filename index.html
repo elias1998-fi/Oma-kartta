@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-v -->
+<head><!-- TP_BUILD 2026-08-27-x -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -72,7 +72,14 @@
        profiilivalikko on ainoa vasemmalle pysäköity eikä sillä ole varjoa.
        40 px riittää kattamaan leveimmän varjon (24 px sumennus + 2 px siirto).
        Sama ratkaisu kuin paluueleen SWIPE_SHADOW_PADissa. */
-    :root { --tp-offscreen-x: calc(100% + 40px); }
+    :root {
+      --tp-offscreen-x: calc(100% + 40px);
+      /* Haalean sininen: sama sävy kuin valitulla latauspistoketiilellä
+         (.charger-type-tile.selected). Käytetään paluunuolten pohjana ja
+         Historia/Suosikit-valitsimen taustana, jotta sävy toistuu. */
+      --tp-pale-blue: #f4f4ff;
+      --tp-pale-blue-active: #e6e6fb;
+    }
     .maplibregl-ctrl-attrib { display: none !important; }
     .maplibregl-ctrl { display: none !important; }
     /* ── Unified center marker ────────────────────────────────────────
@@ -519,13 +526,14 @@
     }
     .overlay-back-btn {
       width: 34px; height: 34px;
-      background: #f0f0f0;
+      background: var(--tp-pale-blue);
       border: none; border-radius: 50%;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; color: #333;
+      font-size: 16px; color: #0C0243;
       margin-right: 10px;
     }
+    .overlay-back-btn:active { background: var(--tp-pale-blue-active); }
     .overlay-title {
       font-family: Arial, sans-serif;
       font-size: 16px; font-weight: bold;
@@ -575,7 +583,7 @@
        Näkymän pohja oli #f2f3f5 ja sen päällä valkoisia laatikoita, joten
        harmaat sävyerot ja reunaviivat pilkkoivat sen kolmeen palaan. Nyt koko
        näkymä on valkoinen ja rakenne tehdään tilalla, pyöristyksillä ja
-       brändin sinisellä (#0C0243 teksti, #1266f1 korostus, #f1f4fa täytöt) —
+       brändin sinisellä (#0C0243 teksti, #1266f1 korostus, --tp-pale-blue täytöt) —
        ei harmailla viivoilla. Säännöt on rajattu #search-overlayhin, jottei
        "Ilmoita alueesta" -näkymä muutu samalla. */
     #search-overlay { background: #ffffff; }
@@ -609,14 +617,8 @@
       padding: 4px 16px;
       margin-bottom: 8px;
     }
-    /* ⚠️ z-index ja säiliön position:relative varmistetaan tässä. Kuvake on
-       absoluuttinen ja tulee DOM:issa ennen kenttää; ilman omaa
-       pinoutumiskontekstia kentän oma tausta piirtyi sen päälle eikä
-       suurennuslasi näkynyt lainkaan. */
     #search-overlay #search-input-container { position: relative; }
-    #search-overlay .search-icon {
-      left: 31px; width: 19px; height: 19px; z-index: 2;
-    }
+    #search-overlay .search-icon { left: 31px; width: 19px; height: 19px; }
     /* Valkoinen tausta kuten välilehtien valitulla kortilla: kevyt reunus ja
        sama hienovarainen varjo, ei harmaata täyttöä. */
     #search-overlay #search-input {
@@ -675,7 +677,7 @@
       display: flex; gap: 4px;
       margin: 2px 16px 10px 16px;
       padding: 4px;
-      background: #f1f4fa;
+      background: var(--tp-pale-blue);
       border-radius: 15px;
     }
     #search-overlay .search-tab {
@@ -701,7 +703,7 @@
       -webkit-tap-highlight-color: transparent;
     }
     #search-overlay .search-fav-btn svg { width: 20px; height: 20px; }
-    #search-overlay .search-fav-btn:active { background: #f1f4fa; border-radius: 50%; }
+    #search-overlay .search-fav-btn:active { background: var(--tp-pale-blue-active); border-radius: 50%; }
     /* Erotinviivat vain rivien VÄLIIN: listan alku ja loppu jäävät siisteiksi
        eikä viimeisen rivin alle jää irrallista viivaa. */
     #search-overlay .search-result-item {
@@ -715,7 +717,7 @@
     #search-overlay .search-result-item:active { background: #f6f9fe; }
     #search-overlay .search-result-icon {
       width: 38px; height: 38px; margin-top: 0;
-      background: #f1f4fa;
+      background: var(--tp-pale-blue);
     }
     #search-overlay .search-result-icon svg { width: 19px; height: 19px; }
     #search-overlay .search-result-name { color: #0C0243; font-weight: 600; font-size: 15px; }
@@ -726,7 +728,7 @@
        samassa vasemmassa linjassa. Oletus (stretch) riittää. */
     #search-overlay .search-result-distance { color: #1266f1; font-weight: bold; }
     #search-overlay .search-history-delete { color: #c2c8d6; margin-top: 0; align-self: center; }
-    #search-overlay .search-history-delete:active { background: #f1f4fa; }
+    #search-overlay .search-history-delete:active { background: var(--tp-pale-blue-active); }
     #search-overlay .search-empty { color: #9aa3b8; padding: 48px 24px; }
 
     /* ── Vieritys ───────────────────────────────────────────────────────
@@ -2377,7 +2379,8 @@
     #parking-overlay { position: fixed; inset: 0; background: #f2f3f5; z-index: 100; display: flex; flex-direction: column; transform: translateX(var(--tp-offscreen-x)); transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); }
     #parking-overlay.open { transform: translateX(0); }
     #parking-header { display: flex; align-items: center; padding: max(14px,env(safe-area-inset-top)) 16px 12px 16px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
-    #back-btn { width: 34px; height: 34px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #333; margin-right: 10px; }
+    #back-btn { width: 34px; height: 34px; background: var(--tp-pale-blue); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #0C0243; margin-right: 10px; }
+    #back-btn:active { background: var(--tp-pale-blue-active); }
     #parking-header-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #222; }
     /* Yrityslaskutus chain — same slide-in pattern as #parking-overlay, but
        stacked above it (110/111) since it opens from the payment picker. */
@@ -5303,9 +5306,6 @@
       <div class="overlay-title">Hakutoiminto</div>
     </div>
     <div id="search-input-container">
-      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#7b8499" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="7.5"/><path d="M20.5 20.5l-4.2-4.2"/>
-      </svg>
       <!-- ⚠️ EI <input> VAAN contenteditable. iOS näyttää näppäimistön
            yläpuolella "form assistant" -palkin (nuolet + valmis) aina kun
            kohdistus on LOMAKEKENTÄSSÄ. Palkkia ei voi piilottaa millään
@@ -5322,6 +5322,14 @@
            data-placeholder="Hae osoitetta, paikkaa tai aluekoodia"
            autocorrect="off" autocapitalize="none" spellcheck="false"
            inputmode="search" enterkeyhint="search"></div>
+      <!-- ⚠️ Suurennuslasi on DOM:issa KENTÄN JÄLKEEN. Kuvake on
+           absoluuttinen ja kenttä on tavallinen lohko, jolla on oma valkoinen
+           tausta; kun kuvake tuli ensin, tausta piirtyi sen päälle eikä
+           kuvake näkynyt. Järjestys hoitaa asian ilman z-indeksiä, joka voi
+           sotkea pinoutumista muualla. -->
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#7b8499" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7.5"/><path d="M20.5 20.5l-4.2-4.2"/>
+      </svg>
       <button id="search-clear" type="button" aria-label="Tyhjennä haku" onclick="clearSearchInput()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
           <line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>
@@ -15446,15 +15454,24 @@
             // ⚠️ Kadun nimeä ei toisteta jos se on sama kuin kohteen nimi —
             // muuten osoitehaussa lukisi "Bulevardi 12" ja alla "Bulevardi,
             // Helsinki".
-            const city   = props.localadmin || props.locality || props.region || '';
-            const street = props.street || '';
-            const hood   = props.neighbourhood || '';
-            const first  = (street && street !== name) ? street
-                         : (hood && hood !== city ? hood : '');
-            const parts = [];
-            if (first) parts.push(first);
-            if (city)  parts.push(city);
-            const fullLocality = parts.join(', ');
+            // ⚠️ Oma try/catch: yksi outo tulos ei saa kaataa koko listaa.
+            // .map() ajetaan kaikille tuloksille, ja jos tämä heittäisi, koko
+            // hakutulos jäisi renderöimättä ja näkyviin tulisi vain
+            // "Haku epäonnistui".
+            let fullLocality = '';
+            try {
+              const city   = String(props.localadmin || props.locality || props.region || '');
+              const street = String(props.street || '');
+              const hood   = String(props.neighbourhood || '');
+              const first  = (street && street !== name) ? street
+                           : (hood && hood !== city ? hood : '');
+              const parts = [];
+              if (first) parts.push(first);
+              if (city)  parts.push(city);
+              fullLocality = parts.join(', ');
+            } catch (e) {
+              fullLocality = String(props.localadmin || props.locality || '');
+            }
             
             const distanceKm = calculateDistance(currentLat, currentLon, coords[1], coords[0]);
             const distanceText = formatDistance(distanceKm);
@@ -16567,7 +16584,7 @@
       }
       const headerHtml =
         '<div style="display:flex;align-items:center;padding:max(14px,env(safe-area-inset-top)) 16px 12px 16px;background:white;border-bottom:1px solid #eee;flex-shrink:0;">' +
-          '<button id="c-back-btn" style="width:34px;height:34px;background:#f0f0f0;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:#333;margin-right:10px;">\u2190</button>' +
+          '<button id="c-back-btn" style="width:34px;height:34px;background:var(--tp-pale-blue);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:#0C0243;margin-right:10px;">\u2190</button>' +
           '<div style="font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#222;">Lataus</div>' +
         '</div>';
       if(!cp){
@@ -16684,7 +16701,7 @@
       const bcHide = document.getElementById('btn-container'); if(bcHide) bcHide.classList.add('hidden');
       const headerHtml =
         '<div style="display:flex;align-items:center;padding:max(14px,env(safe-area-inset-top)) 16px 12px 16px;background:white;border-bottom:1px solid #eee;flex-shrink:0;">' +
-          '<button id="cp-back-btn" style="width:34px;height:34px;background:#f0f0f0;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:#333;margin-right:10px;">\u2190</button>' +
+          '<button id="cp-back-btn" style="width:34px;height:34px;background:var(--tp-pale-blue);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:#0C0243;margin-right:10px;">\u2190</button>' +
           '<div style="font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#222;">Valitse pistoke</div>' +
         '</div>' +
         '<style>.cp-card{transition:transform .12s ease;}.cp-card:active{transform:scale(0.97);}</style>';
