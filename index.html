@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-26-t -->
+<head><!-- TP_BUILD 2026-08-27-a -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -566,6 +566,66 @@
     #search-input:focus {
       border-color: #0C0243;
     }
+
+    /* ── Hakutoiminto: yhtenäinen valkoinen pinta ──────────────────────
+       Näkymän pohja oli #f2f3f5 ja sen päällä valkoisia laatikoita, joten
+       harmaat sävyerot ja reunaviivat pilkkoivat sen kolmeen palaan. Nyt koko
+       näkymä on valkoinen ja rakenne tehdään tilalla, pyöristyksillä ja
+       brändin sinisellä (#0C0243 teksti, #1266f1 korostus, #f1f4fa täytöt) —
+       ei harmailla viivoilla. Säännöt on rajattu #search-overlayhin, jottei
+       "Ilmoita alueesta" -näkymä muutu samalla. */
+    #search-overlay { background: #ffffff; }
+    #search-overlay .overlay-header {
+      border-bottom: none;
+      padding-bottom: 6px;
+    }
+    #search-overlay .overlay-back-btn {
+      width: 36px; height: 36px;
+      background: #f1f4fa; color: #0C0243; font-size: 18px;
+    }
+    #search-overlay .overlay-back-btn:active { background: #e4eaf6; }
+    #search-overlay .overlay-title { color: #0C0243; font-size: 17px; }
+
+    #search-overlay #search-input-container {
+      background: transparent;
+      border-bottom: none;
+      padding: 14px 16px;          /* symmetrinen, jotta .search-icon osuu
+                                      top:50%:lla kentän keskelle */
+    }
+    #search-overlay .search-icon { left: 32px; width: 19px; height: 19px; }
+    #search-overlay #search-input {
+      height: 50px;
+      padding: 0 16px 0 48px;
+      background: #f1f4fa;
+      border: 1.5px solid transparent;
+      border-radius: 14px;
+      color: #0C0243;
+      transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    #search-overlay #search-input::placeholder { color: #9aa3b8; }
+    #search-overlay #search-input:focus {
+      background: #ffffff;
+      border-color: #0C0243;
+      box-shadow: 0 0 0 3px rgba(12,2,67,.08);
+    }
+
+    #search-overlay .search-history-header {
+      padding: 16px 16px 6px 16px;
+      color: #9aa3b8;
+      letter-spacing: .6px;
+    }
+    #search-overlay .search-result-item {
+      border-bottom: 1px solid #f2f4f8;
+      background: transparent;
+    }
+    #search-overlay .search-result-item:active { background: #f7f9fd; }
+    #search-overlay .search-result-icon { background: #f1f4fa; }
+    #search-overlay .search-result-name { color: #0C0243; font-weight: 600; }
+    #search-overlay .search-result-address { color: #8b93a6; }
+    #search-overlay .search-result-distance { color: #1266f1; font-weight: bold; }
+    #search-overlay .search-history-delete { color: #b6bdcc; }
+    #search-overlay .search-history-delete:active { background: #f1f4fa; }
+    #search-overlay .search-empty { color: #9aa3b8; }
     
     #search-results {
       flex: 1;
@@ -5091,10 +5151,15 @@
       <div class="overlay-title">Hakutoiminto</div>
     </div>
     <div id="search-input-container">
-      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#7b8499" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
       </svg>
-      <input type="text" id="search-input" placeholder="Hae osoitetta, paikkaa tai aluekoodia..." autocomplete="off">
+      <!-- enterkeyhint="search" antaa iOS:n näppäimistölle sinisen "etsi"
+           -näppäimen return-näppäimen tilalle. Emoji-/maapallonäppäintä ei voi
+           piilottaa verkkosovelluksesta — se on järjestelmän oma näppäin. -->
+      <input type="text" id="search-input" placeholder="Hae osoitetta, paikkaa tai aluekoodia"
+             autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+             inputmode="search" enterkeyhint="search">
     </div>
     <div id="search-results" class="no-scroll"></div>
   </div>
@@ -6706,11 +6771,11 @@
     // Kello-ikoni historialle - vastapäivään menevällä nuolella kellotaulun ulkopuolella
     function getHistoryIconSVG() {
       return `
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#0C0243" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="13" cy="13" r="8"/>
           <polyline points="13 9 13 13 16 15"/>
-          <path d="M4.5 10.5 L3 9 L4.5 7.5" stroke="#333" stroke-width="2.5"/>
-          <path d="M4 9 C4 9, 6 6, 8 5" stroke="#333" stroke-width="2.5" fill="none"/>
+          <path d="M4.5 10.5 L3 9 L4.5 7.5" stroke="#0C0243" stroke-width="2.5"/>
+          <path d="M4 9 C4 9, 6 6, 8 5" stroke="#0C0243" stroke-width="2.5" fill="none"/>
         </svg>
       `;
     }
@@ -7203,7 +7268,17 @@
         // The search view covers the map — hide the floating action button
         // so it doesn't show through behind the keyboard.
         btnContainer.classList.add('hidden');
-        setTimeout(() => { document.getElementById('search-input').focus(); showSearchHistory(); }, 100);
+        showSearchHistory();
+        // ⚠️ FOCUS SYNKRONISESTI, EI AJASTIMELLA. iOS avaa näppäimistön vain
+        // jos focus() tapahtuu käyttäjän eleen käsittelijän kutsupinossa.
+        // Aiemmin tämä oli setTimeoutin (100 ms) sisällä, jolloin eleen
+        // konteksti oli jo mennyt: kenttä sai kohdistuksen mutta näppäimistö
+        // ei noussut ja hakukenttää piti napauttaa erikseen. menuItemClick
+        // ajaa tämän funktion synkronisesti, joten pino säilyy.
+        // preventScroll estää iOS:ää vierittämästä näkymää kentän kohdalle
+        // samalla kun se on vasta liukumassa sisään.
+        const si = document.getElementById('search-input');
+        try { si.focus({ preventScroll: true }); } catch (e) { si.focus(); }
       }, true);
     });
     
