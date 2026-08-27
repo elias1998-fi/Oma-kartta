@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-j -->
+<head><!-- TP_BUILD 2026-08-27-l -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -706,7 +706,35 @@
     #search-overlay .search-history-delete { color: #c2c8d6; margin-top: 0; align-self: center; }
     #search-overlay .search-history-delete:active { background: #f1f4fa; }
     #search-overlay .search-empty { color: #9aa3b8; padding: 48px 24px; }
-    #search-overlay #search-results { padding-bottom: 12px; }
+
+    /* ── Vieritys ───────────────────────────────────────────────────────
+       ⚠️ VAIN TULOSLISTA VIERITTYY. showSearchHistory asetti listalle luokan
+       'no-scroll' (overflow:hidden), jolloin listaa ei voinut vierittää
+       lainkaan ja kosketus valui dokumentille — iOS vieritti koko sivua,
+       jolloin otsikko, hakukenttä ja jopa kentän kursori liikkuivat mukana.
+       Ohitetaan molemmat luokat hakunäkymän sisällä: lista on aina oma
+       vieritysalueensa.
+       overflow-y:scroll (ei auto), jotta iOS antaa vieteriefektin myös
+       silloin kun rivejä on niin vähän ettei vieritettävää synny.
+       overscroll-behavior:contain pitää vieterin listan sisällä eikä päästä
+       sitä ketjuttumaan dokumenttiin. touch-action:pan-y rajaa eleen
+       pystysuuntaan, jolloin vaakaswipe (paluuele) toimii yhä listan päältä. */
+    #search-overlay #search-results,
+    #search-overlay #search-results.no-scroll,
+    #search-overlay #search-results.allow-scroll {
+      flex: 1;
+      min-height: 0;               /* ⚠️ ilman tätä lista kasvaa sisältönsä
+                                      mittaiseksi eikä vierity lainkaan */
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+      padding-bottom: 12px;
+    }
+    #search-overlay .overlay-header,
+    #search-overlay #search-input-container { flex-shrink: 0; }
+    /* Dokumentti ei saa vierittyä hakunäkymän ollessa auki. */
+    body.search-mode { overflow: hidden; }
     
     #search-results {
       flex: 1;
@@ -7460,6 +7488,9 @@
         // samalla kun se on vasta liukumassa sisään.
         const si = document.getElementById('search-input');
         try { si.focus({ preventScroll: true }); } catch (e) { si.focus(); }
+        if (typeof window.__tpSearchKeyboardInset === 'function') {
+          setTimeout(window.__tpSearchKeyboardInset, 120);
+        }
       }, true);
     });
     
@@ -7501,6 +7532,7 @@
       document.body.classList.remove('search-mode');
       document.getElementById('search-input').value = '';
       document.getElementById('search-results').innerHTML = '';
+      document.getElementById('search-results').style.paddingBottom = '';
       // Restore the floating action button now that the search view is gone.
       btnContainer.classList.remove('hidden');
       if (filterMode) closeFilter();
@@ -15227,6 +15259,31 @@
       document.execCommand('insertText', false, txt.replace(/\s+/g, ' '));
     });
     const searchResults = document.getElementById('search-results');
+    // ⚠️ NÄPPÄIMISTÖN KORKEUS LISÄTÄÄN LISTAN ALAPEHMUSTEEKSI.
+    // Hakunäkymä on position:fixed; inset:0, joten iOS ei kutista sen
+    // asettelualuetta näppäimistön auetessa — listan loppu jäisi
+    // näppäimistön alle eikä sinne pääsisi vierittämällä. visualViewport
+    // kertoo näkyvän osan korkeuden, ja erotus ikkunan korkeuteen on
+    // näppäimistön (ja apupalkin) viemä tila.
+    (function keyboardInset(){
+      const vv = window.visualViewport;
+      if (!vv) return;
+      function apply(){
+        const ov = document.getElementById('search-overlay');
+        if (!ov || !ov.classList.contains('open')) {
+          searchResults.style.paddingBottom = '';
+          return;
+        }
+        const gap = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        searchResults.style.paddingBottom = (gap + 12) + 'px';
+      }
+      vv.addEventListener('resize', apply);
+      vv.addEventListener('scroll', apply);
+      searchInput.addEventListener('focus', () => setTimeout(apply, 60));
+      searchInput.addEventListener('blur',  () => setTimeout(apply, 60));
+      window.__tpSearchKeyboardInset = apply;
+    })();
+
     let searchTimeout = null;
     
     async function searchPlaces(query) {
@@ -17659,17 +17716,23 @@
         const go = dx > w * 0.5 || (dx / dt > SWIPE_FLICK_V && dx > SWIPE_FLICK_MIN);
         const ms = go ? SWIPE_MS_DONE : SWIPE_MS_CANCEL;
         const d  = swipeDim();
-        d.style.transition = 'opacity ' + ms + 'ms ' + SWIPE_EASE;
-        // ⚠️ VERHO HÄIVYTETÄÄN MYÖS PERUUNTUVASSA ELEESSÄ. Aiemmin tässä oli
-        // go ? '0' : String(SWIPE_DIM_MAX), eli peruuntuessa verho nostettiin
-        // TÄYTEEN himmennykseen ja se jäi siihen koko vieterin ajaksi —
-        // siivous tapahtui vasta swipeResetissä animaation jälkeen. Näkymällä
-        // on eleen ajan 55 px pyöristetyt vasemmat kulmat, joten kulmien
-        // kaarien alta paistoi täysin tumma verho: se oli se välähdys ruudun
-        // yläreunassa (ja alareunassa, missä toimintonappi peitti sen).
-        // Ele on joka tapauksessa ohi, joten verho kuuluu häivyttää
-        // molemmissa tapauksissa.
-        d.style.opacity = '0';
+        if (go) {
+          d.style.transition = 'opacity ' + ms + 'ms ' + SWIPE_EASE;
+          d.style.opacity = '0';
+        } else {
+          // ⚠️ PERUUNTUESSA VERHO SAMMUU HETI, EI HÄIVYTTÄEN.
+          // Verho on koko ruudun kokoinen ja liikkuvan näkymän alla, joten
+          // siitä näkyy vain se kaistale jonka näkymä on paljastanut. Kun ele
+          // peruuntuu, kaistale kapenee nollaan 300 ms:ssä — ja jos verho
+          // häivytetään samaan tahtiin, kaistale näkyy koko sen ajan tummana
+          // ja kutistuvana. Näppäimistö peittää alaosan, joten siitä jää
+          // näkyviin vain yläosa: juuri se "himmennyksen välähdys ruudun
+          // yläreunassa". Peruttu ele ei tarvitse himmennystä lainkaan, joten
+          // se otetaan pois samassa ruudussa kuin vieteri lähtee.
+          d.style.transition = 'none';
+          d.style.opacity = '0';
+          d.style.display = 'none';
+        }
         if (g.under) {
           const endS = go ? 0 : -SWIPE_PARALLAX * w;
           for (const u of g.under) {
