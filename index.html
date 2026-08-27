@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-o -->
+<head><!-- TP_BUILD 2026-08-27-p -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -7555,7 +7555,7 @@
       document.getElementById('search-input').value = '';
       document.getElementById('search-results').innerHTML = '';
       setSearchTabsHost('');
-      document.getElementById('search-results').style.paddingBottom = '';
+      if (typeof window.__tpSearchViewportClear === 'function') window.__tpSearchViewportClear();
       // Restore the floating action button now that the search view is gone.
       btnContainer.classList.remove('hidden');
       if (filterMode) closeFilter();
@@ -15314,28 +15314,51 @@
       }, { passive: true });
     })();
 
-    // ⚠️ NÄKYMÄ PYSYY KOKO RUUDUN KOKOISENA (inset:0). Buildissa -n kokeiltiin
-    // korkeuden sitomista visualViewportiin — se rikkoi näkymän: kartta paistoi
-    // näppäimistön alta ja listan korkeus meni väärin. Sen sijaan listalle
-    // annetaan alapehmusteeksi näppäimistön viemä tila, jolloin koko lista on
-    // saavutettavissa vaikka näkymä ulottuu näppäimistön alle.
-    (function keyboardInset(){
+    // ── Näkymä näppäimistön yläpuolelle ─────────────────────────────────
+    // ⚠️ SYY: kun näppäimistö avautuu, iOS EI kutista asetteluikkunaa (layout
+    // viewport) vaan panoroi NÄKYVÄÄ ikkunaa (visual viewport) sen päällä
+    // saadakseen kursorin näkyviin. Panorointi siirtää koko piirretyn sivun,
+    // myös position:fixed -elementit — siksi takaisin-nuoli, otsikko,
+    // hakukenttä, kursori ja välilehdet liikkuivat, vaikka mikään niistä ei
+    // ole vierittyvässä säiliössä. Sivun vieritys (overflow:hidden,
+    // touch-action, scrollTo) ei siihen pure, koska kyse ei ole vierityksestä.
+    // Korjaus: näkymän yläreuna ja korkeus sidotaan visualViewportiin, jolloin
+    // se kattaa tasan näppäimistön yläpuolisen alueen eikä iOS:llä ole syytä
+    // panoroida.
+    // ⚠️ RAJA gap >= 80 px ON PAKOLLINEN. Buildissa -n mitat asetettiin aina,
+    // jolloin näppäimistön sulkeutumisanimaation välivaiheen korkeus jäi
+    // voimaan ja näkymä jäi lyhyeksi — sen alta paistoi kartta. Nyt mitat
+    // asetetaan vain kun näppäimistö on oikeasti ylhäällä, ja muulloin
+    // inline-tyylit poistetaan kokonaan (näkymä palaa inset:0-tilaan).
+    // Mitat luetaan requestAnimationFramessa, jotta ne osuvat animaation
+    // lopulliseen arvoon, ja tarkistus toistetaan muutamaan kertaan
+    // kohdistuksen jälkeen — iOS lähettää resize-tapahtumia epäsäännöllisesti.
+    (function fitSearchAboveKeyboard(){
       const vv = window.visualViewport;
-      if (!vv) return;
+      const ov = document.getElementById('search-overlay');
+      if (!ov || !vv) return;
+      let raf = null;
+      function clear(){ ov.style.top = ''; ov.style.height = ''; }
       function apply(){
-        const ov = document.getElementById('search-overlay');
-        if (!ov || !ov.classList.contains('open')) {
-          searchResults.style.paddingBottom = '';
-          return;
-        }
-        const gap = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
-        searchResults.style.paddingBottom = (gap + 12) + 'px';
+        raf = null;
+        if (!ov.classList.contains('open')) { clear(); return; }
+        const gap = Math.round(window.innerHeight - vv.height - vv.offsetTop);
+        if (gap < 80) { clear(); return; }   // ei näppäimistöä → koko ruutu
+        // inset:0 antaa myös bottom:0, mutta kun top ja height ovat
+        // määriteltyjä, CSS jättää bottomin huomiotta — ei tarvitse nollata.
+        ov.style.top    = Math.round(vv.offsetTop) + 'px';
+        ov.style.height = Math.round(vv.height) + 'px';
       }
-      vv.addEventListener('resize', apply);
-      vv.addEventListener('scroll', apply);
-      searchInput.addEventListener('focus', () => setTimeout(apply, 60));
-      searchInput.addEventListener('blur',  () => setTimeout(apply, 60));
-      window.__tpSearchKeyboardInset = apply;
+      function schedule(){
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(apply);
+      }
+      vv.addEventListener('resize', schedule);
+      vv.addEventListener('scroll', schedule);
+      searchInput.addEventListener('focus', () => [80, 250, 500].forEach(t => setTimeout(schedule, t)));
+      searchInput.addEventListener('blur',  () => { clear(); [80, 250, 500].forEach(t => setTimeout(schedule, t)); });
+      window.__tpSearchKeyboardInset = schedule;
+      window.__tpSearchViewportClear = clear;
     })();
 
     let searchTimeout = null;
