@@ -3399,24 +3399,6 @@
       }
     },
     {
-      "id": "building_3d",
-      "type": "fill-extrusion",
-      "source": "vector",
-      "source-layer": "building",
-      "paint": {
-        "fill-extrusion-color": "#dcd9d6",
-        "fill-extrusion-height": {
-          "property": "render_height",
-          "type": "identity"
-        },
-        "fill-extrusion-base": {
-          "property": "render_min_height",
-          "type": "identity"
-        },
-        "fill-extrusion-opacity": 0.8
-      }
-    },
-    {
       "id": "admin_country",
       "type": "line",
       "source": "vector",
