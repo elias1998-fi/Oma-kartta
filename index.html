@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-r -->
+<head><!-- TP_BUILD 2026-08-27-s -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -579,12 +579,12 @@
        ei harmailla viivoilla. Säännöt on rajattu #search-overlayhin, jottei
        "Ilmoita alueesta" -näkymä muutu samalla. */
     #search-overlay { background: #ffffff; }
-    /* Käärettä siirretään ja sen korkeutta muutetaan JS:llä näppäimistön
-       mukaan. Oletuksena se täyttää koko näkymän. */
+    /* Sisältökääre täyttää näkymän. Mitään ei siirretä eikä mitata JS:llä:
+       otsikko, hakukenttä ja välilehdet ovat kiinni tässä valkoisessa
+       pinnassa, ja vain lista sen sisällä vierittyy. */
     #search-body {
       position: absolute;
-      left: 0; right: 0; top: 0;
-      height: 100%;
+      left: 0; right: 0; top: 0; bottom: 0;
       display: flex; flex-direction: column;
     }
     /* Otsikkorivi ("Hakutoiminto") ja hakukenttä omilla riveillään, mutta
@@ -740,7 +740,8 @@
       min-height: 0;               /* ⚠️ ilman tätä lista kasvaa sisältönsä
                                       mittaiseksi eikä vierity lainkaan */
       overflow-y: scroll;
-      -webkit-overflow-scrolling: touch;
+      /* -webkit-overflow-scrolling: touch POISTETTU. Se on nykyisessä
+         iOS:ssä tehoton ja tunnetusti mitätöi overscroll-behaviorin. */
       overscroll-behavior: contain;
       touch-action: pan-y;
       padding-bottom: 12px;   /* JS kasvattaa tätä näppäimistön korkeudella */
@@ -5285,12 +5286,9 @@
   </div>
 
   <div id="search-overlay">
-    <!-- ⚠️ SISÄKÄÄRE. Näkymä itse pysyy AINA koko ruudun kokoisena ja
-         valkoisena, joten sen alta ei voi paistaa kartta. Sisältö asetetaan
-         tähän kääreeseen, jonka korkeus ja yläreuna sidotaan näkyvään
-         ikkunaan (visualViewport). Jos mitta osuu hieman väärin, näkyviin jää
-         valkoista — ei karttaa. Buildeissa -n ja -p mitat asetettiin suoraan
-         näkymälle, ja juuri siksi väärä mitta paljasti kartan. -->
+    <!-- Sisältökääre. Näkymä itse on koko ruudun kokoinen valkoinen pinta,
+         ja kaikki sisältö on kiinni siinä. Mitään ei siirretä eikä mitata
+         JS:llä. -->
     <div id="search-body">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeSearchOverlay()">←</button>
@@ -7531,9 +7529,6 @@
         // samalla kun se on vasta liukumassa sisään.
         const si = document.getElementById('search-input');
         try { si.focus({ preventScroll: true }); } catch (e) { si.focus(); }
-        if (typeof window.__tpSearchKeyboardInset === 'function') {
-          setTimeout(window.__tpSearchKeyboardInset, 120);
-        }
       }, true);
     });
     
@@ -7577,7 +7572,7 @@
       document.getElementById('search-input').value = '';
       document.getElementById('search-results').innerHTML = '';
       setSearchTabsHost('');
-      if (typeof window.__tpSearchViewportClear === 'function') window.__tpSearchViewportClear();
+      document.getElementById('search-results').scrollTop = 0;
       // Restore the floating action button now that the search view is gone.
       btnContainer.classList.remove('hidden');
       if (filterMode) closeFilter();
@@ -15336,45 +15331,34 @@
       }, { passive: true });
     })();
 
-    // ── Sisältö näppäimistön yläpuolelle ────────────────────────────────
-    // ⚠️ MITAT ANNETAAN SISÄKÄÄREELLE (#search-body), EI NÄKYMÄLLE.
-    // Näkymä on aina koko ruudun kokoinen valkoinen pinta, joten mitan
-    // heitto näkyy korkeintaan valkoisena kaistana — ei karttana, kuten
-    // buildeissa -n ja -p joissa mitat asetettiin näkymälle itselleen.
-    // Syy mittaamiselle: iOS ei kutista asetteluikkunaa näppäimistön
-    // auetessa vaan panoroi näkyvää ikkunaa sen päällä, ja panorointi
-    // siirtää myös position:fixed -elementit. Kun kääre kattaa tasan
-    // näppäimistön yläpuolisen alueen, kursori on jo näkyvissä eikä
-    // panoroinnille ole syytä.
-    // top = vv.offsetTop kumoaa panoroinnin: kääre on absoluuttinen
-    // näkymään nähden, ja näkymä on ankkuroitu asetteluikkunaan, joten
-    // sama luku siirtää kääreen takaisin näkyvän ikkunan yläreunaan.
-    (function fitSearchBody(){
-      const vv   = window.visualViewport;
-      const ov   = document.getElementById('search-overlay');
-      const body = document.getElementById('search-body');
-      if (!ov || !body) return;
-      function clear(){ body.style.top = ''; body.style.height = ''; }
-      if (!vv) { window.__tpSearchViewportClear = clear; return; }
-      let raf = null;
-      function apply(){
-        raf = null;
-        if (!ov.classList.contains('open')) { clear(); return; }
-        const gap = Math.round(window.innerHeight - vv.height - vv.offsetTop);
-        if (gap < 80) { clear(); return; }   // ei näppäimistöä → koko näkymä
-        body.style.top    = Math.round(vv.offsetTop) + 'px';
-        body.style.height = Math.round(vv.height) + 'px';
-      }
-      function schedule(){
-        if (raf) cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(apply);
-      }
-      vv.addEventListener('resize', schedule);
-      vv.addEventListener('scroll', schedule);
-      searchInput.addEventListener('focus', () => [80, 250, 500].forEach(t => setTimeout(schedule, t)));
-      searchInput.addEventListener('blur',  () => { clear(); [80, 250, 500].forEach(t => setTimeout(schedule, t)); });
-      window.__tpSearchKeyboardInset = schedule;
-      window.__tpSearchViewportClear = clear;
+    // ── Vieritys ei saa ketjuuntua listan ulkopuolelle ──────────────────
+    // ⚠️ TÄMÄ ON SE VARSINAINEN SYY, EI NÄPPÄIMISTÖN "MITTAUS".
+    // Kun listassa ei ole vieritettävää — esimerkiksi kun siinä lukee vain
+    // "Ei aikaisempia hakuja" — sormen veto ei kuluta mitään, ja iOS ketjuttaa
+    // sen ylöspäin: näppäimistön ollessa auki se panoroi näkyvää ikkunaa,
+    // jolloin KOKO näkymä liikkuu (otsikko katosi ruudun yli ja hakukenttä
+    // nousi tilapalkin päälle). Näppäimistön ollessa kiinni ketju pysähtyy
+    // html/body{overflow:hidden}-lukkoon, minkä vuoksi ongelma näkyi vain
+    // näppäimistön kanssa. overscroll-behavior:contain ei riitä iOS:llä.
+    // Ratkaisu on kaksiosainen ja se pitää kohteet paikallaan ilman mitään
+    // sijainnin mittaamista tai korjaamista:
+    //   1. Jos listassa ei ole vieritettävää, veto kuitataan käsitellyksi
+    //      (preventDefault) — silloin sillä ei ole mitään minne ketjuuntua.
+    //   2. Jos vieritettävää on, scrollTop siirretään kosketuksen alkaessa
+    //      pois ääripäistä. iOS ketjuttaa vain jos veto alkaa tasan reunalta,
+    //      joten yhden pikselin siirto riittää estämään sen.
+    (function lockSearchListChain(){
+      const el = document.getElementById('search-results');
+      if (!el) return;
+      el.addEventListener('touchstart', () => {
+        const max = el.scrollHeight - el.clientHeight;
+        if (max <= 0) return;
+        if (el.scrollTop <= 0) el.scrollTop = 1;
+        else if (el.scrollTop >= max) el.scrollTop = max - 1;
+      }, { passive: true });
+      el.addEventListener('touchmove', (e) => {
+        if (el.scrollHeight <= el.clientHeight) e.preventDefault();
+      }, { passive: false });
     })();
 
     let searchTimeout = null;
