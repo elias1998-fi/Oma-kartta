@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-g -->
+<head><!-- TP_BUILD 2026-08-27-i -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -698,7 +698,11 @@
     #search-overlay .search-result-icon svg { width: 19px; height: 19px; }
     #search-overlay .search-result-name { color: #0C0243; font-weight: 600; font-size: 15px; }
     #search-overlay .search-result-address { color: #8b93a6; }
-    #search-overlay .search-result-distance { color: #1266f1; font-weight: bold; align-self: center; }
+    /* ⚠️ EI align-self: center. .search-result-text on pystysuuntainen
+       flex-säiliö, joten align-self ohjaa VAAKASUUNTAA — etäisyys keskittyi
+       nimen ja osoitteen alle sarakkeen keskelle sen sijaan että olisi ollut
+       samassa vasemmassa linjassa. Oletus (stretch) riittää. */
+    #search-overlay .search-result-distance { color: #1266f1; font-weight: bold; }
     #search-overlay .search-history-delete { color: #c2c8d6; margin-top: 0; align-self: center; }
     #search-overlay .search-history-delete:active { background: #f1f4fa; }
     #search-overlay .search-empty { color: #9aa3b8; padding: 48px 24px; }
@@ -15096,6 +15100,12 @@
     function isFavourite(lat, lon) {
       return getSearchFavourites().some(f => f.lat === lat && f.lon === lon);
     }
+    function removeFavouriteAt(index) {
+      const list = getSearchFavourites();
+      list.splice(index, 1);
+      saveSearchFavourites(list);
+      showSearchHistory();
+    }
     function toggleFavourite(lat, lon, name, locality) {
       let list = getSearchFavourites();
       const i = list.findIndex(f => f.lat === lat && f.lon === lon);
@@ -15157,9 +15167,13 @@
           const nameEsc = item.name.replace(/'/g, "\\'");
           const locEsc  = (item.locality || '').replace(/'/g, "\\'");
           const fav = isFavourite(item.lat, item.lon);
+          // ⚠️ SAMA NAPPARIVI MOLEMMILLA VÄLILEHDILLÄ. Suosikeista puuttui
+          // ✕, jolloin rivin oikea reuna oli kapeampi ja tekstisarake
+          // leveämpi — siksi etäisyyslukema siirtyi välilehteä vaihtaessa.
+          // Nyt ✕ on molemmissa ja poistaa rivin siltä listalta jolla ollaan.
           const del = (searchListTab === 'history')
             ? `<button class="search-history-delete" onclick="event.stopPropagation(); removeFromSearchHistory(${index})">✕</button>`
-            : '';
+            : `<button class="search-history-delete" onclick="event.stopPropagation(); removeFavouriteAt(${index})">✕</button>`;
           return `
             <div class="search-result-item">
               <div class="search-result-icon">${getHistoryIconSVG()}</div>
@@ -17671,9 +17685,6 @@
         const _endT = go
           ? 'translateX(calc(100% + ' + SWIPE_SHADOW_PAD + 'px))'
           : 'translateX(0px)';
-        // Peruuntuessa myös kulmat suoristuvat samaa tahtia kuin näkymä palaa
-        // paikalleen, jottei pyöristys ehdi näkyä täyden ruudun päällä.
-        const _extraTr = go ? null : 'border-radius ' + ms + 'ms ' + SWIPE_EASE;
         animateTo(g.el, _endT, ms, () => {
           if (!go) { swipeReset(g); return; }
           // ⚠️ JÄRJESTYS ON TÄRKEÄ, muuten syntyy "bounce back".
@@ -17696,9 +17707,22 @@
           g.el.style.transition = 'none';
           g.btn.click();
           requestAnimationFrame(() => requestAnimationFrame(() => swipeReset(g)));
-        }, _extraTr);
-        // Kulmat suoraksi samassa ruudussa kuin vieteri lähtee, jolloin
-        // border-radius-siirtymä poimii ne mukaansa.
+        });
+        // ⚠️ PERUUNTUESSA PYÖRISTYS POIS HETI, EI ANIMOIDEN.
+        // Tämä on se ruudun yläreunassa välähtävä himmennys. Verho on eleen
+        // ajan koko ruudun kokoinen ja sen peittävyys on
+        // (1 − dx/leveys) × 0,22 — eli VAHVIMMILLAAN silloin kun näkymä on
+        // täysin paikallaan. Peitossa se ei näy, koska liikkuva näkymä on sen
+        // päällä — paitsi eleen ajaksi asetettujen 55 px pyöristettyjen
+        // vasempien kulmien kohdalla. Kun ele peruuntuu, näkymä palaa
+        // kohtaan x=0 ja silloin kulman kaari jää ainoaksi kohdaksi josta
+        // tumma verho näkyy: tummana sirppinä vasemmassa ylä- ja
+        // alanurkassa (alanurkan peittää toimintonappi).
+        // Pyöristyksen animointi nollaan EI riitä (kokeiltu buildissa -d):
+        // paluun alussa säde on yhä 55 px ja verho lähes täydessä arvossaan,
+        // eli juuri se hetki jolloin sirppi näkyy. Pyöristys poistetaan siis
+        // välittömästi — verho jää häipymään vedon suuntaisesti kapenevan
+        // vasemman kaistaleen päälle, kuten vedon aikanakin.
         if (!go) {
           g.el.style.borderTopLeftRadius = '0px';
           g.el.style.borderBottomLeftRadius = '0px';
