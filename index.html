@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-b -->
+<head><!-- TP_BUILD 2026-08-27-g -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -575,8 +575,9 @@
        ei harmailla viivoilla. Säännöt on rajattu #search-overlayhin, jottei
        "Ilmoita alueesta" -näkymä muutu samalla. */
     #search-overlay { background: #ffffff; }
-    /* Yksi rivi: takaisin-nappi ja hakukenttä vierekkäin, ei erillistä
-       otsikkopalkkia eikä alareunaviivaa. */
+    /* Otsikkorivi ("Hakutoiminto") ja hakukenttä omilla riveillään, mutta
+       ilman harmaita taustoja ja alareunaviivoja — koko näkymä on yhtä
+       valkoista pintaa. */
     #search-overlay .overlay-header {
       border-bottom: none;
       padding: max(14px, env(safe-area-inset-top)) 16px 10px 16px;
@@ -587,25 +588,48 @@
       background: #f1f4fa; color: #0C0243; font-size: 19px;
     }
     #search-overlay .overlay-back-btn:active { background: #e2e9f7; }
+    #search-overlay .overlay-title { color: #0C0243; font-size: 17px; }
 
+    /* ⚠️ Pehmuste on pystysuunnassa SYMMETRINEN (4 px), jotta .search-icon
+       osuu top:50%:lla kentän keskelle — se on absoluuttinen tähän säiliöön
+       nähden. Väli tulosten suuntaan tehdään marginaalilla, ei pehmusteella. */
     #search-overlay #search-input-container {
-      flex: 1; min-width: 0;
       background: transparent;
       border-bottom: none;
-      padding: 0;
+      padding: 4px 16px;
+      margin-bottom: 8px;
     }
-    #search-overlay .search-icon { left: 15px; width: 19px; height: 19px; }
+    #search-overlay .search-icon { left: 31px; width: 19px; height: 19px; }
     #search-overlay #search-input {
       height: 44px;
+      box-sizing: border-box;
+      /* contenteditable on lohkoelementti: teksti keskitetään line-heightilla
+         (44 − 2×1,5 px reunus = 41 px sisältökorkeus). white-space:nowrap ja
+         vaakavieritys pitävät pitkän haun yhdellä rivillä. */
+      line-height: 41px;
+      white-space: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      outline: none;
       padding: 0 42px 0 44px;
       background: #f1f4fa;
       border: 1.5px solid transparent;
       border-radius: 22px;
       color: #0C0243;
       font-size: 16px;
+      font-family: Arial, sans-serif;
       transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
     }
-    #search-overlay #search-input::placeholder { color: #9aa3b8; }
+    /* Vihjeteksti: contenteditablella ei ole placeholderia, joten se
+       piirretään ::before-elementillä silloin kun kenttä on tyhjä. Tila
+       luetaan .has-text-luokasta eikä :empty-valitsimesta, koska WebKit voi
+       jättää tyhjään kenttään <br>-solmun jolloin :empty ei enää täsmää. */
+    #search-overlay:not(.has-text) #search-input::before {
+      content: attr(data-placeholder);
+      color: #9aa3b8;
+      pointer-events: none;
+    }
     #search-overlay #search-input:focus {
       background: #ffffff;
       border-color: #0C0243;
@@ -613,7 +637,7 @@
     }
     /* Tyhjennysnappi ilmestyy vasta kun kentässä on tekstiä. */
     #search-clear {
-      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      position: absolute; right: 22px; top: 50%; transform: translateY(-50%);
       width: 32px; height: 32px; padding: 0;
       border: none; border-radius: 50%; background: transparent;
       color: #9aa3b8; cursor: pointer;
@@ -623,12 +647,39 @@
     #search-clear:active { background: #e9eef8; }
     #search-overlay.has-text #search-clear { display: flex; }
 
-    #search-overlay .search-history-header {
-      padding: 20px 18px 6px 18px;
-      font-size: 12px;
-      color: #9aa3b8;
-      letter-spacing: .8px;
+    /* Historia / Suosikit -valinta "viimeisimmät haut" -otsikon tilalla:
+       pyöristetty laatikko, jonka sisällä valittu puoli on valkoinen kortti. */
+    #search-overlay .search-tabs {
+      display: flex; gap: 4px;
+      margin: 2px 16px 10px 16px;
+      padding: 4px;
+      background: #f1f4fa;
+      border-radius: 15px;
     }
+    #search-overlay .search-tab {
+      flex: 1; padding: 9px 0;
+      border: none; background: transparent;
+      border-radius: 11px;
+      font-family: Arial, sans-serif; font-size: 14px; font-weight: bold;
+      color: #6b7488; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background .18s ease, color .18s ease;
+    }
+    #search-overlay .search-tab.active {
+      background: #ffffff; color: #0C0243;
+      box-shadow: 0 1px 3px rgba(12,2,67,.10);
+    }
+    /* Tähti: lisää tai poistaa suosikin. Sama koko ja kohdistus kuin
+       poistonapilla, jotta rivin oikea reuna pysyy tasaisena. */
+    #search-overlay .search-fav-btn {
+      width: 32px; height: 32px; padding: 0;
+      border: none; background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      align-self: center; flex-shrink: 0; margin-left: 4px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #search-overlay .search-fav-btn svg { width: 20px; height: 20px; }
+    #search-overlay .search-fav-btn:active { background: #f1f4fa; border-radius: 50%; }
     /* Erotinviivat vain rivien VÄLIIN: listan alku ja loppu jäävät siisteiksi
        eikä viimeisen rivin alle jää irrallista viivaa. */
     #search-overlay .search-result-item {
@@ -5172,27 +5223,35 @@
   </div>
 
   <div id="search-overlay">
-    <!-- Otsikkorivi JA hakukenttä samalla rivillä: erillinen "Hakutoiminto"
-         -otsikkopalkki jätettiin pois, koska kentän vihjeteksti kertoo saman
-         ja näkymä alkaa nyt suoraan siitä mitä sillä tehdään. -->
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeSearchOverlay()">←</button>
-      <div id="search-input-container">
+      <div class="overlay-title">Hakutoiminto</div>
+    </div>
+    <div id="search-input-container">
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#7b8499" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="7.5"/><path d="M20.5 20.5l-4.2-4.2"/>
       </svg>
-      <!-- enterkeyhint="search" antaa iOS:n näppäimistölle sinisen "etsi"
-           -näppäimen return-näppäimen tilalle. Emoji-/maapallonäppäintä ei voi
-           piilottaa verkkosovelluksesta — se on järjestelmän oma näppäin. -->
-      <input type="text" id="search-input" placeholder="Hae paikkaa tai aluekoodia"
-             autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
-             inputmode="search" enterkeyhint="search">
+      <!-- ⚠️ EI <input> VAAN contenteditable. iOS näyttää näppäimistön
+           yläpuolella "form assistant" -palkin (nuolet + valmis) aina kun
+           kohdistus on LOMAKEKENTÄSSÄ. Palkkia ei voi piilottaa millään
+           rajapinnalla, mutta se on sidottu lomakekenttiin — muokattava
+           elementti ei ole lomakekenttä. Tämä on ainoa keino jolla palkkiin
+           voi verkkosovelluksesta vaikuttaa.
+           plaintext-only pitää liitetyn sisällön tekstinä, ja value-ominaisuus
+           on kuorrutettu alempana JS:ssä, joten muu koodi käyttää kenttää
+           täsmälleen kuten ennenkin.
+           enterkeyhint="search" antaa sinisen "etsi"-näppäimen. Emoji-näppäin
+           on järjestelmän oma eikä siihen voi vaikuttaa. -->
+      <div id="search-input" role="searchbox" aria-label="Hae osoitetta, paikkaa tai aluekoodia"
+           contenteditable="plaintext-only"
+           data-placeholder="Hae osoitetta, paikkaa tai aluekoodia"
+           autocorrect="off" autocapitalize="none" spellcheck="false"
+           inputmode="search" enterkeyhint="search"></div>
       <button id="search-clear" type="button" aria-label="Tyhjennä haku" onclick="clearSearchInput()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
           <line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>
         </svg>
       </button>
-      </div>
     </div>
     <div id="search-results" class="no-scroll"></div>
   </div>
@@ -5669,7 +5728,16 @@
   </div>
 
   <!-- Backdrop for bottom sheet -->
-  <div id="sheet-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:19;opacity:0;pointer-events:none;transition:opacity 0.3s ease;"></div>
+  <!-- ⚠️ EI OMAA transition-MÄÄRETTÄ TÄSSÄ. Verholla oli inline
+       transition:opacity 0.3s ease, joten jokainen vedon aikainen
+       opacity-kirjoitus käynnisti uuden 0,3 s siirtymän ja himmennys laahasi
+       sormea jopa kolmasosasekunnin jäljessä — se oli se "laginen" tuntuma.
+       Siirtymän asettaa nyt applySheetDim tapauskohtaisesti: vedettäessä none
+       (sama ruutu kuin transform), napsahduksessa täsmälleen sama kesto ja
+       käyrä kuin sheetin transformilla. will-change pitää verhon omalla
+       kompositointitasollaan, jolloin opacityn muutos ei aiheuta koko ruudun
+       uudelleenpiirtoa joka ruudulla. -->
+  <div id="sheet-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:19;opacity:0;pointer-events:none;will-change:opacity;"></div>
   
   <!-- Free parking terms acceptance box -->
   <div id="free-terms-backdrop"></div>
@@ -7004,7 +7072,13 @@
     // yläasento), joten himmennys kasvaa tasaisesti heti ensimmäisestä
     // pikselistä. Rajat ovat samat kuin vetokäsittelijän minY/maxY.
     const SHEET_DIM_MAX = 0.57;   // sama loppuarvo kuin vanhalla kaavalla
-    function applySheetDim(y){
+    // animate = tosi silloin kun sheet siirtyy CSS-siirtymällä (snapTo,
+    // näkymän palautus). Verho saa silloin TÄSMÄLLEEN saman keston ja käyrän
+    // kuin sheetin transform, jolloin ne etenevät lukkoon lyötyinä. Vedon
+    // aikana animate on epätosi ja siirtymä on none: opacity kirjoitetaan
+    // samassa ruudussa kuin transform, eli verho on kiinni sheetin asennossa
+    // eikä seuraa sitä perässä.
+    function applySheetDim(y, animate){
       if (!sheetBackdrop) return;
       const SH = sheet.clientHeight, WH = window.innerHeight;
       const onArea = !!(currentParkingProps || hoveredPolyId || hoveredChargingId ||
@@ -7012,11 +7086,17 @@
       // ⚠️ NOLLAKOHTA ON LEPOASENTO, ei vedon alaraja. Jos nollakohtana olisi
       // alaraja (75 px), himmennys olisi jo lepotilassa 0,07 — kartta olisi
       // hitusen tumma aina kun alue on valittuna, mitä se ei ennen ollut.
-      // Lepokorkeudet: alue 150 px, tyhjä EMPTY_SHEET_PX, suodatin 70 px.
+      // Lepokorkeudet: alue 150 px, tyhjä EMPTY_SHEET_PX.
+      // ⚠️ SUODATINNÄKYMÄ ON POIKKEUS: sen nollakohta on RUUDUN PUOLIVÄLI, ei
+      // lepoasento. Suodatinsheet lepää 70 px:ssä ja nousee 80 %:iin, joten
+      // lepoasennosta laskettuna himmennys oli puolivälissä jo n. 0,29. Nyt se
+      // pysyy nollassa siihen asti kun sheet peittää puolet ruudusta ja kasvaa
+      // siitä tasaisesti yläasentoon. Muut näkymät alkavat lepoasennostaan,
+      // kuten ennenkin.
       // Lepoasennon ALApuolella (esim. 60 px zoomattaessa ulos) edistymä menee
       // negatiiviseksi ja leikkautuu nollaan — juuri niin kuin pitääkin.
       let minY, maxY;
-      if (filterMode)      { minY = SH - WH * 0.8; maxY = SH - 70; }
+      if (filterMode)      { minY = SH - WH * 0.8; maxY = SH - WH * 0.5; }
       else if (onArea)     { minY = SH - WH * 0.8; maxY = SH - 150; }
       else {
         maxY = SH - EMPTY_SHEET_PX;
@@ -7025,6 +7105,9 @@
       }
       const span = Math.max(1, maxY - minY);
       const prog = Math.max(0, Math.min(1, (maxY - y) / span));
+      sheetBackdrop.style.transition = animate
+        ? 'opacity 0.38s cubic-bezier(0.32,0.72,0,1)'   // sama kuin sheetin transform
+        : 'none';
       sheetBackdrop.style.opacity = String(prog * SHEET_DIM_MAX);
     }
     // HUOM: buildissa -i tätä ajettiin rAF-silmukassa, joka luki sheetin
@@ -7362,6 +7445,7 @@
         // so it doesn't show through behind the keyboard.
         btnContainer.classList.add('hidden');
         showSearchHistory();
+        syncSearchClearBtn();   // vihjeteksti ja tyhjennysnappi oikeaan tilaan
         // ⚠️ FOCUS SYNKRONISESTI, EI AJASTIMELLA. iOS avaa näppäimistön vain
         // jos focus() tapahtuu käyttäjän eleen käsittelijän kutsupinossa.
         // Aiemmin tämä oli setTimeoutin (100 ms) sisällä, jolloin eleen
@@ -7403,6 +7487,11 @@
     }
 
     function closeSearchOverlay() {
+      // Varmistus takaisin-napille ja muille sulkupoluille: eleen alussa blur
+      // on jo tehty, mutta napista suljettaessa kohdistus olisi jäänyt kenttään
+      // ja näppäimistö ruudulle.
+      const _si = document.getElementById('search-input');
+      if (_si && document.activeElement === _si) _si.blur();
       document.getElementById('search-overlay').classList.remove('open');
       document.getElementById('search-overlay').classList.remove('has-text');
       document.body.classList.remove('search-mode');
@@ -14988,18 +15077,69 @@
       showSearchHistory();
     }
     
+    // ── Suosikit ────────────────────────────────────────────────────────
+    // Sama muoto kuin historiarivillä ({lat, lon, name, layer, locality}),
+    // omassa localStorage-avaimessaan. Tunniste on koordinaattipari, koska
+    // sama paikka voi tulla haussa hieman eri nimellä.
+    const SEARCH_FAVOURITES_KEY = 'tp_search_favourites';
+    let searchListTab = 'history';   // 'history' | 'favourites'
+
+    function getSearchFavourites() {
+      try {
+        const f = localStorage.getItem(SEARCH_FAVOURITES_KEY);
+        return f ? JSON.parse(f) : [];
+      } catch (e) { return []; }
+    }
+    function saveSearchFavourites(list) {
+      try { localStorage.setItem(SEARCH_FAVOURITES_KEY, JSON.stringify(list)); } catch (e) {}
+    }
+    function isFavourite(lat, lon) {
+      return getSearchFavourites().some(f => f.lat === lat && f.lon === lon);
+    }
+    function toggleFavourite(lat, lon, name, locality) {
+      let list = getSearchFavourites();
+      const i = list.findIndex(f => f.lat === lat && f.lon === lon);
+      if (i >= 0) list.splice(i, 1);
+      else list.unshift({ lat, lon, name, locality: locality || '' });
+      saveSearchFavourites(list);
+      showSearchHistory();
+    }
+    function setSearchTab(tab) {
+      searchListTab = tab;
+      showSearchHistory();
+    }
+    function starIconSVG(filled) {
+      return `<svg viewBox="0 0 24 24" fill="${filled ? '#1266f1' : 'none'}" stroke="${filled ? '#1266f1' : '#b6bdcc'}"
+                   stroke-width="1.8" stroke-linejoin="round">
+        <path d="M12 3.6l2.6 5.3 5.8.85-4.2 4.1 1 5.75L12 16.9l-5.2 2.7 1-5.75-4.2-4.1 5.8-.85z"/>
+      </svg>`;
+    }
+
     function showSearchHistory() {
-      const history = getSearchHistory();
       const searchResults = document.getElementById('search-results');
-      
       searchResults.classList.remove('allow-scroll');
       searchResults.classList.add('no-scroll');
-      
-      if (history.length === 0) {
-        searchResults.innerHTML = '<div class="search-empty">Ei aikaisempia hakuja</div>';
+
+      const list = (searchListTab === 'favourites') ? getSearchFavourites() : getSearchHistory();
+
+      // Valintalaatikko piirretään AINA, myös tyhjällä listalla — muuten
+      // tyhjästä välilehdestä ei pääsisi takaisin toiseen.
+      const tabs = `
+        <div class="search-tabs" role="tablist">
+          <button class="search-tab${searchListTab === 'history' ? ' active' : ''}"
+                  role="tab" onclick="setSearchTab('history')">Historia</button>
+          <button class="search-tab${searchListTab === 'favourites' ? ' active' : ''}"
+                  role="tab" onclick="setSearchTab('favourites')">Suosikit</button>
+        </div>`;
+
+      if (list.length === 0) {
+        searchResults.innerHTML = tabs + '<div class="search-empty">' +
+          (searchListTab === 'favourites'
+            ? 'Ei suosikkeja. Merkitse paikka tähdellä, niin se ilmestyy tänne.'
+            : 'Ei aikaisempia hakuja') + '</div>';
         return;
       }
-      
+
       let currentLat, currentLon;
       if (userLocation) {
         currentLat = userLocation.lat;
@@ -15009,20 +15149,28 @@
         currentLat = center.lat;
         currentLon = center.lng;
       }
-      
-      searchResults.innerHTML = '<div class="search-history-header">Viimeisimmät haut</div>' + 
-        history.map((item, index) => {
+
+      searchResults.innerHTML = tabs +
+        list.map((item, index) => {
           const distanceKm = calculateDistance(currentLat, currentLon, item.lat, item.lon);
           const distanceText = formatDistance(distanceKm);
+          const nameEsc = item.name.replace(/'/g, "\\'");
+          const locEsc  = (item.locality || '').replace(/'/g, "\\'");
+          const fav = isFavourite(item.lat, item.lon);
+          const del = (searchListTab === 'history')
+            ? `<button class="search-history-delete" onclick="event.stopPropagation(); removeFromSearchHistory(${index})">✕</button>`
+            : '';
           return `
             <div class="search-result-item">
               <div class="search-result-icon">${getHistoryIconSVG()}</div>
-              <div class="search-result-text" onclick="selectHistoryPlace(${item.lat}, ${item.lon}, '${item.name.replace(/'/g, "\\'")}', ${index})">
+              <div class="search-result-text" onclick="selectHistoryPlace(${item.lat}, ${item.lon}, '${nameEsc}', ${index})">
                 <div class="search-result-name">${item.name}</div>
                 <div class="search-result-address">${item.locality || ''}</div>
                 <div class="search-result-distance">${distanceText}</div>
               </div>
-              <button class="search-history-delete" onclick="event.stopPropagation(); removeFromSearchHistory(${index})">✕</button>
+              <button class="search-fav-btn" aria-label="Suosikki"
+                      onclick="event.stopPropagation(); toggleFavourite(${item.lat}, ${item.lon}, '${nameEsc}', '${locEsc}')">${starIconSVG(fav)}</button>
+              ${del}
             </div>
           `;
         }).join('');
@@ -15033,7 +15181,37 @@
     }
 
     const searchInput = document.getElementById('search-input');
+    // ⚠️ value-KUORRUTUS. Kenttä on contenteditable-div, ei <input>, joten
+    // sillä ei ole value-ominaisuutta. Määritellään se tekstisisällön päälle,
+    // jolloin kaikki muu koodi (searchInput.value, si.value = '',
+    // e.target.value) toimii muuttumattomana. contenteditable laukaisee
+    // input-tapahtuman itse, joten kuuntelijat pysyvät ennallaan.
+    try {
+      Object.defineProperty(searchInput, 'value', {
+        get() { return this.textContent; },
+        set(v) { this.textContent = (v == null) ? '' : String(v); },
+        configurable: true
+      });
+    } catch (e) { console.warn('search value shim', e); }
     searchInput.addEventListener('input', syncSearchClearBtn);
+    // Muokattavassa elementissä rivinvaihto lisäisi tekstiin rivin. "etsi"
+    // -näppäin ei saa tehdä sitä vaan sulkea näppäimistön, kuten
+    // lomakekentässä.
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); searchInput.blur(); }
+    });
+    // ⚠️ VARAPOLKU. contenteditable="plaintext-only" on tuettu WebKitissä ja
+    // uusissa Chromeissa, mutta selaimessa joka ei tunne arvoa attribuutti
+    // jäisi tunnistamatta eikä kenttä olisi muokattava lainkaan. Tarkistetaan
+    // ja pudotaan tarvittaessa tavalliseen contenteditableen.
+    if (!searchInput.isContentEditable) searchInput.contentEditable = 'true';
+    // Liitos aina pelkkänä tekstinä, jottei kenttään päädy muotoiluja
+    // (plaintext-only hoitaa tämän itse, varapolku ei).
+    searchInput.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const txt = (e.clipboardData || window.clipboardData).getData('text') || '';
+      document.execCommand('insertText', false, txt.replace(/\s+/g, ' '));
+    });
     const searchResults = document.getElementById('search-results');
     let searchTimeout = null;
     
@@ -16839,7 +17017,7 @@
       // ⚠️ Verho on nollattava tässä. Suodatinsheetin vetäminen isoksi nostaa
       // sen arvoon 0,57, eikä mikään sulkemispolku päivittänyt sitä — kartta
       // jäi pysyvästi tummaksi kunnes perusnäkymän sheetiä veti käsin.
-      applySheetDim(currentY);
+      applySheetDim(currentY, true);
     }
     // filterBtn click handled in menuItemClick above
     filterCloseBtn.addEventListener('click',closeFilter);
@@ -17105,6 +17283,17 @@
       return { btn: top.btn, host: top.host, under: under };
     }
 
+    // Poistaa kohdistuksen tekstikentästä, jotta ohjelmistonäppäimistö
+    // sulkeutuu. Muihin elementteihin ei kosketa.
+    function swipeBlurActiveField(){
+      const a = document.activeElement;
+      if (!a || a === document.body) return;
+      const tag = (a.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || a.isContentEditable) {
+        try { a.blur(); } catch (e) {}
+      }
+    }
+
     function swipeDim(){
       if (_swDim) return _swDim;
       _swDim = document.createElement('div');
@@ -17114,8 +17303,10 @@
       return _swDim;
     }
 
-    function animateTo(el, transform, ms, done){
-      el.style.transition = 'transform ' + ms + 'ms ' + SWIPE_EASE;
+    // extra = valinnainen lisäys transition-listaan (esim. border-radius),
+    // jotta muutkin ominaisuudet ehtivät perille samassa ajassa kuin siirto.
+    function animateTo(el, transform, ms, done, extra){
+      el.style.transition = 'transform ' + ms + 'ms ' + SWIPE_EASE + (extra ? ', ' + extra : '');
       el.style.transform  = transform;
       let fired = false;
       // ⚠️ transitionend KUPLII: ilman target-tarkistusta minkä tahansa lapsen
@@ -17270,6 +17461,14 @@
           if (dy < SWIPE_START_DX) return;
         }
         _g.on = true;
+        // ⚠️ NÄPPÄIMISTÖ POIS HETI KUN ELE ALKAA. Näppäimistö on järjestelmän
+        // piirtämä sivun päälle, joten se ei liiku näkymän mukana — se katoaa
+        // vasta kun kohdistus lähtee kentästä. Ilman tätä hakunäkymä ehti
+        // liukua pois ja näppäimistö jäi vielä hetkeksi ruudulle. Blur tehdään
+        // eleen alussa eikä sen lopussa, jotta molemmat häviävät yhtä aikaa.
+        // Tarkistus kattaa myös contenteditable-kentät (hakukenttä on
+        // sellainen) ja mahdolliset tulevat lomakekentät muissa näkymissä.
+        swipeBlurActiveField();
         _g.el.style.transition = 'none';
         _g.el.style.willChange = 'transform';
         if (_g.mode === 'drawer') {
@@ -17447,7 +17646,16 @@
         const ms = go ? SWIPE_MS_DONE : SWIPE_MS_CANCEL;
         const d  = swipeDim();
         d.style.transition = 'opacity ' + ms + 'ms ' + SWIPE_EASE;
-        d.style.opacity = go ? '0' : String(SWIPE_DIM_MAX);
+        // ⚠️ VERHO HÄIVYTETÄÄN MYÖS PERUUNTUVASSA ELEESSÄ. Aiemmin tässä oli
+        // go ? '0' : String(SWIPE_DIM_MAX), eli peruuntuessa verho nostettiin
+        // TÄYTEEN himmennykseen ja se jäi siihen koko vieterin ajaksi —
+        // siivous tapahtui vasta swipeResetissä animaation jälkeen. Näkymällä
+        // on eleen ajan 55 px pyöristetyt vasemmat kulmat, joten kulmien
+        // kaarien alta paistoi täysin tumma verho: se oli se välähdys ruudun
+        // yläreunassa (ja alareunassa, missä toimintonappi peitti sen).
+        // Ele on joka tapauksessa ohi, joten verho kuuluu häivyttää
+        // molemmissa tapauksissa.
+        d.style.opacity = '0';
         if (g.under) {
           const endS = go ? 0 : -SWIPE_PARALLAX * w;
           for (const u of g.under) {
@@ -17463,6 +17671,9 @@
         const _endT = go
           ? 'translateX(calc(100% + ' + SWIPE_SHADOW_PAD + 'px))'
           : 'translateX(0px)';
+        // Peruuntuessa myös kulmat suoristuvat samaa tahtia kuin näkymä palaa
+        // paikalleen, jottei pyöristys ehdi näkyä täyden ruudun päällä.
+        const _extraTr = go ? null : 'border-radius ' + ms + 'ms ' + SWIPE_EASE;
         animateTo(g.el, _endT, ms, () => {
           if (!go) { swipeReset(g); return; }
           // ⚠️ JÄRJESTYS ON TÄRKEÄ, muuten syntyy "bounce back".
@@ -17485,7 +17696,13 @@
           g.el.style.transition = 'none';
           g.btn.click();
           requestAnimationFrame(() => requestAnimationFrame(() => swipeReset(g)));
-        });
+        }, _extraTr);
+        // Kulmat suoraksi samassa ruudussa kuin vieteri lähtee, jolloin
+        // border-radius-siirtymä poimii ne mukaansa.
+        if (!go) {
+          g.el.style.borderTopLeftRadius = '0px';
+          g.el.style.borderBottomLeftRadius = '0px';
+        }
       } else if (g.mode === 'drawer') {
         const dx = Math.min(0, t.clientX - g.x);
         const dw = g.el.getBoundingClientRect().width || 300;
@@ -18965,6 +19182,14 @@
 
     const overlay=document.getElementById('parking-overlay');
     let _sheetYBeforeParking = null;
+    // ── Säädetyn pysäköintiajan muisti ──────────────────────────────────
+    // Kun käyttäjä säätää ajan, palaa karttaan ja avaa SAMAN alueen uudelleen,
+    // aika on valmiina. Toiselle alueelle mentäessä se nollautuu, koska
+    // aluekohtainen enimmäisaika ja hinta ovat eri — vanha arvo olisi silloin
+    // harhaanjohtava. Muisti elää vain sivun elinajan; se ei ole tallennettu.
+    // drumPhase talletetaan minuuttien rinnalla, jotta rulla on samassa
+    // asennossa eikä hyppää palatessa.
+    let _lastParkAreaCode = null, _lastParkMinutes = 0, _lastParkPhase = 0;
     function openParkingOverlay(p){
       // Muista bottom sheetin asento, jotta "Valittu alue" -paluu palaa
       // täsmälleen samaan kohtaan (ylhäällä/alhaalla) mihin jäätiin.
@@ -18979,8 +19204,12 @@
       // immediately after this call. Don't zero them here or the button text
       // flickers from "Keskeytä pysäköinti" to "Vahvista uusi pysäköintiaika".
       if (!isExtendingSession) {
-        parkingMinutes=0;
-        drumPhase=0;
+        // parkingMaxMinutes on asetettu yllä, joten arvo voidaan rajata heti.
+        const sameArea = (_lastParkAreaCode !== null &&
+                          String(areaCode) === String(_lastParkAreaCode));
+        parkingMinutes = sameArea ? Math.max(0, Math.min(_lastParkMinutes, parkingMaxMinutes)) : 0;
+        drumPhase      = sameArea ? _lastParkPhase : 0;
+        _lastParkAreaCode = String(areaCode);
       }
       parkingStartTime=new Date();
       lastDisplayedMinutes=-1;
@@ -19018,6 +19247,13 @@
 
     function goBackToMap() {
       stopInertia();
+      // ⚠️ TALLENNUS ENNEN isExtendingSessionin NOLLAUSTA (se tehdään alempana
+      // tässä samassa funktiossa). Keston muokkaus ei saa ylikirjoittaa
+      // tavallisen pysäköinnin muistettua aikaa.
+      if (!isExtendingSession) {
+        _lastParkMinutes = parkingMinutes;
+        _lastParkPhase   = drumPhase;
+      }
       overlay.classList.remove('open');
       overlay.classList.remove('extending-mode');
       // Restore the map's floating action button now that we're back on the map
@@ -19039,7 +19275,7 @@
         sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
         sheet.style.transform  = `translateY(${targetY}px)`;
         currentY = targetY;
-        applySheetDim(currentY);
+        applySheetDim(currentY, true);
         if (typeof updateNavBtnVisibility === 'function') updateNavBtnVisibility();
         if (typeof updateOsmOpacity === 'function') updateOsmOpacity(currentY);
       }, 50);
@@ -19441,6 +19677,10 @@
       // Sulkeminen ja perusnäkymän palautus tehdään ILMAN SIIRTYMÄÄ, jottei
       // mikään liu'u näkyvästi — ne vain ovat valmiina kun näkymä lopuksi
       // kutistuu banneriksi.
+      // Pysäköinti alkoi → muistettu aika ei ole enää ajankohtainen.
+      _lastParkAreaCode = null;
+      _lastParkMinutes  = 0;
+      _lastParkPhase    = 0;
       openParkSuccess();
       setTimeout(() => {
         const povl = document.getElementById('parking-overlay');
@@ -20884,7 +21124,7 @@
       sheet.style.transform=`translateY(${t}px)`;
       currentY=t;
 
-      applySheetDim(t);
+      applySheetDim(t, true);
       updateNavBtnVisibility();
       updateOsmOpacity(t);
 
