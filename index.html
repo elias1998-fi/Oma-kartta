@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-i -->
+<head><!-- TP_BUILD 2026-08-27-j -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -1229,6 +1229,15 @@
       font-size: 14px;
       color: #888;
       margin-left: 8px;
+    }
+    /* Versio pelkkänä tekstinä listan alapuolella, harmaalla pohjalla. */
+    .about-version-note {
+      padding: 26px 16px 10px 16px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: #9aa3b8;
+      letter-spacing: .2px;
     }
 
     /* ── Ajoneuvot ──────────────────────────────────────────────────────
@@ -4670,10 +4679,10 @@
     </div>
   </div>
 
-  <!-- "Tietoja sovelluksesta" — five flat rows. The version row is shown
-       as a static value (not tappable). Käyttäjätiedot/Tietosuojaseloste/
-       Lisenssit/Yrityksen kotisivut open external links or placeholder
-       toasts until those pages exist. -->
+  <!-- "Tietoja sovelluksesta" — neljä riviä listassa ja versio pelkkänä
+       tekstinä listan alla. Käyttöehdot/Tietosuojaseloste/Lisenssit näyttävät
+       toistaiseksi ilmoituksen; Yrityksen kotisivut avaa ulkoisen linkin
+       vahvistuskyselyn kautta. -->
   <div id="about-detail" class="settings-detail-overlay">
     <div class="overlay-header">
       <button class="overlay-back-btn" onclick="closeAboutSettings()">←</button>
@@ -4693,28 +4702,19 @@
           <div class="settings-item-text"><div class="settings-item-label">Lisenssit</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
-        <div class="settings-item" style="cursor:default;">
-          <div class="settings-item-text"><div class="settings-item-label">Sovelluksen versio</div></div>
-          <div class="about-version" id="about-version">1.0.0</div>
-        </div>
-        <!-- MITTAUSRIVI (poistetaan kun aluevalinnan katkeamisbugi on varmistettu
-             korjatuksi): kertoo viimeisimmän aluevalinnan lennon lopputuloksen —
-             kuinka monta pikseliä keskipiste jäi tavoitteesta ja monestiko
-             saapumisvahti joutui jatkamaan lentoa. -->
-        <div class="settings-item" style="cursor:default;">
-          <div class="settings-item-text"><div class="settings-item-label">Aluevalinta</div></div>
-          <div class="about-version" id="about-select">–</div>
-        </div>
-        <!-- MITTAUSRIVI (poistetaan kun renkaiden sauma-asia on ratkaistu). -->
-        <div class="settings-item" style="cursor:default;">
-          <div class="settings-item-text"><div class="settings-item-label">Aluedata</div></div>
-          <div class="about-version" id="about-rings" style="font-size:12px;">–</div>
-        </div>
-        <div class="settings-item" onclick="confirmOpenExternal('https://totalparking.fi')">
+        <div class="settings-item" onclick="confirmOpenExternal('https://elias1998-fi.github.io/TotalParkingweb/')">
           <div class="settings-item-text"><div class="settings-item-label">Yrityksen kotisivut</div></div>
           <div class="settings-item-chevron">›</div>
         </div>
       </div>
+      <!-- Versio ei ole enää oma rivinsä listassa vaan pelkkää tekstiä
+           harmaalla alueella listan alapuolella. Tunniste on sama
+           (#about-version), joten se täytetään yhä samasta lähteestä kuin
+           avausruudun versio eivätkä ne voi eritä toisistaan.
+           Aluevalinnan ja aluedatan mittausrivit on poistettu; niiden
+           JS-päivitykset tarkistavat elementin olemassaolon, joten
+           TP_RING_DIAG ja _selDiag jatkavat toimintaansa ilman virhettä. -->
+      <div class="about-version-note" id="about-version">1.0.0</div>
     </div>
   </div>
 
@@ -14025,7 +14025,7 @@
     // eivät voi eritä toisistaan.
     (function(){
       const el = document.getElementById('about-version');
-      if (el && typeof APP_VERSION !== 'undefined') el.textContent = APP_VERSION + ' · ' + APP_BUILD;
+      if (el && typeof APP_VERSION !== 'undefined') el.textContent = 'Versio ' + APP_VERSION + ' · ' + APP_BUILD;
       const rg = document.getElementById('about-rings');
       if (rg && typeof TP_RING_DIAG !== 'undefined') rg.textContent = TP_RING_DIAG;
     })();
