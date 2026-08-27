@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-l -->
+<head><!-- TP_BUILD 2026-08-27-m -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -732,6 +732,7 @@
       padding-bottom: 12px;
     }
     #search-overlay .overlay-header,
+    #search-overlay #search-tabs-host,
     #search-overlay #search-input-container { flex-shrink: 0; }
     /* Dokumentti ei saa vierittyä hakunäkymän ollessa auki. */
     body.search-mode { overflow: hidden; }
@@ -5285,6 +5286,9 @@
         </svg>
       </button>
     </div>
+    <!-- Historia/Suosikit-valinta on vierittyvän listan ULKOPUOLELLA, jotta
+         se pysyy paikallaan ja vierityspalkki alkaa vasta sen alta. -->
+    <div id="search-tabs-host"></div>
     <div id="search-results" class="no-scroll"></div>
   </div>
 
@@ -7533,6 +7537,7 @@
       document.getElementById('search-input').value = '';
       document.getElementById('search-results').innerHTML = '';
       document.getElementById('search-results').style.paddingBottom = '';
+      setSearchTabsHost('');
       // Restore the floating action button now that the search view is gone.
       btnContainer.classList.remove('hidden');
       if (filterMode) closeFilter();
@@ -15157,6 +15162,11 @@
       </svg>`;
     }
 
+    function setSearchTabsHost(html) {
+      const host = document.getElementById('search-tabs-host');
+      if (host) host.innerHTML = html || '';
+    }
+
     function showSearchHistory() {
       const searchResults = document.getElementById('search-results');
       searchResults.classList.remove('allow-scroll');
@@ -15174,8 +15184,9 @@
                   role="tab" onclick="setSearchTab('favourites')">Suosikit</button>
         </div>`;
 
+      setSearchTabsHost(tabs);
       if (list.length === 0) {
-        searchResults.innerHTML = tabs + '<div class="search-empty">' +
+        searchResults.innerHTML = '<div class="search-empty">' +
           (searchListTab === 'favourites'
             ? 'Ei suosikkeja. Merkitse paikka tähdellä, niin se ilmestyy tänne.'
             : 'Ei aikaisempia hakuja') + '</div>';
@@ -15192,7 +15203,7 @@
         currentLon = center.lng;
       }
 
-      searchResults.innerHTML = tabs +
+      searchResults.innerHTML =
         list.map((item, index) => {
           const distanceKm = calculateDistance(currentLat, currentLon, item.lat, item.lon);
           const distanceText = formatDistance(distanceKm);
@@ -15259,6 +15270,32 @@
       document.execCommand('insertText', false, txt.replace(/\s+/g, ' '));
     });
     const searchResults = document.getElementById('search-results');
+
+    // ── Vain lista liikkuu ──────────────────────────────────────────────
+    // ⚠️ KAKSI ERI ILMIÖTÄ SIIRSI HAKUKENTTÄÄ JA KURSORIA.
+    // 1. Kosketusveto otsikon, hakukentän tai välilehtien päältä valuu
+    //    dokumentille, jota selain vierittää. body.search-mode{overflow:hidden}
+    //    ei estä sitä iOS:llä. Estetään oletus kaikkialla paitsi listan
+    //    päällä; vaakasuuntainen paluuele ei kärsi, koska se on oma
+    //    kuuntelijansa eikä nojaa selaimen vieritykseen.
+    // 2. iOS vierittää DOKUMENTTIA itse kun näppäimistö avautuu ja kohdistettu
+    //    kenttä on position:fixed -näkymässä — se yrittää tuoda kursorin
+    //    näkyviin ja siirtää samalla koko näkymän. Pakotetaan takaisin nollaan
+    //    niin kauan kuin hakunäkymä on auki.
+    (function lockSearchScroll(){
+      const ov = document.getElementById('search-overlay');
+      if (!ov) return;
+      ov.addEventListener('touchmove', (e) => {
+        const t = e.target;
+        if (!(t && t.closest && t.closest('#search-results'))) e.preventDefault();
+      }, { passive: false });
+      window.addEventListener('scroll', () => {
+        if (ov.classList.contains('open') && (window.scrollY || window.pageYOffset)) {
+          window.scrollTo(0, 0);
+        }
+      }, { passive: true });
+    })();
+
     // ⚠️ NÄPPÄIMISTÖN KORKEUS LISÄTÄÄN LISTAN ALAPEHMUSTEEKSI.
     // Hakunäkymä on position:fixed; inset:0, joten iOS ei kutista sen
     // asettelualuetta näppäimistön auetessa — listan loppu jäisi
@@ -15317,6 +15354,7 @@
             currentLon = center.lng;
           }
           
+          setSearchTabsHost('');   // hakutuloksissa ei näytetä välilehtiä
           searchResults.innerHTML = data.features.map(feature => {
             const props = feature.properties;
             const coords = feature.geometry.coordinates;
@@ -15351,10 +15389,12 @@
             `;
           }).join('');
         } else {
+          setSearchTabsHost('');   // hakutuloksissa ei näytetä välilehtiä
           searchResults.innerHTML = '<div class="search-empty">Ei hakutuloksia</div>';
         }
       } catch (error) {
         console.error('Hakuvirhe:', error);
+        setSearchTabsHost('');   // hakutuloksissa ei näytetä välilehtiä
         searchResults.innerHTML = '<div class="search-empty">Haku epäonnistui</div>';
       }
     }
