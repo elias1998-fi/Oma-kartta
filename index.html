@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-z -->
+<head><!-- TP_BUILD 2026-08-28-a -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -7066,71 +7066,78 @@
       return 9999;
     }
 
-    // ── Tuplanapautus ja veto = portaaton zoom ──────────────────────────
-    // MapLibressa on vain nipistyszoom ja tuplanapautuksen porrasloikka. Tämä
-    // lisää Google Maps -tyylisen eleen: napauta kahdesti, pidä sormi alhaalla
-    // toisella napautuksella ja liu'uta ylös/alas.
-    // ⚠️ Ele AKTIVOIDAAN VASTA KUN SORMI ON LIIKKUNUT yli 8 px. Jos dragPan ja
-    // doubleClickZoom kytkettäisiin pois heti toisesta napautuksesta, tavallinen
-    // tuplanapautuksen zoom lakkaisi toimimasta — se laukeaa vasta toisen
-    // napautuksen touchendissä, jonka ehtisimme estää.
-    (function tapDragZoom(){
-      const el = map.getCanvasContainer();
-      const TAP_MS = 300, TAP_PX = 30, START_PX = 8, PX_PER_ZOOM = 120;
-      let lastT = 0, lastX = 0, lastY = 0;
-      let armed = false, active = false, startY = 0, startZoom = 0, anchor = null;
-      function end(){
-        if (armed) map.dragPan.enable();
-        armed = false;
-        if (!active) return;
-        active = false;
-        setTimeout(() => map.doubleClickZoom.enable(), 0);
+    // ── Painallus, pito ja veto = portaaton zoom ────────────────────────
+    // Yksi painallus: kosketa karttaa, pidä sormi paikallaan hetken ja
+    // liu'uta sitten YLÖS (lähemmäs) tai ALAS (kauemmas).
+    // ⚠️ PITO ON PAKOLLINEN, koska ilman sitä ele olisi sama kuin kartan
+    // panorointi eikä karttaa voisi enää siirtää lainkaan. Jos sormi lähtee
+    // liikkeelle ennen HOLD_MS:ää, kyseessä on tavallinen panorointi eikä
+    // zoomiin mennä. Pidon aikana sormi saa heilahtaa HOLD_PX:n verran.
+    // ⚠️ dragPan kytketään pois VASTA kun ele on varmistunut. Jos se
+    // kytkettäisiin pois heti kosketuksesta, panorointi ei toimisi ollenkaan.
+    // ⚠️ KUUNTELIJAT #map-ELEMENTTIIN CAPTURE-VAIHEESSA, ei canvas-säiliöön.
+    // Sovelluksessa on blockTapDragZoom, joka pysäyttää tuplanapautuksen
+    // toisen kosketuksen #map-elementin capture-vaiheessa. Se on ancestor
+    // canvas-säiliölle, joten stopPropagation esti tapahtuman pääsyn tänne
+    // kokonaan — juuri siksi aiempi tuplanapautus-zoom ei toiminut kertaakaan.
+    // Capture #map-tasolla ajetaan ennen estoa, joten ele saa tapahtumat
+    // kaikissa tilanteissa.
+    (function pressHoldZoom(){
+      const el = document.getElementById('map') || map.getCanvasContainer();
+      const HOLD_MS = 250, HOLD_PX = 8, PX_PER_ZOOM = 120;
+      let timer = null, armed = false, cancelled = false;
+      let startX = 0, startY = 0, startZoom = 0, anchor = null;
+
+      function disarm(){
+        clearTimeout(timer); timer = null;
+        if (armed) { armed = false; map.dragPan.enable(); }
+        cancelled = false;
       }
       el.addEventListener('touchstart', e => {
-        if (e.touches.length !== 1) { end(); return; }
-        const t = e.touches[0], now = Date.now();
-        if (now - lastT < TAP_MS &&
-            Math.abs(t.clientX - lastX) < TAP_PX &&
-            Math.abs(t.clientY - lastY) < TAP_PX) {
+        clearTimeout(timer);
+        if (e.touches.length !== 1) { disarm(); cancelled = true; return; }
+        const t = e.touches[0];
+        startX = t.clientX; startY = t.clientY;
+        cancelled = false;
+        timer = setTimeout(() => {
+          if (cancelled) return;
           armed = true;
-          startY = t.clientY;
           startZoom = map.getZoom();
           const r = el.getBoundingClientRect();
-          anchor = map.unproject([t.clientX - r.left, t.clientY - r.top]);
-          // ⚠️ dragPan POIS HETI TOISESTA NAPAUTUKSESTA, ei vasta 8 px:n
-          // jälkeen. Aiemmin MapLibre ehti aloittaa panoroinnin ennen kuin se
-          // kytkettiin pois, ja panorointi jatkui eleen loppuun asti — kartta
-          // siis liikkui zoomaamisen sijaan. doubleClickZoom jätetään päälle
-          // tässä vaiheessa, jotta pelkkä tuplanapautus zoomaa yhä normaalisti.
+          anchor = map.unproject([startX - r.left, startY - r.top]);
           map.dragPan.disable();
-          // Ensimmäinen napautus on jo voinut valita alueen ja käynnistää
-          // lennon sen päälle. Katkaistaan se heti, ettei kamera saa kahta
-          // ohjausta yhtä aikaa.
+          // Napautus on voinut valita alueen ja käynnistää lennon sen päälle.
+          // Katkaistaan se, ettei kamera saa kahta ohjausta yhtä aikaa.
           map.stop();
-        }
-        lastT = now; lastX = t.clientX; lastY = t.clientY;
-      }, { passive: true });
+        }, HOLD_MS);
+      }, { capture: true, passive: true });
+
       el.addEventListener('touchmove', e => {
-        if (!armed || e.touches.length !== 1) return;
-        const dy = startY - e.touches[0].clientY;
-        if (!active) {
-          if (Math.abs(dy) < START_PX) return;
-          active = true;
-          map.doubleClickZoom.disable();
+        if (e.touches.length !== 1) { disarm(); cancelled = true; return; }
+        const t = e.touches[0];
+        if (!armed) {
+          // Liike ennen pidon täyttymistä = panorointi, ei zoom.
+          if (Math.abs(t.clientX - startX) > HOLD_PX ||
+              Math.abs(t.clientY - startY) > HOLD_PX) {
+            cancelled = true; clearTimeout(timer); timer = null;
+          }
+          return;
         }
         e.preventDefault();
         // Sormi YLÖS (dy > 0) = zoom sisään, sormi ALAS = zoom ulos.
         // Arvo rajataan kartan omiin ääripäihin, ettei ele jää "jumiin"
         // rajan taakse: ilman rajausta startZoom + dy voisi kasvaa
         // mielivaltaisesti ja paluu vaatisi saman matkan takaisin.
+        const dy = startY - t.clientY;
         const z = Math.max(map.getMinZoom(),
                   Math.min(map.getMaxZoom(), startZoom + dy / PX_PER_ZOOM));
-        // around: pitää napautuskohdan paikallaan, jolloin zoom tuntuu
+        // around: pitää kosketuskohdan paikallaan, jolloin zoom tuntuu
         // tarttuvan siihen kohtaan jota katsotaan.
         map.easeTo({ zoom: z, around: anchor, duration: 0 });
-      }, { passive: false });
-      el.addEventListener('touchend', end, { passive: true });
-      el.addEventListener('touchcancel', end, { passive: true });
+      }, { capture: true, passive: false });
+
+      el.addEventListener('touchend', disarm, { capture: true, passive: true });
+      el.addEventListener('touchcancel', disarm, { capture: true, passive: true });
     })();
 
     map.on('load', () => {
