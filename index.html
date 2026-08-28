@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head><!-- TP_BUILD 2026-08-27-y -->
+<head><!-- TP_BUILD 2026-08-27-z -->
   <meta charset="utf-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -39,6 +39,15 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f1f2; height: -webkit-fill-available; }
     #map { width: 100%; height: 100%; height: -webkit-fill-available; }
+    /* ⚠️ PAKOTETTU touch-action: none KARTALLE.
+       MapLibre asettaa canvas-säiliön touch-actionin sen mukaan mitkä eleet
+       ovat käytössä. Kun tuplanapautus-zoom kytkee dragPanin pois, MapLibre
+       laskee arvon uudelleen ja voi sallia selaimen oman panoroinnin — silloin
+       selain nappaa eleen kompositorissa ennen kuin JS ehtii ajaa, eikä
+       preventDefault enää auta. Tällä säännöllä ele pysyy aina sovelluksen
+       hallussa. Kartan oma panorointi ei kärsi, koska MapLibre toteuttaa sen
+       JavaScriptillä eikä selaimen vieritysmekanismilla. */
+    #map, #map .maplibregl-canvas-container, #map .maplibregl-canvas { touch-action: none !important; }
 
     /* ── Portrait-lock fallback for in-browser use ─────────────────────
        When the device is in landscape, rotate the whole body so the
@@ -7094,6 +7103,10 @@
           // siis liikkui zoomaamisen sijaan. doubleClickZoom jätetään päälle
           // tässä vaiheessa, jotta pelkkä tuplanapautus zoomaa yhä normaalisti.
           map.dragPan.disable();
+          // Ensimmäinen napautus on jo voinut valita alueen ja käynnistää
+          // lennon sen päälle. Katkaistaan se heti, ettei kamera saa kahta
+          // ohjausta yhtä aikaa.
+          map.stop();
         }
         lastT = now; lastX = t.clientX; lastY = t.clientY;
       }, { passive: true });
@@ -7104,16 +7117,17 @@
           if (Math.abs(dy) < START_PX) return;
           active = true;
           map.doubleClickZoom.disable();
-          // ⚠️ Katkaise käynnissä oleva kameraliike. Ensimmäinen napautus voi
-          // valita alueen (tapToSelectArea), joka lentää kartan alueen päälle.
-          // Ilman tätä lento ja zoom-ele ohjaisivat kameraa yhtä aikaa eri
-          // suuntiin, jolloin ele näyttää siltä ettei se toimi lainkaan.
-          map.stop();
         }
         e.preventDefault();
+        // Sormi YLÖS (dy > 0) = zoom sisään, sormi ALAS = zoom ulos.
+        // Arvo rajataan kartan omiin ääripäihin, ettei ele jää "jumiin"
+        // rajan taakse: ilman rajausta startZoom + dy voisi kasvaa
+        // mielivaltaisesti ja paluu vaatisi saman matkan takaisin.
+        const z = Math.max(map.getMinZoom(),
+                  Math.min(map.getMaxZoom(), startZoom + dy / PX_PER_ZOOM));
         // around: pitää napautuskohdan paikallaan, jolloin zoom tuntuu
         // tarttuvan siihen kohtaan jota katsotaan.
-        map.easeTo({ zoom: startZoom + dy / PX_PER_ZOOM, around: anchor, duration: 0 });
+        map.easeTo({ zoom: z, around: anchor, duration: 0 });
       }, { passive: false });
       el.addEventListener('touchend', end, { passive: true });
       el.addEventListener('touchcancel', end, { passive: true });
